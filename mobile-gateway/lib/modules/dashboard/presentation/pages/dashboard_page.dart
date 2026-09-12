@@ -228,7 +228,7 @@ class UserHeaderCard extends StatelessWidget {
             radius: 32,
             backgroundColor: Colors.white24,
             backgroundImage: (image != null && image.toString().isNotEmpty)
-                ? NetworkImage('$baseUrl/storage/$image')
+                ? NetworkImage(image.toString().startsWith('http') ? image.toString() : '$baseUrl/$image')
                 : null,
             child: (image == null || image.toString().isEmpty)
                 ? const Icon(Icons.admin_panel_settings, color: Colors.white, size: 30)

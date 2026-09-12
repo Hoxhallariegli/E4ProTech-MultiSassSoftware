@@ -17,7 +17,13 @@ class StoreUploadedImageAction
 
         $destinationFolder = mb_rtrim($destinationFolder, DIRECTORY_SEPARATOR);
 
-        Storage::disk($disk)->put($destinationFolder.DIRECTORY_SEPARATOR.$name, $img);
+        // Save to public folder directly instead of storage/app/public
+        $targetDir = public_path($destinationFolder);
+        if (!\Illuminate\Support\Facades\File::exists($targetDir)) {
+            \Illuminate\Support\Facades\File::makeDirectory($targetDir, 0755, true);
+        }
+
+        \Illuminate\Support\Facades\File::put($targetDir.DIRECTORY_SEPARATOR.$name, $img);
 
         return $destinationFolder.DIRECTORY_SEPARATOR.$name;
     }

@@ -18,9 +18,17 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\Mobile\AuthController;
 
 Route::post('mobile/login', [AuthController::class, 'login']);
+Route::get('mobile/languages', [\App\Http\Controllers\Api\Mobile\LanguageController::class, 'index']);
 
 Route::middleware('auth:sanctum')->prefix('mobile')->group(function () {
     Route::apiResource('test-modules', \App\Http\Controllers\Api\Mobile\TestModuleController::class);
+    
+
+
+
+
+
+
 
 
 
@@ -75,9 +83,6 @@ Route::middleware('auth:sanctum')->prefix('mobile')->group(function () {
     Route::get('notifications/settings', [\App\Http\Controllers\Api\Mobile\NotificationSettingsController::class, 'index']);
     Route::post('notifications/toggle-module', [\App\Http\Controllers\Api\Mobile\NotificationSettingsController::class, 'toggleModule']);
     Route::post('notifications/toggle-event', [\App\Http\Controllers\Api\Mobile\NotificationSettingsController::class, 'toggleEvent']);
-
-    // Language Settings
-    Route::get('languages', [\App\Http\Controllers\Api\Mobile\LanguageController::class, 'index']);
 
     Route::post('logout', [AuthController::class, 'logout']);
 

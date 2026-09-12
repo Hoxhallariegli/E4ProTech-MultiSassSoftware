@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/widgets/premium_widgets.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../services/api_service.dart';
+import '../../../../services/auth_service.dart';
 import '../../../../l10n/core_localization.dart';
 import '../../../dashboard/presentation/pages/app_shell.dart';
 
@@ -55,6 +56,9 @@ class _LoginPageState extends State<LoginPage> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('auth_token', token);
         await prefs.setString('user_data', jsonEncode(userData));
+
+        // Refresh permissions in AuthService
+        await AuthService.instance.init();
 
         if (mounted) {
           Navigator.pushReplacement(

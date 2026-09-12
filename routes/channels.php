@@ -59,4 +59,11 @@ use Illuminate\Support\Facades\Broadcast;
 
 
 
+
+
+
+
+
+
+
 Broadcast::channel('mobile.test-modules', function (\App\Models\User $user) { return $user->can('view_test_modules'); });

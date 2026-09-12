@@ -8,8 +8,14 @@ String test_moduleTr(
   Map<String, String> args = const {},
 ]) {
   final language = Localizations.localeOf(context).languageCode.toLowerCase();
-  final source = language == 'sq' ? test_moduleSq : test_moduleEn;
 
+  Map<String, String> getSource() {
+    if (language == 'en') return test_moduleEn;
+    if (language == 'sq') return test_moduleSq;
+    return test_moduleEn;
+  }
+
+  final source = getSource();
   var value = source[key] ?? test_moduleEn[key] ?? key;
   args.forEach((name, replacement) {
     value = value.replaceAll('{$name}', replacement);

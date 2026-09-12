@@ -2307,8 +2307,8 @@ DART
         $content = File::get($registryPath);
 
         $import = "import '../../$snake/presentation/pages/{$snake}_list_page.dart';";
-        if (!str_contains($content, $import)) {
-            $content = str_replace('// [REGISTRY_IMPORTS]', "$import\n    // [REGISTRY_IMPORTS]", $content);
+        if (!str_contains($content, "$snake/presentation/pages/{$snake}_list_page.dart")) {
+            $content = str_replace('// [REGISTRY_IMPORTS]', "$import\n// [REGISTRY_IMPORTS]", $content);
         }
 
         $flutterIcon = match($icon) {
@@ -2327,9 +2327,11 @@ DART
             default => 'Icons.layers_outlined',
         };
 
-        $entry = "ModuleEntry(name: '$name', icon: $flutterIcon, page: const {$name}ListPage()),";
-        if (!str_contains($content, $entry)) {
-            $content = str_replace('// [REGISTRY_ENTRIES]', "$entry\n    // [REGISTRY_ENTRIES]", $content);
+        $perm = "view_" . Str::snake(Str::plural($name));
+        $entry = "ModuleEntry(name: '$name', icon: $flutterIcon, page: const {$name}ListPage(), permission: '$perm'),";
+
+        if (!str_contains($content, "name: '$name'")) {
+            $content = str_replace('// [REGISTRY_ENTRIES]', "    $entry\n    // [REGISTRY_ENTRIES]", $content);
         }
 
         File::put($registryPath, $content);

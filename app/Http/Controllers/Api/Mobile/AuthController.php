@@ -37,7 +37,9 @@ class AuthController extends Controller
             'user' => [
                 'name' => $user->name,
                 'email' => $user->email,
-                'image' => $user->image,
+                'image' => $user->image ? asset(ltrim($user->image, '/')) : null,
+                'is_admin' => $user->hasRole('admin'),
+                'permissions' => $user->getAllPermissions()->pluck('name'),
             ]
         ]);
     }

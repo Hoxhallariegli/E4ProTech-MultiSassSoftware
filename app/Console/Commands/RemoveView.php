@@ -218,6 +218,10 @@ class RemoveView extends Command
         $entryPattern = "/ModuleEntry\(name:\s*['\"]{$name}['\"].*?\),\s*/s";
         $content = preg_replace($entryPattern, '', $content);
 
+        // EXTRA CLEANUP: Remove any corrupted fragments that might be left behind (e.g. from failed edits)
+        $corruptPattern = "/\s*permission:\s*['\"]view_" . Str::snake(Str::plural($name)) . "['\"]\),\s*/s";
+        $content = preg_replace($corruptPattern, '', $content);
+
         File::put($registryPath, $content);
         $this->info("✓ Unregistered module from Flutter ModuleRegistry");
     }

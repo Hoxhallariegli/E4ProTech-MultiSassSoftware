@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../../core/widgets/premium_widgets.dart';
-import 'module_registry.dart';
+import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/services/auth_service.dart';
+import 'package:mobile_gateway/modules/dashboard/presentation/pages/module_registry.dart';
 
 class ModulesPage extends StatelessWidget {
   const ModulesPage({super.key});
@@ -8,7 +9,8 @@ class ModulesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final modules = ModuleRegistry.modules;
+    final allModules = ModuleRegistry.modules;
+    final modules = allModules.where((m) => m.permission == null || AuthService.instance.hasPermission(m.permission!)).toList();
 
     if (modules.isEmpty) {
       return Center(

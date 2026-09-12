@@ -10,6 +10,11 @@ class DeleteImageAction
 {
     public function __invoke(string $path, string $disk = 'public'): void
     {
-        Storage::disk($disk)->delete($path);
+        if (\Illuminate\Support\Facades\File::exists(public_path($path))) {
+            \Illuminate\Support\Facades\File::delete(public_path($path));
+        }
+
+        // Also check storage just in case old files are there
+        \Illuminate\Support\Facades\Storage::disk($disk)->delete($path);
     }
 }
