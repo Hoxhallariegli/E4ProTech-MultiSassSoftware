@@ -859,3 +859,19 @@ Regression demo
 all work from the **same generator definition**.
 
 That is the standard this StarterKit should maintain.
+
+ @(
+     "name", "0", "n",
+     "description", "1", "y",
+     "qty", "5", "n",
+    "price", "6", "n",
+     "is_active", "7", "n",
+    "due_date", "9", "n",
+     "event_at", "10", "n",
+     "user_id", "11", "users", "name", "n",
+     "priority", "12", "Low, Medium, High", "n",
+     "image", "8", "y",
+     "cover_photo", "8", "y",
+     "", "box", "Yes"
+ ) | php artisan new:view TestModule --api
+php artisan remove:view TestModule

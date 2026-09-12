@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../test_module/presentation/pages/test_module_list_page.dart';
 // [REGISTRY_IMPORTS]
 
 class ModuleEntry {
@@ -17,7 +16,6 @@ class ModuleEntry {
 }
 
 class ModuleRegistry {
-  static final List<ModuleEntry> modules = [    ModuleEntry(name: 'TestModule', icon: Icons.inventory_2_outlined, page: const TestModuleListPage(), permission: 'view_test_modules'),
-    // [REGISTRY_ENTRIES]
+  static final List<ModuleEntry> modules = [// [REGISTRY_ENTRIES]
   ];
 }

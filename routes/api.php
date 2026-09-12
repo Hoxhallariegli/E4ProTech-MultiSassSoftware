@@ -21,7 +21,8 @@ Route::post('mobile/login', [AuthController::class, 'login']);
 Route::get('mobile/languages', [\App\Http\Controllers\Api\Mobile\LanguageController::class, 'index']);
 
 Route::middleware('auth:sanctum')->prefix('mobile')->group(function () {
-    Route::apiResource('test-modules', \App\Http\Controllers\Api\Mobile\TestModuleController::class);
+    
+    
     
 
 
