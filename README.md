@@ -1,214 +1,701 @@
-# üçé E4ProTech Starterkit Laravel
+# E4ProTech StarterKit ó Laravel 12 + Livewire + Flutter Full-Stack
 
-The ultimate **Laravel 12 & Livewire 3** starter kit, architected for scalability, speed, and a premium **Apple-style** user experience. This template automates the heavy lifting while strictly following **Enterprise Best Practices (DDD, Actions, DTOs, Repository-less Queries)**.
+A production-oriented Laravel StarterKit built around **DDD-inspired architecture, Livewire 3, REST APIs, Reverb realtime events, Flutter BLoC/Cubit, localization, permissions, and generator-driven CRUD scaffolding**.
 
----
+The central idea is simple:
 
-## üöÄ Key Features
-
-- **Architectural Excellence**: Implements a clean Domain-Driven Design (DDD) inspired structure.
-- **Layered Logic**: Complete separation of concerns using **Actions**, **DTOs**, and **Dedicated Query Classes**.
-- **Centralized Validation**: All business rules are defined once in the Model's `rules()` method and shared across the entire UI.
-- **Apple UI/UX**: Ultra-minimalist design, responsive grids, rounded-3xl corners, and full **Dark Mode** support.
-- **Smart Data Components**: 
-    - **Searchable Dropdowns**: Native `x-form.dropdown-search` with live filtering.
-    - **Sortable Headers**: High-contrast blue headers with visual feedback and Model-controlled sorting.
-    - **Create-on-the-fly**: Create related records directly from dropdowns without leaving the current form.
-- **One-Command Scaffolding**: Generate a production-ready feature in seconds.
-- **Surgical API Generation**: One flag to build a complete JSON API layer for any module.
+> Define a module once with `php artisan new:view` and generate the Laravel + Livewire + API + realtime + Flutter ecosystem from the same field definition.
 
 ---
 
-## üõ†Ô∏è The Power of `new:view`
+## What This StarterKit Is
 
-The core of this starter kit is the `php artisan new:view` command. It is an interactive wizard that builds a complete, layered module based on your database schema.
+E4ProTech StarterKit is designed to remove repetitive CRUD work without sacrificing structure.
 
-### 1. Run the Command
+A generated module can include:
+
+- Laravel Model
+- Database Migration
+- DTO
+- Create / Update / Delete Actions
+- List Query
+- Livewire CRUD
+- Blade views
+- Permissions
+- Admin navigation
+- API Controller
+- API Resource
+- API routes
+- Foreign-key lookup endpoints
+- Observer
+- Broadcast Event
+- Reverb channel integration
+- Flutter BLoC/Cubit module
+- Flutter data/repository layer
+- Flutter UI/pages/widgets
+- Image upload integration
+- Module localization for English and Albanian
+- Optional Firebase notification infrastructure
+
+The generator is intentionally **generator-first**: fixes and architectural rules belong in `new:view`, so newly generated modules stay consistent.
+
+---
+
+# 1. Architecture
+
+## 1.1 Laravel / Web
+
+```text
+Livewire / API
+      ¶
+      ?
+   DTO
+      ¶
+      ?
+   Action
+      ¶
+      ?
+    Model
+      ¶
+      ?
+   Database
+```
+
+The same domain actions are reused by the web and mobile sides so that business mutations do not diverge between interfaces.
+
+## 1.2 Realtime
+
+```text
+Database change
+      ¶
+      ?
+   Observer
+      ¶
+      ?
+Broadcast Event
+      ¶
+      ?
+   Laravel Reverb
+      +--------------? Flutter realtime UI
+      ¶
+      +--------------? Livewire realtime refresh
+```
+
+**Reverb is the realtime mechanism.**
+
+## 1.3 Firebase
+
+Firebase is separate from the realtime layer.
+
+```text
+Successful DB operation
+      ¶
+      +--------------? Reverb ? realtime UI
+      ¶
+      +--------------? Firebase ? push notification
+```
+
+Firebase is intended for notifications, not as the primary realtime synchronization layer.
+
+---
+
+# 2. The Main Generator
+
+The core command is:
+
 ```bash
 php artisan new:view {ModelName}
 ```
 
-### 2. Advanced Options
-*   `--api`: Generates a fully-functional API layer (Controllers, Resources, FormRequests).
-*   `--firebase`: Automatically integrates Firebase Push Notifications into the Create Action.
+For the complete Laravel + Flutter stack:
 
-### 3. Supported Field Types
-The wizard supports the following database types for automatic scaffolding:
-*   `string`: Standard short text (VARCHAR).
-*   `text`: Long text for descriptions or content.
-*   `integer` / `bigInteger`: Numeric values.
-*   `boolean`: Toggle/Switch (True/False).
-*   `decimal`: Monetary or precise numeric values (supports `step="0.01"`).
-*   `date` / `datetime`: Date and time pickers.
-*   `foreignId`: Automated relationship builder (creates constraints & dropdowns).
-*   `enum`: Predefined selection list.
-
----
-
-## üì° Surgical API Automation
-
-By appending the `--api` flag, the starter kit generates a high-performance RESTful API layer for your module. Unlike generic scaffolders, this system ensures **100% Logic Parity** between your Web UI and API.
-
-### 1. What is Generated?
-*   **`app/Http/Controllers/Api/{Model}Controller.php`**: Standardized controller using Domain Actions.
-*   **`app/Http/Resources/{Model}Resource.php`**: Transform your models into clean JSON structures.
-*   **`app/Http/Requests/Api/{Model}/Store{Model}Request.php`**: Dedicated API validation.
-*   **`app/Http/Requests/Api/{Model}/Update{Model}Request.php`**: Partial-update (PATCH) support.
-
-### 2. Standardized Responses
-The API layer uses the `ApiResponse` class and the `to_api()` helper to ensure consistent JSON outputs:
-```json
-{
-    "status": "success",
-    "message": "Record created.",
-    "data": { "id": 1, "name": "..." },
-    "meta": null
-}
-```
-
-### 3. Shared Domain Logic
-The API Controller **reuses** the same `DTOs`, `Actions`, and `Queries` as the Livewire components. This means:
-- If you change a rule in an Action, both the Website and the Mobile App reflect it instantly.
-- Zero code duplication.
-
----
-
-## üóëÔ∏è How to Remove a Module
-
-If you need to completely delete a module and all its generated files, use the `remove:view` command. It will perform a surgical cleanup of the entire ecosystem.
-
-### 1. Run the Cleanup
 ```bash
-php artisan remove:view {ModelName}
+php artisan new:view {ModelName} --api
 ```
 
-### 2. What is Removed?
-The command automatically deletes:
-1.  **Domain Layer**: The entire `app/Domain/{Model}` folder (Actions, DTOs, Queries).
-2.  **Infrastructure**: The Model and the Migration file.
-3.  **UI Layer**: Livewire components and all Blade views.
-4.  **API Layer**: Controllers, Resources, and FormRequests.
-5.  **Ecosystem**: Route files (Web & API), sidebar navigation links, and permissions from the database.
+Optional Firebase generation:
 
----
-
-## üèóÔ∏è Architectural Output (What is Generated?)
-
-When you run `new:view`, the system generates a structured ecosystem across four layers:
-
-### A. Domain Layer (`app/Domain/{Model}`)
-*   **`DTOs/{Model}DTO.php`**: A readonly object that ensures data integrity between the UI and the Database.
-*   **`Actions/`**: Pure logic classes for data mutation:
-    - `Create{Model}Action.php`
-    - `Update{Model}Action.php`
-    - `Delete{Model}Action.php`
-*   **`Queries/{Model}ListQuery.php`**: Encapsulates all filtering, searching, and eager-loading logic. No more messy queries in your Livewire components!
-
-### B. Infrastructure Layer
-*   **Migration**: Production-ready schema with correct types (Enum, ForeignId constraints).
-*   **Model (`app/Models/{Model}.php`)**:
-    - `rules()`: Centralized validation array.
-    - `sortable()`: Defined list of fields that the UI is allowed to sort.
-    - `casts()`: Auto-casting for dates, booleans, and enums.
-
-### C. UI Layer (`app/Livewire/Admin` & `resources/views/livewire`)
-*   **Index**: Data table with Pagination, Sortable Headers, and the "Smart Filter" panel.
-*   **Create/Edit**: Forms with auto-filling relationship logic and "Create-on-the-fly" inputs.
-*   **Row**: Modular table rows for easy maintenance.
-
----
-
-## üé® Professional UI Components
-
-| Component | Description |
-| :--- | :--- |
-| `<x-table.th>` | **Pro Sortable Header**. Changes color to Blue if sortable, includes Apple-style chevron indicators. |
-| `<x-form.dropdown-search>` | **Searchable Select**. Handles large datasets with live search, `wire:ignore` for stability, and "+ Add New" integration. |
-| `<x-form.input>` | **Smart Input**. Automatically adapts to `type="number"`, `type="date"`, or `type="text"` with high-contrast labels. |
-| `<x-form.textarea>` | **Auto-spanning Area**. Occupies full width in grids for shippable notes/descriptions. |
-
----
-
-## üöÄ Enterprise-grade Examples
-
-You can use PowerShell one-liners to skip the interactive wizard and scaffold complex modules instantly.
-
-### 1. Scaffold Categories (Standard Module)
-```powershell
-"name`n0`nno`nslug`n0`nno`n`ntag" | php artisan new:view Category
+```bash
+php artisan new:view {ModelName} --api --firebase
 ```
 
-### 2. Scaffold BlogPosts (Module with API Support)
-```powershell
-"title`n0`nno`nslug`n0`nno`ncategory_id`n8`ncategories`nno`ncontent`n1`nyes`npublished`n4`nno`n`nnewspaper" | php artisan new:view BlogPost --api
+### Options
+
+| Option | Purpose |
+|---|---|
+| `--api` | Generate the full API + Flutter + realtime ecosystem |
+| `--firebase` | Generate Firebase notification infrastructure |
+
+The current generator treats `--api` as a **full-stack module**, not as an API-only mode.
+
+---
+
+# 3. Supported Field Types
+
+The generator supports:
+
+| Field | Generated behavior |
+|---|---|
+| `string` | Text input |
+| `text` | Large textarea |
+| `integer` | Integer input |
+| `bigInteger` | Big integer input |
+| `decimal` | Decimal input with 2-decimal UI |
+| `qty` / `quantity` | Decimal semantics |
+| `price` / `amount` / `cost` / `unit_price` | Decimal semantics |
+| `boolean` | Checkbox / switch |
+| `image` | Image picker + upload |
+| `date` | Date picker |
+| `datetime` | Date + time picker |
+| `foreignId` | Relationship + searchable lookup |
+| `enum` | Selection input |
+
+Semantic field names intentionally override the numeric menu selection for known conventions such as `qty`, `price`, `priority`, boolean prefixes, date fields, datetime fields, and image fields.
+
+---
+
+# 4. Example Module
+
+A strong regression module is:
+
+```text
+TestModule
+```
+
+with:
+
+```text
+name
+description
+qty
+price
+is_active
+due_date
+event_at
+user_id
+priority
+image
+cover_photo
+```
+
+Run:
+
+```bash
+php artisan new:view TestModule --api
+```
+
+This exercises text, textarea, decimal, boolean, date, datetime, foreign-key, enum, and image generation in one module.
+
+---
+
+# 5. Generated Laravel Structure
+
+A generated full-stack module follows this general structure:
+
+```text
+app/
++-- Domain/
+¶   +-- TestModule/
+¶       +-- Actions/
+¶       ¶   +-- CreateTestModuleAction.php
+¶       ¶   +-- UpdateTestModuleAction.php
+¶       ¶   +-- DeleteTestModuleAction.php
+¶       +-- DTOs/
+¶       ¶   +-- TestModuleDTO.php
+¶       +-- Queries/
+¶       ¶   +-- TestModuleListQuery.php
+¶       +-- Events/
+¶
++-- Http/
+¶   +-- Controllers/
+¶   ¶   +-- Api/
+¶   ¶       +-- Mobile/
+¶   ¶           +-- TestModuleController.php
+¶   +-- Resources/
+¶       +-- Mobile/
+¶           +-- TestModuleResource.php
+¶
++-- Livewire/
+¶   +-- Admin/
+¶       +-- TestModules/
+¶           +-- TestModules.php
+¶           +-- Create.php
+¶           +-- Edit.php
+¶           +-- Row.php
+¶           +-- QuickCreate.php
+¶
++-- Models/
+¶   +-- TestModule.php
+¶
++-- Observers/
+¶   +-- TestModuleObserver.php
+¶
++-- Events/
+    +-- TestModuleChanged.php
+```
+
+Additional generated resources include:
+
+```text
+database/migrations/
+resources/views/livewire/admin/test-modules/
+routes/admin/test-modules.php
 ```
 
 ---
 
-## üí° Quick Demo Data (Tinker)
+# 6. API Layer
 
-If you want to quickly populate your database with demo categories and blog posts, you can run the following script inside `php artisan tinker`:
+With `--api`, the generator creates the mobile API layer together with the Flutter module.
 
-```php
-// Run php artisan tinker
-use App\Models\Category;
-use App\Models\BlogPost;
-use App\Models\Tag;
+Typical endpoints:
 
-$categories = collect([
-    ['name' => 'Laravel', 'slug' => 'laravel'],
-    ['name' => 'Livewire', 'slug' => 'livewire'],
-    ['name' => 'PHP', 'slug' => 'php'],
-    ['name' => 'Architecture', 'slug' => 'architecture'],
-])->map(fn($category) => Category::create($category));
+```text
+GET    /api/mobile/test-modules
+POST   /api/mobile/test-modules
+GET    /api/mobile/test-modules/{id}
+PUT    /api/mobile/test-modules/{id}
+PATCH  /api/mobile/test-modules/{id}
+DELETE /api/mobile/test-modules/{id}
+```
 
-foreach(range(1, 50) as $i) {
-    BlogPost::create([
-        'title'       => "Laravel 12 Starter Kit Article {$i}",
-        'slug'        => "laravel-12-starter-kit-article-{$i}",
-        'category_id' => $categories->random()->id,
-        'content'     => "Demo blog content for article {$i}. Testing E4ProTech Starterkit.",
-        'published'   => true,
-    ]);
-}
+The mobile layer reuses the generated DTOs, Actions and Query logic.
+
+That gives one mutation path:
+
+```text
+Flutter
+   ¶
+   ?
+API Controller
+   ¶
+   ?
+Validation
+   ¶
+   ?
+DTO
+   ¶
+   ?
+Action
+   ¶
+   ?
+Model
+   ¶
+   ?
+Database
 ```
 
 ---
 
-## üîó Advanced Relationship Rules (Dot Notation)
+# 7. API Success / Failure Contract
 
-When scaffolding a `foreignId` field, you can pull data from **nested tables** (e.g., getting an Employee's name for a Mechanic record) using **Dot Notation**.
+The mobile UI should always distinguish:
 
-### 1. The Format
-When the wizard asks for the **"Display field"**, use: `RELATION.FIELD` (e.g., `employee.name`).
+### Success
 
-### 2. What Happens Under the Hood?
-- **Auto Eager Loading**: The generator adds `->with('relation.subRelation')` to your ListQuery class automatically to prevent Lazy Loading errors.
-- **Deep Resolution**: The UI renders `$item->relation?->subRelation?->field` safely.
-- **Global Dispatch**: When you create a new record in a nested modal, a global JS event is dispatched (`Livewire.dispatch(...)`) ensuring that even the deepest dropdowns refresh instantly.
+```text
+Flutter request
+     ?
+HTTP success
+     ?
+Database mutation succeeds
+     ?
+Flutter receives ACK
+     ?
+UI shows success
+```
+
+Example:
+
+```text
+TestModule u shtua me sukses.
+TestModule u pÎrditÎsua me sukses.
+TestModule u fshi me sukses.
+```
+
+### Failure
+
+```text
+Flutter request
+     ?
+Validation / server / network failure
+     ?
+No success state
+     ?
+Flutter shows error
+```
+
+Example:
+
+```text
+Nuk u shtua: validation failed.
+Nuk u fshi: server error.
+Nuk ka pÎrgjigje nga API.
+```
+
+Firebase success notifications should only be triggered after a successful operation.
 
 ---
 
-## ‚ö° Smart UI Features
+# 8. Realtime with Reverb
 
-### 1. Auto-fill (Cascading Dropdowns)
-The UI components are aware of their relationships. If you have two related dropdowns in a form (e.g., **Brand** and **Model**), simply place the **Model** field after the **Brand** field in the wizard. 
-- When you select a **Model**, the system will automatically detect the linked `brand_id` and populate the **Brand** dropdown for you.
+The generated Observer listens to model lifecycle changes and the generated broadcast event sends the realtime message.
 
-### 2. Infinite Nested Modals
-Thanks to the **Global Dispatch** system and `MutationObserver` integration in our dropdowns, you can open a modal, from a modal, from a modal.
-- `JobCard Form` -> Add `Vehicle` (Modal 1) -> Add `Model` (Modal 2) -> Add `Brand` (Modal 3).
-- Saving the **Brand** will instantly update the list in **Modal 2**, and so on.
+Expected flow when Flutter creates a record:
+
+```text
+Flutter
+  ?
+POST API
+  ?
+Laravel
+  ?
+Create Action
+  ?
+Database
+  ?
+Observer
+  ?
+TestModuleChanged
+  ?
+Reverb
+  +--? Flutter list refresh
+  +--? Livewire list refresh
+```
+
+The reverse works too:
+
+```text
+Livewire
+  ?
+Action
+  ?
+Database
+  ?
+Observer
+  ?
+Reverb
+  +--? Flutter refreshes
+```
+
+This is the definition of realtime synchronization for `--api`.
 
 ---
 
-## üì¶ Deployment
-1.  **Clone**: `git clone ...`
-2.  **Setup**: `composer install && npm install && npm run build`
-3.  **Database**: `php artisan migrate --seed`
-4.  **Admin Access**: Default credentials provided in `DatabaseSeeder`.
+# 9. Image Upload Architecture
 
-Developed by **E4ProTech**. This kit is designed to turn hours of manual coding into a single command. üöÄ
-#   F l e e t M a n a g m e n t D e m o  
- #   G o d _ V e r s i o n _ R e a d y  
- 
+Image fields use the shared `ImageUploadService`.
+
+The intended storage layout is:
+
+```text
+public/
++-- uploads/
+    +-- test-modules/
+        +-- generated-file.webp
+```
+
+The database stores the relative public path:
+
+```text
+uploads/test-modules/generated-file.webp
+```
+
+The service handles image processing and can return a public path suitable for the web and API resource layer.
+
+The generator should use this service consistently instead of maintaining separate upload implementations for Livewire and API.
+
+---
+
+# 10. Flutter Structure
+
+The generated Flutter module follows the project's feature-oriented structure:
+
+```text
+mobile-gateway/
++-- lib/
+    +-- modules/
+    ¶   +-- dashboard/
+    ¶       +-- test_module/
+    ¶           +-- data/
+    ¶           +-- presentation/
+    ¶               +-- cubit/
+    ¶               +-- pages/
+    ¶               +-- widgets/
+    ¶
+    +-- core/
+        +-- realtime/
+        +-- widgets/
+        +-- ...
+```
+
+The generated mobile side is intended to be a real application module, not a second-class API client.
+
+---
+
+# 11. Localization
+
+The Laravel generator already creates module translation files for `en` and `sq`.
+
+The Flutter generator follows the same principle: generated module labels and UI strings should be ready for localization rather than hard-coded throughout widgets.
+
+The rule is:
+
+```text
+One generated field definition
+        ¶
+        +--? Laravel translation key
+        ¶
+        +--? Flutter localization key
+```
+
+This keeps module generation consistent across web and mobile.
+
+---
+
+# 12. Relationship Support
+
+For a `foreignId`, the wizard asks for:
+
+```text
+Constrained table
+Display field
+```
+
+The display field supports dot notation.
+
+Example:
+
+```text
+employee.name
+```
+
+The generated Query layer can eager-load the required relationship path, while the UI resolves nested relation labels safely.
+
+This also supports nested create flows such as:
+
+```text
+JobCard
+  +-- Vehicle
+       +-- Model
+            +-- Brand
+```
+
+The generated Livewire components can propagate newly-created related IDs back to the parent form.
+
+---
+
+# 13. Smart UI
+
+Generated modules include reusable premium UI patterns such as:
+
+- Searchable relationship dropdowns
+- Sortable table headers
+- Pagination
+- Smart filter panels
+- Create-on-the-fly related records
+- Nested modal creation
+- Date and datetime controls
+- Decimal inputs
+- Image preview/upload components
+- Dark mode support
+
+The goal is to keep generated modules visually consistent rather than producing raw framework defaults.
+
+---
+
+# 14. Permissions and Navigation
+
+A generated module registers CRUD permissions such as:
+
+```text
+view_test_modules
+add_test_modules
+edit_test_modules
+delete_test_modules
+```
+
+The generator also adds the admin navigation entry.
+
+This keeps access control part of scaffolding instead of an afterthought.
+
+---
+
+# 15. Translation-Safe Regeneration
+
+Running the generator again should not blindly destroy existing translation work.
+
+The generator reads existing translation files, merges missing keys, and preserves existing values.
+
+That means a module can evolve without losing manually edited translations.
+
+---
+
+# 16. Remove a Generated Module
+
+Use:
+
+```bash
+php artisan remove:view TestModule
+```
+
+The cleanup command is intended to remove the generated CRUD ecosystem, including generated application files, routes, navigation and permissions according to the implementation of the remove command.
+
+After removal:
+
+```bash
+git status
+```
+
+Always review the Git diff before committing destructive cleanup.
+
+> Important: database/schema cleanup should be treated separately from filesystem cleanup unless the project's `remove:view` implementation explicitly handles it.
+
+---
+
+# 17. Git Workflow
+
+Before major generator changes, create a clean baseline:
+
+```bash
+git add .
+git commit -m "chore: starterkit baseline"
+```
+
+Recommended tag:
+
+```text
+v1.0.0-starterkit
+```
+
+Then experiment on a separate branch:
+
+```bash
+git switch -c demo/new-view-test
+```
+
+Useful workflow:
+
+```text
+StarterKit baseline
+       ¶
+       ?
+new:view regression test
+       ¶
+       ?
+generator changes
+       ¶
+       +-- success ? commit
+       ¶
+       +-- failure ? restore / reset
+```
+
+Never use the demo generated module as the source of truth. The source of truth is the generator.
+
+---
+
+# 18. Professional Regression Test
+
+The standard regression module is:
+
+```text
+TestModule
+```
+
+Use the PowerShell sequence documented in `DemoUse.txt`.
+
+After generation, verify:
+
+```text
+[ ] Migration generated
+[ ] Model generated
+[ ] DTO generated
+[ ] Create Action generated
+[ ] Update Action generated
+[ ] Delete Action generated
+[ ] List Query generated
+[ ] Livewire Index generated
+[ ] Livewire Create generated
+[ ] Livewire Edit generated
+[ ] Livewire QuickCreate generated
+[ ] API Controller generated
+[ ] API Resource generated
+[ ] API routes generated
+[ ] Foreign lookup generated
+[ ] Observer generated
+[ ] Reverb event generated
+[ ] Flutter module generated
+[ ] Flutter repository generated
+[ ] Flutter Cubit/BLoC generated
+[ ] Flutter pages/widgets generated
+[ ] Localization generated
+[ ] Image picker generated
+[ ] Enum generated correctly
+[ ] priority is ENUM
+[ ] qty is decimal(12,2)
+[ ] price is decimal(12,2)
+[ ] CREATE works
+[ ] UPDATE works
+[ ] DELETE works
+[ ] Livewire realtime refresh works
+[ ] Flutter realtime refresh works
+```
+
+---
+
+# 19. Deployment Baseline
+
+Typical project setup:
+
+```bash
+composer install
+npm install
+npm run build
+php artisan migrate --seed
+```
+
+Then configure:
+
+- database
+- application environment
+- Reverb
+- Flutter server URL / API configuration
+- notification infrastructure when Firebase is enabled
+
+---
+
+# 20. Philosophy
+
+The purpose of this StarterKit is not to generate the smallest amount of code.
+
+It is to generate a **repeatable, structured and maintainable application ecosystem**.
+
+The command:
+
+```bash
+php artisan new:view TestModule --api
+```
+
+should be enough to create a consistent path from:
+
+```text
+Database
+    ?
+Laravel Domain
+    ?
+Livewire
+    ?
+API
+    ?
+Reverb
+    ?
+Flutter
+```
+
+with the same naming, validation, permissions, localization and UI conventions across the stack.
+
+---
+
+**E4ProTech StarterKit**
+
+Enterprise-oriented Laravel + Livewire + Flutter scaffolding, generated from one command.

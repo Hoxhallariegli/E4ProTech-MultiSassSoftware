@@ -1,0 +1,861 @@
+# new:view — Professional Regression Demo
+
+## Purpose
+
+`DemoUse.txt` is the repeatable regression test for the E4ProTech StarterKit generator.
+
+Use it whenever `new:view`, `remove:view`, Reverb, Flutter generation, image handling, localization, API behavior, or generated UI changes.
+
+The purpose is simple:
+
+> Change the generator → run the same demo → verify the entire generated ecosystem.
+
+---
+
+# 1. Git Baseline
+
+Before major generator changes:
+
+```powershell
+git add .
+git commit -m "chore: starterkit baseline"
+git tag v1.0.0-starterkit
+```
+
+For experimental generator work:
+
+```powershell
+git switch -c demo/new-view-test
+```
+
+Recommended workflow:
+
+```text
+StarterKit baseline
+      ↓
+Run new:view demo
+      ↓
+Inspect generated application
+      ↓
+Fix generator
+      ↓
+Run demo again
+      ↓
+Commit only when the regression test passes
+```
+
+---
+
+# 2. Standard Regression Module
+
+Use:
+
+```text
+TestModule
+```
+
+Fields:
+
+```text
+name
+description
+qty
+price
+is_active
+due_date
+event_at
+user_id
+priority
+image
+cover_photo
+```
+
+The demo intentionally mixes nearly every important generator behavior.
+
+---
+
+# 3. Standard Generator Command
+
+The canonical PowerShell demo:
+
+```powershell
+@(
+    "name", "0", "n",
+    "description", "1", "y",
+    "qty", "5", "n",
+    "price", "6", "n",
+    "is_active", "7", "n",
+    "due_date", "9", "n",
+    "event_at", "10", "n",
+    "user_id", "11", "users", "name", "n",
+    "priority", "12", "Low, Medium, High", "n",
+    "image", "8", "y",
+    "cover_photo", "8", "y",
+    "", "box", "Yes"
+) | php artisan new:view TestModule --api
+```
+
+Expected mode:
+
+```text
+API      = YES
+Reverb   = YES
+Firebase = NO
+```
+
+The `--api` test is intentionally separate from Firebase so realtime behavior can be verified without mixing the push-notification layer into the baseline regression.
+
+---
+
+# 4. Field Coverage Matrix
+
+| Field | Expected generator behavior | Regression target |
+|---|---|---|
+| `name` | string | text input |
+| `description` | text | textarea |
+| `qty` | decimal | 2-decimal numeric input |
+| `price` | decimal | 2-decimal numeric input |
+| `is_active` | boolean | checkbox/switch |
+| `due_date` | date | date picker |
+| `event_at` | datetime | date/time picker |
+| `user_id` | foreignId | relation dropdown + lookup |
+| `priority` | enum | Low / Medium / High |
+| `image` | image | upload + preview |
+| `cover_photo` | image | second upload + preview |
+
+---
+
+# 5. Database Verification
+
+After generation, verify:
+
+```text
+test_modules
+--------------------------------
+id              bigint
+name            varchar
+description     text nullable
+qty             decimal(12,2)
+price           decimal(12,2)
+is_active       boolean
+due_date        date
+event_at        datetime
+user_id         foreign key
+priority        enum
+image           varchar nullable
+cover_photo     varchar nullable
+created_at
+updated_at
+```
+
+Important:
+
+```text
+priority = real database ENUM
+```
+
+Expected values:
+
+```text
+Low
+Medium
+High
+```
+
+And:
+
+```text
+qty   = decimal(12,2)
+price = decimal(12,2)
+```
+
+---
+
+# 6. Laravel Generated Structure
+
+Verify that the generator created the module ecosystem:
+
+```text
+app/
+├── Models/TestModule.php
+├── Domain/TestModule/
+│   ├── Actions/
+│   │   ├── CreateTestModuleAction.php
+│   │   ├── UpdateTestModuleAction.php
+│   │   └── DeleteTestModuleAction.php
+│   ├── DTOs/
+│   │   └── TestModuleDTO.php
+│   ├── Queries/
+│   │   └── TestModuleListQuery.php
+│   └── Events/
+├── Livewire/Admin/TestModules/
+│   ├── TestModules.php
+│   ├── Create.php
+│   ├── Edit.php
+│   ├── Row.php
+│   └── QuickCreate.php
+├── Http/Controllers/Api/Mobile/
+│   └── TestModuleController.php
+├── Http/Resources/Mobile/
+│   └── TestModuleResource.php
+├── Events/
+│   └── TestModuleChanged.php
+└── Observers/
+    └── TestModuleObserver.php
+```
+
+Also verify:
+
+```text
+database/migrations/
+resources/views/livewire/admin/test-modules/
+routes/admin/test-modules.php
+```
+
+---
+
+# 7. Localization Verification
+
+Verify that the module has generated localization support for:
+
+```text
+English
+Albanian
+```
+
+Check that field labels and generated UI text are not hard-coded unnecessarily in generated Flutter widgets.
+
+Expected concept:
+
+```text
+field definition
+     ↓
+Laravel translation
+     ↓
+Flutter localization
+```
+
+When a generator key is added later, re-running the generator must preserve existing translated values and add only missing keys.
+
+---
+
+# 8. Livewire Demo
+
+Open:
+
+```text
+/admin/test-modules
+```
+
+Verify:
+
+```text
+[ ] Index loads
+[ ] Search works
+[ ] Filters work
+[ ] Pagination works
+[ ] Sorting works
+[ ] Add button works
+[ ] Edit works
+[ ] Delete works
+```
+
+Open:
+
+```text
+/admin/test-modules/create
+```
+
+Verify fields:
+
+```text
+Name
+Description
+Qty
+Price
+Is Active
+Due Date
+Event At
+User
+Priority
+Image
+Cover Photo
+```
+
+---
+
+# 9. Image Upload Demo
+
+Test both:
+
+```text
+image
+cover_photo
+```
+
+Expected:
+
+```text
+Livewire form
+   ↓
+ImageUploadService
+   ↓
+public/uploads/test-modules/
+   ↓
+generated .webp file
+```
+
+Verify:
+
+```text
+[ ] file uploads successfully
+[ ] image preview appears
+[ ] saved record contains path
+[ ] Index shows thumbnail
+[ ] clicking thumbnail opens the image
+[ ] edit can replace image
+[ ] deleting record cleans up image
+```
+
+If an image is updated, the old file must not remain orphaned.
+
+---
+
+# 10. API Route Verification
+
+Run:
+
+```powershell
+php artisan route:list
+```
+
+Verify the mobile endpoints for:
+
+```text
+/api/mobile/test-modules
+```
+
+Expected operations:
+
+```text
+GET
+POST
+GET /{id}
+PUT/PATCH
+DELETE
+```
+
+---
+
+# 11. API Create Test
+
+Example payload:
+
+```json
+{
+  "name": "Demo Product",
+  "description": "StarterKit demo",
+  "qty": 10.50,
+  "price": 25.99,
+  "is_active": true,
+  "due_date": "2026-09-20",
+  "event_at": "2026-09-20T14:30:00",
+  "user_id": 1,
+  "priority": "High"
+}
+```
+
+Verify:
+
+```text
+[ ] HTTP request succeeds
+[ ] validation succeeds
+[ ] Action executes
+[ ] database record is created
+[ ] response contains created resource
+```
+
+For a failed request:
+
+```text
+[ ] HTTP error is returned
+[ ] Flutter receives failure
+[ ] success UI is NOT shown
+[ ] Firebase success notification is NOT sent
+```
+
+---
+
+# 12. API Image Test
+
+When sending an image:
+
+```text
+Flutter
+   ↓
+multipart request
+   ↓
+Laravel API
+   ↓
+ImageUploadService
+   ↓
+public/uploads/test-modules/
+   ↓
+database path
+   ↓
+API Resource
+```
+
+Verify that the response contains a usable public image URL.
+
+---
+
+# 13. Flutter APK Demo
+
+Run the mobile application.
+
+Navigate to:
+
+```text
+Dashboard → Test Modules
+```
+
+Verify:
+
+```text
+[ ] module loads
+[ ] search/filter UI loads
+[ ] create page loads
+[ ] edit page loads
+[ ] image picker works
+[ ] enum works
+[ ] foreignId lookup works
+[ ] date picker works
+[ ] datetime picker works
+[ ] decimal validation works
+```
+
+---
+
+# 14. Flutter CREATE Test
+
+Create:
+
+```text
+Name: Demo Product
+Qty: 10
+Price: 25.99
+Active: Yes
+Priority: High
+```
+
+Optionally add:
+
+```text
+Image
+Cover Photo
+```
+
+Expected path:
+
+```text
+Flutter
+   ↓
+POST /api/mobile/test-modules
+   ↓
+Laravel
+   ↓
+CreateTestModuleAction
+   ↓
+DB
+```
+
+The Flutter UI must show a clear success state when the API confirms the operation.
+
+Example:
+
+```text
+TestModule u shtua me sukses.
+```
+
+---
+
+# 15. Flutter UPDATE Test
+
+Change at least one value:
+
+```text
+price
+priority
+is_active
+```
+
+Expected:
+
+```text
+Flutter
+   ↓
+PUT/PATCH
+   ↓
+Laravel
+   ↓
+UpdateTestModuleAction
+   ↓
+DB
+```
+
+Expected UI:
+
+```text
+TestModule u përditësua me sukses.
+```
+
+---
+
+# 16. Flutter DELETE Test
+
+Delete a record.
+
+Expected:
+
+```text
+Flutter
+   ↓
+DELETE API
+   ↓
+Laravel
+   ↓
+DeleteTestModuleAction
+   ↓
+DB
+```
+
+Expected UI:
+
+```text
+TestModule u fshi me sukses.
+```
+
+Failure example:
+
+```text
+Nuk u fshi: server error.
+```
+
+---
+
+# 17. Reverb Regression Test
+
+This is a critical test.
+
+## A. Create from Flutter
+
+```text
+Flutter
+   ↓
+POST API
+   ↓
+Database
+   ↓
+Observer
+   ↓
+TestModuleChanged
+   ↓
+Reverb
+   ├──► Flutter
+   └──► Livewire
+```
+
+Expected:
+
+```text
+[ ] Flutter updates
+[ ] Livewire list updates
+```
+
+## B. Create from Livewire
+
+```text
+Livewire
+   ↓
+Create Action
+   ↓
+Database
+   ↓
+Observer
+   ↓
+TestModuleChanged
+   ↓
+Reverb
+   └──► Flutter
+```
+
+Expected:
+
+```text
+[ ] Flutter sees the new record
+[ ] Livewire remains correct
+```
+
+## C. Update from Flutter
+
+Expected all connected UIs to receive the realtime change.
+
+## D. Delete from Flutter
+
+Expected all connected UIs to reflect deletion.
+
+---
+
+# 18. Firebase Test
+
+For the baseline demo:
+
+```text
+Firebase = OFF
+```
+
+This means:
+
+```text
+Reverb = ON
+Firebase = OFF
+```
+
+Optional Firebase generation:
+
+```powershell
+php artisan new:view TestModule --api --firebase
+```
+
+The expected architecture remains:
+
+```text
+Database change
+     │
+     ├──► Reverb → realtime UI
+     │
+     └──► Firebase → push notification
+```
+
+Firebase must not replace Reverb as the realtime transport.
+
+When enabled, successful operations should produce meaningful push messages such as:
+
+```text
+TestModule u shtua
+TestModule u përditësua
+TestModule u fshi
+```
+
+Failed API/database operations must not produce a success push.
+
+---
+
+# 19. API ACK Test
+
+Every mobile mutation should be tested in two states.
+
+## Success
+
+```text
+Request
+  ↓
+HTTP 2xx
+  ↓
+DB operation succeeds
+  ↓
+Flutter success state
+```
+
+## Failure
+
+```text
+Request
+  ↓
+HTTP error / validation / timeout
+  ↓
+Flutter failure state
+```
+
+Verify that the app can distinguish:
+
+```text
+successful response
+failed response
+no response / network problem
+```
+
+---
+
+# 20. Permission Test
+
+Verify:
+
+```text
+view_test_modules
+add_test_modules
+edit_test_modules
+delete_test_modules
+```
+
+Test at least one unauthorized action.
+
+Expected:
+
+```text
+[ ] list access is protected
+[ ] create access is protected
+[ ] edit access is protected
+[ ] delete access is protected
+```
+
+---
+
+# 21. ForeignId / Nested Create Test
+
+For:
+
+```text
+user_id
+```
+
+verify:
+
+```text
+[ ] searchable dropdown opens
+[ ] users are loaded
+[ ] selected ID is persisted
+```
+
+If using a relationship with dot notation, test:
+
+```text
+employee.name
+```
+
+Expected:
+
+```text
+[ ] related label resolves
+[ ] query eager-loads required relation
+[ ] nested create refreshes parent dropdown
+```
+
+---
+
+# 22. remove:view Test
+
+After the regression run:
+
+```powershell
+php artisan remove:view TestModule
+```
+
+Then:
+
+```powershell
+git status
+```
+
+Verify that generated application artifacts are removed according to the current `remove:view` implementation.
+
+Check:
+
+```text
+[ ] Domain files removed
+[ ] Model removed
+[ ] Livewire files removed
+[ ] Blade views removed
+[ ] API files removed
+[ ] route entry removed
+[ ] navigation entry removed
+[ ] permissions cleaned
+[ ] generated Flutter module cleaned
+```
+
+Treat database/schema cleanup separately unless the remove command explicitly implements it.
+
+---
+
+# 23. Final Regression Checklist
+
+```text
+[ ] Migration generated
+[ ] Model generated
+[ ] DTO generated
+[ ] Create Action generated
+[ ] Update Action generated
+[ ] Delete Action generated
+[ ] List Query generated
+[ ] Livewire Index generated
+[ ] Livewire Create generated
+[ ] Livewire Edit generated
+[ ] Livewire QuickCreate generated
+[ ] API Controller generated
+[ ] API Resource generated
+[ ] API routes generated
+[ ] Foreign lookup generated
+[ ] Observer generated
+[ ] Reverb event generated
+[ ] Flutter module generated
+[ ] Flutter repository generated
+[ ] Flutter Cubit/BLoC generated
+[ ] Flutter pages generated
+[ ] Flutter widgets generated
+[ ] Localization generated
+[ ] Image picker generated
+[ ] Image upload works
+[ ] Image thumbnail works
+[ ] Image replacement works
+[ ] Image cleanup works
+[ ] Enum generated correctly
+[ ] priority is ENUM
+[ ] qty is decimal(12,2)
+[ ] price is decimal(12,2)
+[ ] API CREATE works
+[ ] API UPDATE works
+[ ] API DELETE works
+[ ] Flutter CREATE works
+[ ] Flutter UPDATE works
+[ ] Flutter DELETE works
+[ ] Livewire CREATE works
+[ ] Livewire UPDATE works
+[ ] Livewire DELETE works
+[ ] Reverb Flutter sync works
+[ ] Reverb Livewire sync works
+[ ] API success ACK works
+[ ] API failure state works
+[ ] Firebase success notification works when enabled
+[ ] Firebase success notification is absent on failure
+[ ] permissions work
+[ ] remove:view cleanup works
+```
+
+---
+
+# 24. Definition of Done
+
+`new:view --api` is considered healthy only when all of the following are true:
+
+```text
+Laravel CRUD
+    +
+API
+    +
+Flutter module
+    +
+Reverb realtime
+    +
+Localization
+    +
+Image handling
+    +
+Permissions
+    +
+Regression demo
+```
+
+all work from the **same generator definition**.
+
+That is the standard this StarterKit should maintain.
