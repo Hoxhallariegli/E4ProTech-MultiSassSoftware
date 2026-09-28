@@ -15,23 +15,16 @@ if (Test-Path "$PSScriptRoot\..\.env") {
     $rootDir = (Resolve-Path "$PSScriptRoot\..").Path
 }
 
-Write-Host "`n>>> [1/5] Checking current version from .env..." -ForegroundColor Cyan
+Write-Host "`n>>> [1/5] Checking current version from version.json..." -ForegroundColor Cyan
 
-$envPath = "$rootDir\.env"
-if (-not (Test-Path $envPath)) {
-    Write-Host "Error: .env file not found at $envPath" -ForegroundColor Red
-    exit 1
-}
+$jsonPath = "$rootDir\version.json"
+$currentVer = "1.0.7"
+$currentCode = 6
 
-$envContent = Get-Content $envPath -Raw
-$currentVer = "1.0.2"
-$currentCode = 3
-
-if ($envContent -match 'APK_VERSION=(.+)') {
-    $currentVer = $matches[1].Trim()
-}
-if ($envContent -match 'APK_VERSION_CODE=(.+)') {
-    $currentCode = [int]$matches[1].Trim()
+if (Test-Path $jsonPath) {
+    $jsonContent = Get-Content $jsonPath -Raw | ConvertFrom-Json
+    if ($jsonContent.latest_version) { $currentVer = $jsonContent.latest_version }
+    if ($jsonContent.version_code) { $currentCode = [int]$jsonContent.version_code }
 }
 
 $nextCode = $currentCode + 1
@@ -40,7 +33,7 @@ $nextVer = ""
 if ($NewVersion -ne "") {
     $nextVer = $NewVersion.Trim()
 } else {
-    # Auto-increment patch version (e.g. 1.0.2 -> 1.0.3)
+    # Auto-increment patch version (e.g. 1.0.7 -> 1.0.8)
     $parts = $currentVer.Split('.')
     if ($parts.Count -eq 3) {
         $major = $parts[0]
@@ -55,22 +48,31 @@ if ($NewVersion -ne "") {
 Write-Host "   * Current Version: v$currentVer (Build $currentCode)" -ForegroundColor Yellow
 Write-Host "   * New Release:     v$nextVer (Build $nextCode)" -ForegroundColor Green
 
-# 2. Update .env file
-Write-Host "`n>>> [2/5] Updating .env and pubspec.yaml with new version..." -ForegroundColor Cyan
+# 2. Update version.json, .env, pubspec.yaml and config/app.php
+Write-Host "`n>>> [2/5] Updating version.json, .env, and pubspec.yaml with new version..." -ForegroundColor Cyan
 
-if ($envContent -match 'APK_VERSION=') {
-    $envContent = $envContent -replace 'APK_VERSION=.+', "APK_VERSION=$nextVer"
-} else {
-    $envContent += "`nAPK_VERSION=$nextVer"
+$newJsonObj = @{
+    latest_version = $nextVer
+    version_code = $nextCode
+    release_notes = "Përmirësime të reja në siguri, sinkronizim në kohë reale dhe performancë."
 }
+$newJsonObj | ConvertTo-Json | Set-Content -Path $jsonPath
 
-if ($envContent -match 'APK_VERSION_CODE=') {
-    $envContent = $envContent -replace 'APK_VERSION_CODE=.+', "APK_VERSION_CODE=$nextCode"
-} else {
-    $envContent += "`nAPK_VERSION_CODE=$nextCode"
+$envPath = "$rootDir\.env"
+if (Test-Path $envPath) {
+    $envContent = Get-Content $envPath -Raw
+    if ($envContent -match 'APK_VERSION=') {
+        $envContent = $envContent -replace 'APK_VERSION=.+', "APK_VERSION=$nextVer"
+    } else {
+        $envContent += "`nAPK_VERSION=$nextVer"
+    }
+    if ($envContent -match 'APK_VERSION_CODE=') {
+        $envContent = $envContent -replace 'APK_VERSION_CODE=.+', "APK_VERSION_CODE=$nextCode"
+    } else {
+        $envContent += "`nAPK_VERSION_CODE=$nextCode"
+    }
+    Set-Content -Path $envPath -Value $envContent
 }
-
-Set-Content -Path $envPath -Value $envContent
 
 # Update pubspec.yaml version
 $pubspecPath = "$rootDir\mobile-gateway\pubspec.yaml"
@@ -119,6 +121,7 @@ try {
 Write-Host "`n========================================================" -ForegroundColor Green
 Write-Host "SUCCESS: NEW APK RELEASE v$nextVer (Build $nextCode) PUBLISHED!" -ForegroundColor Green
 Write-Host "========================================================" -ForegroundColor Green
+Write-Host "* version.json & config updated and tracked in Git." -ForegroundColor White
 Write-Host "* APK Path: $publicDownloads\app-release.apk" -ForegroundColor White
 Write-Host "* Public Download URL: /download/apk" -ForegroundColor White
 Write-Host "* Users will now be notified of the new update v$nextVer in the app!`n" -ForegroundColor White
