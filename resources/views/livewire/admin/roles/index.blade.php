@@ -34,14 +34,23 @@
             <thead>
             <tr>
                 <th>
-                    <a class="link" href="#" wire:click.prevent="sortBy('name')">{{ __('roles.Name') }}</a>
+                    <a class="link" href="#" wire:click.prevent="sortBy('label')">{{ __('roles.Name') }}</a>
                 </th>
                 <th>
-                {{ __('roles.Action') }}
-            </th>
-        </tr>
-        </thead>
-        <tbody>
+                    {{ __('Team') }}
+                </th>
+                <th class="text-center">
+                    {{ __('Permissions') }}
+                </th>
+                <th class="text-center">
+                    {{ __('Guard') }}
+                </th>
+                <th class="text-right">
+                    {{ __('roles.Action') }}
+                </th>
+            </tr>
+            </thead>
+            <tbody>
             @foreach($this->roles() as $role)
                 <livewire:admin.roles.row :$role :key="$role->id" @delete="deleteRole('{{ $role->id }}')" />
             @endforeach

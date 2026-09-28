@@ -54,6 +54,8 @@ class BarberProTestSeeder extends Seeder
             'primary_color' => '#111111',
             'secondary_color' => '#f5a623',
             'trial_ends_at' => now()->addDays(14),
+            'expires_at' => now()->addYear(),
+            'sms_enabled' => true,
             'active' => true,
             'timezone' => 'Europe/Tirane',
             'max_no_show_before_block' => 3,

@@ -1,10 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/widgets/premium_widgets.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../services/api_service.dart';
 import '../../../../services/auth_service.dart';
+import '../../../../core/localization/locale_cubit.dart';
+import '../../../../core/branding/branding_cubit.dart';
 import '../../../../l10n/core_localization.dart';
 import '../../../dashboard/presentation/pages/app_shell.dart';
 
@@ -59,6 +62,11 @@ class _LoginPageState extends State<LoginPage> {
 
         // Refresh permissions in AuthService
         await AuthService.instance.init();
+
+        // Update Dynamic Branding
+        if (userData['business'] != null && mounted) {
+          context.read<BrandingCubit>().updateBranding(userData['business']);
+        }
 
         if (mounted) {
           Navigator.pushReplacement(

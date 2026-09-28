@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile_gateway/modules/dashboard/booking/presentation/cubit/booking_cubit.dart';
+import 'package:mobile_gateway/modules/dashboard/booking/data/booking_repository.dart';
+import 'package:mobile_gateway/modules/dashboard/booking/presentation/pages/booking_calendar_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/widgets/premium_widgets.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../services/api_service.dart';
+import '../../../../services/auth_service.dart';
 import '../../../../core/realtime/realtime_service.dart';
 import 'dart:convert';
 import 'package:pusher_reverb_flutter/pusher_reverb_flutter.dart';
 
+import '../widgets/shop_switcher_widget.dart';
 import 'module_registry.dart';
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+  final Key? calendarKey;
+  const DashboardPage({super.key, this.calendarKey});
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -27,6 +34,23 @@ class _DashboardPageState extends State<DashboardPage> {
     super.initState();
     _checkReverb();
     _loadUserData();
+    _syncData();
+    AuthService.instance.addListener(_handleAuthChange);
+  }
+
+  @override
+  void dispose() {
+    AuthService.instance.removeListener(_handleAuthChange);
+    super.dispose();
+  }
+
+  void _handleAuthChange() {
+    if (mounted) _loadUserData();
+  }
+
+  Future<void> _syncData() async {
+    await AuthService.instance.sync();
+    if (mounted) _loadUserData();
   }
 
   Future<void> _loadUserData() async {
@@ -59,144 +83,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      appBar: AppBar(
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'LaraFlutter Control Panel',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-            ),
-            Text(
-              'Pro Automation Starter Kit Active',
-              style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w500),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _reverbStatus == 'CONNECTED'
-                ? Icons.notifications_active_outlined
-                : Icons.notifications_off_outlined,
-              color: _reverbStatus == 'CONNECTED' ? Colors.amber : Colors.grey,
-            ),
-            onPressed: () {
-              String msg = 'Realtime service is offline.';
-              if (_reverbStatus == 'CONNECTED') msg = 'Realtime streaming network active.';
-              if (_reverbStatus == 'CONNECTING') msg = 'Connecting to realtime network...';
-              if (_reverbStatus == 'DISCONNECTED') msg = 'Realtime service is offline.';
-
-              ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(msg),
-                  behavior: SnackBarBehavior.floating,
-                  backgroundColor: _reverbStatus == 'CONNECTED' ? Colors.green.shade800 : Colors.red.shade800,
-                ),
-              );
-            },
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      drawer: Drawer(
-        backgroundColor: theme.colorScheme.surface,
-        child: Column(
-          children: [
-            UserHeaderCard(userData: _userData, baseUrl: _baseUrl),
-            const SizedBox(height: 12),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                children: [
-                  _DrawerItem(
-                    icon: Icons.dashboard_customize_rounded,
-                    label: 'Overview Dashboard',
-                    selected: _selectedDrawerIndex == 0,
-                    onTap: () => setState(() => _selectedDrawerIndex = 0),
-                  ),
-
-                  if (ModuleRegistry.modules.isNotEmpty) ...[
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: Text('DYNAMIC MODULES', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
-                    ),
-                    ...ModuleRegistry.modules.map((module) => _DrawerItem(
-                      icon: module.icon,
-                      label: module.name,
-                      selected: false,
-                      onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => module.page));
-                      },
-                    )),
-                  ],
-
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Text('SYSTEM', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
-                  ),
-                  _DrawerItem(
-                    icon: Icons.settings_suggest_outlined,
-                    label: 'System Settings',
-                    selected: _selectedDrawerIndex == 3,
-                    onTap: () => setState(() => _selectedDrawerIndex = 3),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Text(
-                'v1.0.0 (God Version ready)',
-                style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
-              ),
-            )
-          ],
-        ),
-      ),
-      body: RefreshIndicator(
-        onRefresh: () async => await RealtimeService.instance.start(),
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            const WelcomeBanner(),
-            const SizedBox(height: 24),
-            const Text(
-              'Automation Instructions',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            PremiumCard(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Ready for Reusable Scaffolding',
-                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Use "php artisan new:view {ModuleName} --api" on the Laravel backend. The system will automatically build full-stack CRUD capabilities and append clean architectural pages directly into this project workspace instantly.',
-                    style: TextStyle(fontSize: 12.5, color: Colors.grey, height: 1.4),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+    return BlocProvider(
+      create: (_) => BookingCubit(BookingRepository()),
+      child: BookingCalendarPage(key: widget.calendarKey),
     );
   }
 }
@@ -204,7 +93,9 @@ class _DashboardPageState extends State<DashboardPage> {
 class UserHeaderCard extends StatelessWidget {
   final Map<String, dynamic>? userData;
   final String baseUrl;
-  const UserHeaderCard({super.key, this.userData, required this.baseUrl});
+  final VoidCallback? onSwitchShop;
+
+  const UserHeaderCard({super.key, this.userData, required this.baseUrl, this.onSwitchShop});
 
   @override
   Widget build(BuildContext context) {
@@ -212,6 +103,7 @@ class UserHeaderCard extends StatelessWidget {
     final name = userData?['name'] ?? 'Administrator';
     final email = userData?['email'] ?? 'admin@laraflutter.auto';
     final image = userData?['image'];
+    final shopName = userData?['business']?['name'] ?? 'No Shop Selected';
 
     return Container(
       width: double.infinity,
@@ -224,15 +116,27 @@ class UserHeaderCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 32,
-            backgroundColor: Colors.white24,
-            backgroundImage: (image != null && image.toString().isNotEmpty)
-                ? NetworkImage(image.toString().startsWith('http') ? image.toString() : '$baseUrl/$image')
-                : null,
-            child: (image == null || image.toString().isEmpty)
-                ? const Icon(Icons.admin_panel_settings, color: Colors.white, size: 30)
-                : null,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              CircleAvatar(
+                radius: 32,
+                backgroundColor: Colors.white24,
+                backgroundImage: (image != null && image.toString().isNotEmpty)
+                    ? NetworkImage(image.toString().startsWith('http') ? image.toString() : '$baseUrl/$image')
+                    : null,
+                child: (image == null || image.toString().isEmpty)
+                    ? const Icon(Icons.admin_panel_settings, color: Colors.white, size: 30)
+                    : null,
+              ),
+              if (onSwitchShop != null)
+                IconButton(
+                  onPressed: onSwitchShop,
+                  icon: const Icon(Icons.swap_horiz_rounded, color: Colors.white),
+                  tooltip: 'Switch Shop',
+                ),
+            ],
           ),
           const SizedBox(height: 14),
           Text(
@@ -242,6 +146,25 @@ class UserHeaderCard extends StatelessWidget {
           Text(
             email,
             style: const TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.storefront_rounded, color: Colors.white, size: 14),
+                const SizedBox(width: 6),
+                Text(
+                  shopName,
+                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
           ),
         ],
       ),

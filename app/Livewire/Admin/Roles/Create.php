@@ -15,22 +15,33 @@ class Create extends Component
     public bool $showDialog = false;
 
     public string $label = '';
+    public $barber_shop_id = 0; // Default Global
 
     public function render(): View
     {
         abort_if_cannot('add_roles');
 
-        return view('livewire.admin.roles.create');
+        return view('livewire.admin.roles.create', [
+            'allShops' => \App\Models\BarberShop::all()
+        ]);
     }
 
     public function store(): void
     {
         $this->validate();
 
+        // Security: only global admin can choose the shop, others forced to their own
+        $finalShopId = auth()->user()->is_global_admin ? $this->barber_shop_id : auth()->user()->barber_shop_id;
+
+        // In roles table, NULL means global template
+        $dbShopId = ($finalShopId == 0) ? null : $finalShopId;
+
         /** @var Role $role */
         $role = Role::create([
             'label' => $this->label,
             'name' => mb_strtolower(str_replace(' ', '_', $this->label)),
+            'barber_shop_id' => $dbShopId,
+            'guard_name' => 'web'
         ]);
 
         flash('Role created')->success();
@@ -43,7 +54,7 @@ class Create extends Component
             'type' => 'created',
         ]);
 
-        $this->reset();
+        $this->reset(['label', 'barber_shop_id']);
 
         $this->showDialog = false;
 

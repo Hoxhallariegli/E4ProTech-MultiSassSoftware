@@ -15,6 +15,8 @@ class DatabaseSeeder extends Seeder
             RolesDatabaseSeeder::class,
             SettingsDatabaseSeeder::class,
             UserDatabaseSeeder::class,
+            ModulePermissionsSeeder::class,
+            RealtimeEventsSeeder::class,
         ]);
     }
 }

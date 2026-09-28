@@ -180,6 +180,7 @@
               </div>
           </div>
 
+          <livewire:admin.shop-switcher/>
           <livewire:admin.notifications-menu/>
           <livewire:admin.users.user-menu/>
       </div>
@@ -187,6 +188,30 @@
   </header>
 
   <main id="page-content" class="flex max-w-full flex-auto flex-col pt-16">
+    @php
+        $globalExpired = false;
+        $globalShopName = '';
+        if (auth()->check() && !auth()->user()->hasRole('admin')) {
+            $globalShop = auth()->user()->barberShop;
+            if ($globalShop && $globalShop->expires_at && $globalShop->expires_at->isPast()) {
+                $globalExpired = true;
+                $globalShopName = $globalShop->name;
+            }
+        }
+    @endphp
+
+    @if($globalExpired)
+        <div class="bg-red-600 text-white py-3 px-4 flex items-center justify-center gap-3 animate-pulse shadow-lg sticky top-16 z-40">
+            <x-heroicon-o-exclamation-triangle class="size-6" />
+            <span class="font-bold tracking-wide">
+                {{ __('KUJDES! Abonimi për dyqanin') }} "{{ $globalShopName }}" {{ __('ka skaduar. Ju lutem renovojeni abonimin menjëherë!') }}
+            </span>
+            <a href="{{ route('admin.subscriptions.index') }}" class="bg-white text-red-600 px-4 py-1 rounded-full text-xs font-black uppercase hover:bg-gray-100 transition-colors">
+                {{ __('RENOVONI TANI') }}
+            </a>
+        </div>
+    @endif
+
     <div class="mx-auto w-full max-w-10xl p-4 lg:p-8">
         {{ $slot ?? '' }}
     </div>

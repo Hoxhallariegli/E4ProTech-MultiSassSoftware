@@ -10,10 +10,16 @@
 .env.production
 Homestead.json
 Homestead.yaml
-auth.json
 npm-debug.log
 yarn-error.log
 .phpunit.result.cache
 /.fleet
 /.idea
 /.vscode
+/.gradle_home/
+/.android/
+/.artifacts/
+mobile-gateway/.dart_tool/
+mobile-gateway/.flutter-plugins
+mobile-gateway/.flutter-plugins-dependencies
+mobile-gateway/build/

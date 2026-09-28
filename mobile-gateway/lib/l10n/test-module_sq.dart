@@ -1,4 +1,4 @@
-const Map<String, String> test-moduleSq = {
+const Map<String, String> testModuleSq = {
   'ID': 'ID',
   'TestModule': 'TestModule',
   'TestModules': 'TestModules',

@@ -97,4 +97,7 @@
             </ul>
         </div>
     </div>
+    @error($modelName)
+        <p class="text-xs text-red-500 font-bold mt-1 ml-1">{{ $message }}</p>
+    @enderror
 </div>

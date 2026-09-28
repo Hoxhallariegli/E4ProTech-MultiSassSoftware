@@ -58,7 +58,7 @@ class Users extends Component
      */
     public function builder(): Builder
     {
-        return User::with(['roles', 'invite'])->orderBy($this->sortField, $this->sortAsc ? 'asc' : 'desc');
+        return User::with(['roles', 'barberShops', 'invite'])->orderBy($this->sortField, $this->sortAsc ? 'asc' : 'desc');
     }
 
     public function sortBy(string $field): void

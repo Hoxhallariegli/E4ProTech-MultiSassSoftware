@@ -5,6 +5,8 @@ import '../../core/realtime/realtime_service.dart';
 import '../../modules/dashboard/presentation/pages/module_registry.dart';
 import '../../modules/dashboard/presentation/widgets/shop_switcher_widget.dart';
 import '../../modules/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:mobile_gateway/core/branding/branding_cubit.dart';
+import 'package:mobile_gateway/l10n/core_localization.dart';
 
 class Sidebar extends StatelessWidget {
   const Sidebar({super.key});
@@ -21,7 +23,7 @@ class Sidebar extends StatelessWidget {
         children: [
           UserHeaderCard(
             userData: user,
-            baseUrl: '', // Base URL is handled inside the widget now
+            baseUrl: '',
             onSwitchShop: () {
               showModalBottomSheet(
                 context: context,
@@ -43,20 +45,22 @@ class Sidebar extends StatelessWidget {
               children: [
                 _DrawerItem(
                   icon: Icons.dashboard_customize_rounded,
-                  label: 'Overview Dashboard',
-                  onTap: () => Navigator.pushReplacementNamed(context, '/dashboard'),
+                  label: coreTr(context, 'sidebar.overview'),
+                  onTap: () {
+                    Navigator.of(context).pushNamedAndRemoveUntil('/dashboard', (route) => false);
+                  },
                 ),
 
                 if (modules.isNotEmpty) ...[
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Text('DYNAMIC MODULES', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Text(coreTr(context, 'sidebar.dynamic_modules'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
                   ),
                   ...modules.map((module) => _DrawerItem(
                     icon: module.icon,
-                    label: module.name,
+                    label: module.getTitle(context),
                     onTap: () {
-                      Navigator.pop(context);
+                      Navigator.pop(context); // Close drawer
                       Navigator.push(context, MaterialPageRoute(builder: (_) => module.page));
                     },
                   )),

@@ -26,7 +26,17 @@ class Roles extends Component
 
     public function mount(): void
     {
-        $this->roles = Role::orderby('name')->get();
+        // Fetch roles for the active team PLUS global roles
+        $activeShopId = auth()->user()->barber_shop_id ?: 0;
+        $query = Role::whereIn('barber_shop_id', [$activeShopId, 0])
+            ->orWhereNull('barber_shop_id');
+
+        // SECURITY: If the logged-in user is NOT a global admin, hide the 'admin' role
+        if (!auth()->user()->is_global_admin) {
+            $query->where('name', '!=', 'admin');
+        }
+
+        $this->roles = $query->orderby('name')->get();
         $this->roleSelections = $this->user->roles->pluck('id')->toArray();
     }
 
@@ -37,25 +47,23 @@ class Roles extends Component
 
     public function update(): bool
     {
-        $role = Role::where('name', 'admin')
-            ->firstOrFail();
+        // 1. Get the admin role from Global Context (Team 0) to avoid "RoleDoesNotExist"
+        $originalTeamId = getPermissionsTeamId();
+        setPermissionsTeamId(0);
+        $adminRole = Role::where('name', 'admin')->firstOrFail();
+        setPermissionsTeamId($originalTeamId);
 
-        // if admin role is not in array
-        if (! in_array(needle: $role->id, haystack: $this->roleSelections, strict: true)) {
+        // 2. Check if we are trying to remove the last global admin
+        if (!in_array($adminRole->id, $this->roleSelections)) {
+            // Check count in Team 0
+            setPermissionsTeamId(0);
             $adminRolesCount = User::role('admin')->count();
+            setPermissionsTeamId($originalTeamId);
 
-            // when there is only 1 admin role alert user and stop
-            if ($adminRolesCount === 1 && $this->user->hasRole('admin')) {
-                flash('there must be at least one admin user!')->error();
-
+            if ($adminRolesCount === 1 && $this->user->is_global_admin) {
+                flash('There must be at least one global admin user!')->error();
                 return false;
             }
-
-            // @codeCoverageIgnoreStart
-            $this->syncRoles();
-
-            return false;
-            // @codeCoverageIgnoreEnd
         }
 
         $this->syncRoles();
@@ -65,16 +73,15 @@ class Roles extends Component
 
     protected function syncRoles(): void
     {
-        // @phpstan-ignore-next-line
-        $rolesWithTenant = collect($this->roleSelections)->map(function (string $roleId) {
-            return [
-                'role_id' => $roleId,
-                'model_type' => User::class,
-                'model_id' => $this->user->id,
-            ];
-        })->toArray();
+        // We sync roles for the CURRENT active team context
+        $activeShopId = auth()->user()->barber_shop_id ?: 0;
 
-        $this->user->roles()->sync($rolesWithTenant);
+        $originalTeamId = getPermissionsTeamId();
+        setPermissionsTeamId($activeShopId);
+
+        $this->user->syncRoles($this->roleSelections);
+
+        setPermissionsTeamId($originalTeamId);
 
         add_user_log([
             'title' => 'updated '.$this->user->name."'s roles",

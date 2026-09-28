@@ -36,6 +36,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'image',
         'is_office_login_only',
         'is_active',
+        'barber_shop_id',
         'email_verified_at',
         'last_logged_in_at',
         'two_fa_active',
@@ -52,28 +53,76 @@ class User extends Authenticatable implements MustVerifyEmail
         'remember_token',
     ];
 
+    /**
+     * Local Scope to filter users by the active shop members.
+     * Use this manually in controllers/livewire to avoid Auth recursion.
+     */
+    public function scopeForActiveShop($query)
+    {
+        if (app()->runningInConsole() || !auth()->check()) {
+            return $query;
+        }
+
+        $user = auth()->user();
+
+        // Admin sees everyone
+        $isGlobalAdmin = \Illuminate\Support\Facades\DB::table('model_has_roles')
+            ->where('model_id', $user->id)
+            ->where('barber_shop_id', 0)
+            ->exists();
+
+        if ($isGlobalAdmin) {
+            return $query;
+        }
+
+        return $query->whereHas('barberShops', function($q) use ($user) {
+            $q->where('barber_shops.id', $user->barber_shop_id);
+        });
+    }
+
     public function route(string $id): string
     {
         return route('admin.users.show', ['user' => $id]);
     }
 
+    public function barberShop(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(BarberShop::class, 'barber_shop_id');
+    }
+
+    public function barberShops(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(BarberShop::class, 'barber_shop_user');
+    }
+
     /**
-     * Scope a query to only include active users.
-     *
-     * @param  Builder<User>  $query
-     * @return Builder<User>
+     * Determine if the user is a Global Super Admin (Team 0).
      */
+    public function getIsGlobalAdminAttribute(): bool
+    {
+        return \Illuminate\Support\Facades\Cache::remember('is_global_admin_' . $this->id, 3600, function() {
+            return \Illuminate\Support\Facades\DB::table('model_has_roles')
+                ->where('model_id', $this->id)
+                ->where('barber_shop_id', 0)
+                ->exists();
+        });
+    }
+
+    /**
+     * Get permissions for the user, strictly scoped to the active team.
+     */
+    public function getPermissionsFlattened(): \Illuminate\Support\Collection
+    {
+        return $this->getAllPermissions()->pluck('name');
+    }
+
     public function scopeIsActive(Builder $query): Builder
     {
         return $query->where('is_active', 1);
     }
 
-    /**
-     * @return HasOne<User, User>
-     */
     public function invite(): HasOne
     {
-        /** @var HasOne<User, User> */
         return $this->hasOne(self::class, 'id', 'invited_by');
     }
 
@@ -82,9 +131,6 @@ class User extends Authenticatable implements MustVerifyEmail
         return UserFactory::new();
     }
 
-    /**
-     * @return array<string>
-     */
     protected function casts(): array
     {
         return [

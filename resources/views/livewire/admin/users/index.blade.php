@@ -44,6 +44,7 @@
             <tr>
                 <th><a href="#" wire:click="sortBy('name')">{{ __('users.Name') }}</a></th>
                 <th><a href="#" wire:click="sortBy('email')">{{ __('users.Email') }}</a></th>
+                <th>{{ __('Shops') }}</th>
                 <th>{{ __('users.Joined') }}</th>
                 <th>{{ __('users.Roles') }}</th>
                 <th>{{ __('users.Action') }}</th>
@@ -62,16 +63,52 @@
                     </td>
                     <td>{{ $user->email }}</td>
                     <td>
-                        @if (! empty($user->invite_token))
-                            <small class="dark:text-gray-300">{{ __('users.Invited by') }} {{ $user->invite->name }}<br> {{ date('jS M Y H:i', strtotime($user->invited_at)) }}</small>
-                        @else
-                            {{ $user->created_at !=='' ? date('jS M Y', strtotime($user->created_at)) : '' }}
-                        @endif
+                        <div class="flex flex-wrap gap-1">
+                            @foreach($user->barberShops as $shop)
+                                <x-badge variant="gray" class="!text-[9px]">{{ $shop->name }}</x-badge>
+                            @endforeach
+                            @if($user->barberShops->isEmpty())
+                                <span class="text-gray-400 text-xs italic">None</span>
+                            @endif
+                        </div>
                     </td>
                     <td>
-                        @foreach($user->roles as $role)
-                            <x-badge variant="blue">{{ $role->label }}</x-badge>
-                        @endforeach
+                        <div class="flex flex-col text-xs">
+                            @if (! empty($user->invite_token))
+                                <span class="dark:text-gray-300">{{ __('users.Invited by') }} {{ $user->invite?->name ?? 'System' }}</span>
+                                <span class="text-gray-400">{{ date('jS M Y H:i', strtotime($user->invited_at)) }}</span>
+                            @else
+                                {{ $user->created_at ? date('jS M Y', strtotime((string)$user->created_at)) : '' }}
+                            @endif
+                        </div>
+                    </td>
+                    <td>
+                        <div class="flex flex-wrap gap-1">
+                            @php
+                                // Bypass Spatie scoping for the index list to show all roles
+                                $allRoles = \Illuminate\Support\Facades\DB::table('model_has_roles')
+                                    ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
+                                    ->leftJoin('barber_shops', 'model_has_roles.barber_shop_id', '=', 'barber_shops.id')
+                                    ->where('model_id', $user->id)
+                                    ->select('roles.label', 'barber_shops.name as shop_name', 'model_has_roles.barber_shop_id')
+                                    ->get();
+                            @endphp
+
+                            @foreach($allRoles as $role)
+                                <div class="flex flex-col mb-1 border-r border-gray-100 dark:border-gray-700 pr-1 last:border-0">
+                                    <x-badge variant="blue" class="!text-[9px]">{{ $role->label }}</x-badge>
+                                    @if($role->barber_shop_id > 0)
+                                        <span class="text-[8px] text-gray-400 italic px-1">{{ $role->shop_name ?? 'Shop #'.$role->barber_shop_id }}</span>
+                                    @else
+                                        <span class="text-[8px] text-purple-400 font-bold px-1 uppercase">Global</span>
+                                    @endif
+                                </div>
+                            @endforeach
+
+                            @if($allRoles->isEmpty())
+                                <span class="text-gray-400 text-xs italic">No roles</span>
+                            @endif
+                        </div>
                     </td>
                     <td>
                         <div class="flex space-x-2">

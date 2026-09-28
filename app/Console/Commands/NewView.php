@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class NewView extends Command
 {
-    protected $signature = 'new:view {name} {--api : Generate API + Flutter BLoC mobile layer automatically} {--firebase : Enable Firebase notifications}';
+    protected $signature = 'new:view {name} {--api : Generate API + Flutter BLoC mobile layer automatically} {--firebase : Enable Firebase notifications} {--force : Overwrite existing files without asking}';
     protected $description = 'Universal DDD Scaffolder - God Version (Pro UI, Nested Modals, Hardened)';
 
     protected array $reserved = [
@@ -73,7 +73,7 @@ class NewView extends Command
             $routePath => File::exists($routePath),
         ]);
 
-        if (!empty($existing)) {
+        if (!empty($existing) && !$this->option('force')) {
             $this->warn('The following already exist and will be OVERWRITTEN:');
             foreach (array_keys($existing) as $p) {
                 $this->line(" - $p");
@@ -94,7 +94,9 @@ class NewView extends Command
                 break;
             }
 
-            $fieldName = Str::snake($fieldNameRaw);
+            // Clean up non-printable characters (BOM, etc.)
+            $fieldName = preg_replace('/[[:^print:]]/', '', $fieldNameRaw);
+            $fieldName = Str::snake($fieldName);
             if (!preg_match('/^[a-z][a-z0-9_]*$/', $fieldName)) {
                 $this->error("Invalid field name '$fieldNameRaw'. Use lowercase letters, numbers and underscores, starting with a letter.");
                 continue;
@@ -104,9 +106,22 @@ class NewView extends Command
                 continue;
             }
 
-            $type = $this->choice('Field type', [
+            $typeOptions = [
                 'string', 'text', 'integer', 'bigInteger', 'decimal', 'qty', 'price', 'boolean', 'image', 'date', 'datetime', 'foreignId', 'enum'
-            ], 0);
+            ];
+
+            $type = $this->choice('Field type', $typeOptions, 0);
+
+            // Defensive: ensure $type is the string name even if an index was piped
+            if (is_numeric($type) && isset($typeOptions[$type])) {
+                $type = $typeOptions[$type];
+            }
+
+            // UI-only aliases must never leak into Laravel Schema Builder.
+            // "qty" and "price" are semantic input choices, but both persist as decimal(12,2).
+            if (in_array($type, ['qty', 'price'], true)) {
+                $type = 'decimal';
+            }
 
             $extra = ''; $relatedModel = ''; $labelField = 'name'; $options = []; $isUuid = false;
 
@@ -199,7 +214,7 @@ class NewView extends Command
             // Laravel API Resource + Controller + routes + Flutter BLoC/Cubit module.
             $this->generateApiLayer($name, $pluralName, $pluralKebab, $fields);
             $this->generateRealtimeLayer($name, $pluralName, $pluralKebab);
-            $this->generateFlutterBLoCLayer($name, $pluralName, $pluralKebab, $fields, $icon);
+            $this->generateFlutterBLoCLayer($name, $pluralName, $pluralKebab, $fields, $icon, $pluralSnake);
         }
 
         $this->info('💾 Migrating...');
@@ -251,8 +266,35 @@ class NewView extends Command
     {
         $props = ''; $args = ''; $toArray = '';
         foreach ($fields as $f) {
-            $props .= "        public readonly mixed \${$f['name']},\n";
-            $args .= "            {$f['name']}: \$data['{$f['name']}'] ?? null,\n";
+            $type = match ($f['type']) {
+                'integer', 'bigInteger' => '?int',
+                'foreignId' => ($f['isUuid'] ?? false) ? '?string' : '?int',
+                'boolean' => 'bool',
+                'decimal' => 'float',
+                'string', 'text', 'enum', 'image' => 'string',
+                'date', 'datetime' => '?string',
+                default => 'mixed',
+            };
+
+            // Nullable logic
+            if ($f['nullable'] && !str_starts_with($type, '?') && !in_array($type, ['mixed', 'bool'])) {
+                $type = '?' . $type;
+            }
+
+            $props .= "        public readonly $type \${$f['name']},\n";
+
+            $casting = match ($f['type']) {
+                'integer', 'bigInteger' => "isset(\$data['{$f['name']}']) && \$data['{$f['name']}'] !== '' ? (int) \$data['{$f['name']}'] : null",
+                'foreignId' => ($f['isUuid'] ?? false)
+                    ? "isset(\$data['{$f['name']}']) && \$data['{$f['name']}'] !== '' ? (string) \$data['{$f['name']}'] : null"
+                    : "isset(\$data['{$f['name']}']) && \$data['{$f['name']}'] !== '' ? (int) \$data['{$f['name']}'] : null",
+                'boolean' => "(bool) (\$data['{$f['name']}'] ?? false)",
+                'decimal' => "isset(\$data['{$f['name']}']) && \$data['{$f['name']}'] !== '' ? (float) \$data['{$f['name']}'] : 0.0",
+                'string', 'text', 'enum', 'image' => "(string) (\$data['{$f['name']}'] ?? '')",
+                default => "\$data['{$f['name']}'] ?? null",
+            };
+
+            $args .= "            {$f['name']}: $casting,\n";
             $toArray .= "            '{$f['name']}' => \$this->{$f['name']},\n";
         }
         $stub = "<?php\n\nnamespace App\Domain\\$name\DTOs;\n\nclass {$name}DTO\n{\n    public function __construct(\n$props    ) {}\n    public static function fromArray(array \$data): self { return new self(\n$args        ); }\n    public function toArray(): array { return [\n$toArray        ]; }\n}";
@@ -287,10 +329,13 @@ class NewView extends Command
             if ($f['type'] === 'boolean') {
                 $casts .= "            '{$f['name']}' => 'boolean',\n";
             }
+            if (in_array($f['type'], ['integer', 'bigInteger', 'qty'], true)) {
+                $casts .= "            '{$f['name']}' => 'integer',\n";
+            }
             if (in_array($f['type'], ['date', 'datetime'])) {
                 $casts .= "            '{$f['name']}' => 'datetime',\n";
             }
-            if ($f['type'] === 'decimal') {
+            if ($f['type'] === 'decimal' || $f['type'] === 'price') {
                 $casts .= "            '{$f['name']}' => 'decimal:2',\n";
             }
 
@@ -301,18 +346,27 @@ class NewView extends Command
             $typeRule = match ($f['type']) {
                 'string', 'image' => "'string', 'max:255'",
                 'text' => "'string'",
-                'integer', 'bigInteger' => "'integer'",
+                'integer', 'bigInteger', 'qty' => "'integer'",
                 'boolean' => null, // Already handled by $req
-                'decimal' => "'numeric'",
+                'decimal', 'price' => "'numeric'",
                 'date', 'datetime' => "'date'",
                 'foreignId' => ($f['isUuid'] ?? false) ? "'string'" : "'integer'",
                 'enum' => "\\Illuminate\Validation\Rule::in(['" . implode("', '", array_map('addslashes', $f['options'])) . "'])",
                 default => null,
             };
             $rules .= "            '{$f['name']}' => [$req" . ($typeRule ? ", $typeRule" : '') . "],\n";
-            $sortable .= ", '{$f['name']}'";
+
+            if ($f['name'] !== 'barber_shop_id') {
+                $sortable .= ", '{$f['name']}'";
+            }
         }
-        File::put(app_path("Models/$name.php"), "<?php\n\nnamespace App\Models;\n\nuse Illuminate\Database\Eloquent\Factories\HasFactory;\nuse Illuminate\Database\Eloquent\Model;\n\nclass $name extends Model\n{\n    use HasFactory;\n    protected \$fillable = [$fillable];\n    protected function casts(): array { return [\n$casts        ]; }\n    public static function rules(\$id = null): array { return [\n$rules        ]; }\n    public static function sortable(): array { return [$sortable]; }\n\n    protected static function booted(): void\n    {\n        static::observe(\\App\\Observers\\{$name}Observer::class);\n    }\n$relations\n}");
+        $hasTenant = collect($fields)->contains(fn($f) => $f['name'] === 'barber_shop_id');
+        $traits = 'use HasFactory;';
+        if ($hasTenant) {
+            $traits = 'use HasFactory, \App\Models\Traits\BelongsToBarberShop;';
+        }
+
+        File::put(app_path("Models/$name.php"), "<?php\n\nnamespace App\Models;\n\nuse Illuminate\Database\Eloquent\Factories\HasFactory;\nuse Illuminate\Database\Eloquent\Model;\n\nclass $name extends Model\n{\n    $traits\n    protected \$fillable = [$fillable];\n    protected function casts(): array { return [\n$casts        ]; }\n    public static function rules(\$id = null): array { return [\n$rules        ]; }\n    public static function sortable(): array { return [$sortable]; }\n\n    protected static function booted(): void\n    {\n        static::observe(\\App\\Observers\\{$name}Observer::class);\n    }\n$relations\n" . ($name === 'BarberShop' ? "    public function users(): \Illuminate\Database\Eloquent\Relations\BelongsToMany { return \$this->belongsToMany(User::class, 'barber_shop_user'); }\n\n    public function getLogoUrlAttribute() { return \$this->logo ? (str_starts_with(\$this->logo, 'http') ? \$this->logo : asset('storage/' . \$this->logo)) : null; }\n" : "") . "}");
     }
 
     protected function generateLivewireComponents($name, $pluralSnake, $pluralName, $pluralKebab, $fields)
@@ -327,7 +381,8 @@ class NewView extends Command
         $filterReset = ''; $filterProps = ''; $renderFilters = '';
 
         foreach ($fields as $f) {
-            $props .= "    public \${$f['name']} = '';\n";
+            $defaultValue = $f['type'] === 'boolean' ? 'false' : "''";
+            $props .= "    public \${$f['name']} = $defaultValue;\n";
             $dataMap .= "            '{$f['name']}' => \$this->{$f['name']},\n";
             if ($f['type'] === 'foreignId') {
                 $rv = Str::plural(Str::camel(str_replace('_id', '', $f['name'])));
@@ -377,11 +432,14 @@ class NewView extends Command
                 $updatedHooks .= "    }\n";
 
                 $formHelperMethods .= "\n    protected function get{$rv}List() {\n";
+                $formHelperMethods .= "        \$query = \\App\\Models\\{$f['relatedModel']}::query();\n";
+                $formHelperMethods .= "        if (method_exists(\\App\\Models\\{$f['relatedModel']}::class, 'scopeForActiveShop')) { \$query->forActiveShop(); }\n";
+
                 if (Str::contains($f['labelField'], '.')) {
                     $relPart = explode('.', $f['labelField'])[0];
-                    $formHelperMethods .= "        return \\App\\Models\\{$f['relatedModel']}::with('$relPart')->get()->pluck('{$f['labelField']}', 'id')->toArray();\n";
+                    $formHelperMethods .= "        return \$query->with('$relPart')->get()->pluck('{$f['labelField']}', 'id')->toArray();\n";
                 } else {
-                    $formHelperMethods .= "        return \\App\\Models\\{$f['relatedModel']}::pluck('{$f['labelField']}', 'id')->toArray();\n";
+                    $formHelperMethods .= "        return \$query->pluck('{$f['labelField']}', 'id')->toArray();\n";
                 }
                 $formHelperMethods .= "    }\n";
             }
@@ -400,7 +458,42 @@ class NewView extends Command
     {\n        abort_if_cannot('view_{$pluralSnake}');\n        \$query = (new {$name}ListQuery())->handle(['search' => \$this->search, $renderFilters], \$this->sortField, \$this->sortAsc ? 'asc' : 'desc');\n\n        return view('$viewPath.index', [\n            'items' => \$query->paginate(\$this->paginate),\n            'sortableFields' => $name::sortable(),\n$availableListsIndex        ])->layout('components.layouts.app');\n    }\n\n    public function sortBy(\$field) { if (!in_array(\$field, $name::sortable(), true)) return; if (\$this->sortField === \$field) { \$this->sortAsc = ! \$this->sortAsc; } \$this->sortField = \$field; }\n\n    public function delete$name(\$id, Delete{$name}Action \$action) \n    {\n        abort_if_cannot('delete_{$pluralSnake}');\n        \$item = $name::find(\$id);\n        if (!\$item) { \$this->dispatch('toast', message: __('$pluralKebab.not_found'), type: 'error'); return; }\n        try { \$action->execute(\$item); \$this->dispatch('toast', message: __('$pluralKebab.deleted'), type: 'success'); \$this->resetPage(); } \n        catch (\\Illuminate\\Database\\QueryException \$e) { \$this->dispatch('toast', message: __('$pluralKebab.delete_error_referenced'), type: 'error'); }\n        catch (\\Exception \$e) { \$this->dispatch('toast', message: __('$pluralKebab.delete_error'), type: 'error'); }\n    }\n}";
         File::put("$dir/$pluralName.php", $indexStub);
 
-        File::put("$dir/Create.php", "<?php\n\nnamespace App\Livewire\Admin\\$pluralName;\n\nuse App\Models\\$name;\nuse App\Domain\\$name\DTOs\\{$name}DTO;\nuse App\Domain\\$name\Actions\\Create{$name}Action;\n$imports\n#[Title('Add $name')]\nclass Create extends Component\n{\n    $traits $props $onEvents $updatedHooks $formHelperMethods\n    public function render() { abort_if_cannot('add_{$pluralSnake}'); return view('$viewPath.create', [\n$availableListsForm        ])->layout('components.layouts.app'); }\n    public function store(Create{$name}Action \$action) { \$this->validate(); $fileHandlers \$dto = {$name}DTO::fromArray([\n$dataMap        ]); \$action->execute(\$dto); session()->flash('success', __('$pluralKebab.created')); return to_route('admin.$pluralKebab.index'); }\n    protected function rules(): array { \$rules = $name::rules();
+        $hasBarberShopId = collect($fields)->contains(fn ($f) => $f['name'] === 'barber_shop_id');
+        $mount = '';
+        if ($hasBarberShopId) {
+            $mount = "\n    public function mount() { if (auth()->check() && auth()->user()->barber_shop_id) { \$this->barber_shop_id = auth()->user()->barber_shop_id; } }\n";
+        }
+
+        $subscriptionRender = "return view('$viewPath.create', [\n$availableListsForm        ])->layout('components.layouts.app');";
+        $subscriptionStore = "\$action->execute(\$dto);";
+
+        if ($hasBarberShopId) {
+            $checkMethod = $name === 'Barber' ? 'canAddBarber' : ($name === 'Service' ? 'canAddService' : null);
+            if ($checkMethod) {
+                $subscriptionRender = <<<PHP
+        \$shop = \App\Models\BarberShop::find(\$this->barber_shop_id);
+        \$canAdd = true;
+        if (\$shop && !auth()->user()->hasRole(['admin', 'qqq'])) {
+            \$canAdd = app(\App\Services\SubscriptionService::class)->{$checkMethod}(\$shop);
+        }
+        return view('$viewPath.create', [
+            'limitReached' => !\$canAdd,
+$availableListsForm        ])->layout('components.layouts.app');
+PHP;
+                $subscriptionStore = <<<PHP
+        \$shop = \App\Models\BarberShop::find(\$this->barber_shop_id);
+        if (\$shop && !auth()->user()->hasRole(['admin', 'qqq'])) {
+            if (!app(\App\Services\SubscriptionService::class)->{$checkMethod}(\$shop)) {
+                session()->flash('error', __('Limit reached for this plan.'));
+                return;
+            }
+        }
+        \$action->execute(\$dto);
+PHP;
+            }
+        }
+
+        File::put("$dir/Create.php", "<?php\n\nnamespace App\Livewire\Admin\\$pluralName;\n\nuse App\Models\\$name;\nuse App\Domain\\$name\DTOs\\{$name}DTO;\nuse App\Domain\\$name\Actions\\Create{$name}Action;\n$imports\n#[Title('Add $name')]\nclass Create extends Component\n{\n    $traits $props $onEvents $updatedHooks $formHelperMethods $mount\n    public function render() { abort_if_cannot('add_{$pluralSnake}'); $subscriptionRender }\n    public function store(Create{$name}Action \$action) { \$this->validate(); $fileHandlers \$dto = {$name}DTO::fromArray([\n$dataMap        ]); $subscriptionStore session()->flash('success', __('$pluralKebab.created')); return to_route('admin.$pluralKebab.index'); }\n    protected function rules(): array { \$rules = $name::rules();
 $livewireRules        return \$rules; }\n}");
 
         $dateFills = collect($fields)->filter(fn ($f) => in_array($f['type'], ['date', 'datetime']))->map(function ($f) use ($camel) {
@@ -439,31 +532,67 @@ $livewireRules        return \$rules; }\n}");
         File::makeDirectory($dir, 0755, true, true);
         $pk = Str::kebab($pluralName);
 
-        File::put("$dir/index.blade.php", $this->getIndexStub($name, $pluralName, $pk, $fields));
-        File::put("$dir/create.blade.php", $this->getCreateStub($name, $pk, $fields));
-        File::put("$dir/edit.blade.php", $this->getEditStub($name, $pk, $fields));
+        File::put("$dir/index.blade.php", $this->getIndexStub($name, $pluralName, $pk, $fields, $pluralSnake));
+        File::put("$dir/create.blade.php", $this->getCreateStub($name, $pk, $fields, $pluralSnake));
+        File::put("$dir/edit.blade.php", $this->getEditStub($name, $pk, $fields, $pluralSnake));
         File::put("$dir/row.blade.php", $this->getRowStub($name, $pk, $fields, $pluralSnake));
         File::put("$dir/quick-create.blade.php", "<div class=\"p-6\">\n    @if(\$created)\n        <div class=\"flex flex-col items-center text-center py-10\">\n            <div class=\"w-12 h-12 rounded-full bg-green-50 dark:bg-green-900/30 flex items-center justify-center mb-4\">\n                <x-heroicon-o-check class=\"w-6 h-6 text-green-500\" />\n            </div>\n            <p class=\"font-bold text-gray-900 dark:text-white\">{{ __('$pk.created') }}</p>\n            @if(\$createdLabel)<p class=\"text-sm text-gray-500 dark:text-gray-400 mt-1\">{{ \$createdLabel }}</p>@endif\n            <button type=\"button\" wire:click=\"addAnother\" class=\"mt-6 text-xs font-black uppercase tracking-widest text-blue-600 dark:text-blue-400\">{{ __('$pk.Add $name') }}</button>\n        </div>\n    @else\n        " . $this->getInputs($fields, $pk, true) . "\n        <div class=\"mt-8 flex justify-end\"><x-button wire:click=\"store\" variant=\"blue\">{{ __('$pk.Save') }}</x-button></div>\n    @endif\n</div>");
     }
 
-    protected function getIndexStub($name, $pluralName, $pk, $fields)
+    protected function getIndexStub($name, $pluralName, $pk, $fields, $pluralSnake)
     {
         $searchable = collect($fields)->filter(fn ($f) => in_array($f['type'], ['string', 'text']))->map(fn ($f) => Str::title($f['name']))->prepend('ID')->implode(', ');
         $filters = collect($fields)->filter(fn ($f) => $f['type'] === 'foreignId')->map(function ($f) use ($pk) {
             $rv = Str::plural(Str::camel(str_replace('_id', '', $f['name'])));
             $label = Str::title(str_replace('_', ' ', $f['name']));
-            return "<div><label class=\"block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100\">$label</label><x-form.dropdown-search name=\"{$f['name']}\" wire:model.live=\"{$f['name']}\" label=\"none\" :data=\"\${$rv}\" placeholder=\"Filter $label\" /></div>";
+
+            $filterHtml = "<div><label class=\"block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100\">$label</label><x-form.dropdown-search name=\"{$f['name']}\" wire:model.live=\"{$f['name']}\" label=\"none\" :data=\"\${$rv}\" placeholder=\"Filter $label\" /></div>";
+
+            if ($f['name'] === 'barber_shop_id') {
+                return "@if(auth()->user()->is_global_admin)\n$filterHtml\n@endif";
+            }
+            return $filterHtml;
         })->implode("\n");
 
-        return "<div x-data=\"{ openFilter: @entangle('openFilter') }\">\n    <div class=\"card !p-0 overflow-hidden shadow-none border-gray-200 dark:border-gray-700 dark:bg-gray-800\">\n        <div class=\"p-6\">\n            <div class=\"flex flex-col sm:flex-row sm:items-center justify-between gap-4\">\n                <div><x-h1>{{ __('$pk.$pluralName') }}</x-h1><x-short-description class=\"dark:text-gray-400\">{{ __('$pk.List of') }} ".strtolower($pluralName)."</x-short-description></div>\n                <div class=\"flex items-center gap-3\">\n                    @if(\$search || \$openFilter)\n                        <button wire:click=\"resetFilters\" class=\"inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl transition-none shadow-none\"><span>{{ __('$pk.Reset') }}</span></button>\n                    @endif\n                    <button @click=\"openFilter = !openFilter\" class=\"inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-600 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm transition-none\"><span>{{ __('$pk.Filters') }}</span></button>\n                    <x-btn :href=\"route('admin.$pk.create')\" icon=\"plus\">{{ __('$pk.Add $name') }}</x-btn>\n                </div>\n            </div>\n\n            <div x-show=\"openFilter\" x-cloak class=\"mt-6 p-6 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-2xl\">\n                <div class=\"grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6\">\n                    <div>\n                        <label class=\"block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100\">{{ __('$pk.Search') }}</label>\n                        <input name=\"search\" wire:model.live.debounce.300ms=\"search\" type=\"text\" placeholder=\"Search by $searchable\" class=\"w-full p-3 text-sm font-bold bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500/20 dark:text-white\">\n                    </div>\n                    $filters\n                </div>\n            </div>\n        </div>\n\n        @include('errors.messages')\n\n        <div class=\"overflow-x-auto border-t border-gray-100 dark:border-gray-700\">\n            <table class=\"w-full text-sm text-left text-gray-500 dark:text-gray-400\">\n                <thead class=\"bg-gray-100/50 dark:bg-gray-700/50\"><tr><x-table.th name=\"id\" :label=\"__('$pk.ID')\" :\$sortField :\$sortAsc :sortable=\"true\" />" . collect($fields)->map(fn ($f) => "<x-table.th name=\"{$f['name']}\" :label=\"__('$pk.".Str::title(str_replace('_', ' ', $f['name']))."')\" :\$sortField :\$sortAsc :sortable=\"in_array('{$f['name']}', \$sortableFields)\" />")->implode("\n") . "<th class=\"px-6 py-4 text-right text-[10px] font-black uppercase text-gray-400 tracking-widest\">{{ __('$pk.Action') }}</th></tr></thead>\n                <tbody class=\"divide-y divide-gray-50 dark:divide-gray-700/50\">@forelse(\$items as \$item) <livewire:admin.$pk.row :\$item :key=\"\$item->id\" /> @empty <tr><td colspan=\"100\" class=\"px-6 py-10 text-center text-sm text-gray-400\">{{ __('$pk.No records found.') }}</td></tr> @endforelse</tbody>\n            </table>\n        </div>\n        <div class=\"p-4 border-t border-gray-50 dark:border-gray-700/50\">{{ \$items->links() }}</div>\n    </div>\n</div>";
+        $tableHeaders = collect($fields)->map(function($f) use ($pk) {
+            $header = "<x-table.th name=\"{$f['name']}\" :label=\"__('$pk.".Str::title(str_replace('_', ' ', $f['name']))."')\" :\$sortField :\$sortAsc :sortable=\"in_array('{$f['name']}', \$sortableFields)\" />";
+            if ($f['name'] === 'barber_shop_id') {
+                return "@if(auth()->user()->is_global_admin)\n$header\n@endif";
+            }
+            return $header;
+        })->implode("\n");
+
+        return "<div x-data=\"{ openFilter: @entangle('openFilter') }\">\n    <div class=\"card !p-0 overflow-hidden shadow-none border-gray-200 dark:border-gray-700 dark:bg-gray-800\">\n        <div class=\"p-6\">\n            <div class=\"flex flex-col sm:flex-row sm:items-center justify-between gap-4\">\n                <div><x-h1>{{ __('$pk.$pluralName') }}</x-h1><x-short-description class=\"dark:text-gray-400\">{{ __('$pk.List of') }} ".strtolower($pluralName)."</x-short-description></div>\n                <div class=\"flex items-center gap-3\">\n                    @if(\$search || \$openFilter)\n                        <button wire:click=\"resetFilters\" class=\"inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl transition-none shadow-none\"><span>{{ __('$pk.Reset') }}</span></button>\n                    @endif\n                    <button @click=\"openFilter = !openFilter\" class=\"inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-600 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm transition-none\"><span>{{ __('$pk.Filters') }}</span></button>\n                    @can('add_{$pluralSnake}')\n                        <x-btn :href=\"route('admin.$pk.create')\" icon=\"plus\">{{ __('$pk.Add $name') }}</x-btn>\n                    @endcan\n                </div>\n            </div>\n\n            <div x-show=\"openFilter\" x-cloak class=\"mt-6 p-6 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-2xl\">\n                <div class=\"grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6\">\n                    <div>\n                        <label class=\"block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100\">{{ __('$pk.Search') }}</label>\n                        <input name=\"search\" wire:model.live.debounce.300ms=\"search\" type=\"text\" placeholder=\"Search by $searchable\" class=\"w-full p-3 text-sm font-bold bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500/20 dark:text-white\">\n                    </div>\n                    $filters\n                </div>\n            </div>\n        </div>\n\n        @include('errors.messages')\n\n        <div class=\"overflow-x-auto border-t border-gray-100 dark:border-gray-700\">\n            <table class=\"w-full text-sm text-left text-gray-500 dark:text-gray-400\">\n                <thead class=\"bg-gray-100/50 dark:bg-gray-700/50\"><tr><x-table.th name=\"id\" :label=\"__('$pk.ID')\" :\$sortField :\$sortAsc :sortable=\"true\" />" . $tableHeaders . "<th class=\"px-6 py-4 text-right text-[10px] font-black uppercase text-gray-400 tracking-widest\">{{ __('$pk.Action') }}</th></tr></thead>\n                <tbody class=\"divide-y divide-gray-50 dark:divide-gray-700/50\">@forelse(\$items as \$item) <livewire:admin.$pk.row :\$item :key=\"\$item->id\" /> @empty <tr><td colspan=\"100\" class=\"px-6 py-10 text-center text-sm text-gray-400\">{{ __('$pk.No records found.') }}</td></tr> @endforelse</tbody>\n            </table>\n        </div>\n        <div class=\"p-4 border-t border-gray-50 dark:border-gray-700/50\">{{ \$items->links() }}</div>\n    </div>\n</div>";
     }
 
-    protected function getCreateStub($name, $pk, $fields)
+    protected function getCreateStub($name, $pk, $fields, $pluralSnake)
     {
-        return "<div class=\"space-y-10\">\n    <div class=\"flex items-center justify-between gap-4 px-1\"><div><x-h1>{{ __('$pk.Add $name') }}</x-h1><x-short-description class=\"dark:text-gray-400\">{{ __('$pk.New record') }}</x-short-description></div><x-back-btn route=\"admin.$pk.index\" /></div>\n    @include('errors.errors')\n    <div class=\"bg-white dark:bg-gray-800 p-8 sm:p-12 rounded-[2.5rem] shadow-sm border border-gray-50 dark:border-gray-700\"><form wire:submit.prevent=\"store\" class=\"space-y-8\">".$this->getInputs($fields, $pk, true)."<div class=\"mt-10 flex justify-end\"><x-button type=\"submit\" variant=\"blue\" class=\"w-full sm:w-auto !px-12 !py-4 !rounded-2xl\">{{ __('$pk.Save') }}</x-button></div></form></div>\n</div>";
+        $hasBarberShopId = collect($fields)->contains(fn ($f) => $f['name'] === 'barber_shop_id');
+        $limitAlert = '';
+        $formClass = '';
+
+        if ($hasBarberShopId && in_array($name, ['Barber', 'Service'])) {
+            $limitAlert = <<<HTML
+    @if(\$limitReached ?? false)
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-6 py-4 rounded-3xl flex items-center gap-4 mb-6">
+            <x-heroicon-o-exclamation-triangle class="w-6 h-6 shrink-0" />
+            <div>
+                <p class="font-bold">{{ __('Limit i arritur!') }}</p>
+                <p class="text-sm opacity-90">{{ __('Keni arritur numrin maksimal p\u00ebr k\u00ebt\u00eb plan.') }}</p>
+            </div>
+            <a href="{{ route('admin.subscriptions.index') }}" class="ml-auto bg-red-600 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase hover:bg-red-700 transition-colors">
+                {{ __('P\u00ebrmir\u00ebso Planin') }}
+            </a>
+        </div>
+    @endif
+HTML;
+            $formClass = '{{ ($limitReached ?? false) ? "opacity-50 pointer-events-none" : "" }}';
+        }
+
+        return "<div class=\"space-y-10\">\n    <div class=\"flex items-center justify-between gap-4 px-1\"><div><x-h1>{{ __('$pk.Add $name') }}</x-h1><x-short-description class=\"dark:text-gray-400\">{{ __('$pk.New record') }}</x-short-description></div><x-back-btn route=\"admin.$pk.index\" /></div>\n    @include('errors.errors')\n    $limitAlert\n    <div class=\"bg-white dark:bg-gray-800 p-8 sm:p-12 rounded-[2.5rem] shadow-sm border border-gray-50 dark:border-gray-700\"><form wire:submit.prevent=\"store\" class=\"space-y-8 $formClass\">".$this->getInputs($fields, $pk, true)."<div class=\"mt-10 flex justify-end\"><x-button type=\"submit\" variant=\"blue\" class=\"w-full sm:w-auto !px-12 !py-4 !rounded-2xl\">{{ __('$pk.Save') }}</x-button></div></form></div>\n</div>";
     }
 
-    protected function getEditStub($name, $pk, $fields)
+    protected function getEditStub($name, $pk, $fields, $pluralSnake)
     {
         return "<div class=\"space-y-10\">\n    <div class=\"flex items-center justify-between gap-4 px-1\"><div><x-h1>{{ __('$pk.Edit $name') }}</x-h1><x-short-description class=\"dark:text-gray-400\">{{ __('$pk.Update info') }}</x-short-description></div><x-back-btn route=\"admin.$pk.index\" /></div>\n    @include('errors.errors')\n    <div class=\"bg-white dark:bg-gray-800 p-8 sm:p-12 rounded-[2.5rem] shadow-sm border border-gray-50 dark:border-gray-700\"><form wire:submit.prevent=\"update\" class=\"space-y-8\">".$this->getInputs($fields, $pk, false)."<div class=\"mt-10 flex justify-end\"><x-button type=\"submit\" variant=\"blue\" class=\"w-full sm:w-auto !px-12 !py-4 !rounded-2xl\">{{ __('$pk.Update') }}</x-button></div></form></div>\n</div>";
     }
@@ -471,17 +600,22 @@ $livewireRules        return \$rules; }\n}");
     protected function getRowStub($name, $pk, $fields, $pluralSnake)
     {
         $cells = collect($fields)->map(function ($f) {
+            $cell = '';
             if ($f['type'] === 'foreignId') {
                 $labelPath = str_replace('.', '?->', $f['labelField']);
-                return "<td class=\"px-6 py-5 font-bold text-gray-900 dark:text-white\">{{ \$item->".Str::camel(str_replace('_id', '', $f['name']))."?->{$labelPath} ?? '-' }}</td>";
+                $cell = "<td class=\"px-6 py-5 font-bold text-gray-900 dark:text-white\">{{ \$item->".Str::camel(str_replace('_id', '', $f['name']))."?->{$labelPath} ?? '-' }}</td>";
+            } elseif ($f['type'] === 'image' || Str::contains(strtolower($f['name']), ['file', 'document', 'image', 'photo'])) {
+                $cell = "<td class=\"px-6 py-3\">@if(\$item->{$f['name']}) <a href=\"{{ asset(ltrim(\$item->{$f['name']}, '/')) }}\" target=\"_blank\" rel=\"noopener\" class=\"inline-block group\" title=\"View image\"><img src=\"{{ asset(ltrim(\$item->{$f['name']}, '/')) }}\" alt=\"{{ e(ucwords(str_replace('_', ' ', '{$f['name']}'))) }}\" class=\"w-12 h-12 rounded-xl object-cover border border-gray-200 dark:border-gray-700 shadow-sm group-hover:scale-105 transition-transform duration-150\" loading=\"lazy\" /></a> @else <span class=\"text-gray-400\">-</span> @endif</td>";
+            } elseif (in_array($f['type'], ['date', 'datetime'])) {
+                $cell = "<td class=\"px-6 py-5 text-gray-600 dark:text-gray-300\">{{ \$item->{$f['name']}?->format('d/m/Y H:i') ?? '-' }}</td>";
+            } else {
+                $cell = "<td class=\"px-6 py-5 text-gray-600 dark:text-gray-300\">{{ \$item->{$f['name']} }}</td>";
             }
-            if ($f['type'] === 'image' || Str::contains(strtolower($f['name']), ['file', 'document', 'image', 'photo'])) {
-                return "<td class=\"px-6 py-3\">@if(\$item->{$f['name']}) <a href=\"{{ asset(ltrim(\$item->{$f['name']}, '/')) }}\" target=\"_blank\" rel=\"noopener\" class=\"inline-block group\" title=\"View image\"><img src=\"{{ asset(ltrim(\$item->{$f['name']}, '/')) }}\" alt=\"{{ e(ucwords(str_replace('_', ' ', '{$f['name']}'))) }}\" class=\"w-12 h-12 rounded-xl object-cover border border-gray-200 dark:border-gray-700 shadow-sm group-hover:scale-105 transition-transform duration-150\" loading=\"lazy\" /></a> @else <span class=\"text-gray-400\">-</span> @endif</td>";
+
+            if ($f['name'] === 'barber_shop_id') {
+                return "@if(auth()->user()->is_global_admin)\n$cell\n@endif";
             }
-            if (in_array($f['type'], ['date', 'datetime'])) {
-                return "<td class=\"px-6 py-5 text-gray-600 dark:text-gray-300\">{{ \$item->{$f['name']}?->format('d/m/Y H:i') ?? '-' }}</td>";
-            }
-            return "<td class=\"px-6 py-5 text-gray-600 dark:text-gray-300\">{{ \$item->{$f['name']} }}</td>";
+            return $cell;
         })->implode("\n");
 
         $displayNameField = 'id';
@@ -510,6 +644,10 @@ $livewireRules        return \$rules; }\n}");
                 $rv = Str::plural(Str::camel(str_replace('_id', '', $f['name'])));
                 $comp = 'admin.' . Str::kebab(Str::plural($f['relatedModel'])) . '.quick-create';
 
+                if ($f['name'] === 'barber_shop_id') {
+                    return "<div>\n    @if(auth()->user()->barber_shop_id && !auth()->user()->is_global_admin)\n        <x-form.input name=\"barber_shop_name\" :label=\"__('$pk.$label')\" value=\"{{ auth()->user()->barberShop->name }}\" readonly disabled class=\"bg-gray-50\" />\n        <input type=\"hidden\" wire:model=\"barber_shop_id\">\n    @else\n        <div class=\"flex items-end gap-2\">\n            <div class=\"flex-1\"><x-form.dropdown-search name=\"{$f['name']}\" wire:model.live=\"{$f['name']}\" :label=\"__('$pk.$label')\" :data=\"\${$rv}\" /></div>\n            <x-modal>\n                <x-slot name=\"trigger\"><button type=\"button\" @click=\"on = true\" class=\"mb-6 p-3 bg-blue-50 dark:bg-zinc-900/30 text-blue-600 dark:text-blue-400 rounded-2xl hover:scale-105 transition-transform\"><x-heroicon-o-plus class=\"w-5 h-5\" /></button></x-slot>\n                <x-slot name=\"modalTitle\"><div class=\"dark:text-white px-6 pt-6\">Add New " . $f['relatedModel'] . "</div></x-slot>\n                <x-slot name=\"content\"><livewire:$comp /></x-slot>\n            </x-modal>\n        </div>\n    @endif\n</div>";
+                }
+
                 return "<div>\n    <div class=\"flex items-end gap-2\">\n        <div class=\"flex-1\"><x-form.dropdown-search name=\"{$f['name']}\" wire:model.live=\"{$f['name']}\" :label=\"__('$pk.$label')\" :data=\"\${$rv}\" /></div>\n        <x-modal>\n            <x-slot name=\"trigger\"><button type=\"button\" @click=\"on = true\" class=\"mb-6 p-3 bg-blue-50 dark:bg-zinc-900/30 text-blue-600 dark:text-blue-400 rounded-2xl hover:scale-105 transition-transform\"><x-heroicon-o-plus class=\"w-5 h-5\" /></button></x-slot>\n            <x-slot name=\"modalTitle\"><div class=\"dark:text-white px-6 pt-6\">Add New " . $f['relatedModel'] . "</div></x-slot>\n            <x-slot name=\"content\"><livewire:$comp /></x-slot>\n        </x-modal>\n    </div>\n</div>";
             }
             if ($f['type'] === 'image' || Str::contains(strtolower($f['name']), ['file', 'document', 'image', 'photo'])) {
@@ -525,6 +663,9 @@ $livewireRules        return \$rules; }\n}");
             if ($f['type'] === 'enum') {
                 $opts = collect($f['options'])->map(fn ($o) => '<option value="' . e($o) . '">' . e($o) . '</option>')->implode('');
                 return "<div><label class=\"block mb-1.5 text-[10px] font-bold uppercase tracking-widest\">{{ __('$pk.$label') }}</label><select name=\"{$f['name']}\" wire:model=\"{$f['name']}\" class=\"w-full p-3 text-sm font-bold bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl\"><option value=\"\">--</option>$opts</select></div>";
+            }
+            if (in_array($f['type'], ['integer', 'bigInteger'], true)) {
+                return "<div><x-form.input name=\"{$f['name']}\" type=\"number\" step=\"1\" wire:model.live=\"{$f['name']}\" :label=\"__('$pk.$label')\" class=\"dark:bg-gray-900\" /></div>";
             }
             if (in_array($f['type'], ['qty', 'price', 'decimal'], true)) {
                 return "<div><x-form.input name=\"{$f['name']}\" type=\"number\" step=\"0.01\" min=\"0\" inputmode=\"decimal\" oninput=\"this.value=this.value.replace(/[^0-9.]/g,'').replace(/(\\..*)\\./g,'$1').replace(/(\\.\\d{2}).*/g,'$1')\" wire:model.live=\"{$f['name']}\" :label=\"__('$pk.$label')\" class=\"dark:bg-gray-900\" /></div>";
@@ -776,12 +917,18 @@ DART
                 $method = ($f['isUuid'] ?? false) ? 'foreignUuid' : 'foreignId';
                 $line = "\$table->{$method}('{$f['name']}')->constrained('{$f['constrained']}')";
             } else {
-                if ($f['type'] === 'decimal') {
+                // Defensive guard: semantic aliases must never generate unsupported
+                // Blueprint methods such as $table->price() or $table->qty().
+                $persistedType = in_array($f['type'], ['qty', 'price'], true)
+                    ? 'decimal'
+                    : $f['type'];
+
+                if ($persistedType === 'decimal') {
                     $line = "\$table->decimal('{$f['name']}', 12, 2)";
-                } elseif ($f['type'] === 'image') {
+                } elseif ($persistedType === 'image') {
                     $line = "\$table->string('{$f['name']}')";
                 } else {
-                    $line = "\$table->{$f['type']}('{$f['name']}')";
+                    $line = "\$table->{$persistedType}('{$f['name']}')";
                 }
             }
             if ($f['nullable']) {
@@ -791,7 +938,7 @@ DART
         })->implode("\n");
         File::put(
             'database/migrations/' . date('Y_m_d_His') . "_create_{$tableName}_table.php",
-            "<?php\nuse Illuminate\Database\Migrations\Migration;\nuse Illuminate\Database\Schema\Blueprint;\nuse Illuminate\Support\Facades\Schema;\nreturn new class extends Migration { public function up() { Schema::create('$tableName', function (Blueprint \$table) { \$table->id();\n$schema\n            \$table->timestamps(); }); } public function down() { Schema::dropIfExists('$tableName'); } };"
+            "<?php\nuse Illuminate\Database\Migrations\Migration;\nuse Illuminate\Database\Schema\Blueprint;\nuse Illuminate\Support\Facades\Schema;\nreturn new class extends Migration { public function up() { Schema::create('$tableName', function (Blueprint \$table) { \n            \$table->charset = 'utf8mb4';\n            \$table->collation = 'utf8mb4_unicode_ci';\n            \$table->id();\n$schema\n            \$table->timestamps(); }); } public function down() { Schema::dropIfExists('$tableName'); } };"
         );
     }
 
@@ -923,10 +1070,26 @@ PHP;
         $createAction = "{$domainBase}\\Actions\\Create{$name}Action";
         $updateAction = "{$domainBase}\\Actions\\Update{$name}Action";
 
+        $hasBarberShopId = collect($fields)->contains(fn ($f) => $f['name'] === 'barber_shop_id');
+        $checkLimitLogic = '';
+        if ($hasBarberShopId) {
+            $checkMethod = $name === 'Barber' ? 'canAddBarber' : ($name === 'Service' ? 'canAddService' : null);
+            if ($name === 'BarberShop') { $checkMethod = 'canAddShop'; }
+
+            if ($checkMethod) {
+                if ($name === 'BarberShop') {
+                    $checkLimitLogic = "\n        if (!\$request->user()->is_global_admin) {\n            if (!app(\\App\\Services\\SubscriptionService::class)->canAddShop(\$request->user())) {\n                return response()->json(['message' => __('Limit reached for your plan. Upgrade to add more shops.')], 403);\n            }\n        }\n";
+                } else {
+                    $checkLimitLogic = "\n        \$shopId = \$request->input('barber_shop_id', \$request->user()->barber_shop_id);\n        \$shop = \\App\\Models\\BarberShop::find(\$shopId);\n        if (\$shop && !\$request->user()->is_global_admin) {\n            if (!app(\\App\\Services\\SubscriptionService::class)->{$checkMethod}(\$shop)) {\n                return response()->json(['message' => __('Limit reached for this plan.')], 403);\n            }\n        }\n";
+                }
+            }
+        }
+
         if (class_exists($dtoClass) && class_exists($createAction)) {
             $dtoImports .= "use {$dtoClass};\nuse {$createAction};\n";
             $storeBody = <<<PHP
         \$data = \$this->prepareData(\$request);
+        {$checkLimitLogic}
         \$validated = validator(\$data, {$name}::rules())->validate();
         \$item = app(\\{$createAction}::class)->execute(\\{$dtoClass}::fromArray(\$validated));
         return (new {$name}Resource(\$item->loadMissing({$withPhp})))->response()->setStatusCode(201);
@@ -934,6 +1097,7 @@ PHP;
         } else {
             $storeBody = <<<PHP
         \$data = \$this->prepareData(\$request);
+        {$checkLimitLogic}
         \$validated = validator(\$data, {$name}::rules())->validate();
         \$item = {$name}::create(\$validated);
         return (new {$name}Resource(\$item->loadMissing({$withPhp})))->response()->setStatusCode(201);
@@ -1093,6 +1257,7 @@ PHP;
                 $lookupRoute = "Route::get('{$relationPlural}', function (\\Illuminate\\Http\\Request \$request) {\n"
                     . "        \$search = trim((string) \$request->input('search', ''));\n"
                     . "        \$query = {$relatedModelClass}::query();\n"
+                    . "        if (method_exists({$relatedModelClass}::class, 'scopeForActiveShop')) { \$query->forActiveShop(); }\n"
                     . "        if (\$search !== '') { \$query->where('{$displayField}', 'like', '%' . \$search . '%'); }\n"
                     . "        \$items = \$query->limit(50)->get()->map(fn (\$item) => ['id' => \$item->getKey(), 'name' => \$item->{$displayField}])->values();\n"
                     . "        return response()->json(['data' => \$items]);\n"
@@ -1147,7 +1312,8 @@ class {$name}Changed implements ShouldBroadcast, ShouldDispatchAfterCommit
 
     public function broadcastOn(): array
     {
-        return [new PrivateChannel('mobile.{$pluralKebab}')];
+        \$tenantId = \$this->item->barber_shop_id ?? \$this->item->id;
+        return [new PrivateChannel('mobile.' . \$tenantId . '.{$pluralKebab}')];
     }
 
     public function broadcastAs(): string
@@ -1224,8 +1390,8 @@ $observerClass = $name . 'Observer';
             File::put($channelsPath, "<?php\n\nuse Illuminate\\Support\\Facades\\Broadcast;\n\n");
         }
         $channels = File::get($channelsPath);
-        $channelLine = "Broadcast::channel('mobile.{$pluralKebab}', function (\\App\\Models\\User \$user) { return \$user->can('view_" . Str::snake($pluralName) . "'); });";
-        if (!Str::contains($channels, "Broadcast::channel('mobile.{$pluralKebab}'")) {
+        $channelLine = "Broadcast::channel('mobile.{shopId}.{$pluralKebab}', function (\\App\\Models\\User \$user, \$shopId) { if (\$user->hasRole('admin')) return true; return (int) \$user->barber_shop_id === (int) \$shopId; });";
+        if (!Str::contains($channels, "Broadcast::channel('mobile.{shopId}.{$pluralKebab}'")) {
             $channels .= "\n{$channelLine}\n";
             File::put($channelsPath, $channels);
         }
@@ -1233,10 +1399,14 @@ $observerClass = $name . 'Observer';
         $this->info("🔴 Realtime layer generated for {$name}: observer + broadcast event + private channel");
     }
 
-    protected function generateFlutterBLoCLayer($name, $pluralName, $pluralKebab, $fields, $icon = 'chevron-right')
+    protected function generateFlutterBLoCLayer($name, $pluralName, $pluralKebab, $fields, $icon = 'chevron-right', $pluralSnake = null)
     {
+        if ($pluralSnake === null) {
+            $pluralSnake = Str::snake($pluralName);
+        }
         $base = base_path('mobile-gateway/lib');
         $snake = Str::snake($name);
+        $tr = $snake . 'Tr';
         $moduleDir = "$base/modules/dashboard/$snake";
         $coreDir = "$base/core";
         $flutterL10nDir = "$base/l10n";
@@ -1580,38 +1750,67 @@ DART);
         $hasFile = !empty($fileFields);
         $firstFile = $fileFields[0] ?? null;
 
-        $rowFields = collect($fields)->take(3)->map(function($f) use ($snake) {
-            $fieldKey = addslashes("field.{$f['name']}");
-            $value = match ($f['type']) {
-                'boolean' => "item['{$f['name']}'] == true || item['{$f['name']}'] == 1 ? {$snake}Tr(context, 'common.yes') : {$snake}Tr(context, 'common.no')",
-                'foreignId' => "item['{$f['name']}']?.toString() ?? '-'",
-                default => "item['{$f['name']}']?.toString() ?? '-'",
-            };
-            return "_InfoChip(label: {$snake}Tr(context, '$fieldKey'), value: $value),";
-        })->implode("\n");
+        $rowFields = collect($fields)
+            ->filter(fn($f) => !in_array($f['name'], ['barber_shop_id', 'user_id', 'owner_id']))
+            ->take(3)
+            ->map(function($f) use ($snake, $tr) {
+                $fieldKey = addslashes("field.{$f['name']}");
+                $value = match ($f['type']) {
+                    'boolean' => "item['{$f['name']}'] == true || item['{$f['name']}'] == 1 ? {$tr}(context, 'common.yes') : {$tr}(context, 'common.no')",
+                    'foreignId' => "item['" . Str::camel(str_replace('_id', '', $f['name'])) . "']?['name']?.toString() ?? '-'",
+                    default => "item['{$f['name']}']?.toString() ?? '-'",
+                };
+                return "_InfoChip(label: {$tr}(context, '$fieldKey'), value: $value),";
+            })->implode("\n");
 
-        $filtersUi = collect($fields)->filter(fn($f) => in_array($f['type'], ['foreignId','boolean','enum'], true))->map(function($f) use ($snake) {
-            $label = Str::headline($f['name']);
+        $filtersUi = collect($fields)
+            ->filter(fn($f) => in_array($f['type'], ['foreignId','boolean','enum'], true))
+            ->filter(fn($f) => !in_array($f['name'], ['barber_shop_id'])) // Hide tenant filter
+            ->map(function($f) use ($snake, $tr) {
+            $label = $f['type'] === 'foreignId'
+                ? Str::headline($f['relatedModel'])
+                : Str::headline($f['name']);
             $fieldKey = addslashes("field.{$f['name']}");
             $camel = Str::camel($f['name']);
             if ($f['type'] === 'enum') {
                 $opts = '[' . implode(', ', array_map(fn($o) => "'" . addslashes($o) . "'", $f['options'])) . ']';
-                return "_FilterDropdown(label: {$snake}Tr(context, '$fieldKey'), value: _filters['{$f['name']}']?.toString(), options: $opts, onChanged: (v) => setState(() => _filters['{$f['name']}'] = v)),";
+                return "_FilterDropdown(label: {$tr}(context, '$fieldKey'), value: _filters['{$f['name']}']?.toString(), options: $opts, onChanged: (v) => setState(() => _filters['{$f['name']}'] = v)),";
+            }
+            if ($f['type'] === 'foreignId') {
+                $endpoint = Str::plural(Str::kebab($f['relatedModel']));
+                return "_FilterRelationDropdown(label: {$tr}(context, '$fieldKey'), value: _filters['{$f['name']}']?.toString(), options: _{$camel}FilterOptions, onChanged: (v) => setState(() => _filters['{$f['name']}'] = v)),";
             }
             if ($f['type'] === 'boolean') {
-                return "SwitchListTile.adaptive(contentPadding: EdgeInsets.zero, title: Text({$snake}Tr(context, '$fieldKey')), value: _filters['{$f['name']}'] == true, onChanged: (v) => setState(() => _filters['{$f['name']}'] = v)),";
+                return "SwitchListTile.adaptive(contentPadding: EdgeInsets.zero, title: Text({$tr}(context, '$fieldKey')), value: _filters['{$f['name']}'] == true, onChanged: (v) => setState(() => _filters['{$f['name']}'] = v)),";
             }
-            return "_FilterText(label: {$snake}Tr(context, '$fieldKey'), value: _filters['{$f['name']}']?.toString() ?? '', onChanged: (v) => _filters['{$f['name']}'] = v),";
+            return "_FilterText(label: {$tr}(context, '$fieldKey'), value: _filters['{$f['name']}']?.toString() ?? '', onChanged: (v) => _filters['{$f['name']}'] = v),";
         })->implode("\n");
 
-        $filterFields = collect($fields)->filter(fn($f) => in_array($f['type'], ['foreignId','boolean','enum'], true))->count();
+        $relationFilterState = collect($fields)
+            ->filter(fn($f) => $f['type'] === 'foreignId' && $f['name'] !== 'barber_shop_id')
+            ->map(fn($f) => "  List<Map<String, dynamic>> _" . Str::camel($f['name']) . "FilterOptions = [];\n")
+            ->implode('');
+        $relationFilterLoads = collect($fields)
+            ->filter(fn($f) => $f['type'] === 'foreignId' && $f['name'] !== 'barber_shop_id')
+            ->map(function($f) {
+                $camel = Str::camel($f['name']);
+                $endpoint = Str::plural(Str::kebab($f['relatedModel']));
+                return "    _{$camel}FilterOptions = await repository.lookup('{$endpoint}');\n";
+            })->implode('');
+
+        $filterFields = collect($fields)
+            ->filter(fn ($f) => in_array($f['type'], ['foreignId', 'boolean', 'enum'], true))
+            ->count();
 
         File::put("$pagesDir/{$snake}_list_page.dart", <<<DART
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../../core/widgets/premium_widgets.dart';
-import '../../../../../core/realtime/realtime_service.dart';
-import '../../../../../l10n/{$snake}_localization.dart';
+import 'package:mobile_gateway/services/auth_service.dart';
+import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/core/widgets/app_scaffold.dart';
+import 'package:mobile_gateway/modules/dashboard/presentation/widgets/shop_switcher_widget.dart';
+import 'package:mobile_gateway/core/realtime/realtime_service.dart';
+import 'package:mobile_gateway/l10n/{$snake}_localization.dart';
 import '../cubit/{$snake}_cubit.dart';
 import '../cubit/{$snake}_state.dart';
 import '../widgets/{$snake}_card.dart';
@@ -1638,10 +1837,13 @@ class _{$name}ListViewState extends State<_{$name}ListView> {
   final _search = TextEditingController();
   final _scroll = ScrollController();
   final _filters = <String, dynamic>{};
+  final repository = {$name}Repository();
+$relationFilterState
 
   @override
   void initState() {
     super.initState();
+    _loadFilterOptions();
     _scroll.addListener(() {
       if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 320) {
         context.read<{$name}Cubit>().loadMore();
@@ -1650,7 +1852,11 @@ class _{$name}ListViewState extends State<_{$name}ListView> {
     RealtimeService.instance.subscribe('{$pluralKebab}', (action, data) {
       if (!mounted) return;
       context.read<{$name}Cubit>().handleRealtime(action, data);
-    });
+    }, tenantId: AuthService.instance.user?['barber_shop_id']);
+  }
+
+  Future<void> _loadFilterOptions() async {
+$relationFilterLoads    if (mounted) setState(() {});
   }
 
   @override
@@ -1671,14 +1877,14 @@ class _{$name}ListViewState extends State<_{$name}ListView> {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Container(width: 42, height: 4, decoration: BoxDecoration(color: Theme.of(context).dividerColor, borderRadius: BorderRadius.circular(10))),
           const SizedBox(height: 20),
-          Align(alignment: Alignment.centerLeft, child: Text({$snake}Tr(context, 'list.filters'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800))),
+          Align(alignment: Alignment.centerLeft, child: Text({$tr}(context, 'list.filters'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800))),
           const SizedBox(height: 18),
           $filtersUi
-          if ($filterFields > 0) const SizedBox(height: 8),
+          if ({$filterFields} > 0) const SizedBox(height: 8),
           Row(children: [
-            Expanded(child: OutlinedButton(onPressed: () { _filters.clear(); setState(() {}); Navigator.pop(context); context.read<{$name}Cubit>().load(refresh: true, filters: {}); }, child: Text({$snake}Tr(context, 'list.clear')))),
+            Expanded(child: OutlinedButton(onPressed: () { _filters.clear(); setState(() {}); Navigator.pop(context); context.read<{$name}Cubit>().load(refresh: true, filters: {}); }, child: Text({$tr}(context, 'list.clear')))),
             const SizedBox(width: 12),
-            Expanded(child: FilledButton(onPressed: () { Navigator.pop(context); context.read<{$name}Cubit>().load(refresh: true, filters: _filters); }, child: Text({$snake}Tr(context, 'list.apply')))),
+            Expanded(child: FilledButton(onPressed: () { Navigator.pop(context); context.read<{$name}Cubit>().load(refresh: true, filters: _filters); }, child: Text({$tr}(context, 'list.apply')))),
           ]),
         ]),
       ),
@@ -1693,25 +1899,42 @@ class _{$name}ListViewState extends State<_{$name}ListView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      appBar: AppBar(
-        titleSpacing: 20,
-        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text({$snake}Tr(context, 'list.title'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-          Text({$snake}Tr(context, 'list.subtitle'), style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500)),
-        ]),
-        actions: [
-          IconButton(tooltip: {$snake}Tr(context, 'list.filters'), onPressed: $filterFields > 0 ? _openFilters : null, icon: const Icon(Icons.tune_rounded)),
-          IconButton(tooltip: {$snake}Tr(context, 'list.refresh'), onPressed: () => context.read<{$name}Cubit>().refresh(), icon: const Icon(Icons.refresh_rounded)),
-          const SizedBox(width: 8),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(onPressed: () => _openForm(), icon: const Icon(Icons.add_rounded), label: Text({$snake}Tr(context, 'list.add'))),
+    final canAdd = AuthService.instance.hasPermission('add_{$pluralSnake}');
+    final canEdit = AuthService.instance.hasPermission('edit_{$pluralSnake}');
+    final canDelete = AuthService.instance.hasPermission('delete_{$pluralSnake}');
+
+    return AppScaffold(
+      currentNavIndex: 1, // Modules tab
+      title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text({$tr}(context, 'list.title'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+        InkWell(
+          onTap: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => ShopSwitcherWidget(onSwitched: () => context.read<{$name}Cubit>().refresh()),
+              );
+          },
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(AuthService.instance.user?['business']?['name'] ?? 'Select Shop', style: TextStyle(fontSize: 10, color: theme.colorScheme.primary, fontWeight: FontWeight.bold)),
+              Icon(Icons.keyboard_arrow_down_rounded, size: 12, color: theme.colorScheme.primary),
+            ],
+          ),
+        ),
+      ]),
+      actions: [
+        IconButton(tooltip: {$tr}(context, 'list.filters'), onPressed: {$filterFields} > 0 ? _openFilters : null, icon: const Icon(Icons.tune_rounded)),
+        IconButton(tooltip: {$tr}(context, 'list.refresh'), onPressed: () => context.read<{$name}Cubit>().refresh(), icon: const Icon(Icons.refresh_rounded)),
+        const SizedBox(width: 8),
+      ],
+      floatingActionButton: canAdd ? FloatingActionButton.extended(onPressed: () => _openForm(), icon: const Icon(Icons.add_rounded), label: Text({$tr}(context, 'list.add'))) : null,
       body: Column(children: [
         Padding(padding: const EdgeInsets.fromLTRB(20, 8, 20, 12), child: PremiumSearchBar(
           controller: _search,
-          hintText: {$snake}Tr(context, 'list.search_hint'),
+          hintText: {$tr}(context, 'list.search_hint'),
           onChanged: (v) => context.read<{$name}Cubit>().search(v),
         )),
         Expanded(child: BlocConsumer<{$name}Cubit, {$name}State>(
@@ -1722,7 +1945,7 @@ class _{$name}ListViewState extends State<_{$name}ListView> {
           builder: (context, state) {
             final items = state is {$name}Loaded ? state.items : state is {$name}Loading ? state.items : state is {$name}Failure ? state.items : const <Map<String,dynamic>>[];
             if (state is {$name}Loading && items.isEmpty) return ListView.separated(padding: const EdgeInsets.all(20), itemCount: 7, separatorBuilder: (_, __) => const SizedBox(height: 12), itemBuilder: (_, __) => PremiumSkeleton());
-            if (items.isEmpty) return PremiumEmptyState(title: _search.text.isEmpty ? {$snake}Tr(context, 'list.nothing') : {$snake}Tr(context, 'list.no_results'), message: _search.text.isEmpty ? {$snake}Tr(context, 'list.create_first') : {$snake}Tr(context, 'list.try_different'), icon: _search.text.isEmpty ? Icons.inbox_rounded : Icons.search_off_rounded, actionLabel: _search.text.isEmpty ? {$snake}Tr(context, 'list.create_record') : null, action: _search.text.isEmpty ? () => _openForm() : null);
+            if (items.isEmpty) return PremiumEmptyState(title: _search.text.isEmpty ? {$tr}(context, 'list.nothing') : {$tr}(context, 'list.no_results'), message: _search.text.isEmpty ? {$tr}(context, 'list.create_first') : {$tr}(context, 'list.try_different'), icon: _search.text.isEmpty ? Icons.inbox_rounded : Icons.search_off_rounded, actionLabel: _search.text.isEmpty && canAdd ? {$tr}(context, 'list.create_record') : null, action: _search.text.isEmpty && canAdd ? () => _openForm() : null);
             return RefreshIndicator(
               onRefresh: context.read<{$name}Cubit>().refresh,
               child: ListView.separated(
@@ -1733,7 +1956,11 @@ class _{$name}ListViewState extends State<_{$name}ListView> {
                 separatorBuilder: (_, __) => const SizedBox(height: 10),
                 itemBuilder: (context, index) {
                   if (index == items.length) return state is {$name}Loaded && state.hasMore ? const Padding(padding: EdgeInsets.all(22), child: Center(child: CircularProgressIndicator.adaptive())) : const SizedBox(height: 20);
-                  return {$name}Card(item: items[index], onTap: () => _openForm(items[index]), onDelete: () => _confirmDelete(context, items[index]));
+                  return {$name}Card(
+                    item: items[index],
+                    onTap: canEdit ? () => _openForm(items[index]) : null,
+                    onDelete: canDelete ? () => _confirmDelete(context, items[index]) : null,
+                  );
                 },
               ),
             );
@@ -1746,9 +1973,9 @@ class _{$name}ListViewState extends State<_{$name}ListView> {
   Future<void> _confirmDelete(BuildContext context, Map<String, dynamic> item) async {
     final ok = await PremiumDialog.confirm(
       context,
-      title: {$snake}Tr(context, 'list.delete_confirm_title'),
-      message: {$snake}Tr(context, 'list.delete_confirm_message', {'id': item['id'].toString()}),
-      confirmLabel: {$snake}Tr(context, 'list.delete'),
+      title: {$tr}(context, 'list.delete_confirm_title'),
+      message: {$tr}(context, 'list.delete_confirm_message', {'id': item['id'].toString()}),
+      confirmLabel: {$tr}(context, 'list.delete'),
       destructive: true,
     );
     if (ok == true && context.mounted) context.read<{$name}Cubit>().delete(item['id']);
@@ -1765,9 +1992,9 @@ class _EmptyState extends StatelessWidget {
   const _EmptyState({required this.onAdd, required this.query});
   @override Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(32), child: Column(mainAxisSize: MainAxisSize.min, children: [
     Container(width: 76, height: 76, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer, shape: BoxShape.circle), child: Icon(query.isEmpty ? Icons.inbox_rounded : Icons.search_off_rounded, size: 34)),
-    const SizedBox(height: 18), Text(query.isEmpty ? {$snake}Tr(context, 'list.nothing') : {$snake}Tr(context, 'list.no_results'), style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
-    const SizedBox(height: 7), Text(query.isEmpty ? {$snake}Tr(context, 'list.create_first') : {$snake}Tr(context, 'list.try_different'), textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
-    if (query.isEmpty) ...[const SizedBox(height: 18), FilledButton.icon(onPressed: onAdd, icon: const Icon(Icons.add_rounded), label: Text({$snake}Tr(context, 'list.create_record')))],
+    const SizedBox(height: 18), Text(query.isEmpty ? {$tr}(context, 'list.nothing') : {$tr}(context, 'list.no_results'), style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+    const SizedBox(height: 7), Text(query.isEmpty ? {$tr}(context, 'list.create_first') : {$tr}(context, 'list.try_different'), textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+    if (query.isEmpty) ...[const SizedBox(height: 18), FilledButton.icon(onPressed: onAdd, icon: const Icon(Icons.add_rounded), label: Text({$tr}(context, 'list.create_record')))],
   ])));
 }
 
@@ -1775,6 +2002,29 @@ class _FilterText extends StatelessWidget {
   final String label, value; final ValueChanged<String> onChanged;
   const _FilterText({required this.label, required this.value, required this.onChanged});
   @override Widget build(BuildContext context) => Padding(padding: const EdgeInsets.only(bottom: 12), child: TextFormField(initialValue: value, onChanged: onChanged, decoration: InputDecoration(labelText: label, border: const OutlineInputBorder())));
+}
+
+class _FilterRelationDropdown extends StatelessWidget {
+  final String label;
+  final String? value;
+  final List<Map<String, dynamic>> options;
+  final ValueChanged<String?> onChanged;
+  const _FilterRelationDropdown({required this.label, required this.value, required this.options, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: DropdownButtonFormField<String>(
+      value: options.any((e) => e['id']?.toString() == value) ? value : null,
+      items: options.map((e) => DropdownMenuItem<String>(
+        value: e['id']?.toString(),
+        child: Text((e['name'] ?? e['title'] ?? 'ID: ' + (e['id']?.toString() ?? '')).toString(), overflow: TextOverflow.ellipsis),
+      )).toList(),
+      onChanged: onChanged,
+      isExpanded: true,
+      decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+    ),
+  );
 }
 
 class _FilterDropdown extends StatelessWidget {
@@ -1795,15 +2045,15 @@ DART);
 
         File::put("$widgetsDir/{$snake}_card.dart", <<<DART
 import 'package:flutter/material.dart';
-import '../../../../../services/api_service.dart';
-import '../../../../../core/widgets/premium_widgets.dart';
-import '../../../../../l10n/{$snake}_localization.dart';
+import 'package:mobile_gateway/services/api_service.dart';
+import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/l10n/{$snake}_localization.dart';
 
 class {$name}Card extends StatelessWidget {
   final Map<String, dynamic> item;
-  final VoidCallback onTap;
-  final VoidCallback onDelete;
-  const {$name}Card({super.key, required this.item, required this.onTap, required this.onDelete});
+  final VoidCallback? onTap;
+  final VoidCallback? onDelete;
+  const {$name}Card({super.key, required this.item, this.onTap, this.onDelete});
 
   String get title {
     final value = {$titleExpression};
@@ -1824,7 +2074,17 @@ $cardImage
           const SizedBox(height: 7),
           Wrap(spacing: 6, runSpacing: 6, children: [$rowFields]),
         ])),
-        PopupMenuButton<String>(onSelected: (value) { if (value == 'edit') onTap(); if (value == 'delete') onDelete(); }, itemBuilder: (_) => [PopupMenuItem(value: 'edit', child: Text({$snake}Tr(context, 'list.edit'))), PopupMenuItem(value: 'delete', child: Text({$snake}Tr(context, 'list.delete')))]),
+        if (onTap != null || onDelete != null)
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'edit' && onTap != null) onTap!();
+              if (value == 'delete' && onDelete != null) onDelete!();
+            },
+            itemBuilder: (_) => [
+              if (onTap != null) PopupMenuItem(value: 'edit', child: Text({$tr}(context, 'list.edit'))),
+              if (onDelete != null) PopupMenuItem(value: 'delete', child: Text({$tr}(context, 'list.delete'))),
+            ],
+          ),
       ]),
     );
   }
@@ -1856,8 +2116,13 @@ DART);
 
                 $relationVars .= "  List<Map<String, dynamic>> _{$method}Options = [];\n  {$dartType}? _{$camel};\n";
                 $relationLoaders .= "    _{$method}Options = await repository.lookup('" . Str::plural(Str::kebab($f['relatedModel'])) . "');\n    if (widget.item?['{$field}'] != null) _{$camel} = $parser;\n";
+                if ($field === 'barber_shop_id') {
+                    $relationLoaders .= "    if (_{$camel} == null && AuthService.instance.user?['is_admin'] != true) _{$camel} = AuthService.instance.user?['barber_shop_id'] as {$dartType}?;\n";
+                }
+
                 $relationPickers .= <<<DART
   Future<void> _pick$camel() async {
+    if ("$field" == "barber_shop_id" && AuthService.instance.user?['is_admin'] != true) return;
     var filtered = List<Map<String, dynamic>>.from(_{$method}Options);
     final selected = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -1866,22 +2131,26 @@ DART);
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
       builder: (sheetContext) => StatefulBuilder(builder: (context, setSheet) => SizedBox(height: MediaQuery.of(context).size.height * .72, child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
         Container(width: 42, height: 4, decoration: BoxDecoration(color: Theme.of(context).dividerColor, borderRadius: BorderRadius.circular(10))),
-        const SizedBox(height: 18), Align(alignment: Alignment.centerLeft, child: Text({$snake}Tr(context, 'field.{$field}'), style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800))),
-        const SizedBox(height: 14), TextField(decoration: InputDecoration(prefixIcon: const Icon(Icons.search_rounded), hintText: {$snake}Tr(context, 'form.search'), border: const OutlineInputBorder()), onChanged: (q) => setSheet(() => filtered = _{$method}Options.where((e) => _displayName(e).toLowerCase().contains(q.toLowerCase())).toList())),
+        const SizedBox(height: 18), Align(alignment: Alignment.centerLeft, child: Text({$tr}(sheetContext, 'field.{$field}'), style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800))),
+        const SizedBox(height: 14), TextField(decoration: InputDecoration(prefixIcon: const Icon(Icons.search_rounded), hintText: {$tr}(sheetContext, 'form.search'), border: const OutlineInputBorder()), onChanged: (q) => setSheet(() => filtered = _{$method}Options.where((e) => _displayName(e).toLowerCase().contains(q.toLowerCase())).toList())),
         const SizedBox(height: 12), Expanded(child: ListView.separated(itemCount: filtered.length, separatorBuilder: (_, __) => const Divider(height: 1), itemBuilder: (_, i) { final option = filtered[i]; return ListTile(title: Text(_displayName(option), style: const TextStyle(fontWeight: FontWeight.w700)), trailing: option['id'].toString() == _{$camel}?.toString() ? const Icon(Icons.check_circle_rounded) : null, onTap: () => Navigator.pop(sheetContext, option)); })),
       ])))),
     );
     if (selected != null) setState(() => _{$camel} = $selectedAssignment);
   }
 DART;
-                $widgets .= "            _FieldShell(label: " . $snake . "Tr(context, 'field." . $f['name'] . "'), child: InkWell(onTap: _pick$camel, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_{$method}Options.firstWhere((e) => e['id'].toString() == _{$camel}?.toString(), orElse: () => {'id': '', 'name': " . $snake . "Tr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)])))),\n";
+                if ($field === 'barber_shop_id') {
+                    $widgets .= "            (AuthService.instance.user?['is_admin'] == true) \n              ? _FieldShell(label: " . $tr . "(context, 'field." . $f['name'] . "'), child: InkWell(onTap: _pick$camel, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_{$method}Options.firstWhere((e) => e['id'].toString() == _{$camel}?.toString(), orElse: () => {'id': '', 'name': " . $tr . "(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)]))))\n              : _FieldShell(label: " . $tr . "(context, 'field." . $f['name'] . "'), child: Container(padding: const EdgeInsets.all(16), width: double.infinity, decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5), border: Border.all(color: theme.colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Text(AuthService.instance.user?['business']?['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)))),\n";
+                } else {
+                    $widgets .= "            _FieldShell(label: " . $tr . "(context, 'field." . $f['name'] . "'), child: InkWell(onTap: _pick$camel, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_{$method}Options.firstWhere((e) => e['id'].toString() == _{$camel}?.toString(), orElse: () => {'id': '', 'name': " . $tr . "(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)])))),\n";
+                }
                 $payload .= "    payload['{$field}'] = _{$camel};\n";
                 continue;
             }
             if ($f['type'] === 'boolean') {
                 $controllers .= "  bool _{$camel} = false;\n";
                 $init .= "    _{$camel} = widget.item?['{$field}'] == true || widget.item?['{$field}'] == 1 || widget.item?['{$field}'] == '1';\n";
-                $widgets .= "            Container(decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: SwitchListTile.adaptive(contentPadding: const EdgeInsets.symmetric(horizontal: 16), title: Text({$snake}Tr(context, 'field.{$field}'), style: const TextStyle(fontWeight: FontWeight.w700)), value: _{$camel}, onChanged: (v) => setState(() => _{$camel} = v))),\n";
+                $widgets .= "            Container(decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: SwitchListTile.adaptive(contentPadding: const EdgeInsets.symmetric(horizontal: 16), title: Text({$tr}(context, 'field.{$field}'), style: const TextStyle(fontWeight: FontWeight.w700)), value: _{$camel}, onChanged: (v) => setState(() => _{$camel} = v))),\n";
                 $payload .= "    payload['{$field}'] = _{$camel};\n";
                 continue;
             }
@@ -1889,13 +2158,13 @@ DART;
                 $opts = '[' . implode(', ', array_map(fn($o) => "'" . addslashes($o) . "'", $f['options'])) . ']';
                 $controllers .= "  String? _{$camel};\n";
                 $init .= "    _{$camel} = widget.item?['{$field}']?.toString();\n";
-                $widgets .= "            _FieldShell(label: " . $snake . "Tr(context, 'field." . $f['name'] . "'), child: DropdownButtonFormField<String>(value: $opts.contains(_{$camel}) ? _{$camel} : null, items: $opts.map((v) => DropdownMenuItem<String>(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => _{$camel} = v), validator: (v) { if (v == null || v.isEmpty) return " . $snake . "Tr(context, 'form.select'); return null; }, decoration: const InputDecoration(border: InputBorder.none, isDense: true))),\n";
+                $widgets .= "            _FieldShell(label: " . $tr . "(context, 'field." . $f['name'] . "'), child: DropdownButtonFormField<String>(value: $opts.contains(_{$camel}) ? _{$camel} : null, items: $opts.map((v) => DropdownMenuItem<String>(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => _{$camel} = v), validator: (v) { if (v == null || v.isEmpty) return " . $tr . "(context, 'form.select'); return null; }, decoration: const InputDecoration(border: InputBorder.none, isDense: true))),\n";
                 $payload .= "    payload['{$field}'] = _{$camel};\n";
                 continue;
             }
             if ($f['type'] === 'image' || Str::contains(strtolower($f['name']), ['file', 'document', 'image', 'photo'])) {
                 $fileState .= "  String? _{$camel}Path;\n";
-                $widgets .= "            PremiumImagePicker(label: " . $snake . "Tr(context, 'field." . $f['name'] . "'), path: _{$camel}Path, currentUrl: widget.item?['{$field}'] != null ? '\${ApiService.serverUrl}/\${widget.item!['{$field}']}' : null, onPicked: (p) => setState(() => _{$camel}Path = p)),\n";
+                $widgets .= "            PremiumImagePicker(label: " . $tr . "(context, 'field." . $f['name'] . "'), path: _{$camel}Path, currentUrl: widget.item?['{$field}'] != null ? '\${ApiService.serverUrl}/\${widget.item!['{$field}']}' : null, onPicked: (p) => setState(() => _{$camel}Path = p)),\n";
                 $filesMap .= "    if (_{$camel}Path != null) files['{$field}'] = _{$camel}Path!;\n";
                 continue;
             }
@@ -1904,12 +2173,17 @@ DART;
             if (in_array($f['type'], ['date', 'datetime'], true)) {
                 $controllers .= "  final $controller = TextEditingController();\n";
                 $dispose .= "    $controller.dispose();\n";
-                $init .= "    $controller.text = widget.item?['{$field}']?.toString() ?? '';\n";
                 $iconName = $f['type'] === 'date' ? 'calendar_today_rounded' : 'event_rounded';
                 $pickMethod = $f['type'] === 'date' ? "_pickDate($controller)" : "_pickDateTime($controller)";
                 $placeholder = $f['type'] === 'date' ? 'form.select_date' : 'form.select_datetime';
-                $widgets .= "            _FieldShell(label: " . $snake . "Tr(context, 'field." . $f['name'] . "'), child: InkWell(onTap: () => $pickMethod, borderRadius: BorderRadius.circular(12), child: InputDecorator(decoration: InputDecoration(border: InputBorder.none, isDense: true, suffixIcon: const Icon(Icons.$iconName)), child: Text($controller.text.isEmpty ? {$snake}Tr(context, '$placeholder') : $controller.text, style: TextStyle(color: $controller.text.isEmpty ? Theme.of(context).colorScheme.onSurfaceVariant : null, fontWeight: FontWeight.w600))))),\n";
-                $payload .= "    payload['{$field}'] = $controller.text.isEmpty ? null : $controller.text;\n";
+                $init .= $f['type'] === 'datetime'
+                    ? "    $controller.text = _displayDateTime(widget.item?['{$field}'], includeTime: true);\n"
+                    : "    $controller.text = _displayDateTime(widget.item?['{$field}'], includeTime: false);\n";
+                $widgets .= "            _FieldShell(label: " . $tr . "(context, 'field." . $f['name'] . "'), child: InkWell(onTap: () => $pickMethod, borderRadius: BorderRadius.circular(12), child: InputDecorator(decoration: InputDecoration(border: InputBorder.none, isDense: true, suffixIcon: const Icon(Icons.$iconName)), child: Text($controller.text.isEmpty ? $tr(context, '$placeholder') : $controller.text, style: TextStyle(color: $controller.text.isEmpty ? Theme.of(context).colorScheme.onSurfaceVariant : null, fontWeight: FontWeight.w600))))),\n";
+                $payloadValue = $f['type'] === 'date'
+                    ? "_apiDateValue($controller.text)"
+                    : "_apiDateTimeValue($controller.text)";
+                $payload .= "    payload['{$field}'] = $controller.text.isEmpty ? null : $payloadValue;\n";
                 continue;
             }
 
@@ -1929,7 +2203,7 @@ DART;
             if (in_array($f['type'], ['integer', 'bigInteger'], true)) {
                 $keyboard = "keyboardType: const TextInputType.numberWithOptions(decimal: false), ";
                 $formatters = 'inputFormatters: [FilteringTextInputFormatter.digitsOnly], ';
-                $extraValidator = "if (v != null && v.isNotEmpty && int.tryParse(v) == null) return " . $snake . "Tr(context, 'form.invalid_integer'); ";
+                $extraValidator = "if (v != null && v.isNotEmpty && int.tryParse(v) == null) return " . $tr . "(context, 'form.invalid_integer'); ";
                 $payload .= "    payload['{$field}'] = int.tryParse($controller.text);\n";
             } elseif ($f['type'] === 'decimal') {
                 $keyboard = "keyboardType: const TextInputType.numberWithOptions(decimal: true), ";
@@ -1941,8 +2215,8 @@ DART;
                 $payload .= "    payload['{$field}'] = $controller.text;\n";
             }
 
-            $requiredRule = $f['nullable'] ? '' : "if (v == null || v.trim().isEmpty) return " . $snake . "Tr(context, 'form.required'); ";
-            $widgets .= "            _FieldShell(label: " . $snake . "Tr(context, 'field." . $f['name'] . "'), child: TextFormField(controller: $controller, $keyboard$formatters decoration: InputDecoration(hintText: " . $snake . "Tr(context, 'field." . $f['name'] . "'), border: InputBorder.none, isDense: true), validator: (v) { $requiredRule$extraValidator return null; })),\n";
+            $requiredRule = $f['nullable'] ? '' : "if (v == null || v.trim().isEmpty) return " . $tr . "(context, 'form.required'); ";
+            $widgets .= "            _FieldShell(label: " . $tr . "(context, 'field." . $f['name'] . "'), child: TextFormField(controller: $controller, $keyboard$formatters decoration: InputDecoration(hintText: " . $tr . "(context, 'field." . $f['name'] . "'), border: InputBorder.none, isDense: true), validator: (v) { $requiredRule$extraValidator return null; })),\n";
 
         }
 
@@ -1955,13 +2229,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../../../core/widgets/premium_widgets.dart';
-import '../../../../../core/widgets/premium_image_picker.dart';
-import '../../../../../l10n/{$snake}_localization.dart';
+import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/core/widgets/premium_image_picker.dart';
+import 'package:mobile_gateway/l10n/{$snake}_localization.dart';
 import '../cubit/{$snake}_cubit.dart';
 import '../cubit/{$snake}_state.dart';
 import '../../data/{$snake}_repository.dart';
-import '../../../../../services/api_service.dart';
+import 'package:mobile_gateway/services/api_service.dart';
+import 'package:mobile_gateway/services/auth_service.dart';
 
 class {$name}FormPage extends StatefulWidget {
   final Map<String, dynamic>? item;
@@ -1983,25 +2258,64 @@ $relationVars
 $init
     try {
 $relationLoaders    } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text({$snake}Tr(context, 'form.could_not_load')), behavior: SnackBarBehavior.floating));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text({$tr}(context, 'form.could_not_load')), behavior: SnackBarBehavior.floating));
     } finally { if (mounted) setState(() => _loading = false); }
   }
 
 $relationPickers
   Future<void> _pickDate(TextEditingController controller) async {
-    final initial = DateTime.tryParse(controller.text) ?? DateTime.now();
+    final initial = _parseDisplayDate(controller.text) ?? DateTime.now();
     final picked = await showDatePicker(context: context, initialDate: initial, firstDate: DateTime(1900), lastDate: DateTime(2200));
-    if (picked != null && mounted) setState(() => controller.text = picked.toIso8601String().split('T').first);
+    if (picked != null && mounted) setState(() => controller.text = _formatDisplayDate(picked, includeTime: false));
   }
 
   Future<void> _pickDateTime(TextEditingController controller) async {
-    final initial = DateTime.tryParse(controller.text) ?? DateTime.now();
+    final initial = _parseDisplayDate(controller.text) ?? DateTime.now();
     final date = await showDatePicker(context: context, initialDate: initial, firstDate: DateTime(1900), lastDate: DateTime(2200));
     if (date == null || !mounted) return;
     final time = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(initial));
     if (time == null || !mounted) return;
     final value = DateTime(date.year, date.month, date.day, time.hour, time.minute);
-    setState(() => controller.text = value.toIso8601String());
+    setState(() => controller.text = _formatDisplayDate(value, includeTime: true));
+  }
+
+  DateTime? _parseDisplayDate(String value) {
+    final text = value.trim();
+    if (text.isEmpty) return null;
+    final display = RegExp(r'^(\d{2})/(\d{2})/(\d{4})(?: (\d{2}):(\d{2}))?$').firstMatch(text);
+    if (display != null) {
+      return DateTime(
+        int.parse(display.group(3)!),
+        int.parse(display.group(2)!),
+        int.parse(display.group(1)!),
+        int.tryParse(display.group(4) ?? '0') ?? 0,
+        int.tryParse(display.group(5) ?? '0') ?? 0,
+      );
+    }
+    return DateTime.tryParse(text)?.toLocal();
+  }
+
+  String _formatDisplayDate(DateTime value, {required bool includeTime}) {
+    final date = '\${value.day.toString().padLeft(2, '0')}/\${value.month.toString().padLeft(2, '0')}/\${value.year}';
+    if (!includeTime) return date;
+    return '\$date \${value.hour.toString().padLeft(2, '0')}:\${value.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _displayDateTime(dynamic value, {required bool includeTime}) {
+    if (value == null || value.toString().trim().isEmpty) return '';
+    final parsed = DateTime.tryParse(value.toString())?.toLocal();
+    return parsed == null ? value.toString() : _formatDisplayDate(parsed, includeTime: includeTime);
+  }
+
+  String? _apiDateValue(String value) {
+    final parsed = _parseDisplayDate(value);
+    if (parsed == null) return null;
+    return '\${parsed.year.toString().padLeft(4, '0')}-\${parsed.month.toString().padLeft(2, '0')}-\${parsed.day.toString().padLeft(2, '0')}';
+  }
+
+  String? _apiDateTimeValue(String value) {
+    final parsed = _parseDisplayDate(value);
+    return parsed?.toIso8601String();
   }
 
   String _displayName(Map<String, dynamic> item) {
@@ -2025,18 +2339,25 @@ $filesMap
         listener: (context, state) {
           if (state is {$name}Saved) Navigator.pop(context, true);
           if (state is {$name}Failure) {
-            final message = state.message.trim().isEmpty ? {$snake}Tr(context, 'form.save_error') : state.message;
+            final message = state.message.trim().isEmpty ? {$tr}(context, 'form.save_error') : state.message;
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 4)));
           }
         },
         child: Scaffold(
-          appBar: AppBar(title: Text(widget.item == null ? {$snake}Tr(context, 'form.create_title') : {$snake}Tr(context, 'form.edit_title'), style: const TextStyle(fontWeight: FontWeight.w800))),
+          appBar: AppBar(
+            leading: IconButton(
+              tooltip: 'Back',
+              icon: const Icon(Icons.arrow_back_rounded),
+              onPressed: () => Navigator.of(context).maybePop(),
+            ),
+            title: Text(widget.item == null ? {$tr}(context, 'form.create_title') : {$tr}(context, 'form.edit_title'), style: const TextStyle(fontWeight: FontWeight.w800)),
+          ),
           body: _loading ? const Center(child: CircularProgressIndicator.adaptive()) : Form(key: _formKey, child: Builder(builder: (formContext) => ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 120), children: [
             _FormHeader(isEdit: widget.item != null),
             const SizedBox(height: 22),
 $widgets
             const SizedBox(height: 14),
-            BlocBuilder<{$name}Cubit, {$name}State>(builder: (context, state) => PremiumButton(onPressed: () => _save(context), label: state is {$name}Saving ? {$snake}Tr(context, 'form.saving') : {$snake}Tr(context, 'form.save'), icon: Icons.check_rounded, loading: state is {$name}Saving, expand: true)),
+            BlocBuilder<{$name}Cubit, {$name}State>(builder: (context, state) => PremiumButton(onPressed: () => _save(context), label: state is {$name}Saving ? {$tr}(context, 'form.saving') : {$tr}(context, 'form.save'), icon: Icons.check_rounded, loading: state is {$name}Saving, expand: true)),
           ]))),
         ),
       ),
@@ -2050,7 +2371,7 @@ $dispose    super.dispose();
 class _FormHeader extends StatelessWidget {
   final bool isEdit;
   const _FormHeader({required this.isEdit});
-  @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primaryContainer, Theme.of(context).colorScheme.secondaryContainer]), borderRadius: BorderRadius.circular(24)), child: Row(children: [Container(width: 48, height: 48, decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface.withOpacity(.7), borderRadius: BorderRadius.circular(15)), child: Icon(isEdit ? Icons.edit_rounded : Icons.add_rounded)), const SizedBox(width: 14), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(isEdit ? {$snake}Tr(context, 'form.update_record') : {$snake}Tr(context, 'form.new_record'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)), const SizedBox(height: 3), Text(isEdit ? {$snake}Tr(context, 'form.review_update') : {$snake}Tr(context, 'form.fill_create'), style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant))]))]));
+  @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primaryContainer, Theme.of(context).colorScheme.secondaryContainer]), borderRadius: BorderRadius.circular(24)), child: Row(children: [Container(width: 48, height: 48, decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface.withOpacity(.7), borderRadius: BorderRadius.circular(15)), child: Icon(isEdit ? Icons.edit_rounded : Icons.add_rounded)), const SizedBox(width: 14), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(isEdit ? {$tr}(context, 'form.update_record') : {$tr}(context, 'form.new_record'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)), const SizedBox(height: 3), Text(isEdit ? {$tr}(context, 'form.review_update') : {$tr}(context, 'form.fill_create'), style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant))]))]));
 }
 
 class _FieldShell extends StatelessWidget {
@@ -2203,12 +2524,15 @@ class RealtimeService {
     await _client!.connect();
   }
 
-  Future<void> subscribe(String resource, void Function(String action, Map<String, dynamic> data) listener) async {
+  Future<void> subscribe(String resource, void Function(String action, Map<String, dynamic> data) listener, {dynamic tenantId}) async {
     _listeners.putIfAbsent(resource, () => []).add(listener);
     await start();
-    if (_client == null || _subscribed.contains(resource)) return;
+    if (_client == null) return;
 
-    final channel = _client!.subscribeToPrivateChannel('private-mobile.$resource');
+    final channelName = tenantId != null ? 'private-mobile.$tenantId.$resource' : 'private-mobile.$resource';
+    if (_subscribed.contains(channelName)) return;
+
+    final channel = _client!.subscribeToPrivateChannel(channelName);
     channel.bind('$resource.changed', (eventName, eventData) {
       final data = eventData is String ? jsonDecode(eventData) : eventData;
       if (data is! Map) return;
@@ -2219,12 +2543,12 @@ class RealtimeService {
         callback(action, record);
       }
     });
-    _subscribed.add(resource);
+    _subscribed.add(channelName);
   }
 
   Future<void> stop() async {
-    for (final resource in _subscribed) {
-      _client?.unsubscribeFromChannel('private-mobile.$resource');
+    for (final channelName in _subscribed) {
+      _client?.unsubscribeFromChannel(channelName);
     }
     _subscribed.clear();
     _listeners.clear();
@@ -2328,10 +2652,10 @@ DART
         };
 
         $perm = "view_" . Str::snake(Str::plural($name));
-        $entry = "ModuleEntry(name: '$name', icon: $flutterIcon, page: const {$name}ListPage(), permission: '$perm'),";
+        $entry = "    ModuleEntry(name: '$name', icon: $flutterIcon, page: const {$name}ListPage(), permission: '$perm'),";
 
-        if (!str_contains($content, "name: '$name'")) {
-            $content = str_replace('// [REGISTRY_ENTRIES]', "    $entry\n    // [REGISTRY_ENTRIES]", $content);
+        if (!str_contains($content, "page: const {$name}ListPage()")) {
+            $content = str_replace('// [REGISTRY_ENTRIES]', "$entry\n    // [REGISTRY_ENTRIES]", $content);
         }
 
         File::put($registryPath, $content);

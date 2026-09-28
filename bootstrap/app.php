@@ -20,12 +20,11 @@ return Application::configure(basePath: dirname(__DIR__))
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
-        channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
     ->withBroadcasting(
         __DIR__.'/../routes/channels.php',
-        ['middleware' => ['web', 'auth:sanctum']],
+        ['middleware' => ['auth:sanctum']],
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->redirectGuestsTo(fn () => route('login'));
@@ -36,6 +35,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->replaceInGroup('web', ValidateCsrfToken::class, VerifyCsrfToken::class);
 
         $middleware->appendToGroup('web', \App\Http\Middleware\LanguageMiddleware::class);
+        $middleware->appendToGroup('web', \App\Http\Middleware\SetPermissionsTeamId::class);
+        $middleware->appendToGroup('api', \App\Http\Middleware\SetPermissionsTeamId::class);
 
         $middleware->alias([
             'ipCheckMiddleware' => IpCheckMiddleware::class,

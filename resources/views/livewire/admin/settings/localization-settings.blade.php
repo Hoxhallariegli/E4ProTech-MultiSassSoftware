@@ -33,7 +33,7 @@
                         <h4 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">{{ __('settings.Deep Translation Editor') }}</h4>
                         <p class="text-xs text-gray-500 mt-1">{{ __('settings.Manage every key/value pair for all modules and languages.') }}</p>
                     </div>
-                    <x-a :href="route('admin.settings.languages')" variant="outline" size="sm">
+                    <x-a :href="route('admin.settings.languages.index')" variant="outline" size="sm">
                         <x-heroicon-o-language class="size-4 mr-2" />
                         {{ __('settings.Open Editor') }}
                     </x-a>

@@ -21,7 +21,7 @@ class Roles extends Component
 
     public string $name = '';
 
-    public string $sortField = 'name';
+    public string $sortField = 'label';
 
     public bool $sortAsc = true;
 
@@ -34,7 +34,7 @@ class Roles extends Component
 
     public function builder(): mixed
     {
-        return Role::orderBy($this->sortField, $this->sortAsc ? 'asc' : 'desc');
+        return Role::with(['barberShop'])->withCount('permissions')->orderBy($this->sortField, $this->sortAsc ? 'asc' : 'desc');
     }
 
     public function sortBy(string $field): void

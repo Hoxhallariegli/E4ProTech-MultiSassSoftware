@@ -30,22 +30,32 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach($modules as $module)
-                <div class="card relative">
-                    <h3>{{ $module }}</h3>
-                    @foreach (Permission::where('module', $module)->orderby('name')->get() as $perm)
-                        <label class="block cursor-pointer">
-                            <div class="flex gap-2">
-                            <input
-                                type="checkbox"
-                                class="module-checkbox"
-                                wire:model="permissions"
-                                value="{{ $perm->name }}"
-                            >
-                                {{ $perm->label }}
-                            </div>
-                        </label>
-                    @endforeach
-                </div>
+                @php
+                    $modulePermissions = \App\Models\Permission::where('module', $module)->orderBy('name')->get();
+                    if (!auth()->user()->is_global_admin) {
+                        $userPerms = auth()->user()->getAllPermissions()->pluck('name')->toArray();
+                        $modulePermissions = $modulePermissions->filter(fn($p) => in_array($p->name, $userPerms));
+                    }
+                @endphp
+
+                @if($modulePermissions->isNotEmpty())
+                    <div class="card relative">
+                        <h3>{{ str_replace('_', ' ', $module) }}</h3>
+                        @foreach ($modulePermissions as $perm)
+                            <label class="block cursor-pointer">
+                                <div class="flex gap-2">
+                                <input
+                                    type="checkbox"
+                                    class="module-checkbox"
+                                    wire:model="permissions"
+                                    value="{{ $perm->name }}"
+                                >
+                                    {{ $perm->label }}
+                                </div>
+                            </label>
+                        @endforeach
+                    </div>
+                @endif
             @endforeach
             </div>
 

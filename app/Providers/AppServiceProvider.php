@@ -28,6 +28,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        if (class_exists(\App\Models\BarberShop::class)) {
+            \App\Models\BarberShop::observe(\App\Observers\BarberShopObserver::class);
+        }
         $this->configureAuth();
         $this->configureCommands();
         $this->configureDates();
@@ -56,7 +59,9 @@ class AppServiceProvider extends ServiceProvider
     private function configureAuth(): void
     {
         Gate::before(function (?User $user) {
-            return $user?->hasRole('admin') ? true : null;
+            if (!$user) return null;
+
+            return $user->is_global_admin ?: null;
         });
     }
 

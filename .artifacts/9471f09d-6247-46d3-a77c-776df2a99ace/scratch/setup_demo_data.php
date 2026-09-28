@@ -21,45 +21,19 @@ $user1 = User::firstOrCreate(
 );
 $user1->assignRole($ownerRole);
 
+// ... pas krijimit të dyqaneve
 $shop1 = BarberShop::firstOrCreate(['name' => 'Elite Cut Tirana'], ['active' => true, 'address' => 'Tirana 1', 'expires_at' => Carbon::now()->addMonths(6)]);
-$shop2 = BarberShop::firstOrCreate(['name' => 'Classic Style Durres'], ['active' => true, 'address' => 'Durres 1', 'expires_at' => Carbon::now()->addMonths(6)]);
-
-// Lidhim User 1 me dy dyqanet
-$user1->barberShops()->syncWithoutDetaching([$shop1->id, $shop2->id]);
-
-// Caktojmë Shop 1 si aktiv
-$user1->update(['barber_shop_id' => $shop1->id]);
-
-// 3. Demo User 2 (1 Dyqan, Abonim Aktiv)
-$user2 = User::firstOrCreate(
-    ['email' => 'user2@demo.com'],
-    [
-        'name' => 'User Two (1 Shop)',
-        'slug' => 'user-two',
-        'password' => Hash::make('password'),
-        'is_active' => true
-    ]
+\App\Models\Subscription::updateOrCreate(
+    ['barber_shop_id' => $shop1->id],
+    ['plan_name' => 'Premium', 'expires_at' => $shop1->expires_at, 'status' => 'active']
 );
-$user2->assignRole($ownerRole);
 
-$shop3 = BarberShop::firstOrCreate(['name' => 'Vip Barber Vlore'], ['active' => true, 'address' => 'Vlore 1', 'expires_at' => Carbon::now()->addMonth()]);
-$user2->barberShops()->syncWithoutDetaching([$shop3->id]);
-$user2->update(['barber_shop_id' => $shop3->id]);
-
-// 4. Demo User 3 (Abonim i Skaduar për test)
-$user3 = User::firstOrCreate(
-    ['email' => 'user3@expired.com'],
-    [
-        'name' => 'User Expired',
-        'slug' => 'user-expired',
-        'password' => Hash::make('password'),
-        'is_active' => true
-    ]
-);
-$user3->assignRole($ownerRole);
 $shopExpired = BarberShop::firstOrCreate(['name' => 'Old Cut Shop'], ['active' => true, 'address' => 'Prishtine', 'expires_at' => Carbon::now()->subDays(5)]);
-$user3->barberShops()->syncWithoutDetaching([$shopExpired->id]);
-$user3->update(['barber_shop_id' => $shopExpired->id]);
+\App\Models\Subscription::updateOrCreate(
+    ['barber_shop_id' => $shopExpired->id],
+    ['plan_name' => 'Basic', 'expires_at' => $shopExpired->expires_at, 'status' => 'expired']
+);
+
 
 echo "Demo Data Created Successfully!\n";
 echo "-------------------------------\n";

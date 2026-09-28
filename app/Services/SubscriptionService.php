@@ -42,6 +42,34 @@ class SubscriptionService
     }
 
     /**
+     * Check if a user (owner) can add more shops.
+     */
+    public function canAddShop(\App\Models\User $user): bool
+    {
+        // Global admin can always add shops
+        $isGlobalAdmin = \Illuminate\Support\Facades\DB::table('model_has_roles')
+            ->where('model_id', $user->id)
+            ->where('barber_shop_id', 0)
+            ->exists();
+
+        if ($isGlobalAdmin) return true;
+
+        // Get the highest 'max_shops' from all active subscriptions of this owner
+        $maxShops = \App\Models\Subscription::whereHas('barberShop', function($q) use ($user) {
+                $q->where('owner_id', $user->id);
+            })
+            ->whereIn('status', ['active', 'trial'])
+            ->where('ends_at', '>', now())
+            ->with('plan')
+            ->get()
+            ->max(fn($s) => $s->plan->max_shops ?? 1) ?? 1;
+
+        $currentShopsCount = \App\Models\BarberShop::where('owner_id', $user->id)->count();
+
+        return $currentShopsCount < $maxShops;
+    }
+
+    /**
      * Get the active subscription for a shop.
      */
     public function getActiveSubscription(BarberShop $shop): ?Subscription

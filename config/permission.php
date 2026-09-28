@@ -98,7 +98,7 @@ return [
          * foreign key is other than `team_id`.
          */
 
-        'team_foreign_key' => 'tenant_id',
+        'team_foreign_key' => 'barber_shop_id',
     ],
 
     /*
@@ -116,7 +116,7 @@ return [
      * 'model_has_permissions'(view the latest version of package's migration file)
      */
 
-    'teams' => false,
+    'teams' => true,
 
     /*
      * When set to true, the required permission names are added to the exception

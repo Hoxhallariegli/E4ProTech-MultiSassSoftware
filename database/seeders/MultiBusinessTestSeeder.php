@@ -267,15 +267,15 @@ class MultiBusinessTestSeeder extends Seeder
         // Demo Customers & Bookings for testing
         $cust1 = Customer::updateOrCreate(
             ['barber_shop_id' => $shop1->id, 'phone' => '+355698888881'],
-            ['name' => 'Albano Klienti', 'email' => 'albano@test.com']
+            ['name' => 'Albano Klienti', 'email' => 'albano@test.com', 'total_bookings' => 1, 'no_show_count' => 0]
         );
         $cust2 = Customer::updateOrCreate(
             ['barber_shop_id' => $shop2->id, 'phone' => '+355698888882'],
-            ['name' => 'Anisa Kliente', 'email' => 'anisa@test.com']
+            ['name' => 'Anisa Kliente', 'email' => 'anisa@test.com', 'total_bookings' => 1, 'no_show_count' => 0]
         );
         $cust3 = Customer::updateOrCreate(
             ['barber_shop_id' => $shop3->id, 'phone' => '+355698888883'],
-            ['name' => 'Dorina Kliente', 'email' => 'dorina@test.com']
+            ['name' => 'Dorina Kliente', 'email' => 'dorina@test.com', 'total_bookings' => 1, 'no_show_count' => 0]
         );
 
         // Demo Booking & Payment for Shop 1
@@ -310,7 +310,7 @@ class MultiBusinessTestSeeder extends Seeder
         $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         foreach ($days as $day) {
             WorkingHour::updateOrCreate(
-                ['barber_shop_id' => $shopId, 'barber_id' => $barberId, 'day_of_week' => $day],
+                ['barber_id' => $barberId, 'day_of_week' => $day],
                 ['open_time' => '09:00', 'close_time' => '19:00', 'lunch_start' => '13:00', 'lunch_end' => '14:00', 'is_closed' => false]
             );
         }

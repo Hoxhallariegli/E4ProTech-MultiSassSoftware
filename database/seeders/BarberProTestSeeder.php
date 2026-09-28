@@ -22,6 +22,7 @@ use App\Models\Review;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Seeder testimi — krijon një skenar të plotë (1 barber shop, staf, shërbime,
@@ -36,10 +37,10 @@ class BarberProTestSeeder extends Seeder
     {
         // 1. Owner + BarberShop
         $owner = User::firstOrCreate(
-            ['email' => 'owner@test.com'],
+            ['email' => 'barber1@test.com'],
             [
-                'name' => 'Test Owner',
-                'slug' => 'test-owner',
+                'name' => 'Ardit Berberi',
+                'slug' => 'ardit-berberi',
                 'password' => Hash::make('password'),
                 'is_office_login_only' => false,
                 'is_active' => true,
@@ -48,37 +49,114 @@ class BarberProTestSeeder extends Seeder
 
         $shop = BarberShop::create([
             'owner_id' => $owner->id,
-            'name' => 'Test Barber Shop',
-            'app_name' => 'Test Shop APK',
-            'slug' => 'test-barber-shop',
+            'name' => 'BERBERANA 1',
+            'app_name' => 'BAR1',
+            'slug' => 'berberana-1',
+            'logo' => 'placeholder.png',
+            'banner' => 'placeholder.png',
             'primary_color' => '#111111',
             'secondary_color' => '#f5a623',
             'trial_ends_at' => now()->addDays(14),
+            'expires_at' => now()->addYear(),
+            'sms_enabled' => true,
             'active' => true,
             'timezone' => 'Europe/Tirane',
             'max_no_show_before_block' => 3,
         ]);
 
-        // link owner to the shop (barber_shop_id column added manually to users)
-        $owner->update(['barber_shop_id' => $shop->id]);
+        $shop2 = BarberShop::create([
+            'owner_id' => $owner->id,
+            'name' => 'BERBERANA 2',
+            'app_name' => 'BAR2',
+            'slug' => 'berberana-2',
+            'logo' => 'placeholder.png',
+            'banner' => 'placeholder.png',
+            'primary_color' => '#222222',
+            'secondary_color' => '#e44d26',
+            'trial_ends_at' => now()->addDays(14),
+            'expires_at' => now()->addYear(),
+            'sms_enabled' => false,
+            'active' => true,
+            'timezone' => 'Europe/Tirane',
+            'max_no_show_before_block' => 5,
+        ]);
 
-        // 2. Plan + Subscription
-        $plan = Plan::create([
-            'name' => 'Pro Monthly',
-            'price' => 29.99,
+        // link owner to the shop and assign QQQ role for these teams
+        $owner->update(['barber_shop_id' => $shop->id]);
+        $owner->barberShops()->sync([$shop->id, $shop2->id]);
+
+        $roleQQQ = \App\Models\Role::firstOrCreate(['name' => 'QQQ'], ['label' => 'QQQ Role']);
+        $allPermissions = \App\Models\Permission::all();
+        $roleQQQ->syncPermissions($allPermissions);
+
+        // Assign QQQ role to Ardit for both shops using Spatie Teams (IDEMPOTENT)
+        $roleQQQ = \App\Models\Role::where('name', 'QQQ')->first();
+        if ($roleQQQ) {
+            foreach ([$shop->id, $shop2->id] as $sid) {
+                DB::table('model_has_roles')->updateOrInsert(
+                    [
+                        'role_id' => $roleQQQ->id,
+                        'model_type' => 'App\Models\User',
+                        'model_id' => $owner->id,
+                        'barber_shop_id' => $sid
+                    ],
+                    ['barber_shop_id' => $sid]
+                );
+            }
+        }
+
+        // Reset team id for global context
+        setPermissionsTeamId(null);
+
+        // 2. Plans
+        $planStarter = Plan::create([
+            'name' => 'Starter',
+            'price' => 19.99,
             'duration_months' => 1,
-            'max_barbers' => 10,
-            'max_services' => 50,
+            'max_barbers' => 3,
+            'max_services' => 10,
+            'max_shops' => 1,
             'active' => true,
         ]);
 
+        $planPro = Plan::create([
+            'name' => 'Pro',
+            'price' => 49.99,
+            'duration_months' => 1,
+            'max_barbers' => 10,
+            'max_services' => 50,
+            'max_shops' => 3,
+            'active' => true,
+        ]);
+
+        $planUnlimited = Plan::create([
+            'name' => 'Unlimited',
+            'price' => 99.99,
+            'duration_months' => 1,
+            'max_barbers' => 999,
+            'max_services' => 999,
+            'max_shops' => 999,
+            'active' => true,
+        ]);
+
+        // Subscription for Shop 1 (Pro)
         Subscription::create([
             'barber_shop_id' => $shop->id,
-            'plan_id' => $plan->id,
+            'plan_id' => $planPro->id,
             'starts_at' => now(),
             'ends_at' => now()->addMonth(),
-            'status' => 'trial',
-            'auto_renew' => false,
+            'status' => 'active',
+            'auto_renew' => true,
+        ]);
+
+        // Subscription for Shop 2 (Starter)
+        Subscription::create([
+            'barber_shop_id' => $shop2->id,
+            'plan_id' => $planStarter->id,
+            'starts_at' => now(),
+            'ends_at' => now()->addMonth(),
+            'status' => 'active',
+            'auto_renew' => true,
         ]);
 
         // 3. Barbers
@@ -99,15 +177,29 @@ class BarberProTestSeeder extends Seeder
             'user_id' => $barberUser->id,
             'name' => 'Ardit Berberi',
             'phone' => '+355691111111',
+            'photo' => 'barber1.png',
             'bio' => '10 vjet eksperiencë.',
             'active' => true,
         ]);
 
+        $barberUser2 = User::firstOrCreate(
+            ['email' => 'barber2@test.com'],
+            [
+                'name' => 'Elton Berberi',
+                'slug' => 'elton-berberi',
+                'password' => Hash::make('password'),
+                'is_office_login_only' => false,
+                'is_active' => true,
+                'barber_shop_id' => $shop->id,
+            ]
+        );
+
         $barber2 = Barber::create([
             'barber_shop_id' => $shop->id,
-            'user_id' => null,
+            'user_id' => $barberUser2->id,
             'name' => 'Elton Berberi',
             'phone' => '+355692222222',
+            'photo' => 'barber2.png',
             'bio' => 'Specialist në flokë kaçurrela.',
             'active' => true,
         ]);
@@ -157,11 +249,13 @@ class BarberProTestSeeder extends Seeder
         $customer1 = Customer::create([
             'barber_shop_id' => $shop->id, 'name' => 'Gentian Klienti',
             'phone' => '+355693333333', 'email' => 'gentian@test.com',
+            'photo' => 'cust1.png',
             'total_bookings' => 0, 'no_show_count' => 0,
         ]);
         $customer2 = Customer::create([
             'barber_shop_id' => $shop->id, 'name' => 'Sara Kliente',
             'phone' => '+355694444444', 'email' => 'sara@test.com',
+            'photo' => 'cust2.png',
             'total_bookings' => 0, 'no_show_count' => 0,
         ]);
 

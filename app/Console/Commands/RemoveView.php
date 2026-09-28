@@ -3,11 +3,12 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use App\Models\Permission;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
-use App\Models\Permission;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
 
 class RemoveView extends Command
 {
@@ -163,10 +164,21 @@ class RemoveView extends Command
         }
 
         // 8. Delete Migration & Drop Table
+        Schema::disableForeignKeyConstraints();
         if (Schema::hasTable($tableName)) {
+            // Check if it's barber_shops and we have foreign keys on users
+            if ($tableName === 'barber_shops') {
+                try {
+                    Schema::table('users', function (Blueprint $table) {
+                        $table->dropForeign(['barber_shop_id']);
+                    });
+                } catch (\Throwable $e) {}
+            }
+
             Schema::dropIfExists($tableName);
             $this->info("✓ Dropped Table: $tableName");
         }
+        Schema::enableForeignKeyConstraints();
 
         $migrations = File::files(database_path('migrations'));
         foreach ($migrations as $migration) {
@@ -205,24 +217,18 @@ class RemoveView extends Command
         $content = File::get($registryPath);
         $snake = Str::snake($name);
 
-        // Remove import
         $lines = explode("\n", $content);
-        $lines = array_filter($lines, function($line) use ($snake) {
-            $trimmed = trim($line);
-            return !(str_starts_with($trimmed, "import") && str_contains($trimmed, "{$snake}_list_page.dart"));
-        });
+        $newLines = [];
 
-        $content = implode("\n", $lines);
+        foreach ($lines as $line) {
+            // Skip the line if it contains the module name or the import path
+            if (str_contains($line, "name: '$name'") || str_contains($line, "{$snake}_list_page.dart")) {
+                continue;
+            }
+            $newLines[] = $line;
+        }
 
-        // Remove entry
-        $entryPattern = "/ModuleEntry\(name:\s*['\"]{$name}['\"].*?\),\s*/s";
-        $content = preg_replace($entryPattern, '', $content);
-
-        // EXTRA CLEANUP: Remove any corrupted fragments that might be left behind (e.g. from failed edits)
-        $corruptPattern = "/\s*permission:\s*['\"]view_" . Str::snake(Str::plural($name)) . "['\"]\),\s*/s";
-        $content = preg_replace($corruptPattern, '', $content);
-
-        File::put($registryPath, $content);
+        File::put($registryPath, implode("\n", $newLines));
         $this->info("✓ Unregistered module from Flutter ModuleRegistry");
     }
 }

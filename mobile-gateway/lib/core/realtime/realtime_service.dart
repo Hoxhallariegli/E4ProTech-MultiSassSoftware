@@ -34,12 +34,15 @@ class RealtimeService {
     await _client!.connect();
   }
 
-  Future<void> subscribe(String resource, void Function(String action, Map<String, dynamic> data) listener) async {
+  Future<void> subscribe(String resource, void Function(String action, Map<String, dynamic> data) listener, {dynamic tenantId}) async {
     _listeners.putIfAbsent(resource, () => []).add(listener);
     await start();
-    if (_client == null || _subscribed.contains(resource)) return;
+    if (_client == null) return;
 
-    final channel = _client!.subscribeToPrivateChannel('private-mobile.$resource');
+    final channelName = tenantId != null ? 'private-mobile.$tenantId.$resource' : 'private-mobile.$resource';
+    if (_subscribed.contains(channelName)) return;
+
+    final channel = _client!.subscribeToPrivateChannel(channelName);
     channel.bind('$resource.changed', (eventName, eventData) {
       final data = eventData is String ? jsonDecode(eventData) : eventData;
       if (data is! Map) return;
@@ -50,12 +53,12 @@ class RealtimeService {
         callback(action, record);
       }
     });
-    _subscribed.add(resource);
+    _subscribed.add(channelName);
   }
 
   Future<void> stop() async {
-    for (final resource in _subscribed) {
-      _client?.unsubscribeFromChannel('private-mobile.$resource');
+    for (final channelName in _subscribed) {
+      _client?.unsubscribeFromChannel(channelName);
     }
     _subscribed.clear();
     _listeners.clear();

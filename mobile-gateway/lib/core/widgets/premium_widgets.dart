@@ -8,3 +8,4 @@ export 'premium_states.dart';
 export 'premium_dialog.dart';
 export 'premium_app_bar.dart';
 export 'premium_image_picker.dart';
+export 'premium_header.dart';

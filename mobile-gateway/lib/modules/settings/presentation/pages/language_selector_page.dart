@@ -85,9 +85,9 @@ class _LanguageSelectorPageState extends State<LanguageSelectorPage> {
     final code = lang['code'] ?? 'en';
     final name = lang['name'] ?? code.toUpperCase();
 
-    return BlocBuilder<LocaleCubit, Locale>(
-      builder: (context, locale) {
-        final isSelected = locale.languageCode == code;
+    return BlocBuilder<LocaleCubit, LocaleState>(
+      builder: (context, state) {
+        final isSelected = state.locale.languageCode == code;
 
         return Container(
           margin: const EdgeInsets.only(bottom: 12),

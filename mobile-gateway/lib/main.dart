@@ -3,10 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile_gateway/core/theme/app_theme.dart';
+import 'package:mobile_gateway/core/theme/theme_cubit.dart';
 import 'package:mobile_gateway/core/localization/locale_cubit.dart';
+import 'package:mobile_gateway/core/branding/branding_cubit.dart';
 import 'package:mobile_gateway/modules/auth/presentation/pages/login_page.dart';
 import 'package:mobile_gateway/modules/dashboard/presentation/pages/app_shell.dart';
-
 import 'package:mobile_gateway/services/auth_service.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -17,8 +18,12 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString('auth_token');
   runApp(
-    BlocProvider(
-      create: (context) => LocaleCubit(),
+    MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => LocaleCubit()),
+        BlocProvider(create: (context) => BrandingCubit()),
+        BlocProvider(create: (context) => ThemeCubit()),
+      ],
       child: MyApp(isLoggedIn: token != null && token.isNotEmpty),
     ),
   );
@@ -30,23 +35,46 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<LocaleCubit, LocaleState>(
-      builder: (context, state) {
-        return MaterialApp(
-          title: 'LaraFlutter Gateway',
-          navigatorKey: navigatorKey,
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light(),
-          darkTheme: AppTheme.dark(),
-          themeMode: ThemeMode.system,
-          locale: state.locale,
-          supportedLocales: state.supportedLocales,
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          home: isLoggedIn ? const AppShell() : const LoginPage(),
+    return BlocBuilder<ThemeCubit, ThemeMode>(
+      builder: (context, themeMode) {
+        return BlocBuilder<BrandingCubit, BrandingState>(
+          builder: (context, branding) {
+            return BlocBuilder<LocaleCubit, LocaleState>(
+              builder: (context, localeState) {
+                return MaterialApp(
+                  title: branding.appName,
+                  navigatorKey: navigatorKey,
+                  debugShowCheckedModeBanner: false,
+                  theme: AppTheme.light().copyWith(
+                    primaryColor: branding.primaryColor,
+                    colorScheme: AppTheme.light().colorScheme.copyWith(
+                      primary: branding.primaryColor,
+                      secondary: branding.primaryColor,
+                    ),
+                  ),
+                  darkTheme: AppTheme.dark().copyWith(
+                    primaryColor: branding.primaryColor,
+                    colorScheme: AppTheme.dark().colorScheme.copyWith(
+                      primary: branding.primaryColor,
+                      secondary: branding.primaryColor,
+                    ),
+                  ),
+                  themeMode: themeMode,
+                  locale: localeState.locale,
+                  supportedLocales: localeState.supportedLocales,
+                  localizationsDelegates: const [
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                  ],
+                  routes: {
+                    '/dashboard': (context) => const AppShell(),
+                  },
+                  home: isLoggedIn ? const AppShell() : const LoginPage(),
+                );
+              },
+            );
+          },
         );
       },
     );

@@ -51,7 +51,15 @@ class Edit extends Component
     {
         abort_if_cannot('edit_roles');
 
-        $modules = Permission::select('module')->distinct()->orderBy('module')->pluck('module');
+        $user = auth()->user();
+        $query = Permission::query();
+
+        // If not global admin, only show permissions that the user currently has
+        if (!$user->is_global_admin) {
+            $query->whereIn('name', $user->getAllPermissions()->pluck('name'));
+        }
+
+        $modules = $query->select('module')->distinct()->orderBy('module')->pluck('module');
 
         return view('livewire.admin.roles.edit', compact('modules'));
     }

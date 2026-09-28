@@ -9,7 +9,19 @@
 
         @include('errors.success')
 
-        <x-form.input autofocus wire:model="label" :label="__('Role')" name="label" required />
+        <div class="space-y-4">
+            <x-form.input autofocus wire:model="label" :label="__('Role Name')" name="label" required />
+
+            @if(auth()->user()->is_global_admin)
+                <x-form.select wire:model="barber_shop_id" :label="__('Assign to Team')" name="barber_shop_id">
+                    <option value="0">🌍 {{ __('GLOBAL (Template Role)') }}</option>
+                    @foreach($allShops as $shop)
+                        <option value="{{ $shop->id }}">🏪 {{ $shop->name }}</option>
+                    @endforeach
+                </x-form.select>
+                <p class="text-[10px] text-gray-500 italic">* {{ __('Global roles are visible and usable by all barber shops.') }}</p>
+            @endif
+        </div>
 
     </x-slot>
 

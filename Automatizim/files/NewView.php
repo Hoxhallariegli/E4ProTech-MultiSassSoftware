@@ -210,8 +210,31 @@ class NewView extends Command
     {
         $props = ''; $args = ''; $toArray = '';
         foreach ($fields as $f) {
-            $props .= "        public readonly mixed \${$f['name']},\n";
-            $args .= "            {$f['name']}: \$data['{$f['name']}'] ?? null,\n";
+            $type = match ($f['type']) {
+                'integer', 'bigInteger', 'foreignId' => '?int',
+                'boolean' => 'bool',
+                'decimal' => 'float',
+                'string', 'text', 'enum' => 'string',
+                'date', 'datetime' => '?string',
+                default => 'mixed',
+            };
+
+            // Nullable logic
+            if ($f['nullable'] && !str_starts_with($type, '?') && !in_array($type, ['mixed', 'bool'])) {
+                $type = '?' . $type;
+            }
+
+            $props .= "        public readonly $type \${$f['name']},\n";
+
+            $casting = match ($f['type']) {
+                'integer', 'bigInteger', 'foreignId' => "isset(\$data['{$f['name']}']) && \$data['{$f['name']}'] !== '' ? (int) \$data['{$f['name']}'] : null",
+                'boolean' => "(bool) (\$data['{$f['name']}'] ?? false)",
+                'decimal' => "isset(\$data['{$f['name']}']) && \$data['{$f['name']}'] !== '' ? (float) \$data['{$f['name']}'] : 0.0",
+                'string', 'text', 'enum' => "(string) (\$data['{$f['name']}'] ?? '')",
+                default => "\$data['{$f['name']}'] ?? null",
+            };
+
+            $args .= "            {$f['name']}: $casting,\n";
             $toArray .= "            '{$f['name']}' => \$this->{$f['name']},\n";
         }
         $stub = "<?php\n\nnamespace App\Domain\\$name\DTOs;\n\nclass {$name}DTO\n{\n    public function __construct(\n$props    ) {}\n    public static function fromArray(array \$data): self { return new self(\n$args        ); }\n    public function toArray(): array { return [\n$toArray        ]; }\n}";
@@ -238,6 +261,12 @@ class NewView extends Command
     {
         $fillable = collect($fields)->map(fn ($f) => "'{$f['name']}'")->implode(', ');
         $relations = ''; $casts = ''; $rules = ''; $sortable = "'id'";
+        $hasBarberShopId = collect($fields)->contains(fn ($f) => $f['name'] === 'barber_shop_id');
+        $traits = 'use HasFactory;';
+        if ($hasBarberShopId) {
+            $traits .= " use \App\Models\Traits\BelongsToBarberShop;";
+        }
+
         foreach ($fields as $f) {
             if ($f['type'] === 'foreignId') {
                 $rel = Str::camel(str_replace('_id', '', $f['name']));
@@ -268,7 +297,13 @@ class NewView extends Command
             $rules .= "            '{$f['name']}' => [$req" . ($typeRule ? ", $typeRule" : '') . "],\n";
             $sortable .= ", '{$f['name']}'";
         }
-        File::put(app_path("Models/$name.php"), "<?php\n\nnamespace App\Models;\n\nuse Illuminate\Database\Eloquent\Factories\HasFactory;\nuse Illuminate\Database\Eloquent\Model;\n\nclass $name extends Model\n{\n    use HasFactory;\n    protected \$fillable = [$fillable];\n    protected function casts(): array { return [\n$casts        ]; }\n    public static function rules(\$id = null): array { return [\n$rules        ]; }\n    public static function sortable(): array { return [$sortable]; }\n\n    protected static function booted(): void\n    {\n        static::observe(\\App\\Observers\\{$name}Observer::class);\n    }\n$relations\n}");
+
+        $extraModelMethods = "";
+        if ($name === 'BarberShop') {
+            $extraModelMethods = "\n    public function users(): \Illuminate\Database\Eloquent\Relations\BelongsToMany { return \$this->belongsToMany(User::class, 'barber_shop_user'); }\n\n    public function getLogoUrlAttribute() { return \$this->logo ? (str_starts_with(\$this->logo, 'http') ? \$this->logo : asset('storage/' . \$this->logo)) : null; }\n";
+        }
+
+        File::put(app_path("Models/$name.php"), "<?php\n\nnamespace App\Models;\n\nuse Illuminate\Database\Eloquent\Factories\HasFactory;\nuse Illuminate\Database\Eloquent\Model;\n\nclass $name extends Model\n{\n    $traits\n    protected \$fillable = [$fillable];\n    protected function casts(): array { return [\n$casts        ]; }\n    public static function rules(\$id = null): array { return [\n$rules        ]; }\n    public static function sortable(): array { return [$sortable]; }\n\n    protected static function booted(): void\n    {\n        static::observe(\\App\\Observers\\{$name}Observer::class);\n    }\n$relations\n$extraModelMethods}");
     }
 
     protected function generateLivewireComponents($name, $pluralSnake, $pluralName, $pluralKebab, $fields)
@@ -300,7 +335,7 @@ class NewView extends Command
                 $filterProps .= "    #[Url(history: true)] public \${$f['name']} = '';\n";
                 $renderFilters .= "            '{$f['name']}' => \$this->{$f['name']},\n";
             }
-            if (Str::contains(strtolower($f['name']), ['file', 'document'])) {
+            if (Str::contains(strtolower($f['name']), ['file', 'document', 'image', 'photo', 'logo', 'banner'])) {
                 $fileHandlers .= "        if (\$this->{$f['name']} && !is_string(\$this->{$f['name']})) { \$this->{$f['name']} = \$this->{$f['name']}->store('uploads/$pluralKebab', 'public'); }\n";
             }
         }
@@ -355,7 +390,42 @@ class NewView extends Command
     {\n        abort_if_cannot('view_{$pluralSnake}');\n        \$query = (new {$name}ListQuery())->handle(['search' => \$this->search, $renderFilters], \$this->sortField, \$this->sortAsc ? 'asc' : 'desc');\n\n        return view('$viewPath.index', [\n            'items' => \$query->paginate(\$this->paginate),\n            'sortableFields' => $name::sortable(),\n$availableListsIndex        ])->layout('components.layouts.app');\n    }\n\n    public function sortBy(\$field) { if (!in_array(\$field, $name::sortable(), true)) return; if (\$this->sortField === \$field) { \$this->sortAsc = ! \$this->sortAsc; } \$this->sortField = \$field; }\n\n    public function delete$name(\$id, Delete{$name}Action \$action) \n    {\n        abort_if_cannot('delete_{$pluralSnake}');\n        \$item = $name::find(\$id);\n        if (!\$item) { \$this->dispatch('toast', message: __('$pluralKebab.not_found'), type: 'error'); return; }\n        try { \$action->execute(\$item); \$this->dispatch('toast', message: __('$pluralKebab.deleted'), type: 'success'); \$this->resetPage(); } \n        catch (\\Illuminate\\Database\\QueryException \$e) { \$this->dispatch('toast', message: __('$pluralKebab.delete_error_referenced'), type: 'error'); }\n        catch (\\Exception \$e) { \$this->dispatch('toast', message: __('$pluralKebab.delete_error'), type: 'error'); }\n    }\n}";
         File::put("$dir/$pluralName.php", $indexStub);
 
-        File::put("$dir/Create.php", "<?php\n\nnamespace App\Livewire\Admin\\$pluralName;\n\nuse App\Models\\$name;\nuse App\Domain\\$name\DTOs\\{$name}DTO;\nuse App\Domain\\$name\Actions\\Create{$name}Action;\n$imports\n#[Title('Add $name')]\nclass Create extends Component\n{\n    $traits $props $onEvents $updatedHooks $formHelperMethods\n    public function render() { abort_if_cannot('add_{$pluralSnake}'); return view('$viewPath.create', [\n$availableListsForm        ])->layout('components.layouts.app'); }\n    public function store(Create{$name}Action \$action) { \$this->validate(); $fileHandlers \$dto = {$name}DTO::fromArray([\n$dataMap        ]); \$action->execute(\$dto); session()->flash('success', __('$pluralKebab.created')); return to_route('admin.$pluralKebab.index'); }\n    protected function rules(): array { return $name::rules(); }\n}");
+        $hasBarberShopId = collect($fields)->contains(fn ($f) => $f['name'] === 'barber_shop_id');
+        $mount = '';
+        if ($hasBarberShopId) {
+            $mount = "\n    public function mount() { if (auth()->check() && auth()->user()->barber_shop_id) { \$this->barber_shop_id = auth()->user()->barber_shop_id; } }\n";
+        }
+
+        $subscriptionRender = "return view('$viewPath.create', [\n$availableListsForm        ])->layout('components.layouts.app');";
+        $subscriptionStore = "\$action->execute(\$dto);";
+
+        if ($hasBarberShopId) {
+            $checkMethod = $name === 'Barber' ? 'canAddBarber' : ($name === 'Service' ? 'canAddService' : null);
+            if ($checkMethod) {
+                $subscriptionRender = <<<PHP
+        \$shop = \App\Models\BarberShop::find(\$this->barber_shop_id);
+        \$canAdd = true;
+        if (\$shop && !auth()->user()->hasRole(['admin', 'qqq'])) {
+            \$canAdd = app(\App\Services\SubscriptionService::class)->{$checkMethod}(\$shop);
+        }
+        return view('$viewPath.create', [
+            'limitReached' => !\$canAdd,
+$availableListsForm        ])->layout('components.layouts.app');
+PHP;
+                $subscriptionStore = <<<PHP
+        \$shop = \App\Models\BarberShop::find(\$this->barber_shop_id);
+        if (\$shop && !auth()->user()->hasRole(['admin', 'qqq'])) {
+            if (!app(\App\Services\SubscriptionService::class)->{$checkMethod}(\$shop)) {
+                session()->flash('error', __('Limit reached for this plan.'));
+                return;
+            }
+        }
+        \$action->execute(\$dto);
+PHP;
+            }
+        }
+
+        File::put("$dir/Create.php", "<?php\n\nnamespace App\Livewire\Admin\\$pluralName;\n\nuse App\Models\\$name;\nuse App\Domain\\$name\DTOs\\{$name}DTO;\nuse App\Domain\\$name\Actions\\Create{$name}Action;\n$imports\n#[Title('Add $name')]\nclass Create extends Component\n{\n    $traits $props $onEvents $updatedHooks $formHelperMethods $mount\n    public function render() { abort_if_cannot('add_{$pluralSnake}'); $subscriptionRender }\n    public function store(Create{$name}Action \$action) { \$this->validate(); $fileHandlers \$dto = {$name}DTO::fromArray([\n$dataMap        ]); $subscriptionStore session()->flash('success', __('$pluralKebab.created')); return to_route('admin.$pluralKebab.index'); }\n    protected function rules(): array { return $name::rules(); }\n}");
 
         $dateFills = collect($fields)->filter(fn ($f) => in_array($f['type'], ['date', 'datetime']))->map(function ($f) use ($camel) {
             $fmt = $f['type'] === 'datetime' ? "'Y-m-d\\TH:i'" : "'Y-m-d'";
@@ -412,7 +482,29 @@ class NewView extends Command
 
     protected function getCreateStub($name, $pk, $fields)
     {
-        return "<div class=\"space-y-10\">\n    <div class=\"flex items-center justify-between gap-4 px-1\"><div><x-h1>{{ __('$pk.Add $name') }}</x-h1><x-short-description class=\"dark:text-gray-400\">{{ __('$pk.New record') }}</x-short-description></div><x-back-btn route=\"admin.$pk.index\" /></div>\n    @include('errors.errors')\n    <div class=\"bg-white dark:bg-gray-800 p-8 sm:p-12 rounded-[2.5rem] shadow-sm border border-gray-50 dark:border-gray-700\"><form wire:submit.prevent=\"store\" class=\"space-y-8\">".$this->getInputs($fields, $pk, true)."<div class=\"mt-10 flex justify-end\"><x-button type=\"submit\" variant=\"blue\" class=\"w-full sm:w-auto !px-12 !py-4 !rounded-2xl\">{{ __('$pk.Save') }}</x-button></div></form></div>\n</div>";
+        $hasBarberShopId = collect($fields)->contains(fn ($f) => $f['name'] === 'barber_shop_id');
+        $limitAlert = '';
+        $formClass = '';
+
+        if ($hasBarberShopId && in_array($name, ['Barber', 'Service'])) {
+            $limitAlert = <<<HTML
+    @if(\$limitReached ?? false)
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-6 py-4 rounded-3xl flex items-center gap-4 mb-6">
+            <x-heroicon-o-exclamation-triangle class="w-6 h-6 shrink-0" />
+            <div>
+                <p class="font-bold">{{ __('Limit i arritur!') }}</p>
+                <p class="text-sm opacity-90">{{ __('Keni arritur numrin maksimal p\u00ebr k\u00ebt\u00eb plan.') }}</p>
+            </div>
+            <a href="{{ route('admin.subscriptions.index') }}" class="ml-auto bg-red-600 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase hover:bg-red-700 transition-colors">
+                {{ __('P\u00ebrmir\u00ebso Planin') }}
+            </a>
+        </div>
+    @endif
+HTML;
+            $formClass = '{{ ($limitReached ?? false) ? "opacity-50 pointer-events-none" : "" }}';
+        }
+
+        return "<div class=\"space-y-10\">\n    <div class=\"flex items-center justify-between gap-4 px-1\"><div><x-h1>{{ __('$pk.Add $name') }}</x-h1><x-short-description class=\"dark:text-gray-400\">{{ __('$pk.New record') }}</x-short-description></div><x-back-btn route=\"admin.$pk.index\" /></div>\n    @include('errors.errors')\n    $limitAlert\n    <div class=\"bg-white dark:bg-gray-800 p-8 sm:p-12 rounded-[2.5rem] shadow-sm border border-gray-50 dark:border-gray-700\"><form wire:submit.prevent=\"store\" class=\"space-y-8 $formClass\">".$this->getInputs($fields, $pk, true)."<div class=\"mt-10 flex justify-end\"><x-button type=\"submit\" variant=\"blue\" class=\"w-full sm:w-auto !px-12 !py-4 !rounded-2xl\">{{ __('$pk.Save') }}</x-button></div></form></div>\n</div>";
     }
 
     protected function getEditStub($name, $pk, $fields)
@@ -551,7 +643,7 @@ class NewView extends Command
         })->implode("\n");
         File::put(
             'database/migrations/' . date('Y_m_d_His') . "_create_{$tableName}_table.php",
-            "<?php\nuse Illuminate\Database\Migrations\Migration;\nuse Illuminate\Database\Schema\Blueprint;\nuse Illuminate\Support\Facades\Schema;\nreturn new class extends Migration { public function up() { Schema::create('$tableName', function (Blueprint \$table) { \$table->id();\n$schema\n            \$table->timestamps(); }); } public function down() { Schema::dropIfExists('$tableName'); } };"
+            "<?php\nuse Illuminate\Database\Migrations\Migration;\nuse Illuminate\Database\Schema\Blueprint;\nuse Illuminate\Support\Facades\Schema;\nreturn new class extends Migration { public function up() { Schema::create('$tableName', function (Blueprint \$table) { \n            \$table->charset = 'utf8mb4';\n            \$table->collation = 'utf8mb4_unicode_ci';\n            \$table->id();\n$schema\n            \$table->timestamps(); }); } public function down() { Schema::dropIfExists('$tableName'); } };"
         );
     }
 

@@ -7,6 +7,8 @@ environment:
   sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
+  firebase_messaging: ^16.0.0
+  firebase_core: ^4.0.0
   flutter:
     sdk: flutter
   flutter_localizations:

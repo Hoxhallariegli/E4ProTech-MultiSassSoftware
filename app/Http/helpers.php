@@ -121,9 +121,19 @@ if (! function_exists('storage_exists')) {
 }
 
 if (! function_exists('storage_url')) {
-    function storage_url(string $file): string
+    function storage_url(?string $file): string
     {
-        return Storage::url($file);
+        if (empty($file)) {
+            return asset('placeholder.png');
+        }
+        if (str_starts_with($file, 'http')) {
+            return $file;
+        }
+        $file = ltrim(str_replace('\\', '/', $file), '/');
+        if (str_starts_with($file, 'storage/')) {
+            $file = substr($file, strlen('storage/'));
+        }
+        return asset($file);
     }
 }
 

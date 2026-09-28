@@ -12,6 +12,6 @@
 
     @can('edit_roles')
         <livewire:admin.users.edit.admin-settings :user="$user"/>
-        <livewire:admin.users.edit.roles :user="$user"/>
+        <livewire:admin.users.edit.barber-shops :user="$user"/>
     @endcan
 </div>

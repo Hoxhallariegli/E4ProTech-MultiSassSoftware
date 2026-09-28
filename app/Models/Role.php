@@ -15,12 +15,12 @@ class Role extends SpatieRole
 
     protected $primaryKey = 'id';
 
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'id' => 'string',
     ];
+
+    public function barberShop(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(BarberShop::class, 'barber_shop_id');
+    }
 }

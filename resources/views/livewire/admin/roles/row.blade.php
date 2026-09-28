@@ -1,5 +1,29 @@
 <tr>
-    <td class="px-6 py-5">{{ $role->label }}</td>
+    <td class="px-6 py-5">
+        <div class="flex flex-col">
+            <span class="font-bold text-gray-900 dark:text-white">{{ $role->label }}</span>
+            <span class="text-[10px] uppercase tracking-widest text-gray-400">{{ $role->name }}</span>
+        </div>
+    </td>
+    <td class="px-6 py-5">
+        @if($role->barber_shop_id === 0 || is_null($role->barber_shop_id))
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 uppercase tracking-tighter">
+                {{ __('Global Template') }}
+            </span>
+        @else
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                {{ $role->barberShop->name ?? __('Shop #') . $role->barber_shop_id }}
+            </span>
+        @endif
+    </td>
+    <td class="px-6 py-5 text-center">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+            {{ $role->permissions_count }}
+        </span>
+    </td>
+    <td class="px-6 py-5 text-center text-xs text-gray-500 uppercase">
+        {{ $role->guard_name }}
+    </td>
     <td class="px-6 py-5 text-right">
         <div class="flex justify-end space-x-2">
 

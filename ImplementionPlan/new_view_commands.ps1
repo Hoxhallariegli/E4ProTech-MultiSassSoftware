@@ -34,7 +34,9 @@
     "primary_color","0","n",
     "secondary_color","0","n",
     "trial_ends_at","10","y",
+    "expires_at","10","y",
     "active","7","n",
+    "sms_enabled","7","n",
     "timezone","0","n",
     "max_no_show_before_block","2","y",
     "",
@@ -52,6 +54,7 @@
     "duration_months","2","n",
     "max_barbers","2","n",
     "max_services","2","n",
+    "max_shops","2","n",
     "active","7","n",
     "",
     "chart-bar"

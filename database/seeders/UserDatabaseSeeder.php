@@ -37,7 +37,18 @@ class UserDatabaseSeeder extends Seeder
             ]
         );
 
+        // Ensure the admin role exists
+        // Set team id to 0 for global/foundation roles
+        setPermissionsTeamId(0);
+
+        \App\Models\Role::firstOrCreate(
+            ['name' => 'admin', 'guard_name' => 'web'],
+            ['label' => 'Administrator']
+        );
+
         // Assign admin role to bypass all gates
         $user->assignRole('admin');
+
+        setPermissionsTeamId(null);
     }
 }
