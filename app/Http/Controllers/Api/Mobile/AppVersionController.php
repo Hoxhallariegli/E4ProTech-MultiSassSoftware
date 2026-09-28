@@ -33,13 +33,17 @@ class AppVersionController extends Controller
         $code = $versionData['version_code'] ?? config('app.apk_version_code', 6);
         $notes = $versionData['release_notes'] ?? 'Përmirësime në SMS Gateway, sinkronizim i ri i takimeve dhe lokalizim dypalësh Shqip & Anglisht.';
 
+        $downloadUrl = file_exists(public_path('downloads/app-release.apk'))
+            ? asset('downloads/app-release.apk')
+            : url('download/apk');
+
         return response()->json([
             'latest_version' => (string) $version,
             'version_code' => (int) $code,
             'has_apk' => $hasApk,
             'file_size_mb' => $fileSizeMb,
             'last_modified' => $lastModified,
-            'download_url' => url('download/apk'),
+            'download_url' => $downloadUrl,
             'release_notes' => (string) $notes,
         ]);
     }
@@ -56,8 +60,20 @@ class AppVersionController extends Controller
             }
         }
 
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        $size = filesize($apkPath);
+
         return response()->download($apkPath, 'E4ProTech-Engine.apk', [
             'Content-Type' => 'application/vnd.android.package-archive',
+            'Content-Length' => (string) $size,
+            'Content-Disposition' => 'attachment; filename="E4ProTech-Engine.apk"',
+            'Accept-Ranges' => 'bytes',
+            'Cache-Control' => 'no-cache, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
         ]);
     }
 }
