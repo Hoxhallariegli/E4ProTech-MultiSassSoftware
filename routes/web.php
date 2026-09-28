@@ -22,6 +22,7 @@ Livewire::setUpdateRoute(function ($handle) {
 
 Route::get('/', WelcomeController::class);
 Route::get('s/{slug}', [\App\Http\Controllers\ShopLandingController::class, 'show'])->name('shop.landing');
+Route::get('download/apk', [\App\Http\Controllers\Api\Mobile\AppVersionController::class, 'download'])->name('app.download.apk');
 Route::get('language/{locale}', function ($locale) {
     session()->put('locale', $locale);
     return redirect()->back();

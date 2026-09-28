@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:mobile_gateway/core/localization/locale_cubit.dart';
 import 'package:mobile_gateway/core/branding/branding_cubit.dart';
 import 'package:mobile_gateway/core/theme/theme_cubit.dart';
@@ -117,6 +118,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isAdmin = AuthService.instance.user?['is_admin'] == true;
+
     return BlocBuilder<BrandingCubit, BrandingState>(
       builder: (context, branding) {
         final theme = Theme.of(context);
@@ -137,11 +140,15 @@ class _SettingsPageState extends State<SettingsPage> {
               _CustomColorPickerCard(branding: branding),
               const SizedBox(height: 16),
 
-              // 4. SMS Gateway & Device Management (Combined & Permission-Gated)
+              // 4. App Update & APK Download
+              const _AppVersionCard(),
+              const SizedBox(height: 16),
+
+              // 5. SMS Gateway & Device Management (Combined & Permission-Gated)
               _SmsGatewayGroupCard(branding: branding, onAuthChange: _handleAuthChange),
               const SizedBox(height: 16),
 
-              // 5. Language Settings
+              // 6. Language Settings
               PremiumCard(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -186,7 +193,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               const SizedBox(height: 16),
 
-              // 6. Compact System Health
+              // 7. Compact System Health
               _CompactHealthRow(
                 reverb: _reverbStatus,
                 api: _apiStatus,
@@ -195,15 +202,17 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               const SizedBox(height: 16),
 
-              // 7. App Connectivity & Config
-              _CompactEndpointCard(
-                currentUrl: _currentBaseUrl,
-                controller: _urlController,
-                onSave: _saveUrl,
-              ),
-              const SizedBox(height: 16),
+              // 8. App Connectivity & Config (ADMIN ONLY)
+              if (isAdmin) ...[
+                _CompactEndpointCard(
+                  currentUrl: _currentBaseUrl,
+                  controller: _urlController,
+                  onSave: _saveUrl,
+                ),
+                const SizedBox(height: 16),
+              ],
 
-              // 8. Navigation Shortcuts
+              // 9. Navigation Shortcuts
               _SimpleNavCard(
                 label: coreTr(context, 'settings.notifications'),
                 icon: Icons.notifications_none_rounded,
@@ -211,7 +220,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               const SizedBox(height: 16),
 
-              // 9. Security
+              // 10. Security
               _SimpleNavCard(
                 label: coreTr(context, 'settings.logout'),
                 icon: Icons.logout_rounded,
@@ -232,6 +241,174 @@ class _SettingsPageState extends State<SettingsPage> {
   void dispose() {
     _urlController.dispose();
     super.dispose();
+  }
+}
+
+class _AppVersionCard extends StatefulWidget {
+  const _AppVersionCard();
+
+  @override
+  State<_AppVersionCard> createState() => _AppVersionCardState();
+}
+
+class _AppVersionCardState extends State<_AppVersionCard> {
+  bool _loading = false;
+  Map<String, dynamic>? _versionInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkVersion();
+  }
+
+  Future<void> _checkVersion() async {
+    setState(() => _loading = true);
+    try {
+      final res = await ApiService.get('/app-version');
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (mounted) {
+          setState(() {
+            _versionInfo = data;
+            _loading = false;
+          });
+        }
+      } else {
+        if (mounted) setState(() => _loading = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _downloadApk() async {
+    final baseUrl = await ApiService.serverUrl;
+    final downloadUrl = Uri.parse('$baseUrl/download/apk');
+
+    try {
+      if (await canLaunchUrl(downloadUrl)) {
+        await launchUrl(downloadUrl, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(downloadUrl, mode: LaunchMode.platformDefault);
+      }
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final hasApk = _versionInfo?['has_apk'] == true;
+    final version = _versionInfo?['latest_version'] ?? '1.0.2';
+    final sizeMb = _versionInfo?['file_size_mb'] ?? '56.4';
+    const currentInstalledVersion = '1.0.2';
+    final isNewVersionAvailable = hasApk && (version != currentInstalledVersion);
+
+    return PremiumCard(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.system_update_rounded, color: Colors.blue, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Përditësimi i Aplikacionit (APK)',
+                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: isDark ? Colors.white : null),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Versioni Aktual: v$version ($sizeMb MB)',
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+              if (_loading)
+                const SizedBox(width: 20, height: 20, child: CircularProgressIndicator.adaptive(strokeWidth: 2))
+              else
+                IconButton(
+                  tooltip: 'Rifresko Versionin',
+                  icon: const Icon(Icons.refresh_rounded, size: 20),
+                  onPressed: _checkVersion,
+                ),
+            ],
+          ),
+          if (isNewVersionAvailable) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.green.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.verified_rounded, color: Colors.green, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '⚡ Version i Ri Gati për Shkarkim (v$version)',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: Colors.green),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _versionInfo?['release_notes'] ?? 'Shkarkoni skedarin APK direkt nga serveri.',
+                          style: TextStyle(fontSize: 10.5, color: isDark ? Colors.white70 : Colors.black87),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _downloadApk,
+                icon: const Icon(Icons.download_rounded, size: 18),
+                label: const Text('Shkarko & Instalo APK-në', style: TextStyle(fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade700,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Colors.green, size: 16),
+                const SizedBox(width: 6),
+                Text(
+                  'Aplikacioni është i përditësuar (v$currentInstalledVersion)',
+                  style: const TextStyle(fontSize: 11.5, color: Colors.green, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
 

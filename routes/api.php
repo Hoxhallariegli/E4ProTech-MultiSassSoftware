@@ -16,6 +16,8 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\Mobile\AuthController;
 Route::get('/health', fn () => response()->json(['ok' => true]))->withoutMiddleware(['auth:sanctum']);
+Route::get('app-version', [\App\Http\Controllers\Api\Mobile\AppVersionController::class, 'check']);
+Route::get('mobile/app-version', [\App\Http\Controllers\Api\Mobile\AppVersionController::class, 'check']);
 Route::post('mobile/login', [AuthController::class, 'login']);
 Route::get('mobile/languages', [\App\Http\Controllers\Api\Mobile\LanguageController::class, 'index']);
 
