@@ -20,8 +20,8 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(text: 'demo@e4protech.com');
-  final _passwordController = TextEditingController(text: 'E4ProTech');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _loading = false;
   bool _obscurePassword = true;
   String _currentServer = 'Loading...';
@@ -96,6 +96,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final branding = context.watch<BrandingCubit>().state;
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -110,22 +111,39 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    height: 80,
-                    width: 80,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [theme.colorScheme.primary, theme.colorScheme.secondary],
+                  Center(
+                    child: Container(
+                      height: 84,
+                      width: 84,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [branding.primaryColor, branding.primaryColor.withOpacity(0.8)],
+                        ),
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: branding.primaryColor.withOpacity(0.35),
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                       ),
-                      shape: BoxShape.circle,
+                      child: branding.logoUrl != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(22),
+                              child: Image.network(branding.logoUrl!, fit: BoxFit.cover),
+                            )
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(22),
+                              child: Image.asset('assets/E4ProTech-Engine.png', fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.bolt_rounded, color: Colors.white, size: 45)),
+                            ),
                     ),
-                    child: const Icon(Icons.bolt, color: Colors.white, size: 45),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   Text(
-                    coreTr(context, 'auth.welcome'),
+                    branding.appName.isNotEmpty && branding.appName != 'LaraFlutter Gateway' ? branding.appName : 'E4ProTech Engine',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: -0.5),
                   ),
                   const SizedBox(height: 6),
                   Text(

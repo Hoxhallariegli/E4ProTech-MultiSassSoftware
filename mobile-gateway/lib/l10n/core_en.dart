@@ -10,7 +10,7 @@ const Map<String, String> coreEn = {
   'common.edit': 'Edit',
 
   'auth.welcome': 'Welcome! 👋',
-  'auth.subtitle': 'LaraFlutter Control Panel Core',
+  'auth.subtitle': 'E4ProTech Engine Control Panel',
   'auth.email': 'Email Address',
   'auth.email_hint': 'Enter your email account',
   'auth.password': 'Password',

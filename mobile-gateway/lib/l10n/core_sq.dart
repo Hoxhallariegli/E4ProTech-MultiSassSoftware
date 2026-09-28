@@ -10,7 +10,7 @@ const Map<String, String> coreSq = {
   'common.edit': 'Ndrysho',
 
   'auth.welcome': 'Mirëseerdhët! 👋',
-  'auth.subtitle': 'LaraFlutter Paneli i Kontrollit',
+  'auth.subtitle': 'E4ProTech Engine Paneli i Kontrollit',
   'auth.email': 'Adresa Email',
   'auth.email_hint': 'Vendosni llogarinë tuaj email',
   'auth.password': 'Fjalëkalimi',
