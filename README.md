@@ -699,3 +699,5 @@ with the same naming, validation, permissions, localization and UI conventions a
 **E4ProTech StarterKit**
 
 Enterprise-oriented Laravel + Livewire + Flutter scaffolding, generated from one command.
+#   E 4 P r o T e c h - M u l t i S a s s S o f t w a r e  
+ 
