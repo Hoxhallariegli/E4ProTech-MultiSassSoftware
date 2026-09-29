@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:mobile_gateway/core/localization/locale_cubit.dart';
 import 'package:mobile_gateway/core/branding/branding_cubit.dart';
 import 'package:mobile_gateway/core/theme/theme_cubit.dart';
@@ -1285,22 +1286,35 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
     try {
       String? fcmToken;
       if (value) {
-        try {
-          NotificationSettings settings = await FirebaseMessaging.instance.requestPermission(
-            alert: true,
-            badge: true,
-            sound: true,
-            provisional: false,
-          );
-          debugPrint('FCM Notification permission status: ${settings.authorizationStatus}');
+        var status = await Permission.notification.status;
+        if (!status.isGranted) {
+          status = await Permission.notification.request();
+        }
 
-          if (settings.authorizationStatus == AuthorizationStatus.authorized ||
-              settings.authorizationStatus == AuthorizationStatus.provisional) {
-            fcmToken = await FirebaseMessaging.instance.getToken();
-            debugPrint('FCM Real Token: $fcmToken');
+        if (status.isPermanentlyDenied) {
+          if (mounted) {
+            setState(() => _deviceLoading = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Leja e njoftimeve është bllokuar në cilësimet e telefonit. Klikoni për ta hapur.'),
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: Colors.orange,
+                action: SnackBarAction(
+                  label: 'CILËSIMET',
+                  textColor: Colors.white,
+                  onPressed: () => openAppSettings(),
+                ),
+              ),
+            );
           }
+          return;
+        }
+
+        try {
+          fcmToken = await FirebaseMessaging.instance.getToken();
+          debugPrint('FCM Real Token: $fcmToken');
         } catch (e) {
-          debugPrint('FCM permission/getToken error: $e');
+          debugPrint('FCM getToken error: $e');
         }
 
         if (fcmToken == null || fcmToken.isEmpty) {
@@ -1308,7 +1322,7 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
             setState(() => _deviceLoading = false);
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Ju lutemi pranoni lejen e njoftimeve nga sistemi operativ për të marrë Token-in e Firebase.'),
+                content: Text('Nuk u mor dot Token-i i Firebase. Kontrolloni lidhjen me internet.'),
                 behavior: SnackBarBehavior.floating,
                 backgroundColor: Colors.orange,
               ),
