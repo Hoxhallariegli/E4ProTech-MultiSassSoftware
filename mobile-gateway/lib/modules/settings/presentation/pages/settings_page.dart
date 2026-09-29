@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'package:mobile_gateway/core/localization/locale_cubit.dart';
 import 'package:mobile_gateway/core/branding/branding_cubit.dart';
 import 'package:mobile_gateway/core/theme/theme_cubit.dart';
@@ -145,7 +147,7 @@ class _SettingsPageState extends State<SettingsPage> {
               _CustomColorPickerCard(branding: branding),
               const SizedBox(height: 16),
 
-              // 4. App Update & APK Download
+              // 4. App Update & In-App APK Downloader
               const _AppVersionCard(),
               const SizedBox(height: 16),
 
@@ -208,7 +210,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(height: 16),
               ],
 
-              // 9. Navigation Shortcuts
+              // 8. Navigation Shortcuts
               _SimpleNavCard(
                 label: coreTr(context, 'settings.notifications'),
                 icon: Icons.notifications_none_rounded,
@@ -216,7 +218,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               const SizedBox(height: 16),
 
-              // 10. Security
+              // 9. Security
               _SimpleNavCard(
                 label: coreTr(context, 'settings.logout'),
                 icon: Icons.logout_rounded,
@@ -249,6 +251,9 @@ class _AppVersionCard extends StatefulWidget {
 
 class _AppVersionCardState extends State<_AppVersionCard> {
   bool _loading = false;
+  bool _downloading = false;
+  double _downloadProgress = 0.0;
+  String _downloadStatus = '';
   Map<String, dynamic>? _versionInfo;
 
   @override
@@ -277,17 +282,78 @@ class _AppVersionCardState extends State<_AppVersionCard> {
     }
   }
 
-  Future<void> _downloadApk() async {
-    final baseUrl = await ApiService.serverUrl;
-    final downloadUrl = Uri.parse('$baseUrl/download/apk');
+  Future<void> _downloadAndInstallInApp() async {
+    if (_downloading) return;
+
+    setState(() {
+      _downloading = true;
+      _downloadProgress = 0.0;
+      _downloadStatus = 'Duke u lidhur me serverin...';
+    });
 
     try {
-      if (await canLaunchUrl(downloadUrl)) {
-        await launchUrl(downloadUrl, mode: LaunchMode.externalApplication);
-      } else {
-        await launchUrl(downloadUrl, mode: LaunchMode.platformDefault);
+      final baseUrl = await ApiService.serverUrl;
+      final downloadUrl = '$baseUrl/download/apk';
+
+      final client = http.Client();
+      final request = http.Request('GET', Uri.parse(downloadUrl));
+      final response = await client.send(request);
+
+      if (response.statusCode != 200) {
+        throw Exception('Dështoi shkarkimi nga serveri (HTTP ${response.statusCode})');
       }
-    } catch (_) {}
+
+      final contentLength = response.contentLength ?? (57 * 1024 * 1024);
+      final dir = await getTemporaryDirectory();
+      final filePath = '${dir.path}/E4ProTech-Engine.apk';
+      final file = File(filePath);
+
+      final sink = file.openWrite();
+      int received = 0;
+
+      await response.stream.forEach((chunk) {
+        sink.add(chunk);
+        received += chunk.length;
+        if (mounted) {
+          setState(() {
+            _downloadProgress = (received / contentLength).clamp(0.0, 1.0);
+            final recMb = (received / (1024 * 1024)).toStringAsFixed(1);
+            final totalMb = (contentLength / (1024 * 1024)).toStringAsFixed(1);
+            _downloadStatus = 'Duke shkarkuar... $recMb MB / $totalMb MB (${(_downloadProgress * 100).toInt()}%)';
+          });
+        }
+      });
+
+      await sink.close();
+
+      if (mounted) {
+        setState(() {
+          _downloading = false;
+          _downloadStatus = 'Shkarkimi u krye! Duke hapur instaluesin...';
+        });
+
+        final apkUri = Uri.file(filePath);
+        try {
+          if (await canLaunchUrl(apkUri)) {
+            await launchUrl(apkUri, mode: LaunchMode.externalApplication);
+          } else {
+            await launchUrl(Uri.parse(downloadUrl), mode: LaunchMode.externalApplication);
+          }
+        } catch (_) {
+          await launchUrl(Uri.parse(downloadUrl), mode: LaunchMode.externalApplication);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _downloading = false;
+          _downloadStatus = 'Gabim: $e';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gabim gjatë shkarkimit: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
@@ -295,9 +361,9 @@ class _AppVersionCardState extends State<_AppVersionCard> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final hasApk = _versionInfo?['has_apk'] == true;
-    final version = _versionInfo?['latest_version'] ?? '1.0.2';
-    final sizeMb = _versionInfo?['file_size_mb'] ?? '56.4';
-    const currentInstalledVersion = '1.0.2';
+    final version = _versionInfo?['latest_version'] ?? '1.0.14';
+    final sizeMb = _versionInfo?['file_size_mb'] ?? '57.2';
+    const currentInstalledVersion = '1.0.14';
     final isNewVersionAvailable = hasApk && (version != currentInstalledVersion);
 
     return PremiumCard(
@@ -326,7 +392,7 @@ class _AppVersionCardState extends State<_AppVersionCard> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Versioni Aktual: v$version ($sizeMb MB)',
+                      'Versioni i Serverit: v$version ($sizeMb MB)',
                       style: const TextStyle(fontSize: 11, color: Colors.grey),
                     ),
                   ],
@@ -342,7 +408,28 @@ class _AppVersionCardState extends State<_AppVersionCard> {
                 ),
             ],
           ),
-          if (isNewVersionAvailable) ...[
+          if (_downloading) ...[
+            const SizedBox(height: 14),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _downloadStatus,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue),
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: _downloadProgress,
+                    minHeight: 8,
+                    backgroundColor: Colors.blue.withOpacity(0.15),
+                    valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
+                  ),
+                ),
+              ],
+            ),
+          ] else if (isNewVersionAvailable) ...[
             const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.all(12),
@@ -365,7 +452,7 @@ class _AppVersionCardState extends State<_AppVersionCard> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _versionInfo?['release_notes'] ?? 'Shkarkoni skedarin APK direkt nga serveri.',
+                          _versionInfo?['release_notes'] ?? 'Shkarkoni dhe instaloni skedarin e ri APK direkt në aplikacion.',
                           style: TextStyle(fontSize: 10.5, color: isDark ? Colors.white70 : Colors.black87),
                         ),
                       ],
@@ -378,9 +465,9 @@ class _AppVersionCardState extends State<_AppVersionCard> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: _downloadApk,
+                onPressed: _downloadAndInstallInApp,
                 icon: const Icon(Icons.download_rounded, size: 18),
-                label: const Text('Shkarko & Instalo APK-në', style: TextStyle(fontWeight: FontWeight.bold)),
+                label: const Text('Shkarko & Instalo APK-në Në Aplikacion 🚀', style: TextStyle(fontWeight: FontWeight.bold)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue.shade700,
                   foregroundColor: Colors.white,
@@ -1429,9 +1516,9 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
                 );
               },
               icon: const Icon(Icons.mark_email_read_rounded, size: 18),
-              label: Text(
+              label: const Text(
                 '📜 Shiko Logjet e Mesazheve',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
               style: OutlinedButton.styleFrom(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
