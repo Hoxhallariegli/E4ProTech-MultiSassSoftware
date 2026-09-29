@@ -1124,6 +1124,33 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
   }
 
   Future<void> _checkDeviceStatus() async {
+    try {
+      final res = await ApiService.get('/device-tokens');
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        final items = body['data'] as List?;
+        if (items != null) {
+          final user = AuthService.instance.user;
+          final shopId = user?['barber_shop_id']?.toString();
+
+          final activeGatewayItem = items.firstWhere(
+            (e) => (e['barber_shop_id']?.toString() == shopId) &&
+                   (e['is_sms_gateway'] == true || e['is_sms_gateway'] == 1 || e['is_sms_gateway'] == '1'),
+            orElse: () => null,
+          );
+
+          final isPrimaryForThisShop = activeGatewayItem != null;
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('is_sms_gateway_device', isPrimaryForThisShop);
+
+          if (mounted) {
+            setState(() => _isGatewayDevice = isPrimaryForThisShop);
+            return;
+          }
+        }
+      }
+    } catch (_) {}
+
     final prefs = await SharedPreferences.getInstance();
     final isGateway = prefs.getBool('is_sms_gateway_device') ?? false;
     if (mounted) setState(() => _isGatewayDevice = isGateway);

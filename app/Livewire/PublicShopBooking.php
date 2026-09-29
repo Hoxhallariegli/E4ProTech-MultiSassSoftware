@@ -86,6 +86,8 @@ class PublicShopBooking extends Component
             ],
             [
                 'name' => trim($this->customerName),
+                'total_bookings' => 0,
+                'no_show_count' => 0,
             ]
         );
 
