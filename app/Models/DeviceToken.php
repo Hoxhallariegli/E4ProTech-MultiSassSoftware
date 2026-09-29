@@ -31,7 +31,7 @@ class DeviceToken extends Model
             'barber_shop_id' => ['required', 'integer'],
             'user_id' => ['required', 'string'],
             'fcm_token' => ['required', 'string', 'max:255'],
-            'platform' => ['required', \Illuminate\Validation\Rule::in(['android', 'ios'])],
+            'platform' => ['required', \Illuminate\Validation\Rule::in(['android', 'ios', 'web'])],
             'is_sms_gateway' => ['boolean'],
             'device_name' => ['nullable', 'string', 'max:255'],
             'last_used_at' => ['nullable', 'date'],
