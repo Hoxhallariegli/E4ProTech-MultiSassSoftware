@@ -24,4 +24,4 @@ mobile-gateway/.flutter-plugins-dependencies
 mobile-gateway/build/
 PROJECT_PROGRESS_AND_ARCHITECTURE.md
 /storage/app/firebase-service-account.json
-/mobile-gateway/android/app/google-services.json
+mobile-gateway/android/app/google-services.json
