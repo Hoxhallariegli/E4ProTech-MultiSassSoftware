@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Admin\Settings;
 
 use App\Models\Setting;
+use App\Models\DeviceToken;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
@@ -19,9 +20,38 @@ class FirebaseSettings extends Component
 
     protected $listeners = ['fcm-token-received' => 'setBrowserToken'];
 
-    public function setBrowserToken($token): void
+    public function setBrowserToken($token = null): void
     {
+        if (is_array($token)) {
+            $token = $token[0] ?? null;
+        }
+
+        if (!$token || !is_string($token)) {
+            return;
+        }
+
         $this->browserToken = $token;
+
+        if (auth()->check()) {
+            $user = auth()->user();
+            $shopId = $user->barber_shop_id ?: \App\Models\BarberShop::value('id');
+
+            if ($shopId) {
+                DeviceToken::updateOrCreate(
+                    [
+                        'barber_shop_id' => $shopId,
+                        'user_id' => $user->id,
+                        'fcm_token' => $token,
+                    ],
+                    [
+                        'platform' => 'web',
+                        'is_sms_gateway' => false,
+                        'device_name' => 'Web Admin Browser',
+                        'last_used_at' => now(),
+                    ]
+                );
+            }
+        }
     }
 
     public function mount(): void
@@ -61,7 +91,7 @@ class FirebaseSettings extends Component
 
     public function testNotification(\App\Services\FirebaseService $service): void
     {
-        $deviceCount = \App\Models\DeviceToken::count();
+        $deviceCount = DeviceToken::count();
 
         if ($deviceCount > 0) {
             $sent = $service->sendToAllDevices(
