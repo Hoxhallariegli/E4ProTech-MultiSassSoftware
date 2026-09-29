@@ -1,3 +1,10 @@
+# Enable APK MIME Type & Disable Compression for APK downloads
+AddType application/vnd.android.package-archive .apk
+
+<IfModule mod_deflate.c>
+    SetEnvIfNoCase Request_URI \.apk$ no-gzip dont-vary
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes

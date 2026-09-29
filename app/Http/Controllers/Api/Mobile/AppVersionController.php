@@ -51,29 +51,21 @@ class AppVersionController extends Controller
     public function download()
     {
         $apkPath = public_path('downloads/app-release.apk');
-        if (!file_exists($apkPath)) {
-            $altPath = base_path('mobile-gateway/build/app/outputs/flutter-apk/app-release.apk');
-            if (file_exists($altPath)) {
-                $apkPath = $altPath;
-            } else {
-                abort(404, 'Nuk u gjet asnjë skedar APK në server.');
+        if (file_exists($apkPath)) {
+            return redirect()->to(asset('downloads/app-release.apk'));
+        }
+
+        $altPath = base_path('mobile-gateway/build/app/outputs/flutter-apk/app-release.apk');
+        if (file_exists($altPath)) {
+            if (ob_get_level()) {
+                ob_end_clean();
             }
+            return response()->download($altPath, 'E4ProTech-Engine.apk', [
+                'Content-Type' => 'application/vnd.android.package-archive',
+                'Content-Length' => (string) filesize($altPath),
+            ]);
         }
 
-        if (ob_get_level()) {
-            ob_end_clean();
-        }
-
-        $size = filesize($apkPath);
-
-        return response()->download($apkPath, 'E4ProTech-Engine.apk', [
-            'Content-Type' => 'application/vnd.android.package-archive',
-            'Content-Length' => (string) $size,
-            'Content-Disposition' => 'attachment; filename="E4ProTech-Engine.apk"',
-            'Accept-Ranges' => 'bytes',
-            'Cache-Control' => 'no-cache, must-revalidate',
-            'Pragma' => 'no-cache',
-            'Expires' => '0',
-        ]);
+        abort(404, 'Nuk u gjet asnjë skedar APK në server.');
     }
 }
