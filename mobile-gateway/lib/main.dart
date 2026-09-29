@@ -6,6 +6,7 @@ import 'package:mobile_gateway/core/theme/app_theme.dart';
 import 'package:mobile_gateway/core/theme/theme_cubit.dart';
 import 'package:mobile_gateway/core/localization/locale_cubit.dart';
 import 'package:mobile_gateway/core/branding/branding_cubit.dart';
+import 'package:mobile_gateway/core/notifications/push_service.dart';
 import 'package:mobile_gateway/modules/auth/presentation/pages/login_page.dart';
 import 'package:mobile_gateway/modules/dashboard/presentation/pages/app_shell.dart';
 import 'package:mobile_gateway/services/auth_service.dart';
@@ -15,8 +16,16 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AuthService.instance.init();
+
+  try {
+    await PushService.initialize();
+  } catch (e) {
+    debugPrint('PushService init error on startup: $e');
+  }
+
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString('auth_token');
+
   runApp(
     MultiBlocProvider(
       providers: [
