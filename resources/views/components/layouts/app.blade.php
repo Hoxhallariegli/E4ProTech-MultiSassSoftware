@@ -72,24 +72,37 @@
                     if ('serviceWorker' in navigator) {
                         navigator.serviceWorker.register('/firebase-messaging-sw.js')
                             .then((registration) => {
-                                if (isDebug) console.log('⚙️ Service Worker registered.');
+                                console.log('⚙️ Service Worker registered for Web Push.');
 
-                                const fetchFcmToken = () => {
-                                    messaging.getToken({ serviceWorkerRegistration: registration }).then((token) => {
-                                        if (token && typeof Livewire !== 'undefined') {
-                                            if (isDebug) console.log('🔑 FCM Token:', token);
-                                            Livewire.dispatch('fcm-token-received', { token: token });
-                                        }
-                                    }).catch(e => {
-                                        if (isDebug) console.error('Token fetch error:', e);
-                                    });
+                                const getWebFcmToken = () => {
+                                    messaging.getToken({ serviceWorkerRegistration: registration })
+                                        .then((token) => {
+                                            if (token) {
+                                                console.log('🔑 Web FCM Token:', token);
+                                                if (typeof Livewire !== 'undefined') {
+                                                    Livewire.dispatch('fcm-token-received', { token: token });
+                                                }
+                                            }
+                                        })
+                                        .catch((err) => console.error('❌ Web FCM Token Error:', err));
                                 };
 
                                 if (Notification.permission === 'granted') {
-                                    fetchFcmToken();
+                                    console.log('🔔 Notification Permission: GRANTED');
+                                    getWebFcmToken();
+                                } else if (Notification.permission !== 'denied') {
+                                    console.log('🔔 Notification Permission: Prompting user...');
+                                    Notification.requestPermission().then((permission) => {
+                                        console.log('🔔 Permission result:', permission);
+                                        if (permission === 'granted') {
+                                            getWebFcmToken();
+                                        }
+                                    });
+                                } else {
+                                    console.warn('🔔 Notification Permission: DENIED in browser settings');
                                 }
                             }).catch(err => {
-                                if (isDebug) console.error('❌ SW Registration failed:', err);
+                                console.error('❌ SW Registration failed:', err);
                             });
                     }
                 } catch (e) {

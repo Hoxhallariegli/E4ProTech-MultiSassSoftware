@@ -15,7 +15,7 @@ class FirebaseService
         $enabled = filter_var(env('FIREBASE_ENABLED', $dbEnabled), FILTER_VALIDATE_BOOLEAN) || filter_var($dbEnabled, FILTER_VALIDATE_BOOLEAN);
 
         if (!$enabled) {
-            Log::warning('Firebase notification skipped: Firebase is disabled.');
+            Log::warning('Firebase notification skipped: Firebase is disabled in Settings.');
             return false;
         }
 
@@ -66,6 +66,23 @@ class FirebaseService
             Log::error('Firebase Notification Exception: ' . $e->getMessage());
             return false;
         }
+    }
+
+    public function sendToShopDevices(int $shopId, string $title, string $body): int
+    {
+        $tokens = DeviceToken::where('barber_shop_id', $shopId)
+            ->pluck('fcm_token')
+            ->filter()
+            ->unique();
+
+        $successCount = 0;
+        foreach ($tokens as $token) {
+            if ($this->sendNotification($title, $body, $token)) {
+                $successCount++;
+            }
+        }
+
+        return $successCount;
     }
 
     public function sendToAllDevices(string $title, string $body): int
