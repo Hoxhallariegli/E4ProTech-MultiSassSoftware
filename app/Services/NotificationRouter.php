@@ -4,19 +4,38 @@ namespace App\Services;
 
 use App\Events\FirebaseNotificationRequested;
 use App\Models\RealtimeEvent;
+use App\Models\EventSetting;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 
 class NotificationRouter
 {
     /**
      * Called from every generated Observer on created/updated/deleted.
-     * Reverb (realtime UI) already fired separately via {Model}Changed —
-     * this only decides whether Firebase/FCM should also fire for this
-     * specific view+action, e.g. 'job-cards.created'.
+     * Checks if Firebase Push & SMS Gateway notifications are enabled
+     * for this specific shop/salon in EventSetting.
      */
     public function maybeNotify(string $event, Model $item, string $action): void
     {
-        if (! RealtimeEvent::firebaseEnabled($event)) {
+        $shopId = $item->barber_shop_id ?? auth()->user()?->barber_shop_id;
+
+        $enabled = true; // Default enabled if no override setting exists
+
+        if ($shopId) {
+            $realtimeEvent = RealtimeEvent::where('event', $event)->first();
+            if ($realtimeEvent) {
+                $setting = EventSetting::where('barber_shop_id', $shopId)
+                    ->where('realtime_event_id', $realtimeEvent->id)
+                    ->first();
+
+                if ($setting) {
+                    $enabled = (bool) $setting->firebase_enabled;
+                }
+            }
+        }
+
+        if (!$enabled) {
+            Log::info("Notification skipped: Event [{$event}] is disabled for shop #{$shopId} in EventSettings.");
             return;
         }
 
