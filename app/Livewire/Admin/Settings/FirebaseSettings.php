@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Models\DeviceToken;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
+use Livewire\Attributes\On;
 
 class FirebaseSettings extends Component
 {
@@ -18,12 +19,11 @@ class FirebaseSettings extends Component
     public bool $isFirebaseDebugEnabled = false;
     public string $browserToken = '';
 
-    protected $listeners = ['fcm-token-received' => 'setBrowserToken'];
-
+    #[On('fcm-token-received')]
     public function setBrowserToken($token = null): void
     {
         if (is_array($token)) {
-            $token = $token[0] ?? null;
+            $token = $token['token'] ?? ($token[0] ?? null);
         }
 
         if (!$token || !is_string($token)) {

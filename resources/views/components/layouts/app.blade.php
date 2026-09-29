@@ -74,16 +74,20 @@
                             .then((registration) => {
                                 if (isDebug) console.log('⚙️ Service Worker registered.');
 
-                                Notification.requestPermission().then((permission) => {
-                                    if (permission === 'granted') {
-                                        messaging.getToken({ serviceWorkerRegistration: registration }).then((token) => {
+                                const fetchFcmToken = () => {
+                                    messaging.getToken({ serviceWorkerRegistration: registration }).then((token) => {
+                                        if (token && typeof Livewire !== 'undefined') {
                                             if (isDebug) console.log('🔑 FCM Token:', token);
+                                            Livewire.dispatch('fcm-token-received', { token: token });
+                                        }
+                                    }).catch(e => {
+                                        if (isDebug) console.error('Token fetch error:', e);
+                                    });
+                                };
 
-                                            // Njoftojmë Livewire për token-in e ri
-                                            window.dispatchEvent(new CustomEvent('fcm-token-received', { detail: token }));
-                                        });
-                                    }
-                                });
+                                if (Notification.permission === 'granted') {
+                                    fetchFcmToken();
+                                }
                             }).catch(err => {
                                 if (isDebug) console.error('❌ SW Registration failed:', err);
                             });

@@ -1,5 +1,5 @@
 <div>
-    <div class="card" x-on:fcm-token-received.window="$wire.setBrowserToken([$event.detail])">
+    <div class="card">
         <h3>{{ __('settings.Firebase Cloud Messaging') }}</h3>
 
         <x-form wire:submit="update" method="put">
