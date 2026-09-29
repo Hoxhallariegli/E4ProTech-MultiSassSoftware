@@ -51,6 +51,7 @@ class SendFirebaseNotificationListener
                             'barber_shop_id' => $booking->barber_shop_id,
                             'customer_id' => $booking->customer_id,
                             'channel' => 'sms',
+                            'message' => $parsedMessage,
                             'status' => 'sent',
                             'sent_at' => now(),
                         ]);
