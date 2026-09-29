@@ -14,6 +14,50 @@ use App\Domain\DeviceToken\Actions\UpdateDeviceTokenAction;
 
 class DeviceTokenController extends Controller
 {
+    public function saveWebToken(Request $request): JsonResponse
+    {
+        $request->validate([
+            'fcm_token' => 'required|string',
+            'platform' => 'nullable|string',
+            'device_name' => 'nullable|string',
+        ]);
+
+        $user = $request->user() ?: auth()->user();
+        $fcmToken = $request->input('fcm_token');
+        $platform = $request->input('platform', 'android');
+        $deviceName = $request->input('device_name', 'Mobile Device');
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        $shopId = $user->barber_shop_id ?: \App\Models\BarberShop::value('id');
+
+        if (!$shopId) {
+            return response()->json(['message' => 'Llogaria juaj nuk ka dyqan aktiv.'], 422);
+        }
+
+        $deviceToken = DeviceToken::updateOrCreate(
+            [
+                'barber_shop_id' => $shopId,
+                'user_id' => $user->id,
+                'fcm_token' => $fcmToken,
+            ],
+            [
+                'platform' => in_array($platform, ['android', 'ios', 'web']) ? $platform : 'android',
+                'is_sms_gateway' => false,
+                'device_name' => $deviceName,
+                'last_used_at' => now(),
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Token-i i pajisjes u regjistrua me sukses te baza e të dhënave!',
+            'data' => $deviceToken,
+        ]);
+    }
+
     public function index(Request $request)
     {
         abort_if_cannot('view_device_tokens');

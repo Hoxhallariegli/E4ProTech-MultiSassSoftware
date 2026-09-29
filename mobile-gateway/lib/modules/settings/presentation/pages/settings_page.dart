@@ -1243,23 +1243,6 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
     if (mounted) setState(() => _isGatewayDevice = isGateway);
   }
 
-  Future<String> _getPersistentDeviceId() async {
-    String? token;
-    try {
-      token = await FirebaseMessaging.instance.getToken();
-    } catch (_) {}
-
-    if (token == null || token.isEmpty) {
-      final prefs = await SharedPreferences.getInstance();
-      token = prefs.getString('persistent_device_id');
-      if (token == null || token.isEmpty) {
-        token = 'device-id-${DateTime.now().millisecondsSinceEpoch}';
-        await prefs.setString('persistent_device_id', token);
-      }
-    }
-    return token;
-  }
-
   Future<void> _toggleShopSms(bool enabled) async {
     setState(() => _shopSmsLoading = true);
     try {
@@ -1300,6 +1283,7 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
 
     setState(() => _deviceLoading = true);
     try {
+      String? fcmToken;
       if (value) {
         try {
           NotificationSettings settings = await FirebaseMessaging.instance.requestPermission(
@@ -1309,21 +1293,45 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
             provisional: false,
           );
           debugPrint('FCM Notification permission status: ${settings.authorizationStatus}');
+
+          if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+              settings.authorizationStatus == AuthorizationStatus.provisional) {
+            fcmToken = await FirebaseMessaging.instance.getToken();
+            debugPrint('FCM Real Token: $fcmToken');
+          }
         } catch (e) {
-          debugPrint('FCM permission error: $e');
+          debugPrint('FCM permission/getToken error: $e');
         }
 
-        try {
-          await FirebaseMessaging.instance.subscribeToTopic('all');
-        } catch (e) {
-          debugPrint('FCM topic subscription error: $e');
+        if (fcmToken == null || fcmToken.isEmpty) {
+          if (mounted) {
+            setState(() => _deviceLoading = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Ju lutemi pranoni lejen e njoftimeve nga sistemi operativ për të marrë Token-in e Firebase.'),
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
+          return;
         }
+
+        final rawShopId = AuthService.instance.user?['barber_shop_id'];
+        if (rawShopId != null) {
+          final shopId = int.tryParse(rawShopId.toString());
+          if (shopId != null) {
+            try {
+              await FirebaseMessaging.instance.subscribeToTopic('shop_$shopId');
+            } catch (_) {}
+          }
+        }
+      } else {
+        fcmToken = await FirebaseMessaging.instance.getToken() ?? 'inactive_token';
       }
 
-      final token = await _getPersistentDeviceId();
-
       final res = await ApiService.post('/device-tokens/set-primary-gateway', {
-        'fcm_token': token,
+        'fcm_token': fcmToken,
         'is_sms_gateway': value,
         'device_name': 'Android Phone (${AuthService.instance.user?['name'] ?? 'Staff'})',
       });
