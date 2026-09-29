@@ -17,6 +17,7 @@ import 'package:mobile_gateway/services/api_service.dart';
 import 'package:mobile_gateway/services/auth_service.dart';
 import 'package:mobile_gateway/modules/auth/presentation/pages/login_page.dart';
 import 'package:mobile_gateway/modules/settings/presentation/pages/notification_settings_page.dart';
+import 'package:mobile_gateway/modules/dashboard/message_log/presentation/pages/message_log_list_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -1194,6 +1195,26 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
 
     setState(() => _deviceLoading = true);
     try {
+      if (value) {
+        try {
+          NotificationSettings settings = await FirebaseMessaging.instance.requestPermission(
+            alert: true,
+            badge: true,
+            sound: true,
+            provisional: false,
+          );
+          debugPrint('FCM Notification permission status: ${settings.authorizationStatus}');
+        } catch (e) {
+          debugPrint('FCM permission error: $e');
+        }
+
+        try {
+          await FirebaseMessaging.instance.subscribeToTopic('all');
+        } catch (e) {
+          debugPrint('FCM topic subscription error: $e');
+        }
+      }
+
       final token = await _getPersistentDeviceId();
 
       final res = await ApiService.post('/device-tokens/set-primary-gateway', {
@@ -1213,7 +1234,7 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(data['message'] ?? (value ? 'SMS Gateway u aktivizua.' : 'SMS Gateway u çaktivizua.')),
+              content: Text(data['message'] ?? (value ? 'SMS Gateway & Firebase Push u aktivizuan.' : 'SMS Gateway u çaktivizua.')),
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -1376,6 +1397,27 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
                           activeColor: Colors.green,
                         ),
                 ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MessageLogListPage()),
+                );
+              },
+              icon: const Icon(Icons.mark_email_read_rounded, size: 18),
+              label: Text(
+                '📜 Shiko Logjet e Mesazheve',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              style: OutlinedButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
           ),
