@@ -25,3 +25,4 @@ mobile-gateway/build/
 PROJECT_PROGRESS_AND_ARCHITECTURE.md
 /storage/app/firebase-service-account.json
 mobile-gateway/android/app/google-services.json
+/storage/logs/laravel.log
