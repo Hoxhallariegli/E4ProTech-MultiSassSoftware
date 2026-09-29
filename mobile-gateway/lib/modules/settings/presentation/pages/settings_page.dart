@@ -198,16 +198,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               const SizedBox(height: 16),
 
-              // 7. Compact System Health
-              _CompactHealthRow(
-                reverb: _reverbStatus,
-                api: _apiStatus,
-                db: _dbStatus,
-                cache: _cacheStatus,
-              ),
-              const SizedBox(height: 16),
-
-              // 8. App Connectivity & Config (ADMIN ONLY)
+              // 7. App Connectivity & Config (ADMIN ONLY)
               if (isAdmin) ...[
                 _CompactEndpointCard(
                   currentUrl: _currentBaseUrl,

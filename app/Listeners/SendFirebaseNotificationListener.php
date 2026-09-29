@@ -21,7 +21,7 @@ class SendFirebaseNotificationListener
         try {
             $shopId = null;
 
-            // 1. If Booking action, queue SMS template
+            // 1. If Booking action, queue SMS template for SMS Gateway
             if ($event->modelClass === Booking::class || is_a($event->modelClass, Booking::class, true)) {
                 $booking = Booking::with(['customer', 'service', 'barber', 'barberShop'])->find($event->modelId);
                 if ($booking) {
@@ -60,7 +60,7 @@ class SendFirebaseNotificationListener
                 }
             }
 
-            // 2. Dispatch FCM Push Notification ISOLATED PER SHOP ID!
+            // 2. Dispatch FCM Push Notification STRICTLY ISOLATED PER SHOP ID!
             $actionLabel = match ($event->action) {
                 'created' => 'krijua',
                 'updated' => 'përditësua',
@@ -85,8 +85,15 @@ class SendFirebaseNotificationListener
                 $shopId = auth()->user()->barber_shop_id;
             }
 
+            $customData = [
+                'shop_id' => (string) ($shopId ?? 0),
+                'action' => (string) $event->action,
+                'model' => (string) class_basename($event->modelClass),
+                'model_id' => (string) $event->modelId,
+            ];
+
             if ($shopId) {
-                $sentCount = $this->firebaseService->sendToShopDevices($shopId, $title, $body);
+                $sentCount = $this->firebaseService->sendToShop($shopId, $title, $body, $customData);
                 Log::info("FCM Push Notification sent for shop #{$shopId} event [{$event->event}] to {$sentCount} devices.");
             } else {
                 $sentCount = $this->firebaseService->sendToAllDevices($title, $body);

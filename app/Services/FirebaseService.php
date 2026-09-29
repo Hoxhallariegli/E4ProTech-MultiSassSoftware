@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 
 class FirebaseService
 {
-    public function sendNotification(string $title, string $body, string $topic = 'all'): bool
+    public function sendNotification(string $title, string $body, string $topic = 'all', array $customData = []): bool
     {
         $dbEnabled = Setting::where('key', 'firebase_enabled')->value('value');
         $enabled = filter_var(env('FIREBASE_ENABLED', $dbEnabled), FILTER_VALIDATE_BOOLEAN) || filter_var($dbEnabled, FILTER_VALIDATE_BOOLEAN);
@@ -35,15 +35,17 @@ class FirebaseService
                 return false;
             }
 
+            $payloadData = array_merge([
+                'title' => $title,
+                'body' => $body,
+            ], $customData);
+
             $message = [
                 'notification' => [
                     'title' => $title,
                     'body' => $body,
                 ],
-                'data' => [
-                    'title' => $title,
-                    'body' => $body,
-                ]
+                'data' => array_map('strval', $payloadData),
             ];
 
             if (strlen($topic) > 30) {
@@ -68,8 +70,13 @@ class FirebaseService
         }
     }
 
-    public function sendToShopDevices(int $shopId, string $title, string $body): int
+    public function sendToShop(int $shopId, string $title, string $body, array $customData = []): int
     {
+        // 1. Send via FCM Topic dedicated to shop "shop_{$shopId}"
+        $topic = "shop_{$shopId}";
+        $this->sendNotification($title, $body, $topic, $customData);
+
+        // 2. Send directly to all registered FCM device tokens for this specific shop
         $tokens = DeviceToken::where('barber_shop_id', $shopId)
             ->pluck('fcm_token')
             ->filter()
@@ -77,7 +84,7 @@ class FirebaseService
 
         $successCount = 0;
         foreach ($tokens as $token) {
-            if ($this->sendNotification($title, $body, $token)) {
+            if ($this->sendNotification($title, $body, $token, $customData)) {
                 $successCount++;
             }
         }

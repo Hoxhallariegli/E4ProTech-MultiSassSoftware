@@ -27,15 +27,34 @@ class PushService {
         await registerTokenWithBackend();
       }
 
-      try {
-        await FirebaseMessaging.instance.subscribeToTopic('all');
-      } catch (_) {}
+      final shopId = AuthService.instance.user?['barber_shop_id'];
+      if (shopId != null) {
+        await subscribeToShop(int.parse(shopId.toString()));
+      }
 
       FirebaseMessaging.onMessage.listen((message) {
-        debugPrint('FCM Foreground message received: ${message.notification?.title}');
+        debugPrint('FCM Foreground Message: ${message.notification?.title} - ${message.notification?.body}');
       });
     } catch (e) {
       debugPrint('PushService initialization error: $e');
+    }
+  }
+
+  static Future<void> subscribeToShop(int shopId) async {
+    try {
+      await FirebaseMessaging.instance.subscribeToTopic('shop_$shopId');
+      debugPrint('Subscribed to FCM topic: shop_$shopId');
+    } catch (e) {
+      debugPrint('FCM topic subscription error: $e');
+    }
+  }
+
+  static Future<void> unsubscribeFromShop(int shopId) async {
+    try {
+      await FirebaseMessaging.instance.unsubscribeFromTopic('shop_$shopId');
+      debugPrint('Unsubscribed from FCM topic: shop_$shopId');
+    } catch (e) {
+      debugPrint('FCM topic un-subscription error: $e');
     }
   }
 
