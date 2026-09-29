@@ -25,7 +25,7 @@ class PublicShopBooking extends Component
     public string $notes = '';
 
     public bool $bookingSuccess = false;
-    public ?Booking $createdBooking = null;
+    public ?int $createdBookingId = null;
 
     public function mount(BarberShop $shop)
     {
@@ -117,14 +117,14 @@ class PublicShopBooking extends Component
             app(NotificationRouter::class)->maybeNotify('bookings.created', $booking, 'created');
         } catch (\Throwable $e) {}
 
-        $this->createdBooking = $booking;
+        $this->createdBookingId = $booking->id;
         $this->bookingSuccess = true;
     }
 
     public function resetForm()
     {
         $this->bookingSuccess = false;
-        $this->createdBooking = null;
+        $this->createdBookingId = null;
         $this->customerName = '';
         $this->customerPhone = '';
         $this->notes = '';
@@ -134,10 +134,12 @@ class PublicShopBooking extends Component
     {
         $staff = Barber::where('barber_shop_id', $this->shop->id)->where('active', true)->get();
         $services = Service::where('barber_shop_id', $this->shop->id)->where('active', true)->get();
+        $createdBooking = $this->createdBookingId ? Booking::with(['barber', 'service', 'barberShop'])->find($this->createdBookingId) : null;
 
         return view('livewire.public-shop-booking', [
             'staff' => $staff,
             'services' => $services,
+            'createdBooking' => $createdBooking,
         ]);
     }
 }
