@@ -15,7 +15,7 @@ class FirebaseSettings extends Component
     public string $firebaseProjectId = '';
     public string $firebaseWebConfig = '';
     public bool $isFirebaseDebugEnabled = false;
-    public string $browserToken = ''; // Ruajmë tokenin e browserit për test
+    public string $browserToken = '';
 
     protected $listeners = ['fcm-token-received' => 'setBrowserToken'];
 
@@ -61,19 +61,30 @@ class FirebaseSettings extends Component
 
     public function testNotification(\App\Services\FirebaseService $service): void
     {
-        // Dërgojmë te tokeni specifik nese e kemi, perndryshe te 'all' topic
-        $target = $this->browserToken ?: 'all';
+        $deviceCount = \App\Models\DeviceToken::count();
+
+        if ($deviceCount > 0) {
+            $sent = $service->sendToAllDevices(
+                'Njoftim Testues 🔥',
+                'Nëse e shihni këtë mesazh, Firebase Push Notifications funksionon 100%!'
+            );
+
+            if ($sent > 0) {
+                $this->dispatch('toast', ['message' => "Njoftimi u dërgua me sukses te {$sent} pajisje!", 'type' => 'success']);
+                return;
+            }
+        }
 
         $sent = $service->sendNotification(
-            'Test Notification',
-            'If you see this, Firebase is working correctly! 🍎🚀',
-            $target
+            'Njoftim Testues 🔥',
+            'Nëse e shihni këtë mesazh, Firebase Push Notifications funksionon 100%!',
+            'all'
         );
 
         if ($sent) {
-            $this->dispatch('toast', ['message' => 'Test notification sent! Target: ' . ($this->browserToken ? 'Device' : 'Topic'), 'type' => 'success']);
+            $this->dispatch('toast', ['message' => 'Njoftimi u dërgua me sukses te tema (topic: all)!', 'type' => 'success']);
         } else {
-            $this->dispatch('toast', ['message' => 'Failed to send notification. Check logs.', 'type' => 'error']);
+            $this->dispatch('toast', ['message' => 'Dërgimi i njoftimit dështoi. Kontrolloni logjet te storage/logs/laravel.log.', 'type' => 'error']);
         }
     }
 }

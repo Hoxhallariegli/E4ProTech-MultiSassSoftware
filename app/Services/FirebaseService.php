@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Setting;
+use App\Models\DeviceToken;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -10,22 +11,29 @@ class FirebaseService
 {
     public function sendNotification(string $title, string $body, string $topic = 'all'): bool
     {
-        // Prioritizohet .env, nese jo merret nga databaza
-        $enabled = env('FIREBASE_ENABLED', Setting::where('key', 'firebase_enabled')->value('value'));
-        if (!$enabled) return false;
+        $dbEnabled = Setting::where('key', 'firebase_enabled')->value('value');
+        $enabled = filter_var(env('FIREBASE_ENABLED', $dbEnabled), FILTER_VALIDATE_BOOLEAN) || filter_var($dbEnabled, FILTER_VALIDATE_BOOLEAN);
 
-        $projectId = env('FIREBASE_PROJECT_ID', Setting::where('key', 'firebase_project_id')->value('value'));
-        $credentialsJson = env('FIREBASE_CREDENTIALS', Setting::where('key', 'firebase_credentials')->value('value'));
-        $credentials = json_decode($credentialsJson, true);
+        if (!$enabled) {
+            Log::warning('Firebase notification skipped: Firebase is disabled.');
+            return false;
+        }
 
-        if (!$projectId || !$credentials) {
-            Log::warning('Firebase config is missing in both .env and Settings UI.');
+        $projectId = env('FIREBASE_PROJECT_ID') ?: Setting::where('key', 'firebase_project_id')->value('value');
+        $credentialsJson = env('FIREBASE_CREDENTIALS') ?: Setting::where('key', 'firebase_credentials')->value('value');
+        $credentials = is_string($credentialsJson) ? json_decode($credentialsJson, true) : null;
+
+        if (!$projectId || !$credentials || empty($credentials['client_email']) || empty($credentials['private_key'])) {
+            Log::warning('Firebase config missing or invalid credentials JSON in Settings UI or .env.');
             return false;
         }
 
         try {
             $token = $this->getAccessToken($credentials);
-            if (!$token) return false;
+            if (!$token) {
+                Log::error('Firebase OAuth2 token generation failed.');
+                return false;
+            }
 
             $message = [
                 'notification' => [
@@ -38,8 +46,7 @@ class FirebaseService
                 ]
             ];
 
-            // Nëse inputi 'topic' është në fakt një Token pajisjeje (i gjatë), përdor 'token'
-            if (strlen($topic) > 50) {
+            if (strlen($topic) > 30) {
                 $message['token'] = $topic;
             } else {
                 $message['topic'] = $topic;
@@ -50,46 +57,63 @@ class FirebaseService
             ]);
 
             if (!$response->successful()) {
-                Log::error('Firebase API Response: ' . $response->body());
+                Log::error('Firebase API Error Response: ' . $response->body());
                 return false;
             }
 
             return true;
         } catch (\Exception $e) {
-            Log::error('Firebase Notification Error: ' . $e->getMessage());
+            Log::error('Firebase Notification Exception: ' . $e->getMessage());
             return false;
         }
     }
 
-    /**
-     * Gjeneron OAuth2 Token manualisht duke përdorur OpenSSL (pa pasur nevojë për librari të rënda).
-     */
+    public function sendToAllDevices(string $title, string $body): int
+    {
+        $tokens = DeviceToken::pluck('fcm_token')->filter()->unique();
+        $successCount = 0;
+
+        foreach ($tokens as $token) {
+            if ($this->sendNotification($title, $body, $token)) {
+                $successCount++;
+            }
+        }
+
+        return $successCount;
+    }
+
     protected function getAccessToken(array $credentials): ?string
     {
-        $header = json_encode(['alg' => 'RS256', 'typ' => 'JWT']);
-        $now = time();
-        $payload = json_encode([
-            'iss' => $credentials['client_email'],
-            'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
-            'aud' => 'https://oauth2.googleapis.com/token',
-            'exp' => $now + 3600,
-            'iat' => $now,
-        ]);
+        try {
+            $header = json_encode(['alg' => 'RS256', 'typ' => 'JWT']);
+            $now = time();
+            $payload = json_encode([
+                'iss' => $credentials['client_email'],
+                'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
+                'aud' => 'https://oauth2.googleapis.com/token',
+                'exp' => $now + 3600,
+                'iat' => $now,
+            ]);
 
-        $base64UrlHeader = $this->base64UrlEncode($header);
-        $base64UrlPayload = $this->base64UrlEncode($payload);
+            $base64UrlHeader = $this->base64UrlEncode($header);
+            $base64UrlPayload = $this->base64UrlEncode($payload);
 
-        openssl_sign($base64UrlHeader . "." . $base64UrlPayload, $signature, $credentials['private_key'], 'SHA256');
-        $base64UrlSignature = $this->base64UrlEncode($signature);
+            $key = $credentials['private_key'];
+            openssl_sign($base64UrlHeader . "." . $base64UrlPayload, $signature, $key, 'SHA256');
+            $base64UrlSignature = $this->base64UrlEncode($signature);
 
-        $jwt = $base64UrlHeader . "." . $base64UrlPayload . "." . $base64UrlSignature;
+            $jwt = $base64UrlHeader . "." . $base64UrlPayload . "." . $base64UrlSignature;
 
-        $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
-            'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-            'assertion' => $jwt,
-        ]);
+            $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
+                'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+                'assertion' => $jwt,
+            ]);
 
-        return $response->json()['access_token'] ?? null;
+            return $response->json()['access_token'] ?? null;
+        } catch (\Exception $e) {
+            Log::error('Firebase AccessToken Error: ' . $e->getMessage());
+            return null;
+        }
     }
 
     protected function base64UrlEncode($data): string
