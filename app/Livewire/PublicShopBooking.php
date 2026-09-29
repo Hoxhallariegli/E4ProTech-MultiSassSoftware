@@ -1,0 +1,143 @@
+<?php
+
+namespace App\Livewire;
+
+use Livewire\Component;
+use App\Models\BarberShop;
+use App\Models\Barber;
+use App\Models\Service;
+use App\Models\Booking;
+use App\Models\Customer;
+use App\Services\NotificationRouter;
+use App\Events\BookingChanged;
+use Carbon\Carbon;
+
+class PublicShopBooking extends Component
+{
+    public BarberShop $shop;
+
+    public ?int $selectedBarberId = null;
+    public ?int $selectedServiceId = null;
+    public string $bookingDate = '';
+    public string $bookingTime = '10:00';
+    public string $customerName = '';
+    public string $customerPhone = '';
+    public string $notes = '';
+
+    public bool $bookingSuccess = false;
+    public ?Booking $createdBooking = null;
+
+    public function mount(BarberShop $shop)
+    {
+        $this->shop = $shop;
+        $this->bookingDate = now()->format('Y-m-d');
+
+        $firstBarber = Barber::where('barber_shop_id', $this->shop->id)->where('active', true)->first();
+        if ($firstBarber) {
+            $this->selectedBarberId = $firstBarber->id;
+        }
+
+        $firstService = Service::where('barber_shop_id', $this->shop->id)->where('active', true)->first();
+        if ($firstService) {
+            $this->selectedServiceId = $firstService->id;
+        }
+    }
+
+    public function selectService($serviceId)
+    {
+        $this->selectedServiceId = (int) $serviceId;
+    }
+
+    public function selectBarber($barberId)
+    {
+        $this->selectedBarberId = (int) $barberId;
+    }
+
+    public function submitBooking()
+    {
+        $this->validate([
+            'selectedBarberId' => 'required|exists:barbers,id',
+            'selectedServiceId' => 'required|exists:services,id',
+            'bookingDate' => 'required|date|after_or_equal:today',
+            'bookingTime' => 'required',
+            'customerName' => 'required|string|max:100',
+            'customerPhone' => 'required|string|max:30',
+        ], [
+            'customerName.required' => 'Ju lutemi vendosni Emrin dhe Mbiemrin tuaj.',
+            'customerPhone.required' => 'Ju lutemi vendosni Numrin e Telefonit.',
+            'bookingDate.after_or_equal' => 'Data e rezervimit duhet të jetë sot ose në ditët në vijim.',
+        ]);
+
+        $appointmentAt = Carbon::parse("{$this->bookingDate} {$this->bookingTime}:00");
+
+        try {
+            // Check overlap
+            Booking::checkOverlap($this->selectedBarberId, $appointmentAt, $this->selectedServiceId);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->addError('bookingTime', $e->getMessage());
+            return;
+        }
+
+        // Find or create Customer
+        $customer = Customer::updateOrCreate(
+            [
+                'barber_shop_id' => $this->shop->id,
+                'phone' => trim($this->customerPhone),
+            ],
+            [
+                'name' => trim($this->customerName),
+            ]
+        );
+
+        $service = Service::findOrFail($this->selectedServiceId);
+
+        // Create Booking
+        $booking = Booking::create([
+            'barber_shop_id' => $this->shop->id,
+            'barber_id' => $this->selectedBarberId,
+            'service_id' => $service->id,
+            'customer_id' => $customer->id,
+            'appointment_at' => $appointmentAt,
+            'status' => 'confirmed',
+            'payment_status' => 'unpaid',
+            'total_price' => $service->price,
+            'notes' => $this->notes ? "Rezervim Online: " . $this->notes : "Rezervim Online nga Faqja Publike",
+            'source' => 'online',
+        ]);
+
+        $customer->increment('total_bookings');
+
+        // Trigger Realtime Reverb WebSockets
+        try {
+            event(new BookingChanged($booking, 'created'));
+        } catch (\Throwable $e) {}
+
+        // Trigger Notifications Router (SMS Gateway, Firebase Push, Email)
+        try {
+            app(NotificationRouter::class)->maybeNotify('bookings.created', $booking, 'created');
+        } catch (\Throwable $e) {}
+
+        $this->createdBooking = $booking;
+        $this->bookingSuccess = true;
+    }
+
+    public function resetForm()
+    {
+        $this->bookingSuccess = false;
+        $this->createdBooking = null;
+        $this->customerName = '';
+        $this->customerPhone = '';
+        $this->notes = '';
+    }
+
+    public function render()
+    {
+        $staff = Barber::where('barber_shop_id', $this->shop->id)->where('active', true)->get();
+        $services = Service::where('barber_shop_id', $this->shop->id)->where('active', true)->get();
+
+        return view('livewire.public-shop-booking', [
+            'staff' => $staff,
+            'services' => $services,
+        ]);
+    }
+}

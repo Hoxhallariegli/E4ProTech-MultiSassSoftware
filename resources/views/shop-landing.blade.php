@@ -11,6 +11,7 @@
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
     </style>
+    @livewireStyles
 </head>
 <body class="min-h-full flex flex-col justify-between selection:bg-rose-500 selection:text-white antialiased bg-slate-950">
 
@@ -159,11 +160,16 @@
         </div>
     </section>
 
+    <!-- Public Booking Component -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
+        <livewire:public-shop-booking :shop="$shop" />
+    </section>
+
     <!-- Footer -->
     <footer class="py-10 border-t border-slate-800/60 bg-slate-950">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p class="text-xs text-slate-500 font-medium">
-                © {{ date('Y') }} {{ $shop->name }} — Mundësuar nga LaraFlutter SaaS Engine
+                © {{ date('Y') }} {{ $shop->name }} — Mundësuar nga E4ProTech Engine
             </p>
             <div class="flex gap-4 text-xs text-slate-400 font-semibold">
                 <a href="#" class="hover:text-white transition">Kushtet e Shërbimit</a>
@@ -172,5 +178,6 @@
         </div>
     </footer>
 
+    @livewireScripts
 </body>
 </html>
