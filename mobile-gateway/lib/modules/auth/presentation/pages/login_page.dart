@@ -93,6 +93,37 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  Widget _buildQuickChip(String label, String email, String password, IconData icon, Color color) {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _emailController.text = email;
+          _passwordController.text = password;
+        });
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.12),
+          border: Border.all(color: color.withOpacity(0.3)),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -208,7 +239,23 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Zgjidh Llogari Testuese (Auto-Fill):',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildQuickChip('Elegance Salon', 'owner.salon@test.com', 'password', Icons.content_cut_rounded, const Color(0xFFEC4899)),
+                      _buildQuickChip('Gentlemen Barber', 'owner.barber@test.com', 'password', Icons.storefront_rounded, const Color(0xFF2563EB)),
+                      _buildQuickChip('Glamour Nails', 'owner.nails@test.com', 'password', Icons.back_hand_rounded, const Color(0xFF10B981)),
+                      _buildQuickChip('Klara Staff', 'staff.salon@test.com', 'password', Icons.person_rounded, const Color(0xFF8B5CF6)),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
                   PremiumButton(
                     onPressed: _handleLogin,
                     label: _loading ? coreTr(context, 'auth.authenticating') : coreTr(context, 'auth.sign_in'),
