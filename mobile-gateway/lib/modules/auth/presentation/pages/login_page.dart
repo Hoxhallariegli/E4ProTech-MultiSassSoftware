@@ -9,6 +9,7 @@ import '../../../../services/auth_service.dart';
 import '../../../../core/localization/locale_cubit.dart';
 import '../../../../core/branding/branding_cubit.dart';
 import '../../../../l10n/core_localization.dart';
+import '../../../../core/notifications/push_service.dart';
 import '../../../dashboard/presentation/pages/app_shell.dart';
 
 class LoginPage extends StatefulWidget {
@@ -62,6 +63,21 @@ class _LoginPageState extends State<LoginPage> {
 
         // Refresh permissions in AuthService
         await AuthService.instance.init();
+
+        // Register FCM Token with backend and subscribe to shop
+        try {
+          await PushService.initialize();
+          await PushService.registerTokenWithBackend();
+          final rawShopId = userData['barber_shop_id'] ?? userData['business']?['id'];
+          if (rawShopId != null) {
+            final shopId = int.tryParse(rawShopId.toString());
+            if (shopId != null) {
+              await PushService.subscribeToShop(shopId);
+            }
+          }
+        } catch (e) {
+          debugPrint('FCM post-login error: $e');
+        }
 
         // Update Dynamic Branding
         if (userData['business'] != null && mounted) {

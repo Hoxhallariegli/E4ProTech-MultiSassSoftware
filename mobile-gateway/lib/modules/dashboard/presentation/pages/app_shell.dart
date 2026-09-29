@@ -10,6 +10,7 @@ import '../../../../services/auth_service.dart';
 import '../../../../core/branding/branding_cubit.dart';
 import '../../../../core/widgets/premium_header.dart';
 import '../../../../core/widgets/sidebar.dart';
+import '../../../../core/notifications/push_service.dart';
 import '../../booking/presentation/pages/booking_calendar_page.dart';
 
 class AppShell extends StatefulWidget {
@@ -37,6 +38,7 @@ class _AppShellState extends State<AppShell> {
     _checkAuth();
     AuthService.instance.addListener(_handleAuthChange);
     _handleAuthChange(); // Initial branding load
+    PushService.initialize();
   }
 
   @override

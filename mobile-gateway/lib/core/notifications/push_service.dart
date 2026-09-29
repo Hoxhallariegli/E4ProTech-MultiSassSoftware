@@ -20,16 +20,22 @@ class PushService {
         alert: true,
         badge: true,
         sound: true,
+        provisional: false,
       );
+
+      debugPrint('FCM Authorization Status: ${settings.authorizationStatus}');
 
       if (settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional) {
         await registerTokenWithBackend();
       }
 
-      final shopId = AuthService.instance.user?['barber_shop_id'];
-      if (shopId != null) {
-        await subscribeToShop(int.parse(shopId.toString()));
+      final rawShopId = AuthService.instance.user?['barber_shop_id'];
+      if (rawShopId != null) {
+        final shopId = int.tryParse(rawShopId.toString());
+        if (shopId != null) {
+          await subscribeToShop(shopId);
+        }
       }
 
       FirebaseMessaging.onMessage.listen((message) {
@@ -60,17 +66,20 @@ class PushService {
 
   static Future<void> registerTokenWithBackend() async {
     try {
-      if (AuthService.instance.user == null) return;
-
       final token = await FirebaseMessaging.instance.getToken();
+      debugPrint('FCM Token fetched: $token');
+
       if (token != null && token.isNotEmpty) {
         final platform = defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android';
+        final userName = AuthService.instance.user?['name'] ?? 'User';
 
         await ApiService.post('/device-tokens/save-web-token', {
           'fcm_token': token,
           'platform': platform,
-          'device_name': 'Mobile Device (${AuthService.instance.user?['name'] ?? 'Staff'})',
+          'device_name': 'Mobile Device ($userName)',
         });
+
+        debugPrint('FCM Token registered with Laravel backend!');
       }
     } catch (e) {
       debugPrint('FCM token registration with backend error: $e');
