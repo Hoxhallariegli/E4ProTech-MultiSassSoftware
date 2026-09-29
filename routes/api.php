@@ -23,6 +23,9 @@ Route::get('mobile/languages', [\App\Http\Controllers\Api\Mobile\LanguageControl
 
 Route::middleware(['auth:sanctum'])->prefix('mobile')->group(function () {
 
+    Route::get('sms-gateway/pending-messages', [\App\Http\Controllers\Api\Mobile\MessageQueueController::class, 'pendingMessages']);
+    Route::post('sms-gateway/mark-sent', [\App\Http\Controllers\Api\Mobile\MessageQueueController::class, 'markSent']);
+
     Route::get('barber-shops', function (\Illuminate\Http\Request $request) {
         $search = trim((string) $request->input('search', ''));
         // Spatie Global scope handled in model

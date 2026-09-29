@@ -14,6 +14,38 @@ use App\Domain\MessageQueue\Actions\UpdateMessageQueueAction;
 
 class MessageQueueController extends Controller
 {
+    public function pendingMessages(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $shopId = $user?->barber_shop_id;
+
+        if (!$shopId) {
+            return response()->json(['data' => []]);
+        }
+
+        $items = MessageQueue::where('barber_shop_id', $shopId)
+            ->where('status', 'pending')
+            ->where('channel', 'sms')
+            ->orderBy('id', 'asc')
+            ->limit(10)
+            ->get();
+
+        return response()->json(['data' => $items]);
+    }
+
+    public function markSent(Request $request): JsonResponse
+    {
+        $request->validate(['id' => 'required|integer']);
+
+        $item = MessageQueue::find($request->id);
+        if ($item) {
+            $item->update(['status' => 'sent']);
+            return response()->json(['success' => true, 'message' => 'SMS u shënua si e dërguar!']);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Nuk u gjet mesazhi.'], 404);
+    }
+
     public function index(Request $request)
     {
         abort_if_cannot('view_message_queues');
@@ -25,19 +57,16 @@ class MessageQueueController extends Controller
         $sortField = in_array($sortField, $allowedSorts, true) ? $sortField : 'id';
         $direction = in_array($direction, ['asc', 'desc'], true) ? $direction : 'desc';
 
-        $query = MessageQueue::query()->with(array (
-  0 => 'barberShop',
-  1 => 'booking',
-));
+        $query = MessageQueue::query()->with([
+            'barberShop',
+            'booking',
+        ]);
 
         $search = trim((string) $request->input('search', ''));
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('id', 'like', "%{$search}%");
-                foreach (array (
-  0 => 'phone_number',
-  1 => 'message_content',
-) as $field) {
+                foreach (['phone_number', 'message_content'] as $field) {
                     $q->orWhere($field, 'like', "%{$search}%");
                 }
             });
@@ -47,8 +76,7 @@ class MessageQueueController extends Controller
             if ($value === null || $value === '' || !str_ends_with($key, '_id')) {
                 continue;
             }
-            if (in_array($key, array (
-), true)) {
+            if (in_array($key, [], true)) {
                 continue;
             }
             if (in_array($key, array_keys(MessageQueue::rules()), true)) {
@@ -63,37 +91,37 @@ class MessageQueueController extends Controller
     public function show($id)
     {
         abort_if_cannot('view_message_queues');
-        $item = MessageQueue::with(array (
-  0 => 'barberShop',
-  1 => 'booking',
-))->findOrFail($id);
+        $item = MessageQueue::with([
+            'barberShop',
+            'booking',
+        ])->findOrFail($id);
         return new MessageQueueResource($item);
     }
 
     public function store(Request $request)
     {
         abort_if_cannot('add_message_queues');
-                $data = $this->prepareData($request);
-        
+        $data = $this->prepareData($request);
+
         $validated = validator($data, MessageQueue::rules())->validate();
         $item = app(\App\Domain\MessageQueue\Actions\CreateMessageQueueAction::class)->execute(\App\Domain\MessageQueue\DTOs\MessageQueueDTO::fromArray($validated));
-        return (new MessageQueueResource($item->loadMissing(array (
-  0 => 'barberShop',
-  1 => 'booking',
-))))->response()->setStatusCode(201);
+        return (new MessageQueueResource($item->loadMissing([
+            'barberShop',
+            'booking',
+        ])))->response()->setStatusCode(201);
     }
 
     public function update(Request $request, $id)
     {
         abort_if_cannot('edit_message_queues');
-                $item = MessageQueue::findOrFail($id);
+        $item = MessageQueue::findOrFail($id);
         $data = $this->prepareData($request);
         $validated = validator($data, MessageQueue::rules($id))->validate();
-        $item = app(\App\Domain\MessageQueue\Actions\UpdateMessageQueueAction::class)->execute($item, \App\Domain\MessageQueue\DTOs\MessageQueueDTO::fromArray($validated));
-        return new MessageQueueResource($item->loadMissing(array (
-  0 => 'barberShop',
-  1 => 'booking',
-)));
+        $item = app(\App\Domain\MessageQueue\Actions\UpdateDeviceTokenAction::class)->execute($item, \App\Domain\MessageQueue\DTOs\MessageQueueDTO::fromArray($validated));
+        return new MessageQueueResource($item->loadMissing([
+            'barberShop',
+            'booking',
+        ]));
     }
 
     public function destroy($id): JsonResponse
@@ -117,8 +145,8 @@ class MessageQueueController extends Controller
     {
         $data = $request->all();
 
-        foreach (array (
-) as $field) {
+        foreach ([
+        ] as $field) {
             if (isset($data[$field]) && is_string($data[$field])) {
                 $decoded = json_decode($data[$field], true);
                 if (json_last_error() === JSON_ERROR_NONE) {
@@ -127,8 +155,8 @@ class MessageQueueController extends Controller
             }
         }
 
-        foreach (array (
-) as $field) {
+        foreach ([
+        ] as $field) {
             if ($request->hasFile($field)) {
                 $data[$field] = app(\App\Services\ImageUploadService::class)->upload($request->file($field), 'uploads/message-queues');
             }
