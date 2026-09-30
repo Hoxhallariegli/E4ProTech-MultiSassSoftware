@@ -22,6 +22,7 @@ import 'package:mobile_gateway/modules/auth/presentation/pages/login_page.dart';
 import 'package:mobile_gateway/modules/settings/presentation/pages/notification_settings_page.dart';
 import 'package:mobile_gateway/modules/dashboard/message_log/presentation/pages/message_log_list_page.dart';
 import 'package:mobile_gateway/core/notifications/push_service.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -257,11 +258,26 @@ class _AppVersionCardState extends State<_AppVersionCard> {
   double _downloadProgress = 0.0;
   String _downloadStatus = '';
   Map<String, dynamic>? _versionInfo;
+  String _installedVersion = '';
+  int _installedBuildNumber = 0;
 
   @override
   void initState() {
     super.initState();
+    _loadPackageInfo();
     _checkVersion();
+  }
+
+  Future<void> _loadPackageInfo() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() {
+          _installedVersion = info.version;
+          _installedBuildNumber = int.tryParse(info.buildNumber) ?? 0;
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _checkVersion() async {
@@ -363,10 +379,14 @@ class _AppVersionCardState extends State<_AppVersionCard> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final hasApk = _versionInfo?['has_apk'] == true;
-    final version = _versionInfo?['latest_version'] ?? '1.0.14';
-    final sizeMb = _versionInfo?['file_size_mb'] ?? '57.2';
-    const currentInstalledVersion = '1.0.14';
-    final isNewVersionAvailable = hasApk && (version != currentInstalledVersion);
+    final serverVersionName = (_versionInfo?['latest_version'] ?? '1.0.35').toString();
+    final serverVersionCode = int.tryParse(_versionInfo?['version_code']?.toString() ?? '0') ?? 0;
+    final sizeMb = _versionInfo?['file_size_mb'] ?? '58.1';
+
+    final isNewVersionAvailable = hasApk && (
+      (serverVersionCode > 0 && _installedBuildNumber > 0 && serverVersionCode > _installedBuildNumber) ||
+      (serverVersionName.isNotEmpty && _installedVersion.isNotEmpty && serverVersionName != _installedVersion && serverVersionCode == 0)
+    );
 
     return PremiumCard(
       padding: const EdgeInsets.all(18),
@@ -394,7 +414,7 @@ class _AppVersionCardState extends State<_AppVersionCard> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Versioni i Serverit: v$version ($sizeMb MB)',
+                      'Versioni i Serverit: v$serverVersionName ($sizeMb MB)',
                       style: const TextStyle(fontSize: 11, color: Colors.grey),
                     ),
                   ],
@@ -449,7 +469,7 @@ class _AppVersionCardState extends State<_AppVersionCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '⚡ Version i Ri Gati për Shkarkim (v$version)',
+                          '⚡ Version i Ri Gati për Shkarkim (v$serverVersionName)',
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: Colors.green),
                         ),
                         const SizedBox(height: 2),
@@ -467,28 +487,51 @@ class _AppVersionCardState extends State<_AppVersionCard> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: _downloadAndInstallInApp,
-                icon: const Icon(Icons.download_rounded, size: 18),
-                label: const Text('Shkarko & Instalo APK-në Në Aplikacion 🚀', style: TextStyle(fontWeight: FontWeight.bold)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade700,
+                  backgroundColor: theme.colorScheme.primary,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                onPressed: _downloadAndInstallInApp,
+                icon: const Icon(Icons.download_rounded, size: 20),
+                label: const Text(
+                  'Shkarko & Instalo APK-në Në Aplikacion 🚀',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
               ),
             ),
           ] else ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                const Icon(Icons.check_circle_rounded, color: Colors.green, size: 16),
-                const SizedBox(width: 6),
-                Text(
-                  'Aplikacioni është i përditësuar (v$currentInstalledVersion)',
-                  style: const TextStyle(fontSize: 11.5, color: Colors.green, fontWeight: FontWeight.bold),
-                ),
-              ],
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.green.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle_rounded, color: Colors.green, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '✓ Aplikacioni është i Përditësuar (v${_installedVersion.isEmpty ? serverVersionName : _installedVersion})',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: Colors.green),
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          'Po përdorni versionin më të fundit të aplikacionit. Nuk ka asnjë përditësim të ri.',
+                          style: TextStyle(fontSize: 10.5, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ],
@@ -1339,6 +1382,7 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
         fcmToken = await FirebaseMessaging.instance.getToken() ?? 'inactive_token';
       }
 
+      final currentServer = await ApiService.serverUrl;
       final rawShopId = AuthService.instance.user?['barber_shop_id'] ?? AuthService.instance.user?['business']?['id'];
 
       final res = await ApiService.post('/device-tokens/set-primary-gateway', {
@@ -1357,11 +1401,15 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
             _isGatewayDevice = value;
             _deviceLoading = false;
           });
+          final tokenPreview = fcmToken.length > 10 ? fcmToken.substring(0, 10) : fcmToken;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(data['message'] ?? (value ? 'Aktivizuar ✅ - Token u regjistrua me sukses!' : 'SMS Gateway u çaktivizua.')),
+              content: Text(value
+                  ? 'Aktivizuar ✅ [Server: $currentServer | Token: $tokenPreview...]'
+                  : 'SMS Gateway u çaktivizua.'),
               behavior: SnackBarBehavior.floating,
               backgroundColor: Colors.green,
+              duration: const Duration(seconds: 4),
             ),
           );
         }
@@ -1370,7 +1418,12 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
         if (mounted) {
           setState(() => _deviceLoading = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Gabim serveri ($res.statusCode): $err'), backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating),
+            SnackBar(
+              content: Text('Gabim serveri ($currentServer - HTTP ${res.statusCode}): $err'),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 5),
+            ),
           );
         }
       }
