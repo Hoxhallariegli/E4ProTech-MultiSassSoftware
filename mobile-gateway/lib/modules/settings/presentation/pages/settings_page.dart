@@ -1286,28 +1286,17 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
     try {
       String? fcmToken;
       if (value) {
-        var status = await Permission.notification.status;
-        if (!status.isGranted) {
-          status = await Permission.notification.request();
-        }
-
-        if (status.isPermanentlyDenied) {
-          if (mounted) {
-            setState(() => _deviceLoading = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Leja e njoftimeve është bllokuar në cilësimet e telefonit. Klikoni për ta hapur.'),
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: Colors.orange,
-                action: SnackBarAction(
-                  label: 'CILËSIMET',
-                  textColor: Colors.white,
-                  onPressed: () => openAppSettings(),
-                ),
-              ),
-            );
+        try {
+          var status = await Permission.notification.status;
+          if (!status.isGranted) {
+            status = await Permission.notification.request();
           }
-          return;
+
+          if (status.isDenied || status.isPermanentlyDenied) {
+            await openAppSettings();
+          }
+        } catch (e) {
+          debugPrint('Permission request error: $e');
         }
 
         try {
@@ -1321,10 +1310,15 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
           if (mounted) {
             setState(() => _deviceLoading = false);
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Nuk u mor dot Token-i i Firebase. Kontrolloni lidhjen me internet.'),
+              SnackBar(
+                content: const Text('Leja e njoftimeve nuk është aktivizuar te cilësimet e telefonit. Klikoni për ta hapur.'),
                 behavior: SnackBarBehavior.floating,
                 backgroundColor: Colors.orange,
+                action: SnackBarAction(
+                  label: 'CILËSIMET',
+                  textColor: Colors.white,
+                  onPressed: () => openAppSettings(),
+                ),
               ),
             );
           }

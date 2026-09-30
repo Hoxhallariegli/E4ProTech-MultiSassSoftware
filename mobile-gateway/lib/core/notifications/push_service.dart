@@ -1,44 +1,84 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:mobile_gateway/services/api_service.dart';
 import 'package:mobile_gateway/services/auth_service.dart';
 
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  WidgetsFlutterBinding.ensureInitialized();
+  if (!kIsWeb) await Firebase.initializeApp();
 }
 
 class PushService {
   static Future<void> initialize() async {
     try {
-      await Firebase.initializeApp();
-      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+      if (!kIsWeb) {
+        await Firebase.initializeApp();
+        FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-      var status = await Permission.notification.status;
-      if (!status.isGranted) {
-        status = await Permission.notification.request();
-      }
+        const initSettings = InitializationSettings(
+          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        );
+        await flutterLocalNotificationsPlugin.initialize(initSettings);
 
-      debugPrint('PermissionHandler Notification Status: $status');
-
-      if (status.isGranted) {
-        await registerTokenWithBackend();
-      }
-
-      final rawShopId = AuthService.instance.user?['barber_shop_id'];
-      if (rawShopId != null) {
-        final shopId = int.tryParse(rawShopId.toString());
-        if (shopId != null) {
-          await subscribeToShop(shopId);
+        final androidImpl = flutterLocalNotificationsPlugin
+            .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+        if (androidImpl != null) {
+          await androidImpl.createNotificationChannel(
+            const AndroidNotificationChannel(
+              'high_importance_channel',
+              'Njoftime Kryesore',
+              description: 'Kanal kryesor për njoftimet Push të E4ProTech Engine',
+              importance: Importance.max,
+            ),
+          );
         }
-      }
 
-      FirebaseMessaging.onMessage.listen((message) {
-        debugPrint('FCM Foreground Message: ${message.notification?.title} - ${message.notification?.body}');
-      });
+        NotificationSettings settings = await FirebaseMessaging.instance.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+          provisional: false,
+        );
+        debugPrint('FCM Authorization Status: ${settings.authorizationStatus}');
+
+        await registerTokenWithBackend();
+
+        final rawShopId = AuthService.instance.user?['barber_shop_id'];
+        if (rawShopId != null) {
+          final shopId = int.tryParse(rawShopId.toString());
+          if (shopId != null) {
+            await subscribeToShop(shopId);
+          }
+        }
+
+        FirebaseMessaging.onMessage.listen((message) {
+          debugPrint('FCM Foreground Message: ${message.notification?.title} - ${message.notification?.body}');
+          if (message.notification != null) {
+            flutterLocalNotificationsPlugin.show(
+              message.hashCode,
+              message.notification!.title,
+              message.notification!.body,
+              const NotificationDetails(
+                android: AndroidNotificationDetails(
+                  'high_importance_channel',
+                  'Njoftime Kryesore',
+                  importance: Importance.max,
+                  priority: Priority.high,
+                  icon: '@mipmap/ic_launcher',
+                ),
+              ),
+            );
+          }
+        });
+      }
     } catch (e) {
       debugPrint('PushService initialization error: $e');
     }
