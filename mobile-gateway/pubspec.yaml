@@ -1,7 +1,7 @@
 name: mobile_gateway
 description: A new Flutter project.
 publish_to: 'none'
-version: 1.0.34+33
+version: 1.0.35+34
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -33,6 +33,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/E4ProTech-Engine.png
+
 
 
 

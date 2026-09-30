@@ -64,20 +64,19 @@ class _LoginPageState extends State<LoginPage> {
         // Refresh permissions in AuthService
         await AuthService.instance.init();
 
-        // Register FCM Token with backend and subscribe to shop
-        try {
-          await PushService.initialize();
-          await PushService.registerTokenWithBackend();
+        // Register FCM Token with backend asynchronously in background (non-blocking)
+        PushService.initialize().then((_) {
+          PushService.registerTokenWithBackend();
           final rawShopId = userData['barber_shop_id'] ?? userData['business']?['id'];
           if (rawShopId != null) {
             final shopId = int.tryParse(rawShopId.toString());
             if (shopId != null) {
-              await PushService.subscribeToShop(shopId);
+              PushService.subscribeToShop(shopId);
             }
           }
-        } catch (e) {
+        }).catchError((e) {
           debugPrint('FCM post-login error: $e');
-        }
+        });
 
         // Update Dynamic Branding
         if (userData['business'] != null && mounted) {
