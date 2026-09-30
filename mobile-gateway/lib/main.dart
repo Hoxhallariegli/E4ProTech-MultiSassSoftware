@@ -17,11 +17,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AuthService.instance.init();
 
-  try {
-    await PushService.initialize();
-  } catch (e) {
-    debugPrint('PushService init error on startup: $e');
-  }
+  // Run PushService init in background without blocking runApp
+  PushService.initialize().timeout(const Duration(seconds: 3)).catchError((e) {
+    debugPrint('PushService background init error: $e');
+  });
 
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString('auth_token');

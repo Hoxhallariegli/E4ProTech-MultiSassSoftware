@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile_gateway/services/api_service.dart';
 import 'package:mobile_gateway/services/auth_service.dart';
 
@@ -104,7 +105,14 @@ class PushService {
 
   static Future<void> registerTokenWithBackend() async {
     try {
-      final token = await FirebaseMessaging.instance.getToken();
+      final prefs = await SharedPreferences.getInstance();
+      final authToken = prefs.getString('auth_token');
+      if (authToken == null || authToken.isEmpty) {
+        debugPrint('Skip FCM registration: User not logged in.');
+        return;
+      }
+
+      final token = await FirebaseMessaging.instance.getToken().timeout(const Duration(seconds: 5));
       debugPrint('FCM Token fetched: $token');
 
       if (token != null && token.isNotEmpty) {
@@ -115,7 +123,7 @@ class PushService {
           'fcm_token': token,
           'platform': platform,
           'device_name': 'Mobile Device ($userName)',
-        });
+        }).timeout(const Duration(seconds: 5));
 
         debugPrint('FCM Token registered with Laravel backend!');
       }
