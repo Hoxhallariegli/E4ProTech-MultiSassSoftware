@@ -31,6 +31,7 @@ class Create extends Component
     public $sms_enabled = false;
     public $timezone = '';
     public $max_no_show_before_block = '';
+    public $min_service_time = '';
     public $business_type = 'barbershop';
     public $staff_label = '';
     public $staff_label_plural = '';
@@ -79,6 +80,7 @@ class Create extends Component
             'sms_enabled' => $this->sms_enabled,
             'timezone' => $this->timezone,
             'max_no_show_before_block' => $this->max_no_show_before_block,
+            'min_service_time' => $this->min_service_time,
             'business_type' => $this->business_type,
             'staff_label' => $this->staff_label,
             'staff_label_plural' => $this->staff_label_plural,

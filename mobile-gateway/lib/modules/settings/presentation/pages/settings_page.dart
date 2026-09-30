@@ -1316,16 +1316,6 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
   }
 
   Future<void> _toggleGatewayDevice(bool value) async {
-    if (!widget.branding.smsEnabled) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(coreTr(context, 'settings.enable_shop_sms_first')),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
-
     setState(() => _deviceLoading = true);
     try {
       String? fcmToken;
@@ -1579,8 +1569,8 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
                   _deviceLoading
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator.adaptive(strokeWidth: 2))
                       : Switch.adaptive(
-                          value: _isGatewayDevice && widget.branding.smsEnabled,
-                          onChanged: widget.branding.smsEnabled ? _toggleGatewayDevice : null,
+                          value: _isGatewayDevice,
+                          onChanged: _toggleGatewayDevice,
                           activeColor: Colors.green,
                         ),
                 ],

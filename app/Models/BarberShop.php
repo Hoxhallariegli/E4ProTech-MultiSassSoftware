@@ -24,6 +24,7 @@ class BarberShop extends Model
         'sms_enabled',
         'timezone',
         'max_no_show_before_block',
+        'min_service_time',
         'business_type',
         'staff_label',
         'staff_label_plural',
@@ -38,6 +39,7 @@ class BarberShop extends Model
             'active' => 'boolean',
             'sms_enabled' => 'boolean',
             'max_no_show_before_block' => 'integer',
+            'min_service_time' => 'integer',
         ];
     }
 
@@ -57,6 +59,7 @@ class BarberShop extends Model
             'sms_enabled' => ['boolean'],
             'timezone' => ['required', 'string', 'max:255'],
             'max_no_show_before_block' => ['nullable', 'integer'],
+            'min_service_time' => ['nullable', 'integer', 'min:1', 'max:480'],
             'business_type' => ['nullable', 'string', 'max:255'],
             'staff_label' => ['nullable', 'string', 'max:255'],
             'staff_label_plural' => ['nullable', 'string', 'max:255'],
@@ -157,5 +160,20 @@ class BarberShop extends Model
             'spa', 'aesthetic' => 'Trajtimi',
             default => 'Shërbimi',
         };
+    }
+
+    public function getResolvedMinServiceTimeAttribute(): int
+    {
+        if ($this->min_service_time && (int) $this->min_service_time > 0) {
+            return (int) $this->min_service_time;
+        }
+
+        $min = \App\Models\Service::withoutGlobalScope('barber_shop_access')
+            ->where('barber_shop_id', $this->id)
+            ->where('active', true)
+            ->where('duration_minutes', '>', 0)
+            ->min('duration_minutes');
+
+        return $min && (int) $min > 0 ? (int) $min : 15;
     }
 }

@@ -25,6 +25,7 @@ class BarberShopResource extends JsonResource
             'sms_enabled' => $this->sms_enabled,
             'timezone' => $this->timezone,
             'max_no_show_before_block' => $this->max_no_show_before_block,
+            'min_service_time' => $this->resolved_min_service_time,
             'business_type' => $this->business_type ?? 'barbershop',
             'staff_label' => $this->resolved_staff_label,
             'staff_label_plural' => $this->resolved_staff_label_plural,

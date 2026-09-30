@@ -249,11 +249,12 @@ class BookingController extends Controller
         $dayName = $date->format('l');
 
         $barber = $barberId
-            ? \App\Models\Barber::find($barberId)
+            ? \App\Models\Barber::withoutGlobalScope('barber_shop_access')->find($barberId)
             : null;
 
         $workingHour = $barberId
-            ? \App\Models\WorkingHour::where('barber_id', $barberId)
+            ? \App\Models\WorkingHour::withoutGlobalScope('barber_shop_access')
+                ->where('barber_id', $barberId)
                 ->where('day_of_week', $dayName)
                 ->first()
             : null;
@@ -305,7 +306,7 @@ class BookingController extends Controller
             }
         }
 
-        $bookings = Booking::query()
+        $bookings = Booking::withoutGlobalScope('barber_shop_access')
             ->with(['customer', 'service', 'barber'])
             ->whereBetween('appointment_at', [
                 $date->copy()->startOfDay(),
@@ -318,12 +319,19 @@ class BookingController extends Controller
 
         $barberShopId = $barber?->barber_shop_id;
 
+        if (!$barberShopId && $request->input('barber_shop_id')) {
+            $barberShopId = (int) $request->input('barber_shop_id');
+        }
+
         if (!$barberShopId && $request->user()?->barber_shop_id) {
             $barberShopId = $request->user()->barber_shop_id;
         }
 
+        $shop = $barberShopId ? \App\Models\BarberShop::find($barberShopId) : null;
+
         $activeServices = $barberShopId
-            ? \App\Models\Service::where('barber_shop_id', $barberShopId)
+            ? \App\Models\Service::withoutGlobalScope('barber_shop_access')
+                ->where('barber_shop_id', $barberShopId)
                 ->where('active', true)
                 ->get(['id', 'name', 'duration_minutes'])
             : collect();
@@ -335,20 +343,19 @@ class BookingController extends Controller
             ])
             ->all();
 
-        $stepMinutes = 15;
+        // Calculate minimum service time strictly isolated per shop_id
+        $minServiceTime = $shop
+            ? $shop->resolved_min_service_time
+            : ($activeServices->where('duration_minutes', '>', 0)->min('duration_minutes') ?: 15);
 
-        $reqDuration = 20;
+        $stepMinutes = max(5, $minServiceTime);
+
+        $reqDuration = $minServiceTime;
         if ($serviceId) {
-            $serv = \App\Models\Service::find($serviceId);
+            $serv = \App\Models\Service::withoutGlobalScope('barber_shop_access')->find($serviceId);
             if ($serv && (int) $serv->duration_minutes > 0) {
                 $reqDuration = (int) $serv->duration_minutes;
             }
-        } elseif ($activeServices->isNotEmpty()) {
-            $reqDuration = (int) (
-                $activeServices
-                    ->where('duration_minutes', '>', 0)
-                    ->min('duration_minutes') ?: 20
-            );
         }
 
         /*

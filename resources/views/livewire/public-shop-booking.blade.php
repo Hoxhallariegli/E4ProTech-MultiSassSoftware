@@ -88,12 +88,18 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">4. Ora e Takimit</label>
-                    <select wire:model.live="bookingTime"
-                            class="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-white font-bold text-sm focus:border-amber-500 focus:outline-none">
-                        @foreach(['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30'] as $timeSlot)
-                            <option value="{{ $timeSlot }}">{{ $timeSlot }}</option>
-                        @endforeach
-                    </select>
+                    @if(!empty($this->availableSlots))
+                        <select wire:model.live="bookingTime"
+                                class="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-white font-bold text-sm focus:border-amber-500 focus:outline-none">
+                            @foreach($this->availableSlots as $timeSlot)
+                                <option value="{{ $timeSlot }}">{{ $timeSlot }}</option>
+                            @endforeach
+                        </select>
+                    @else
+                        <div class="px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold text-xs flex items-center gap-2">
+                            <span>⚠️</span> Nuk ka orare të lira për këtë datë/person.
+                        </div>
+                    @endif
                     @error('bookingTime') <p class="text-xs text-rose-400 mt-1 font-bold">{{ $message }}</p> @enderror
                 </div>
             </div>

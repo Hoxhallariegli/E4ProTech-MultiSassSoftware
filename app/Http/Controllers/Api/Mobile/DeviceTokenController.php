@@ -4,10 +4,11 @@ namespace App\Http\Controllers\Api\Mobile;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Mobile\DeviceTokenResource;
-use \App\Models\DeviceToken;
+use App\Models\DeviceToken;
+use App\Models\BarberShop;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use App\Domain\DeviceToken\DTOs\DeviceTokenDTO;
 use App\Domain\DeviceToken\Actions\CreateDeviceTokenAction;
 use App\Domain\DeviceToken\Actions\UpdateDeviceTokenAction;
@@ -16,10 +17,18 @@ class DeviceTokenController extends Controller
 {
     public function saveWebToken(Request $request): JsonResponse
     {
+        Log::info('🔥 RAW REQUEST HIT to saveWebToken', [
+            'raw_all' => $request->all(),
+            'headers' => $request->headers->all(),
+            'ip' => $request->ip(),
+            'user' => $request->user()?->only(['id', 'name', 'email', 'barber_shop_id']),
+        ]);
+
         $request->validate([
             'fcm_token' => 'required|string',
             'platform' => 'nullable|string',
             'device_name' => 'nullable|string',
+            'barber_shop_id' => 'nullable|integer',
         ]);
 
         $user = $request->user() ?: auth()->user();
@@ -27,35 +36,132 @@ class DeviceTokenController extends Controller
         $platform = $request->input('platform', 'android');
         $deviceName = $request->input('device_name', 'Mobile Device');
 
-        if (!$user) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
-        }
+        $shopId = $request->input('barber_shop_id')
+            ?: $user?->barber_shop_id
+            ?: BarberShop::value('id');
 
-        $shopId = $user->barber_shop_id ?: \App\Models\BarberShop::value('id');
-
-        if (!$shopId) {
-            return response()->json(['message' => 'Llogaria juaj nuk ka dyqan aktiv.'], 422);
-        }
-
-        $deviceToken = DeviceToken::updateOrCreate(
-            [
-                'barber_shop_id' => $shopId,
-                'user_id' => $user->id,
-                'fcm_token' => $fcmToken,
-            ],
-            [
-                'platform' => in_array($platform, ['android', 'ios', 'web']) ? $platform : 'android',
-                'is_sms_gateway' => false,
-                'device_name' => $deviceName,
-                'last_used_at' => now(),
-            ]
-        );
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Token-i i pajisjes u regjistrua me sukses te baza e të dhënave!',
-            'data' => $deviceToken,
+        Log::info('FCM saveWebToken endpoint hit', [
+            'fcm_token' => $fcmToken,
+            'user_id' => $user?->id,
+            'user_name' => $user?->name,
+            'barber_shop_id' => $shopId,
+            'platform' => $platform,
+            'device_name' => $deviceName,
         ]);
+
+        try {
+            $deviceToken = DeviceToken::updateOrCreate(
+                [
+                    'fcm_token' => $fcmToken,
+                ],
+                [
+                    'barber_shop_id' => $shopId,
+                    'user_id' => $user?->id,
+                    'platform' => in_array($platform, ['android', 'ios', 'web']) ? $platform : 'android',
+                    'is_sms_gateway' => false,
+                    'device_name' => $deviceName,
+                    'last_used_at' => now(),
+                ]
+            );
+
+            Log::info('FCM Token successfully saved to DB', ['device_token_id' => $deviceToken->id]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Token-i i pajisjes u regjistrua me sukses te baza e të dhënave!',
+                'data' => $deviceToken,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('FCM saveWebToken DB Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Dështoi ruajtja e token-it te baza e të dhënave: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function setPrimaryGateway(Request $request): JsonResponse
+    {
+        Log::info('🔥 RAW REQUEST HIT to setPrimaryGateway', [
+            'raw_all' => $request->all(),
+            'headers' => $request->headers->all(),
+            'ip' => $request->ip(),
+            'user' => $request->user()?->only(['id', 'name', 'email', 'barber_shop_id']),
+        ]);
+
+        $request->validate([
+            'fcm_token' => 'required|string',
+            'is_sms_gateway' => 'required|boolean',
+            'device_name' => 'nullable|string',
+            'barber_shop_id' => 'nullable|integer',
+        ]);
+
+        $user = $request->user() ?: auth()->user();
+        $fcmToken = $request->input('fcm_token');
+        $isSmsGateway = $request->boolean('is_sms_gateway');
+
+        $shopId = $request->input('barber_shop_id')
+            ?: $user?->barber_shop_id
+            ?: BarberShop::value('id');
+
+        Log::info('FCM setPrimaryGateway endpoint hit', [
+            'fcm_token' => $fcmToken,
+            'is_sms_gateway' => $isSmsGateway,
+            'user_id' => $user?->id,
+            'barber_shop_id' => $shopId,
+        ]);
+
+        try {
+            if ($isSmsGateway) {
+                if ($shopId) {
+                    DeviceToken::where('barber_shop_id', $shopId)->update(['is_sms_gateway' => false]);
+                }
+
+                $deviceToken = DeviceToken::updateOrCreate(
+                    [
+                        'fcm_token' => $fcmToken,
+                    ],
+                    [
+                        'barber_shop_id' => $shopId,
+                        'user_id' => $user?->id,
+                        'platform' => $request->input('platform', 'android'),
+                        'is_sms_gateway' => true,
+                        'device_name' => $request->input('device_name', 'Android Device'),
+                        'last_used_at' => now(),
+                    ]
+                );
+
+                // Auto-enable SMS on the salon record if activating gateway
+                if ($shopId) {
+                    BarberShop::where('id', $shopId)->update(['sms_enabled' => true]);
+                }
+
+                Log::info('FCM setPrimaryGateway successfully activated for shop ' . $shopId);
+
+                return response()->json([
+                    'success' => true,
+                    'is_sms_gateway' => true,
+                    'message' => 'Kjo pajisje u caktua si SMS Gateway kryesor i sallonit.',
+                    'data' => $deviceToken,
+                ]);
+            } else {
+                DeviceToken::where('fcm_token', $fcmToken)->delete();
+
+                Log::info('FCM setPrimaryGateway deactivated for token');
+
+                return response()->json([
+                    'success' => true,
+                    'is_sms_gateway' => false,
+                    'message' => 'Pajisja u çaktivizua dhe u hoq nga lista.',
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::error('FCM setPrimaryGateway DB Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Dështoi ruajtja e SMS Gateway: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function index(Request $request)
@@ -110,60 +216,6 @@ class DeviceTokenController extends Controller
         return new DeviceTokenResource($item);
     }
 
-    public function setPrimaryGateway(Request $request): JsonResponse
-    {
-        $request->validate([
-            'fcm_token' => 'required|string',
-            'is_sms_gateway' => 'required|boolean',
-            'device_name' => 'nullable|string',
-        ]);
-
-        $user = $request->user();
-        $shopId = $user->barber_shop_id;
-        $fcmToken = $request->input('fcm_token');
-        $isSmsGateway = $request->boolean('is_sms_gateway');
-
-        if (!$shopId) {
-            return response()->json(['message' => 'Llogaria juaj nuk ka dyqan aktiv.'], 422);
-        }
-
-        if ($isSmsGateway) {
-            // Unset all other devices for this shop to ensure only 1 primary SMS gateway device
-            DeviceToken::where('barber_shop_id', $shopId)->update(['is_sms_gateway' => false]);
-
-            $deviceToken = DeviceToken::updateOrCreate(
-                [
-                    'barber_shop_id' => $shopId,
-                    'user_id' => $user->id,
-                    'fcm_token' => $fcmToken,
-                ],
-                [
-                    'platform' => $request->input('platform', 'android'),
-                    'is_sms_gateway' => true,
-                    'device_name' => $request->input('device_name', 'Android Device'),
-                    'last_used_at' => now(),
-                ]
-            );
-
-            return response()->json([
-                'success' => true,
-                'is_sms_gateway' => true,
-                'message' => 'Kjo pajisje u caktua si SMS Gateway kryesor i sallonit.',
-            ]);
-        } else {
-            // When turning OFF, delete the device token record from the DB
-            DeviceToken::where('barber_shop_id', $shopId)
-                ->where('fcm_token', $fcmToken)
-                ->delete();
-
-            return response()->json([
-                'success' => true,
-                'is_sms_gateway' => false,
-                'message' => 'Pajisja u çaktivizua dhe u hoq nga lista.',
-            ]);
-        }
-    }
-
     public function store(Request $request)
     {
         abort_if_cannot('add_device_tokens');
@@ -199,7 +251,7 @@ class DeviceTokenController extends Controller
             $item->delete();
             return response()->json(['success' => true, 'message' => 'DeviceToken deleted.']);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error("Delete Error: " . $e->getMessage());
+            Log::error("Delete Error: " . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => config('app.debug') ? $e->getMessage() : 'Record is referenced by other data and cannot be deleted.',
