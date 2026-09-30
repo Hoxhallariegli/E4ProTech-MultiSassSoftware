@@ -21,6 +21,7 @@ import 'package:mobile_gateway/services/auth_service.dart';
 import 'package:mobile_gateway/modules/auth/presentation/pages/login_page.dart';
 import 'package:mobile_gateway/modules/settings/presentation/pages/notification_settings_page.dart';
 import 'package:mobile_gateway/modules/dashboard/message_log/presentation/pages/message_log_list_page.dart';
+import 'package:mobile_gateway/core/notifications/push_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -1292,18 +1293,23 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
             status = await Permission.notification.request();
           }
 
-          if (status.isDenied || status.isPermanentlyDenied) {
+          if (status.isGranted) {
+            await Future.delayed(const Duration(milliseconds: 400));
+          } else if (status.isDenied || status.isPermanentlyDenied) {
             await openAppSettings();
           }
         } catch (e) {
           debugPrint('Permission request error: $e');
         }
 
-        try {
-          fcmToken = await FirebaseMessaging.instance.getToken();
-          debugPrint('FCM Real Token: $fcmToken');
-        } catch (e) {
-          debugPrint('FCM getToken error: $e');
+        for (int i = 0; i < 4; i++) {
+          try {
+            fcmToken = await FirebaseMessaging.instance.getToken().timeout(const Duration(seconds: 4));
+            if (fcmToken != null && fcmToken.isNotEmpty) break;
+          } catch (e) {
+            debugPrint('FCM getToken error attempt $i: $e');
+          }
+          await Future.delayed(const Duration(milliseconds: 600));
         }
 
         if (fcmToken == null || fcmToken.isEmpty) {
@@ -1324,6 +1330,9 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
           }
           return;
         }
+
+        // Register with device-tokens save-web-token as well
+        PushService.registerTokenWithBackend();
 
         final rawShopId = AuthService.instance.user?['barber_shop_id'];
         if (rawShopId != null) {
