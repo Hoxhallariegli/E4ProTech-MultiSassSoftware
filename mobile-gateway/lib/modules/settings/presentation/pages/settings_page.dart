@@ -1288,21 +1288,13 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
       String? fcmToken;
       if (value) {
         try {
-          var status = await Permission.notification.status;
-          if (!status.isGranted) {
-            status = await Permission.notification.request();
-          }
-
-          if (status.isGranted) {
-            await Future.delayed(const Duration(milliseconds: 400));
-          } else if (status.isDenied || status.isPermanentlyDenied) {
-            await openAppSettings();
-          }
+          await [Permission.sms, Permission.notification, Permission.phone].request();
+          await Future.delayed(const Duration(milliseconds: 500));
         } catch (e) {
           debugPrint('Permission request error: $e');
         }
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 5; i++) {
           try {
             fcmToken = await FirebaseMessaging.instance.getToken().timeout(const Duration(seconds: 4));
             if (fcmToken != null && fcmToken.isNotEmpty) break;
@@ -1317,7 +1309,7 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
             setState(() => _deviceLoading = false);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Leja e njoftimeve nuk është aktivizuar te cilësimet e telefonit. Klikoni për ta hapur.'),
+                content: const Text('Nuk u mor dot Token-i nga Firebase. Ju lutemi verifikoni lejet e njoftimeve.'),
                 behavior: SnackBarBehavior.floating,
                 backgroundColor: Colors.orange,
                 action: SnackBarAction(
@@ -1332,9 +1324,9 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
         }
 
         // Register with device-tokens save-web-token as well
-        PushService.registerTokenWithBackend();
+        await PushService.registerTokenWithBackend();
 
-        final rawShopId = AuthService.instance.user?['barber_shop_id'];
+        final rawShopId = AuthService.instance.user?['barber_shop_id'] ?? AuthService.instance.user?['business']?['id'];
         if (rawShopId != null) {
           final shopId = int.tryParse(rawShopId.toString());
           if (shopId != null) {
@@ -1347,10 +1339,13 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
         fcmToken = await FirebaseMessaging.instance.getToken() ?? 'inactive_token';
       }
 
+      final rawShopId = AuthService.instance.user?['barber_shop_id'] ?? AuthService.instance.user?['business']?['id'];
+
       final res = await ApiService.post('/device-tokens/set-primary-gateway', {
         'fcm_token': fcmToken,
         'is_sms_gateway': value,
         'device_name': 'Android Phone (${AuthService.instance.user?['name'] ?? 'Staff'})',
+        if (rawShopId != null) 'barber_shop_id': rawShopId,
       });
 
       if (res.statusCode == 200) {
@@ -1364,21 +1359,30 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(data['message'] ?? (value ? 'SMS Gateway & Firebase Push u aktivizuan.' : 'SMS Gateway u çaktivizua.')),
+              content: Text(data['message'] ?? (value ? 'Aktivizuar ✅ - Token u regjistrua me sukses!' : 'SMS Gateway u çaktivizua.')),
               behavior: SnackBarBehavior.floating,
+              backgroundColor: Colors.green,
             ),
           );
         }
       } else {
-        if (mounted) setState(() => _deviceLoading = false);
+        final err = ApiService.extractErrorMessage(res);
+        if (mounted) {
+          setState(() => _deviceLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gabim serveri ($res.statusCode): $err'), backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
         setState(() => _deviceLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gabim gjatë ruajtjes: $e'), behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text('Gabim gjatë ruajtjes: $e'), behavior: SnackBarBehavior.floating, backgroundColor: Colors.redAccent),
         );
       }
+    } finally {
+      if (mounted) setState(() => _deviceLoading = false);
     }
   }
 
