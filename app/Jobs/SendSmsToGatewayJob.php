@@ -61,9 +61,7 @@ class SendSmsToGatewayJob
         }
 
         try {
-            $fcmSent = $firebaseService->sendNotification(
-                'SMS Gateway',
-                'Duke dërguar SMS...',
+            $fcmSent = $firebaseService->sendDataMessage(
                 $gatewayDevice->fcm_token,
                 [
                     'action' => 'SEND_SMS',
@@ -75,7 +73,7 @@ class SendSmsToGatewayJob
 
             // Mark as 'processing' in Queue
             $queue->update(['status' => 'processing']);
-            Log::info("📱 [SendSmsToGatewayJob] Pushed SEND_SMS FCM to Gateway device [{$gatewayDevice->device_name}] for Queue ID: {$queue->id}. FCM Status: " . ($fcmSent ? 'SUCCESS' : 'FAILED'));
+            Log::info("📱 [SendSmsToGatewayJob] Pushed silent SEND_SMS FCM data message to Gateway device [{$gatewayDevice->device_name}] for Queue ID: {$queue->id}. FCM Status: " . ($fcmSent ? 'SUCCESS' : 'FAILED'));
 
         } catch (\Throwable $e) {
             $queue->increment('retry_count');

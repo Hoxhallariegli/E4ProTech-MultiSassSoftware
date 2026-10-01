@@ -70,6 +70,44 @@ class FirebaseService
         }
     }
 
+    public function sendDataMessage(string $token, array $customData = []): bool
+    {
+        $dbEnabled = Setting::where('key', 'firebase_enabled')->value('value');
+        $enabled = filter_var(env('FIREBASE_ENABLED', $dbEnabled), FILTER_VALIDATE_BOOLEAN) || filter_var($dbEnabled, FILTER_VALIDATE_BOOLEAN);
+
+        if (!$enabled) return false;
+
+        $projectId = env('FIREBASE_PROJECT_ID') ?: Setting::where('key', 'firebase_project_id')->value('value');
+        $credentialsJson = env('FIREBASE_CREDENTIALS') ?: Setting::where('key', 'firebase_credentials')->value('value');
+        $credentials = is_string($credentialsJson) ? json_decode($credentialsJson, true) : null;
+
+        if (!$projectId || !$credentials || empty($credentials['client_email']) || empty($credentials['private_key'])) {
+            return false;
+        }
+
+        try {
+            $accessToken = $this->getAccessToken($credentials);
+            if (!$accessToken) return false;
+
+            $message = [
+                'token' => $token,
+                'data' => array_map('strval', $customData),
+                'android' => [
+                    'priority' => 'high',
+                ],
+            ];
+
+            $response = Http::withToken($accessToken)->post("https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send", [
+                'message' => $message
+            ]);
+
+            return $response->successful();
+        } catch (\Exception $e) {
+            Log::error('Firebase Data Message Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public function sendToShop(int $shopId, string $title, string $body, array $customData = []): int
     {
         // Send directly to all registered FCM device tokens for this shop, or users belonging to this shop
