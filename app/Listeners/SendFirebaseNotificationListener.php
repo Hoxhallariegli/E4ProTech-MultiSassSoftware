@@ -84,8 +84,9 @@ class SendFirebaseNotificationListener
                             'status' => 'pending',
                             'retry_count' => 0,
                         ]);
+                        \App\Models\AuditTrail::log($queue, 'create', 'MessageQueues');
 
-                        MessageLog::create([
+                        $msgLog = MessageLog::create([
                             'barber_shop_id' => $booking->barber_shop_id,
                             'customer_id' => $booking->customer_id,
                             'channel' => 'sms',
@@ -93,6 +94,7 @@ class SendFirebaseNotificationListener
                             'status' => 'pending',
                             'sent_at' => null,
                         ]);
+                        \App\Models\AuditTrail::log($msgLog, 'create', 'MessageLogs');
 
                         Log::info("📝 [STEP 4a] SMS Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
 

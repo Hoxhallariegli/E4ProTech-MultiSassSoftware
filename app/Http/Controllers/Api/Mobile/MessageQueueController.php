@@ -41,16 +41,22 @@ class MessageQueueController extends Controller
         if ($item) {
             $status = in_array($request->input('status'), ['sent', 'failed']) ? $request->input('status') : 'sent';
             $item->update(['status' => $status]);
+            \App\Models\AuditTrail::log($item, 'update', 'MessageQueues');
 
             // Update matching MessageLog record to 'sent' or 'failed'
-            \App\Models\MessageLog::where('barber_shop_id', $item->barber_shop_id)
+            $log = \App\Models\MessageLog::where('barber_shop_id', $item->barber_shop_id)
                 ->where('channel', 'sms')
                 ->where('customer_id', $item->booking?->customer_id)
                 ->latest('id')
-                ->first()?->update([
+                ->first();
+
+            if ($log) {
+                $log->update([
                     'status' => $status,
                     'sent_at' => $status === 'sent' ? now() : null,
                 ]);
+                \App\Models\AuditTrail::log($log, 'update', 'MessageLogs');
+            }
 
             return response()->json(['success' => true, 'message' => "SMS status updated to {$status}!"]);
         }

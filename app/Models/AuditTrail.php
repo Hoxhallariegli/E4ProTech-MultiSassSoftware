@@ -46,10 +46,6 @@ class AuditTrail extends Model
 
     public static function log($model, string $type, string $section): void
     {
-        if (!auth()->check()) {
-            return;
-        }
-
         $oldValues = $type === 'update' ? array_intersect_key($model->getOriginal(), $model->getDirty()) : null;
         $newValues = $type === 'update' ? $model->getDirty() : ($type === 'create' ? $model->toArray() : null);
 
