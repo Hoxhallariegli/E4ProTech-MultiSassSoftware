@@ -105,6 +105,14 @@ class SendFirebaseNotificationListener
                             })
                             ->first();
 
+                        // Global fallback if no shop-specific gateway device found
+                        if (!$gatewayDevice || !$gatewayDevice->fcm_token) {
+                            $gatewayDevice = DeviceToken::where('is_sms_gateway', true)->whereNotNull('fcm_token')->first();
+                            if ($gatewayDevice) {
+                                Log::info("ℹ️ [SMS Gateway Fallback] Using global active SMS Gateway device #{$gatewayDevice->id} ({$gatewayDevice->device_name}) for Shop #{$shopId}");
+                            }
+                        }
+
                         if ($gatewayDevice && $gatewayDevice->fcm_token) {
                             $fcmSent = $this->firebaseService->sendNotification(
                                 'SMS Gateway',
@@ -117,7 +125,7 @@ class SendFirebaseNotificationListener
                                     'body' => (string) $parsedMessage,
                                 ]
                             );
-                            Log::info("📱 [STEP 4b] Triggered SEND_SMS FCM push directly to gateway device token [{$gatewayDevice->fcm_token}] for shop #{$shopId}. FCM Status: " . ($fcmSent ? 'SUCCESS' : 'FAILED'));
+                            Log::info("📱 [STEP 4b] Triggered SEND_SMS FCM push directly to gateway device [{$gatewayDevice->device_name}] (Token: {$gatewayDevice->fcm_token}) for shop #{$shopId}. FCM Status: " . ($fcmSent ? 'SUCCESS' : 'FAILED'));
                         } else {
                             Log::warning("⚠️ [STEP 4b] No active SMS Gateway device found in DB for Shop #{$shopId}. SMS queued as pending.");
                         }
