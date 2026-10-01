@@ -35,13 +35,9 @@ class MessageQueueController extends Controller
 
     public function markSent(Request $request): JsonResponse
     {
-        $request->validate([
-            'id' => 'required',
-            'status' => 'nullable|string',
-            'error_message' => 'nullable|string',
-        ]);
+        $id = $request->input('sms_id') ?? $request->input('id');
 
-        $item = MessageQueue::find($request->id);
+        $item = MessageQueue::find($id);
         if ($item) {
             $status = in_array($request->input('status'), ['sent', 'failed']) ? $request->input('status') : 'sent';
             $item->update(['status' => $status]);
@@ -49,7 +45,7 @@ class MessageQueueController extends Controller
             // Update matching MessageLog record to 'sent' or 'failed'
             \App\Models\MessageLog::where('barber_shop_id', $item->barber_shop_id)
                 ->where('channel', 'sms')
-                ->where('message', $item->message_content)
+                ->where('customer_id', $item->booking?->customer_id)
                 ->latest('id')
                 ->first()?->update([
                     'status' => $status,

@@ -94,6 +94,7 @@ class FirebaseService
                 'data' => array_map('strval', $customData),
                 'android' => [
                     'priority' => 'high',
+                    'ttl' => '0s',
                 ],
             ];
 
