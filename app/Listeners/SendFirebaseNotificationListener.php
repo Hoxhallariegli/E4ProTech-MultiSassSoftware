@@ -84,7 +84,7 @@ class SendFirebaseNotificationListener
                             'customer_id' => $booking->customer_id,
                             'channel' => 'sms',
                             'message' => $parsedMessage,
-                            'status' => 'pending', // NOT sent yet, waiting for app to process
+                            'status' => 'failed', // Përkohësisht derisa të konfirmohet dërgimi nga APK
                             'sent_at' => null,
                         ]);
 
