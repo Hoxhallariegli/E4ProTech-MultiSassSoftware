@@ -33,6 +33,8 @@ String formatPhone(String raw) {
 Future<void> _reportSmsStatus(String smsId, String status, {String? error, String? phone, String? body}) async {
   try {
     final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('last_processed_sms_id', smsId);
+
     if (phone != null) {
       List<String> logs = prefs.getStringList('sms_logs') ?? [];
       logs.insert(0, jsonEncode({'phone': phone, 'body': body ?? '', 'status': status, 'time': DateTime.now().toIso8601String(), 'error': error ?? ''}));
@@ -66,9 +68,10 @@ void onStart(ServiceInstance service) async {
 
     final prefs = await SharedPreferences.getInstance();
     final String lastId = prefs.getString('last_processed_sms_id') ?? '';
-    if (lastId == smsId) return; // Prevent duplicate sending for exact same SMS ID
-
-    await prefs.setString('last_processed_sms_id', smsId);
+    if (lastId == smsId) {
+      debugPrint('⏭️ SMS #$smsId already processed. Skipping duplicate.');
+      return;
+    }
 
     final String phone = formatPhone((data['phone'] ?? '').toString());
     final String body = data['body'] ?? '';
@@ -129,7 +132,6 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
         if (phone.isNotEmpty && body.isNotEmpty) {
           try {
-            await prefs.setString('last_processed_sms_id', smsId);
             final Telephony telephony = Telephony.instance;
             await telephony.sendSms(to: phone, message: body);
             await _reportSmsStatus(smsId, 'sent', phone: phone, body: body);
@@ -234,8 +236,6 @@ class PushService {
 
             if (phone.isNotEmpty && body.isNotEmpty) {
               try {
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.setString('last_processed_sms_id', smsId);
                 final Telephony telephony = Telephony.instance;
                 await telephony.sendSms(to: phone, message: body);
                 await _reportSmsStatus(smsId, 'sent', phone: phone, body: body);

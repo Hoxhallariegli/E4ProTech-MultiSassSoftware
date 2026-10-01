@@ -50,19 +50,18 @@ class DeviceTokenController extends Controller
         ]);
 
         try {
-            $deviceToken = DeviceToken::updateOrCreate(
-                [
-                    'fcm_token' => $fcmToken,
-                ],
-                [
-                    'barber_shop_id' => $shopId,
-                    'user_id' => $user?->id,
-                    'platform' => in_array($platform, ['android', 'ios', 'web']) ? $platform : 'android',
-                    'is_sms_gateway' => false,
-                    'device_name' => $deviceName,
-                    'last_used_at' => now(),
-                ]
-            );
+            // Delete any existing duplicates for this FCM token across all shops/users
+            DeviceToken::where('fcm_token', $fcmToken)->delete();
+
+            $deviceToken = DeviceToken::create([
+                'fcm_token' => $fcmToken,
+                'barber_shop_id' => $shopId,
+                'user_id' => $user?->id,
+                'platform' => in_array($platform, ['android', 'ios', 'web']) ? $platform : 'android',
+                'is_sms_gateway' => false,
+                'device_name' => $deviceName,
+                'last_used_at' => now(),
+            ]);
 
             Log::info('FCM Token successfully saved to DB', ['device_token_id' => $deviceToken->id]);
 
@@ -117,19 +116,18 @@ class DeviceTokenController extends Controller
                     DeviceToken::where('barber_shop_id', $shopId)->update(['is_sms_gateway' => false]);
                 }
 
-                $deviceToken = DeviceToken::updateOrCreate(
-                    [
-                        'fcm_token' => $fcmToken,
-                    ],
-                    [
-                        'barber_shop_id' => $shopId,
-                        'user_id' => $user?->id,
-                        'platform' => $request->input('platform', 'android'),
-                        'is_sms_gateway' => true,
-                        'device_name' => $request->input('device_name', 'Android Device'),
-                        'last_used_at' => now(),
-                    ]
-                );
+                // Remove any old rows for this FCM token
+                DeviceToken::where('fcm_token', $fcmToken)->delete();
+
+                $deviceToken = DeviceToken::create([
+                    'fcm_token' => $fcmToken,
+                    'barber_shop_id' => $shopId,
+                    'user_id' => $user?->id,
+                    'platform' => $request->input('platform', 'android'),
+                    'is_sms_gateway' => true,
+                    'device_name' => $request->input('device_name', 'Android Device'),
+                    'last_used_at' => now(),
+                ]);
 
                 // Auto-enable SMS on the salon record if activating gateway
                 if ($shopId) {
