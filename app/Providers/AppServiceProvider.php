@@ -36,6 +36,21 @@ class AppServiceProvider extends ServiceProvider
         if (class_exists(\App\Models\BarberShop::class)) {
             \App\Models\BarberShop::observe(\App\Observers\BarberShopObserver::class);
         }
+        if (class_exists(\App\Models\Booking::class)) {
+            \App\Models\Booking::observe(\App\Observers\BookingObserver::class);
+        }
+        if (class_exists(\App\Models\Customer::class)) {
+            \App\Models\Customer::observe(\App\Observers\CustomerObserver::class);
+        }
+        if (class_exists(\App\Models\Payment::class)) {
+            \App\Models\Payment::observe(\App\Observers\PaymentObserver::class);
+        }
+        if (class_exists(\App\Models\Service::class)) {
+            \App\Models\Service::observe(\App\Observers\ServiceObserver::class);
+        }
+        if (class_exists(\App\Models\Barber::class)) {
+            \App\Models\Barber::observe(\App\Observers\BarberObserver::class);
+        }
         $this->configureAuth();
         $this->configureCommands();
         $this->configureDates();

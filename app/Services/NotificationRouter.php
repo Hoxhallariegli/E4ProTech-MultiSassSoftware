@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Log;
 
 class NotificationRouter
 {
+    protected static array $processedEvents = [];
+
     /**
      * Called from every generated Observer on created/updated/deleted.
      * Checks if Firebase Push & SMS Gateway notifications are enabled
@@ -17,6 +19,13 @@ class NotificationRouter
      */
     public function maybeNotify(string $event, Model $item, string $action): void
     {
+        $dedupKey = get_class($item) . ':' . $item->getKey() . ':' . $action;
+        if (isset(static::$processedEvents[$dedupKey])) {
+            Log::info("⏭️ [NotificationRouter] Skipped duplicate trigger for {$dedupKey}");
+            return;
+        }
+        static::$processedEvents[$dedupKey] = true;
+
         $shopId = $item->barber_shop_id ?? auth()->user()?->barber_shop_id;
 
         $enabled = true; // Default enabled if no override setting exists

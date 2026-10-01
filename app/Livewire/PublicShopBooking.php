@@ -261,6 +261,13 @@ class PublicShopBooking extends Component
 
         $customer->increment('total_bookings');
 
+        // Trigger Notification Router explicitly (Deduplicated automatically by NotificationRouter)
+        try {
+            app(NotificationRouter::class)->maybeNotify('bookings.created', $booking, 'created');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to trigger NotificationRouter from Livewire: " . $e->getMessage());
+        }
+
         $this->createdBookingId = $booking->id;
         $this->bookingSuccess = true;
     }
