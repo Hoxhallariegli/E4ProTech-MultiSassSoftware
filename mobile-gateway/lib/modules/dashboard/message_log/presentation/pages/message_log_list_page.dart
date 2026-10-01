@@ -158,7 +158,7 @@ _FilterDropdown(label: message_logTr(context, 'field.status'), value: _filters['
                   if (index == items.length) return state is MessageLogLoaded && state.hasMore ? const Padding(padding: EdgeInsets.all(22), child: Center(child: CircularProgressIndicator.adaptive())) : const SizedBox(height: 20);
                   return MessageLogCard(
                     item: items[index],
-                    onTap: canEdit ? () => _openForm(items[index]) : null,
+                    onTap: () => _showLogDetailsModal(context, items[index]),
                     onDelete: canDelete ? () => _confirmDelete(context, items[index]) : null,
                   );
                 },
@@ -179,6 +179,94 @@ _FilterDropdown(label: message_logTr(context, 'field.status'), value: _filters['
       destructive: true,
     );
     if (ok == true && context.mounted) context.read<MessageLogCubit>().delete(item['id']);
+  }
+
+  void _showLogDetailsModal(BuildContext context, Map<String, dynamic> item) {
+    final customer = (item['customer_name'] ?? item['customer']?['name'] ?? 'Klient').toString();
+    final channel = (item['channel'] ?? 'sms').toString().toUpperCase();
+    final message = (item['message'] ?? '').toString();
+    final status = (item['status'] ?? 'sent').toString().toLowerCase();
+    final sentAt = item['sent_at']?.toString() ?? item['created_at']?.toString() ?? '';
+    final error = item['error_message']?.toString() ?? '';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E212B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(
+              channel == 'SMS' ? Icons.sms_rounded : Icons.chat_bubble_rounded,
+              color: status == 'sent' ? Colors.green : Colors.red,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Detajet e Logut #$customer',
+                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Chip(
+                  label: Text(channel, style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+                  backgroundColor: Colors.blue.shade800,
+                  padding: EdgeInsets.zero,
+                ),
+                const SizedBox(width: 8),
+                Chip(
+                  label: Text(status.toUpperCase(), style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+                  backgroundColor: status == 'sent' ? Colors.green.shade800 : Colors.red.shade800,
+                  padding: EdgeInsets.zero,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text('Klienti: $customer', style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
+            if (sentAt.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text('Koha: $sentAt', style: const TextStyle(color: Colors.grey, fontSize: 11)),
+            ],
+            const SizedBox(height: 14),
+            const Text('Përmbajtja e Mesazhit:', style: TextStyle(color: Colors.amber, fontSize: 12, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade800),
+              ),
+              child: SelectableText(
+                message.isEmpty ? 'Përmbajtja bosh.' : message,
+                style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.4),
+              ),
+            ),
+            if (error.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              const Text('Gabimi:', style: TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(error, style: const TextStyle(color: Colors.redAccent, fontSize: 11)),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Mbyll', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 }
 

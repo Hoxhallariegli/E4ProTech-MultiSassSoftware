@@ -100,18 +100,18 @@ class MessageLogCard extends StatelessWidget {
               ],
             ),
           ),
-          if (onTap != null || onDelete != null)
-            PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert_rounded, color: isDark ? Colors.white70 : Colors.black54),
-              onSelected: (value) {
-                if (value == 'edit' && onTap != null) onTap!();
-                if (value == 'delete' && onDelete != null) onDelete!();
-              },
-              itemBuilder: (_) => [
-                if (onTap != null) PopupMenuItem(value: 'edit', child: Text(message_logTr(context, 'list.edit'))),
-                if (onDelete != null) PopupMenuItem(value: 'delete', child: Text(message_logTr(context, 'list.delete'))),
-              ],
-            ),
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert_rounded, color: isDark ? Colors.white70 : Colors.black54),
+            onSelected: (value) {
+              if (value == 'view' && onTap != null) onTap!();
+              if (value == 'edit' && onTap != null) onTap!();
+              if (value == 'delete' && onDelete != null) onDelete!();
+            },
+            itemBuilder: (_) => [
+              if (onTap != null) const PopupMenuItem(value: 'view', child: Text('👁️ Shiko Detajet')),
+              if (onDelete != null) PopupMenuItem(value: 'delete', child: Text(message_logTr(context, 'list.delete'))),
+            ],
+          ),
         ],
       ),
     );
