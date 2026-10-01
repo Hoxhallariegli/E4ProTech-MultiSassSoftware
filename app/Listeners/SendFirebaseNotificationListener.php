@@ -72,12 +72,13 @@ class SendFirebaseNotificationListener
                         };
 
                         $parsedMessage = MessageTemplate::parseForBooking($booking, $templateType);
+                        $formattedPhone = $this->formatPhone($booking->customer->phone);
 
                         $queue = MessageQueue::create([
                             'barber_shop_id' => $booking->barber_shop_id,
                             'booking_id' => $booking->id,
                             'channel' => 'sms',
-                            'phone_number' => $booking->customer->phone,
+                            'phone_number' => $formattedPhone,
                             'message_content' => $parsedMessage,
                             'scheduled_at' => now(),
                             'status' => 'pending',
@@ -153,5 +154,21 @@ class SendFirebaseNotificationListener
         } catch (\Throwable $e) {
             Log::error("❌ [STEP ERROR] FCM Push Notification Listener Error for event [{$event->event}]: " . $e->getMessage());
         }
+    }
+
+    private function formatPhone(string $raw): string
+    {
+        $digits = preg_replace('/[^\d]/', '', $raw);
+        if (empty($digits)) return $raw;
+
+        if (str_starts_with($digits, '00355')) {
+            $digits = substr($digits, 2);
+        } elseif (str_starts_with($digits, '0')) {
+            $digits = '355' . substr($digits, 1);
+        } elseif (!str_starts_with($digits, '355')) {
+            $digits = '355' . $digits;
+        }
+
+        return '+' . $digits;
     }
 }

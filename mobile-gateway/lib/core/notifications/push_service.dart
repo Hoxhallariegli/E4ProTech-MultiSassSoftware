@@ -14,6 +14,22 @@ import 'package:telephony/telephony.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
+String formatPhone(String raw) {
+  if (raw.isEmpty) return '';
+  String digits = raw.replaceAll(RegExp(r'[^\d]'), '');
+  if (digits.isEmpty) return '';
+
+  if (digits.startsWith('00355')) {
+    digits = digits.substring(2);
+  } else if (digits.startsWith('0')) {
+    digits = '355${digits.substring(1)}';
+  } else if (!digits.startsWith('355')) {
+    digits = '355$digits';
+  }
+
+  return '+$digits';
+}
+
 Future<void> _reportSmsStatus(String smsId, String status, {String? error, String? phone, String? body}) async {
   try {
     final prefs = await SharedPreferences.getInstance();
@@ -54,11 +70,7 @@ void onStart(ServiceInstance service) async {
 
     await prefs.setString('last_processed_sms_id', smsId);
 
-    String phone = (data['phone'] ?? '').toString().replaceAll(RegExp(r'[^\d+]'), '');
-    if (phone.startsWith('0')) {
-      phone = '+355${phone.substring(1)}';
-    }
-
+    final String phone = formatPhone((data['phone'] ?? '').toString());
     final String body = data['body'] ?? '';
     final int notifId = data['notif_id'] ?? 0;
 
@@ -112,11 +124,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         Map<String, dynamic> taskData = Map<String, dynamic>.from(message.data);
         taskData['notif_id'] = message.hashCode;
 
-        String phone = (message.data['phone'] ?? '').toString().replaceAll(RegExp(r'[^\d+]'), '');
+        final String phone = formatPhone((message.data['phone'] ?? '').toString());
         final String body = message.data['body'] ?? '';
-        if (phone.startsWith('0')) {
-          phone = '+355${phone.substring(1)}';
-        }
 
         if (phone.isNotEmpty && body.isNotEmpty) {
           try {
@@ -219,12 +228,9 @@ class PushService {
             Map<String, dynamic> taskData = Map<String, dynamic>.from(message.data);
             taskData['notif_id'] = message.hashCode;
 
-            String phone = (message.data['phone'] ?? '').toString().replaceAll(RegExp(r'[^\d+]'), '');
+            final String phone = formatPhone((message.data['phone'] ?? '').toString());
             final String body = message.data['body'] ?? '';
             final String smsId = message.data['sms_id'] ?? '';
-            if (phone.startsWith('0')) {
-              phone = '+355${phone.substring(1)}';
-            }
 
             if (phone.isNotEmpty && body.isNotEmpty) {
               try {
