@@ -10,9 +10,15 @@ use App\Models\MessageQueue;
 use App\Models\MessageLog;
 use App\Models\DeviceToken;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Queue\InteractsWithQueue;
 
-class SendFirebaseNotificationListener
+class SendFirebaseNotificationListener implements ShouldQueue
 {
+    use InteractsWithQueue;
+
+    public $tries = 3;
+
     public function __construct(protected FirebaseService $firebaseService)
     {
     }

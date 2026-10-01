@@ -1316,6 +1316,18 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
     }
   }
 
+  Future<void> _updateReminderHours(int hours) async {
+    try {
+      final res = await ApiService.post('/business/toggle-sms', {'reminder_hours': hours});
+      if (res.statusCode == 200) {
+        await AuthService.instance.sync();
+        widget.onAuthChange();
+      }
+    } catch (e) {
+      debugPrint('Error updating reminder hours: $e');
+    }
+  }
+
   Future<void> _toggleGatewayDevice(bool value) async {
     setState(() => _deviceLoading = true);
     try {
@@ -1533,6 +1545,68 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
                           onChanged: _toggleShopSms,
                           activeColor: theme.colorScheme.primary,
                         ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // ORA E RIKUJTESES SMS
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E212B) : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF3B4052) : theme.colorScheme.outlineVariant,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Koha e Rikujtesës (SMS Reminder)',
+                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Mesazhi "Rikujtesë" dërgohet ${widget.branding.reminderHours} orë para orarit.',
+                          style: const TextStyle(fontSize: 10.5, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: 70,
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<int>(
+                        value: [1, 2, 4, 12, 24, 48].contains(widget.branding.reminderHours) ? widget.branding.reminderHours : 2,
+                        isExpanded: true,
+                        dropdownColor: isDark ? const Color(0xFF2A2E3B) : Colors.white,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 1, child: Text('1 Orë')),
+                          DropdownMenuItem(value: 2, child: Text('2 Orë')),
+                          DropdownMenuItem(value: 4, child: Text('4 Orë')),
+                          DropdownMenuItem(value: 12, child: Text('12 Orë')),
+                          DropdownMenuItem(value: 24, child: Text('1 Ditë')),
+                          DropdownMenuItem(value: 48, child: Text('2 Ditë')),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            _updateReminderHours(val);
+                          }
+                        },
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

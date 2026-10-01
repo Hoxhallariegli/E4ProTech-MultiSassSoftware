@@ -8,6 +8,7 @@ class BrandingState {
   final String? logoUrl;
   final Color primaryColor;
   final bool smsEnabled;
+  final int reminderHours;
   final int trialDaysLeft;
   final String planName;
   final String subscriptionStatus;
@@ -22,6 +23,7 @@ class BrandingState {
     this.logoUrl,
     required this.primaryColor,
     this.smsEnabled = false,
+    this.reminderHours = 2,
     this.trialDaysLeft = 0,
     this.planName = 'Plani Pro',
     this.subscriptionStatus = 'active',
@@ -43,6 +45,7 @@ class BrandingState {
     return {
       'appName': appName,
       'logoUrl': logoUrl,
+      'reminderHours': reminderHours,
       'primaryColor': primaryColor.value,
       'smsEnabled': smsEnabled,
       'trialDaysLeft': trialDaysLeft,
@@ -56,12 +59,13 @@ class BrandingState {
     };
   }
 
-  factory BrandingState.fromMap(Map<String, dynamic> map) {
+    factory BrandingState.fromMap(Map<String, dynamic> map) {
     return BrandingState(
       appName: map['appName'] ?? 'LaraFlutter Gateway',
       logoUrl: map['logoUrl'],
       primaryColor: Color(map['primaryColor'] ?? 0xFF3B82F6),
       smsEnabled: map['smsEnabled'] ?? false,
+      reminderHours: map['reminderHours'] ?? 2,
       trialDaysLeft: map['trialDaysLeft'] ?? 0,
       planName: map['planName'] ?? 'Plani Pro',
       subscriptionStatus: map['subscriptionStatus'] ?? 'active',
@@ -96,6 +100,7 @@ class BrandingCubit extends Cubit<BrandingState> {
       logoUrl: businessData['logo'],
       primaryColor: color,
       smsEnabled: businessData['sms_active'] ?? false,
+      reminderHours: businessData['reminder_hours_before'] ?? 2,
       trialDaysLeft: businessData['trial_days_left'] ?? 0,
       planName: businessData['plan_name'] ?? 'Plani Pro',
       subscriptionStatus: businessData['subscription_status'] ?? 'active',

@@ -12,13 +12,26 @@ class BusinessSettingsController extends Controller
 {
     public function toggleSms(Request $request, ToggleSmsGatewayAction $action)
     {
-        $request->validate(['enabled' => 'required|boolean']);
+        $request->validate([
+            'enabled' => 'nullable|boolean',
+            'reminder_hours' => 'nullable|integer|min:0|max:72',
+        ]);
 
-        $status = $action->execute($request->enabled);
+        $status = null;
+        if ($request->has('enabled')) {
+            $status = $action->execute($request->enabled);
+        }
+
+        if ($request->has('reminder_hours')) {
+            $shop = Auth::user()->activeShop;
+            if ($shop) {
+                $shop->update(['reminder_hours_before' => $request->reminder_hours]);
+            }
+        }
 
         return response()->json([
             'success' => true,
-            'sms_enabled' => $status
+            'sms_enabled' => $status ?? Auth::user()?->activeShop?->sms_enabled
         ]);
     }
 
@@ -48,6 +61,7 @@ class BusinessSettingsController extends Controller
                 'logo' => $shop->logo_url,
                 'color' => $shop->primary_color,
                 'sms_active' => (bool) $shop->sms_enabled,
+                'reminder_hours_before' => (int) $shop->reminder_hours_before,
                 'plan_name' => $shop->active_plan_name,
                 'trial_days_left' => $shop->days_left,
                 'subscription_status' => $shop->days_left > 0 ? 'active' : 'expired',
