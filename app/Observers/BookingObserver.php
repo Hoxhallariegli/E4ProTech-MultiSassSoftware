@@ -11,10 +11,11 @@ class BookingObserver
     public function created(Booking $item): void
     {
         try {
+            \Illuminate\Support\Facades\Log::info("📌 [STEP 1] BookingObserver::created triggered for Booking #{$item->id} (Shop #{$item->barber_shop_id})");
             event(new BookingChanged($item, 'created'));
             app(NotificationRouter::class)->maybeNotify('bookings.created', $item, 'created');
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning("Observer (created) failure for Booking: " . $e->getMessage());
+            \Illuminate\Support\Facades\Log::warning("❌ Observer (created) failure for Booking #{$item->id}: " . $e->getMessage());
         }
     }
 

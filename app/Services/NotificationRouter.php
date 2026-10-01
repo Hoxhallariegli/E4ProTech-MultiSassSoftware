@@ -34,10 +34,14 @@ class NotificationRouter
             }
         }
 
+        Log::info("📌 [STEP 2] NotificationRouter::maybeNotify checking event [{$event}] for Shop #{$shopId} (Enabled: " . ($enabled ? 'YES' : 'NO') . ")");
+
         if (!$enabled) {
-            Log::info("Notification skipped: Event [{$event}] is disabled for shop #{$shopId} in EventSettings.");
+            Log::info("⚠️ Notification skipped: Event [{$event}] is disabled for shop #{$shopId} in EventSettings.");
             return;
         }
+
+        Log::info("🚀 [STEP 3] Dispatching FirebaseNotificationRequested event for [{$event}] Model #{$item->getKey()}");
 
         event(new FirebaseNotificationRequested(
             event: $event,

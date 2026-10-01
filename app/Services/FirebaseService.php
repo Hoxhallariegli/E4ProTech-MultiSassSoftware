@@ -84,9 +84,14 @@ class FirebaseService
             ->filter()
             ->unique();
 
+        Log::info("🔍 [FirebaseService::sendToShop] Found " . $tokens->count() . " device token(s) for Shop #{$shopId}: ", $tokens->toArray());
+
         $successCount = 0;
         foreach ($tokens as $token) {
-            if ($this->sendNotification($title, $body, $token, $customData)) {
+            $shortToken = strlen($token) > 15 ? substr($token, 0, 15) . '...' : $token;
+            $res = $this->sendNotification($title, $body, $token, $customData);
+            Log::info("  └─ FCM Push to [{$shortToken}] Status: " . ($res ? 'SUCCESS' : 'FAILED'));
+            if ($res) {
                 $successCount++;
             }
         }

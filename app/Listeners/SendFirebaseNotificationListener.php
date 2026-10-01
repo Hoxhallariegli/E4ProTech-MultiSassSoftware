@@ -24,6 +24,7 @@ class SendFirebaseNotificationListener
     public function handle(FirebaseNotificationRequested $event): void
     {
         try {
+            Log::info("📌 [STEP 4] SendFirebaseNotificationListener received event [{$event->event}] Action: [{$event->action}] Model ID: [{$event->modelId}]");
             $shopId = null;
 
             $actionLabel = match ($event->action) {
@@ -92,7 +93,7 @@ class SendFirebaseNotificationListener
                             'sent_at' => null,
                         ]);
 
-                        Log::info("Queued custom SMS template for shop #{$booking->barber_shop_id} to {$booking->customer->phone}");
+                        Log::info("📝 [STEP 4a] SMS Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
 
                         // Find Gateway device for this shop OR user of this shop
                         $gatewayDevice = DeviceToken::where('is_sms_gateway', true)
@@ -105,7 +106,7 @@ class SendFirebaseNotificationListener
                             ->first();
 
                         if ($gatewayDevice && $gatewayDevice->fcm_token) {
-                            $this->firebaseService->sendNotification(
+                            $fcmSent = $this->firebaseService->sendNotification(
                                 'SMS Gateway',
                                 'Duke dërguar SMS...',
                                 $gatewayDevice->fcm_token,
@@ -116,7 +117,9 @@ class SendFirebaseNotificationListener
                                     'body' => (string) $parsedMessage,
                                 ]
                             );
-                            Log::info("Triggered SEND_SMS push directly to gateway device for shop #{$shopId}");
+                            Log::info("📱 [STEP 4b] Triggered SEND_SMS FCM push directly to gateway device token [{$gatewayDevice->fcm_token}] for shop #{$shopId}. FCM Status: " . ($fcmSent ? 'SUCCESS' : 'FAILED'));
+                        } else {
+                            Log::warning("⚠️ [STEP 4b] No active SMS Gateway device found in DB for Shop #{$shopId}. SMS queued as pending.");
                         }
                     }
                 }
@@ -136,13 +139,13 @@ class SendFirebaseNotificationListener
 
             if ($shopId) {
                 $sentCount = $this->firebaseService->sendToShop($shopId, $title, $body, $customData);
-                Log::info("FCM Push Notification sent for shop #{$shopId} event [{$event->event}] to {$sentCount} devices.");
+                Log::info("🔔 [STEP 5] FCM Push Notification sent for shop #{$shopId} event [{$event->event}] to {$sentCount} devices. Title: '{$title}'");
             } else {
                 $sentCount = $this->firebaseService->sendToAllDevices($title, $body);
-                Log::info("FCM Push Notification sent globally for event [{$event->event}] to {$sentCount} devices.");
+                Log::info("🔔 [STEP 5] FCM Push Notification sent globally for event [{$event->event}] to {$sentCount} devices. Title: '{$title}'");
             }
         } catch (\Throwable $e) {
-            Log::error("FCM Push Notification Listener Error for event [{$event->event}]: " . $e->getMessage());
+            Log::error("❌ [STEP ERROR] FCM Push Notification Listener Error for event [{$event->event}]: " . $e->getMessage());
         }
     }
 }
