@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -1327,14 +1328,26 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
           debugPrint('Permission request error: $e');
         }
 
-        for (int i = 0; i < 5; i++) {
-          try {
-            fcmToken = await FirebaseMessaging.instance.getToken().timeout(const Duration(seconds: 4));
-            if (fcmToken != null && fcmToken.isNotEmpty) break;
-          } catch (e) {
-            debugPrint('FCM getToken error attempt $i: $e');
+        try {
+          await Firebase.initializeApp();
+        } catch (_) {}
+
+        try {
+          fcmToken = await FirebaseMessaging.instance.getToken();
+        } catch (e) {
+          debugPrint('FCM getToken direct error: $e');
+        }
+
+        if (fcmToken == null || fcmToken.isEmpty) {
+          for (int i = 0; i < 4; i++) {
+            try {
+              fcmToken = await FirebaseMessaging.instance.getToken().timeout(const Duration(seconds: 4));
+              if (fcmToken != null && fcmToken.isNotEmpty) break;
+            } catch (e) {
+              debugPrint('FCM getToken error attempt $i: $e');
+            }
+            await Future.delayed(const Duration(milliseconds: 600));
           }
-          await Future.delayed(const Duration(milliseconds: 600));
         }
 
         if (fcmToken == null || fcmToken.isEmpty) {
@@ -1342,7 +1355,7 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
             setState(() => _deviceLoading = false);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Nuk u mor dot Token-i nga Firebase. Ju lutemi verifikoni lejet e njoftimeve.'),
+                content: const Text('Nuk u mor dot Token-i nga Firebase. Ju lutemi verifikoni lejet te cilësimet e telefonit.'),
                 behavior: SnackBarBehavior.floating,
                 backgroundColor: Colors.orange,
                 action: SnackBarAction(
@@ -1369,7 +1382,11 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
           }
         }
       } else {
-        fcmToken = await FirebaseMessaging.instance.getToken() ?? 'inactive_token';
+        try {
+          fcmToken = await FirebaseMessaging.instance.getToken();
+        } catch (_) {
+          fcmToken = 'inactive_token';
+        }
       }
 
       final currentServer = await ApiService.serverUrl;
@@ -1386,16 +1403,19 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
         final data = jsonDecode(res.body);
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('is_sms_gateway_device', value);
+        await AuthService.instance.sync();
+        widget.onAuthChange();
+
         if (mounted) {
           setState(() {
             _isGatewayDevice = value;
             _deviceLoading = false;
           });
-          final tokenPreview = fcmToken.length > 10 ? fcmToken.substring(0, 10) : fcmToken;
+          final tokenPreview = (fcmToken != null && fcmToken.length > 10) ? fcmToken.substring(0, 10) : fcmToken;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(value
-                  ? 'Aktivizuar ✅ [Server: $currentServer | Token: $tokenPreview...]'
+                  ? 'Aktivizuar me sukses ✅ [Server: $currentServer | Token: $tokenPreview...]'
                   : 'SMS Gateway u çaktivizua.'),
               behavior: SnackBarBehavior.floating,
               backgroundColor: Colors.green,

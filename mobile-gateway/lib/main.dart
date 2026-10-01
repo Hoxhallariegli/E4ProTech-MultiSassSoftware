@@ -11,14 +11,22 @@ import 'package:mobile_gateway/modules/auth/presentation/pages/login_page.dart';
 import 'package:mobile_gateway/modules/dashboard/presentation/pages/app_shell.dart';
 import 'package:mobile_gateway/services/auth_service.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AuthService.instance.init();
 
-  // Run PushService init in background without blocking runApp
-  PushService.initialize().timeout(const Duration(seconds: 3)).catchError((e) {
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('Firebase initializeApp error on startup: $e');
+  }
+
+  // Run PushService init in background
+  PushService.initialize().catchError((e) {
     debugPrint('PushService background init error: $e');
   });
 
