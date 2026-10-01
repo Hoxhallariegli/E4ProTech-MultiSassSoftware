@@ -35,12 +35,28 @@ class MessageQueueController extends Controller
 
     public function markSent(Request $request): JsonResponse
     {
-        $request->validate(['id' => 'required|integer']);
+        $request->validate([
+            'id' => 'required',
+            'status' => 'nullable|string',
+            'error_message' => 'nullable|string',
+        ]);
 
         $item = MessageQueue::find($request->id);
         if ($item) {
-            $item->update(['status' => 'sent']);
-            return response()->json(['success' => true, 'message' => 'SMS u shënua si e dërguar!']);
+            $status = in_array($request->input('status'), ['sent', 'failed']) ? $request->input('status') : 'sent';
+            $item->update(['status' => $status]);
+
+            // Update matching MessageLog record to 'sent' or 'failed'
+            \App\Models\MessageLog::where('barber_shop_id', $item->barber_shop_id)
+                ->where('channel', 'sms')
+                ->where('message', $item->message_content)
+                ->latest('id')
+                ->first()?->update([
+                    'status' => $status,
+                    'sent_at' => $status === 'sent' ? now() : null,
+                ]);
+
+            return response()->json(['success' => true, 'message' => "SMS status updated to {$status}!"]);
         }
 
         return response()->json(['success' => false, 'message' => 'Nuk u gjet mesazhi.'], 404);

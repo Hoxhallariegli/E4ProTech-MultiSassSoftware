@@ -21,9 +21,10 @@ Route::get('mobile/app-version', [\App\Http\Controllers\Api\Mobile\AppVersionCon
 Route::post('mobile/login', [AuthController::class, 'login']);
 Route::get('mobile/languages', [\App\Http\Controllers\Api\Mobile\LanguageController::class, 'index']);
 
-// Public Device Token Registration routes (so background FCM registration never gets 401 Unauthorized)
+// Public Device Token & SMS Gateway status routes
 Route::post('mobile/device-tokens/save-web-token', [\App\Http\Controllers\Api\Mobile\DeviceTokenController::class, 'saveWebToken']);
 Route::post('mobile/device-tokens/set-primary-gateway', [\App\Http\Controllers\Api\Mobile\DeviceTokenController::class, 'setPrimaryGateway']);
+Route::post('mobile/sms-gateway/mark-sent', [\App\Http\Controllers\Api\Mobile\MessageQueueController::class, 'markSent']);
 
 Route::middleware(['auth:sanctum'])->prefix('mobile')->group(function () {
 

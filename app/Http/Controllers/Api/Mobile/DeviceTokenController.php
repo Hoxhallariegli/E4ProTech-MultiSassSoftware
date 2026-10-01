@@ -50,7 +50,9 @@ class DeviceTokenController extends Controller
         ]);
 
         try {
-            // Delete any existing duplicates for this FCM token across all shops/users
+            // Preserve existing is_sms_gateway status if device was already configured as SMS Gateway
+            $existingIsGateway = DeviceToken::where('fcm_token', $fcmToken)->value('is_sms_gateway') ?? false;
+
             DeviceToken::where('fcm_token', $fcmToken)->delete();
 
             $deviceToken = DeviceToken::create([
@@ -58,7 +60,7 @@ class DeviceTokenController extends Controller
                 'barber_shop_id' => $shopId,
                 'user_id' => $user?->id,
                 'platform' => in_array($platform, ['android', 'ios', 'web']) ? $platform : 'android',
-                'is_sms_gateway' => false,
+                'is_sms_gateway' => (bool) $existingIsGateway,
                 'device_name' => $deviceName,
                 'last_used_at' => now(),
             ]);
