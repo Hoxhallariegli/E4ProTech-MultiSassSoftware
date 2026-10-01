@@ -50,12 +50,21 @@ class SendBookingReminders extends Command
                 continue;
             }
 
-            $reminderHours = $shop->reminder_hours_before ?? 2;
+            $reminderMins = (int) ($shop->reminder_hours_before ?: 30);
+            if ($reminderMins <= 6) {
+                $reminderMins = $reminderMins * 60; // Convert 1h, 2h, 4h to minutes
+            }
 
             $appointmentTime = Carbon::parse($booking->appointment_at);
-            $reminderTime = $appointmentTime->copy()->subHours($reminderHours);
 
-            // If the time to send the reminder is now or has passed (but the appointment hasn't happened yet)
+            // Do not send reminder if appointment is less than 15 minutes away (too close to creation)
+            if ($appointmentTime->diffInMinutes($now) < 15) {
+                continue;
+            }
+
+            $reminderTime = $appointmentTime->copy()->subMinutes($reminderMins);
+
+            // If the time to send the reminder is now or has passed
             if ($now->greaterThanOrEqualTo($reminderTime)) {
 
                 $alreadyQueued = MessageQueue::where('booking_id', $booking->id)

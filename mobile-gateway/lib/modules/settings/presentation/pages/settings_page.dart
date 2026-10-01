@@ -1562,7 +1562,7 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Mesazhi "Rikujtesë" dërgohet ${widget.branding.reminderHours} orë para orarit.',
+                          'Mesazhi "Rikujtesë" dërgohet ${widget.branding.reminderHours >= 60 ? "${widget.branding.reminderHours ~/ 60} orë" : "${widget.branding.reminderHours} minuta"} para orarit.',
                           style: const TextStyle(fontSize: 10.5, color: Colors.grey),
                         ),
                       ],
@@ -1570,24 +1570,23 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
                   ),
                   const SizedBox(width: 12),
                   SizedBox(
-                    width: 70,
+                    width: 85,
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<int>(
-                        value: [1, 2, 4, 12, 24, 48].contains(widget.branding.reminderHours) ? widget.branding.reminderHours : 2,
+                        value: [30, 60, 120, 240, 1440].contains(widget.branding.reminderHours) ? widget.branding.reminderHours : 30,
                         isExpanded: true,
                         dropdownColor: isDark ? const Color(0xFF2A2E3B) : Colors.white,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: isDark ? Colors.white : Colors.black,
                         ),
                         items: const [
-                          DropdownMenuItem(value: 1, child: Text('1 Orë')),
-                          DropdownMenuItem(value: 2, child: Text('2 Orë')),
-                          DropdownMenuItem(value: 4, child: Text('4 Orë')),
-                          DropdownMenuItem(value: 12, child: Text('12 Orë')),
-                          DropdownMenuItem(value: 24, child: Text('1 Ditë')),
-                          DropdownMenuItem(value: 48, child: Text('2 Ditë')),
+                          DropdownMenuItem(value: 30, child: Text('30 Min')),
+                          DropdownMenuItem(value: 60, child: Text('1 Orë')),
+                          DropdownMenuItem(value: 120, child: Text('2 Orë')),
+                          DropdownMenuItem(value: 240, child: Text('4 Orë')),
+                          DropdownMenuItem(value: 1440, child: Text('1 Ditë')),
                         ],
                         onChanged: (val) {
                           if (val != null) {

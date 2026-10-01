@@ -64,14 +64,9 @@ class SendFirebaseNotificationListener
                         $body = "Rezervimi i {$customerName} u përditësua për {$time}.";
                     }
 
-                    if ($booking->customer && $booking->customer->phone) {
-                        $templateType = match ($event->action) {
-                            'created' => 'confirmation',
-                            'updated' => 'reminder',
-                            default => 'confirmation',
-                        };
-
-                        $parsedMessage = MessageTemplate::parseForBooking($booking, $templateType);
+                    // Queue SMS confirmation ONLY when booking is newly created
+                    if ($event->action === 'created' && $booking->customer && $booking->customer->phone) {
+                        $parsedMessage = MessageTemplate::parseForBooking($booking, 'confirmation');
                         $formattedPhone = $this->formatPhone($booking->customer->phone);
 
                         $queue = MessageQueue::create([
@@ -96,7 +91,7 @@ class SendFirebaseNotificationListener
                         ]);
                         \App\Models\AuditTrail::log($msgLog, 'create', 'MessageLogs');
 
-                        Log::info("📝 [STEP 4a] SMS Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
+                        Log::info("📝 [STEP 4a] SMS Confirmation Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
 
                         // Find Gateway device for this shop OR user of this shop
                         $gatewayDevice = DeviceToken::where('is_sms_gateway', true)
