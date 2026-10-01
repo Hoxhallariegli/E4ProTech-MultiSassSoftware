@@ -54,7 +54,11 @@ void onStart(ServiceInstance service) async {
 
     await prefs.setString('last_processed_sms_id', smsId);
 
-    final String phone = data['phone'] ?? '';
+    String phone = (data['phone'] ?? '').toString().replaceAll(RegExp(r'[^\d+]'), '');
+    if (phone.startsWith('0')) {
+      phone = '+355${phone.substring(1)}';
+    }
+
     final String body = data['body'] ?? '';
     final int notifId = data['notif_id'] ?? 0;
 
@@ -63,7 +67,15 @@ void onStart(ServiceInstance service) async {
     try {
       if (!kIsWeb) {
         final Telephony telephony = Telephony.instance;
-        await telephony.sendSms(to: phone, message: body);
+        await telephony.sendSms(
+          to: phone,
+          message: body,
+          statusListener: (SendStatus status) async {
+            if (status == SendStatus.SENT || status == SendStatus.DELIVERED) {
+              await _reportSmsStatus(smsId, 'sent', phone: phone, body: body);
+            }
+          },
+        );
       }
       await _reportSmsStatus(smsId, 'sent', phone: phone, body: body);
       await flutterLocalNotificationsPlugin.show(
@@ -99,6 +111,25 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       if (message.data['action'] == 'SEND_SMS') {
         Map<String, dynamic> taskData = Map<String, dynamic>.from(message.data);
         taskData['notif_id'] = message.hashCode;
+
+        String phone = (message.data['phone'] ?? '').toString().replaceAll(RegExp(r'[^\d+]'), '');
+        final String body = message.data['body'] ?? '';
+        if (phone.startsWith('0')) {
+          phone = '+355${phone.substring(1)}';
+        }
+
+        if (phone.isNotEmpty && body.isNotEmpty) {
+          try {
+            await prefs.setString('last_processed_sms_id', smsId);
+            final Telephony telephony = Telephony.instance;
+            await telephony.sendSms(to: phone, message: body);
+            await _reportSmsStatus(smsId, 'sent', phone: phone, body: body);
+            return;
+          } catch (e) {
+            debugPrint('Background direct send error: $e');
+          }
+        }
+
         FlutterBackgroundService().invoke("execute_sms", taskData);
       }
     }
@@ -187,6 +218,27 @@ class PushService {
           if (message.data['action'] == 'SEND_SMS') {
             Map<String, dynamic> taskData = Map<String, dynamic>.from(message.data);
             taskData['notif_id'] = message.hashCode;
+
+            String phone = (message.data['phone'] ?? '').toString().replaceAll(RegExp(r'[^\d+]'), '');
+            final String body = message.data['body'] ?? '';
+            final String smsId = message.data['sms_id'] ?? '';
+            if (phone.startsWith('0')) {
+              phone = '+355${phone.substring(1)}';
+            }
+
+            if (phone.isNotEmpty && body.isNotEmpty) {
+              try {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setString('last_processed_sms_id', smsId);
+                final Telephony telephony = Telephony.instance;
+                await telephony.sendSms(to: phone, message: body);
+                await _reportSmsStatus(smsId, 'sent', phone: phone, body: body);
+                return;
+              } catch (e) {
+                debugPrint('Foreground direct send error: $e');
+              }
+            }
+
             FlutterBackgroundService().invoke("execute_sms", taskData);
             return;
           }
