@@ -261,6 +261,19 @@ class PublicShopBooking extends Component
 
         $customer->increment('total_bookings');
 
+        // PËRDORIM EVENTIN QË TË AKTIVIZOJË LISTENER-IN E FIREBASE/SMS
+        try {
+            event(new BookingChanged($booking, 'created'));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to trigger BookingChanged event: " . $e->getMessage());
+        }
+
+        try {
+            app(NotificationRouter::class)->maybeNotify('bookings.created', $booking, 'created');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to trigger maybeNotify: " . $e->getMessage());
+        }
+
         $this->createdBookingId = $booking->id;
         $this->bookingSuccess = true;
     }
