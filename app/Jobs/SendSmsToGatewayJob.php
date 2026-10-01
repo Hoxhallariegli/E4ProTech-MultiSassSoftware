@@ -12,7 +12,7 @@ use App\Models\DeviceToken;
 use App\Services\FirebaseService;
 use Illuminate\Support\Facades\Log;
 
-class SendSmsToGatewayJob implements ShouldQueue
+class SendSmsToGatewayJob
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 

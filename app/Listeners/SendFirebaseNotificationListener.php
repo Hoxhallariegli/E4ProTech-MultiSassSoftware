@@ -13,10 +13,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 
-class SendFirebaseNotificationListener implements ShouldQueue
+class SendFirebaseNotificationListener
 {
-    use InteractsWithQueue;
-
     public $tries = 3;
 
     public function __construct(protected FirebaseService $firebaseService)
