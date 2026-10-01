@@ -72,12 +72,10 @@ class FirebaseService
 
     public function sendToShop(int $shopId, string $title, string $body, array $customData = []): int
     {
-        // 1. Send via FCM Topic dedicated to shop "shop_{$shopId}"
-        $topic = "shop_{$shopId}";
-        $this->sendNotification($title, $body, $topic, $customData);
-
-        // 2. Send directly to all registered FCM device tokens for this specific shop
+        // Send directly to all registered FCM device tokens for this specific shop
+        // NO MORE TOPIC MESSAGING to avoid duplicates
         $tokens = DeviceToken::where('barber_shop_id', $shopId)
+            ->whereNotNull('fcm_token')
             ->pluck('fcm_token')
             ->filter()
             ->unique();

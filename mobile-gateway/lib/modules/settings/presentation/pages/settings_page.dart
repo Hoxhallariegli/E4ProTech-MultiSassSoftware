@@ -1383,16 +1383,6 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
 
         // Register with device-tokens save-web-token as well
         await PushService.registerTokenWithBackend();
-
-        final rawShopId = AuthService.instance.user?['barber_shop_id'] ?? AuthService.instance.user?['business']?['id'];
-        if (rawShopId != null) {
-          final shopId = int.tryParse(rawShopId.toString());
-          if (shopId != null) {
-            try {
-              await FirebaseMessaging.instance.subscribeToTopic('shop_$shopId');
-            } catch (_) {}
-          }
-        }
       } else {
         try {
           fcmToken = await FirebaseMessaging.instance.getToken();
