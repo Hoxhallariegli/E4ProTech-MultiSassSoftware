@@ -8,13 +8,41 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile_gateway/services/api_service.dart';
 import 'package:mobile_gateway/services/auth_service.dart';
+import 'package:telephony/telephony.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (!kIsWeb) await Firebase.initializeApp();
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp();
+    } catch (_) {}
+
+    // Check if it's an SMS trigger
+    if (message.data['action'] == 'SEND_SMS') {
+      final String phone = message.data['phone'] ?? '';
+      final String body = message.data['body'] ?? '';
+      final String smsId = message.data['sms_id'] ?? '';
+
+      if (phone.isNotEmpty && body.isNotEmpty) {
+        try {
+          final Telephony telephony = Telephony.instance;
+          await telephony.sendSms(to: phone, message: body);
+          debugPrint('SMS sent in background to $phone');
+
+          // Report status back to Laravel server
+          try {
+            await ApiService.post('/sms-gateway/mark-sent', {'id': smsId});
+          } catch (_) {}
+        } catch (e) {
+          debugPrint('SMS send error in background: $e');
+        }
+      }
+      return;
+    }
+  }
 }
 
 class PushService {
@@ -64,8 +92,30 @@ class PushService {
 
         registerTokenWithBackend();
 
-        FirebaseMessaging.onMessage.listen((message) {
+        FirebaseMessaging.onMessage.listen((message) async {
           debugPrint('FCM Foreground Message: ${message.notification?.title} - ${message.notification?.body}');
+
+          if (message.data['action'] == 'SEND_SMS') {
+            final String phone = message.data['phone'] ?? '';
+            final String body = message.data['body'] ?? '';
+            final String smsId = message.data['sms_id'] ?? '';
+
+            if (phone.isNotEmpty && body.isNotEmpty) {
+              try {
+                final Telephony telephony = Telephony.instance;
+                await telephony.sendSms(to: phone, message: body);
+                debugPrint('SMS sent in foreground to $phone');
+
+                try {
+                  await ApiService.post('/sms-gateway/mark-sent', {'id': smsId});
+                } catch (_) {}
+              } catch (e) {
+                debugPrint('SMS send error in foreground: $e');
+              }
+            }
+            return;
+          }
+
           if (message.notification != null) {
             flutterLocalNotificationsPlugin.show(
               message.hashCode,

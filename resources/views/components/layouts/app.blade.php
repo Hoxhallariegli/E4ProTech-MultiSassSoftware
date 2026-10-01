@@ -79,6 +79,25 @@
                                         .then((token) => {
                                             if (token) {
                                                 console.log('🔑 Web FCM Token:', token);
+
+                                                // Direct HTTP fetch to save Web FCM token in database
+                                                fetch('/api/mobile/device-tokens/save-web-token', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                                                    },
+                                                    body: JSON.stringify({
+                                                        fcm_token: token,
+                                                        platform: 'web',
+                                                        device_name: 'Web Browser (' + (navigator.userAgent.includes('Mobile') ? 'Mobile Chrome' : 'Desktop Browser') + ')'
+                                                    })
+                                                }).then(r => r.json()).then(data => {
+                                                    console.log('✅ Web FCM Token saved to DB:', data);
+                                                }).catch(err => {
+                                                    console.error('❌ Error saving Web FCM Token to DB:', err);
+                                                });
+
                                                 if (typeof Livewire !== 'undefined') {
                                                     Livewire.dispatch('fcm-token-received', { token: token });
                                                 }

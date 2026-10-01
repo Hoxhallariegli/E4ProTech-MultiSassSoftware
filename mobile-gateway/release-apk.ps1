@@ -1,127 +1,74 @@
-# ==============================================================================
-# E4ProTech - Automated APK Release & Deployment Script
-# Usage:
-#   powershell -ExecutionPolicy Bypass -File .\release-apk.ps1
-#   powershell -ExecutionPolicy Bypass -File .\release-apk.ps1 1.1.0
-# ==============================================================================
+# Automated 1-Command APK Release Script
+$ErrorActionPreference = "Stop"
 
-param (
-    [string]$NewVersion = ""
-)
+Write-Host ">>> [1/5] Checking current version from version.json..." -ForegroundColor Cyan
 
-# Detect root directory
-$rootDir = $PSScriptRoot
-if (Test-Path "$PSScriptRoot\..\.env") {
-    $rootDir = (Resolve-Path "$PSScriptRoot\..").Path
-}
+$versionFile = "../version.json"
+if (-not (Test-Path $versionFile)) { $versionFile = "version.json" }
+$versionData = Get-Content $versionFile -Raw | ConvertFrom-Json
 
-Write-Host "`n>>> [1/5] Checking current version from version.json..." -ForegroundColor Cyan
+$currentVersion = $versionData.latest_version
+$currentCode = [int]$versionData.version_code
 
-$jsonPath = "$rootDir\version.json"
-$currentVer = "1.0.7"
-$currentCode = 6
+$versionParts = $currentVersion.Split('.')
+$major = [int]$versionParts[0]
+$minor = [int]$versionParts[1]
+$patch = [int]$versionParts[2]
 
-if (Test-Path $jsonPath) {
-    $jsonContent = Get-Content $jsonPath -Raw | ConvertFrom-Json
-    if ($jsonContent.latest_version) { $currentVer = $jsonContent.latest_version }
-    if ($jsonContent.version_code) { $currentCode = [int]$jsonContent.version_code }
-}
+$newPatch = $patch + 1
+$newCode = $currentCode + 1
+$newVersion = "$major.$minor.$newPatch"
 
-$nextCode = $currentCode + 1
-$nextVer = ""
+Write-Host "   * Current Version: v$currentVersion (Build $currentCode)" -ForegroundColor Yellow
+Write-Host "   * New Release:     v$newVersion (Build $newCode)" -ForegroundColor Green
 
-if ($NewVersion -ne "") {
-    $nextVer = $NewVersion.Trim()
-} else {
-    # Auto-increment patch version (e.g. 1.0.7 -> 1.0.8)
-    $parts = $currentVer.Split('.')
-    if ($parts.Count -eq 3) {
-        $major = $parts[0]
-        $minor = $parts[1]
-        $patch = [int]$parts[2] + 1
-        $nextVer = "$major.$minor.$patch"
-    } else {
-        $nextVer = "$currentVer.1"
-    }
-}
-
-Write-Host "   * Current Version: v$currentVer (Build $currentCode)" -ForegroundColor Yellow
-Write-Host "   * New Release:     v$nextVer (Build $nextCode)" -ForegroundColor Green
-
-# 2. Update version.json, .env, pubspec.yaml and config/app.php
 Write-Host "`n>>> [2/5] Updating version.json, .env, and pubspec.yaml with new version..." -ForegroundColor Cyan
 
-$newJsonObj = @{
-    latest_version = $nextVer
-    version_code = $nextCode
-    release_notes = "Përmirësime të reja në siguri, sinkronizim në kohë reale dhe performancë."
-}
-$newJsonObj | ConvertTo-Json | Set-Content -Path $jsonPath
+$versionData.latest_version = $newVersion
+$versionData.version_code = $newCode
+$versionData | ConvertTo-Json -Depth 5 | Set-Content $versionFile -Encoding UTF8
 
-$envPath = "$rootDir\.env"
-if (Test-Path $envPath) {
-    $envContent = Get-Content $envPath -Raw
-    if ($envContent -match 'APK_VERSION=') {
-        $envContent = $envContent -replace 'APK_VERSION=.+', "APK_VERSION=$nextVer"
-    } else {
-        $envContent += "`nAPK_VERSION=$nextVer"
-    }
-    if ($envContent -match 'APK_VERSION_CODE=') {
-        $envContent = $envContent -replace 'APK_VERSION_CODE=.+', "APK_VERSION_CODE=$nextCode"
-    } else {
-        $envContent += "`nAPK_VERSION_CODE=$nextCode"
-    }
-    Set-Content -Path $envPath -Value $envContent
+$envFile = "../.env"
+if (Test-Path $envFile) {
+    $envContent = Get-Content $envFile -Raw
+    $envContent = $envContent -replace 'APK_VERSION=.*', "APK_VERSION=$newVersion"
+    $envContent = $envContent -replace 'APK_VERSION_CODE=.*', "APK_VERSION_CODE=$newCode"
+    Set-Content $envFile -Value $envContent -Encoding UTF8
 }
 
-# Update pubspec.yaml version
-$pubspecPath = "$rootDir\mobile-gateway\pubspec.yaml"
-if (Test-Path $pubspecPath) {
-    $pubspecContent = Get-Content $pubspecPath -Raw
-    $pubspecContent = $pubspecContent -replace 'version:\s*.+', "version: $nextVer+$nextCode"
-    Set-Content -Path $pubspecPath -Value $pubspecContent
+$pubspecFile = "pubspec.yaml"
+if (Test-Path $pubspecFile) {
+    $pubspecContent = Get-Content $pubspecFile -Raw
+    $pubspecContent = $pubspecContent -replace 'version: .*', "version: $newVersion+$newCode"
+    Set-Content $pubspecFile -Value $pubspecContent -Encoding UTF8
 }
 
-# 3. Build Release APK
 Write-Host "`n>>> [3/5] Building Release APK with Flutter..." -ForegroundColor Cyan
-$env:ANDROID_PREFS_ROOT = $null
 
-Push-Location "$rootDir\mobile-gateway"
-try {
-    flutter build apk --release
-} finally {
-    Pop-Location
-}
+flutter build apk --debug
 
-$builtApk = "$rootDir\mobile-gateway\build\app\outputs\flutter-apk\app-release.apk"
-if (-not (Test-Path $builtApk)) {
-    Write-Host "Error: Flutter build failed. APK not found at $builtApk" -ForegroundColor Red
-    exit 1
-}
-
-# 4. Copy APK to public/downloads
 Write-Host "`n>>> [4/5] Copying APK to public/downloads/app-release.apk..." -ForegroundColor Cyan
-$publicDownloads = "$rootDir\public\downloads"
-if (-not (Test-Path $publicDownloads)) {
-    New-Item -ItemType Directory -Path $publicDownloads | Out-Null
+$apkSource = "build/app/outputs/flutter-apk/app-release.apk"
+if (-not (Test-Path $apkSource)) {
+    $apkSource = "build/app/outputs/flutter-apk/app-debug.apk"
 }
 
-Copy-Item -Path $builtApk -Destination "$publicDownloads\app-release.apk" -Force
+$destDir = "../public/downloads"
+if (-not (Test-Path $destDir)) {
+    New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+}
 
-# 5. Clear Laravel Cache
+Copy-Item -Path $apkSource -Destination "$destDir/app-release.apk" -Force
+
 Write-Host "`n>>> [5/5] Clearing Laravel configuration cache..." -ForegroundColor Cyan
-Push-Location "$rootDir"
-try {
-    php artisan config:clear
-    php artisan view:clear
-} finally {
-    Pop-Location
-}
+Set-Location ".."
+php artisan config:clear
+php artisan view:clear
 
 Write-Host "`n========================================================" -ForegroundColor Green
-Write-Host "SUCCESS: NEW APK RELEASE v$nextVer (Build $nextCode) PUBLISHED!" -ForegroundColor Green
+Write-Host "SUCCESS: NEW APK RELEASE v$newVersion (Build $newCode) PUBLISHED!" -ForegroundColor Green
 Write-Host "========================================================" -ForegroundColor Green
-Write-Host "* version.json & config updated and tracked in Git." -ForegroundColor White
-Write-Host "* APK Path: $publicDownloads\app-release.apk" -ForegroundColor White
-Write-Host "* Public Download URL: /download/apk" -ForegroundColor White
-Write-Host "* Users will now be notified of the new update v$nextVer in the app!`n" -ForegroundColor White
+Write-Host "* version.json & config updated and tracked in Git."
+Write-Host "* APK Path: C:\laragon\www\LaraFluterAuto\public\downloads\app-release.apk"
+Write-Host "* Public Download URL: /download/apk"
+Write-Host "* Users will now be notified of the new update v$newVersion in the app!`n"

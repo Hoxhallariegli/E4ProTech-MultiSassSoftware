@@ -261,16 +261,6 @@ class PublicShopBooking extends Component
 
         $customer->increment('total_bookings');
 
-        // Trigger Realtime Reverb WebSockets
-        try {
-            event(new BookingChanged($booking, 'created'));
-        } catch (\Throwable $e) {}
-
-        // Trigger Notifications Router (SMS Gateway, Firebase Push, Email)
-        try {
-            app(NotificationRouter::class)->maybeNotify('bookings.created', $booking, 'created');
-        } catch (\Throwable $e) {}
-
         $this->createdBookingId = $booking->id;
         $this->bookingSuccess = true;
     }

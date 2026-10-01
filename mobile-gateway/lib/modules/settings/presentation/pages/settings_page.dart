@@ -1598,28 +1598,204 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
             ),
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const MessageLogListPage()),
-                );
-              },
-              icon: const Icon(Icons.mark_email_read_rounded, size: 18),
-              label: const Text(
-                '📜 Shiko Logjet e Mesazheve',
-                style: TextStyle(fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const MessageLogListPage()),
+                    );
+                  },
+                  icon: const Icon(Icons.mark_email_read_rounded, size: 16),
+                  label: const Text(
+                    '📜 Logjet SMS',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
               ),
-              style: OutlinedButton.styleFrom(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _runPushDiagnostics(context),
+                  icon: const Icon(Icons.bug_report_rounded, size: 16),
+                  label: const Text(
+                    '🧪 Diagnostiko',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.amber.shade800,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  void _runPushDiagnostics(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const _PushDiagnosticsModal(),
+    );
+  }
+}
+
+class _PushDiagnosticsModal extends StatefulWidget {
+  const _PushDiagnosticsModal();
+
+  @override
+  State<_PushDiagnosticsModal> createState() => _PushDiagnosticsModalState();
+}
+
+class _PushDiagnosticsModalState extends State<_PushDiagnosticsModal> {
+  final List<String> _logs = [];
+  bool _testing = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _startDiagnosticTest();
+  }
+
+  void _log(String text) {
+    if (mounted) {
+      setState(() => _logs.add(text));
+    }
+  }
+
+  Future<void> _startDiagnosticTest() async {
+    _log('🚀 [1/5] Inicimi i testit diagnostikues...');
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    // 1. Firebase Core Check
+    try {
+      await Firebase.initializeApp();
+      _log('✅ [2/5] Firebase Core: I inicializuar me sukses.');
+    } catch (e) {
+      _log('❌ [2/5] Firebase Core Error: $e');
+    }
+
+    // 2. Permissions Check
+    try {
+      final statuses = await [Permission.sms, Permission.notification, Permission.phone].request();
+      final notifGranted = statuses[Permission.notification]?.isGranted == true;
+      final smsGranted = statuses[Permission.sms]?.isGranted == true;
+      final phoneGranted = statuses[Permission.phone]?.isGranted == true;
+
+      _log('📋 [3/5] Lejet Android:');
+      _log('   • Njoftimet (Notification): ${notifGranted ? "✅ Lejuar" : "❌ Refuzuar"}');
+      _log('   • Dërgimi SMS (SMS): ${smsGranted ? "✅ Lejuar" : "❌ Refuzuar"}');
+      _log('   • Leximi i Telefonit (Phone): ${phoneGranted ? "✅ Lejuar" : "❌ Refuzuar"}');
+    } catch (e) {
+      _log('❌ [3/5] Gabim gjatë kërkimit të lejeve: $e');
+    }
+
+    // 3. FCM Token Retrieval
+    String? fcmToken;
+    try {
+      fcmToken = await FirebaseMessaging.instance.getToken();
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        final preview = fcmToken.length > 20 ? fcmToken.substring(0, 20) : fcmToken;
+        _log('🔑 [4/5] FCM Token u mor me sukses: $preview...');
+      } else {
+        _log('❌ [4/5] FCM Token kthen bosh/null!');
+      }
+    } catch (e) {
+      _log('❌ [4/5] Gabim gjatë marrjes së FCM Token: $e');
+    }
+
+    // 4. API Endpoint Test
+    if (fcmToken != null && fcmToken.isNotEmpty) {
+      try {
+        final serverUrl = await ApiService.serverUrl;
+        _log('🌐 [5/5] Testimi i lidhjes me Serverin ($serverUrl)...');
+
+        final user = AuthService.instance.user;
+        final rawShopId = user?['barber_shop_id'] ?? user?['business']?['id'];
+
+        final res = await ApiService.post('/device-tokens/save-web-token', {
+          'fcm_token': fcmToken,
+          'platform': 'android',
+          'device_name': 'Android Diagnostic Test (${user?['name'] ?? 'Staff'})',
+          if (rawShopId != null) 'barber_shop_id': rawShopId,
+        });
+
+        if (res.statusCode == 200) {
+          _log('✅ API HTTP 200 OK: Token-i u regjistrua me sukses te baza e të dhënave!');
+          _log('📄 Përgjigja nga Laravel: ${res.body}');
+        } else {
+          _log('❌ API HTTP ${res.statusCode} Error: ${res.body}');
+        }
+      } catch (e) {
+        _log('💥 [5/5] Gabim gjatë POST kërkesës në server: $e');
+      }
+    }
+
+    if (mounted) setState(() => _testing = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: const Color(0xFF1E212B),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Row(
+        children: [
+          Icon(Icons.bug_report_rounded, color: Colors.amber),
+          SizedBox(width: 10),
+          Text('Diagnostikimi i Push & Gateway', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        ],
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 320,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade800),
+          ),
+          child: ListView.builder(
+            itemCount: _logs.length,
+            itemBuilder: (ctx, idx) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Text(
+                _logs[idx],
+                style: TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 11,
+                  color: _logs[idx].contains('❌') || _logs[idx].contains('💥') ? Colors.redAccent : (_logs[idx].contains('✅') ? Colors.greenAccent : Colors.white70),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        if (_testing)
+          const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator.adaptive(strokeWidth: 2)),
+          )
+        else
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Mbyll Testin', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+          ),
+      ],
     );
   }
 }

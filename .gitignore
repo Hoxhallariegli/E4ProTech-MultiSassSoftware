@@ -26,3 +26,7 @@ PROJECT_PROGRESS_AND_ARCHITECTURE.md
 /storage/app/firebase-service-account.json
 mobile-gateway/android/app/google-services.json
 /storage/logs/laravel.log
+
+.android_home/
+.gradle_cache/
+public/downloads/app-debug.apk

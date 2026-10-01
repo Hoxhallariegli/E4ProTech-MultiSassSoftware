@@ -8,6 +8,7 @@ use App\Models\Booking;
 use App\Models\MessageTemplate;
 use App\Models\MessageQueue;
 use App\Models\MessageLog;
+use App\Models\DeviceToken;
 use Illuminate\Support\Facades\Log;
 
 class SendFirebaseNotificationListener
@@ -21,47 +22,6 @@ class SendFirebaseNotificationListener
         try {
             $shopId = null;
 
-            // 1. If Booking action, queue SMS template for SMS Gateway
-            if ($event->modelClass === Booking::class || is_a($event->modelClass, Booking::class, true)) {
-                $booking = Booking::with(['customer', 'service', 'barber', 'barberShop'])->find($event->modelId);
-                if ($booking) {
-                    $shopId = $booking->barber_shop_id;
-
-                    if ($booking->customer && $booking->customer->phone) {
-                        $templateType = match ($event->action) {
-                            'created' => 'confirmation',
-                            'updated' => 'reminder',
-                            default => 'confirmation',
-                        };
-
-                        $parsedMessage = MessageTemplate::parseForBooking($booking, $templateType);
-
-                        MessageQueue::create([
-                            'barber_shop_id' => $booking->barber_shop_id,
-                            'booking_id' => $booking->id,
-                            'channel' => 'sms',
-                            'phone_number' => $booking->customer->phone,
-                            'message_content' => $parsedMessage,
-                            'scheduled_at' => now(),
-                            'status' => 'pending',
-                            'retry_count' => 0,
-                        ]);
-
-                        MessageLog::create([
-                            'barber_shop_id' => $booking->barber_shop_id,
-                            'customer_id' => $booking->customer_id,
-                            'channel' => 'sms',
-                            'message' => $parsedMessage,
-                            'status' => 'sent',
-                            'sent_at' => now(),
-                        ]);
-
-                        Log::info("Queued custom SMS template for shop #{$booking->barber_shop_id} to {$booking->customer->phone}");
-                    }
-                }
-            }
-
-            // 2. Dispatch FCM Push Notification STRICTLY ISOLATED PER SHOP ID!
             $actionLabel = match ($event->action) {
                 'created' => 'krijua',
                 'updated' => 'përditësua',
@@ -82,6 +42,75 @@ class SendFirebaseNotificationListener
             $title = "Njoftim: {$moduleName} u {$actionLabel}! 🔔";
             $body = "Regjistrimi #{$event->modelId} te moduli {$moduleName} u {$actionLabel} me sukses.";
 
+            // 1. If Booking action, custom logic for Push and SMS Gateway
+            if ($event->modelClass === Booking::class || is_a($event->modelClass, Booking::class, true)) {
+                $booking = Booking::with(['customer', 'service', 'barber', 'barberShop'])->find($event->modelId);
+                if ($booking) {
+                    $shopId = $booking->barber_shop_id;
+                    $customerName = $booking->customer?->name ?? 'Klient';
+                    $serviceName = $booking->service?->name ?? 'Shërbim';
+                    $barberName = $booking->barber?->name ?? 'Staf';
+                    $time = $booking->appointment_at ? $booking->appointment_at->format('H:i d/m/Y') : '';
+
+                    // Custom Push Notification Body
+                    if ($event->action === 'created') {
+                        $body = "Klienti {$customerName} rezervoi {$serviceName} për orën {$time} tek {$barberName}.";
+                    } elseif ($event->action === 'updated') {
+                        $body = "Rezervimi i {$customerName} u përditësua për {$time}.";
+                    }
+
+                    if ($booking->customer && $booking->customer->phone) {
+                        $templateType = match ($event->action) {
+                            'created' => 'confirmation',
+                            'updated' => 'reminder',
+                            default => 'confirmation',
+                        };
+
+                        $parsedMessage = MessageTemplate::parseForBooking($booking, $templateType);
+
+                        $queue = MessageQueue::create([
+                            'barber_shop_id' => $booking->barber_shop_id,
+                            'booking_id' => $booking->id,
+                            'channel' => 'sms',
+                            'phone_number' => $booking->customer->phone,
+                            'message_content' => $parsedMessage,
+                            'scheduled_at' => now(),
+                            'status' => 'pending',
+                            'retry_count' => 0,
+                        ]);
+
+                        MessageLog::create([
+                            'barber_shop_id' => $booking->barber_shop_id,
+                            'customer_id' => $booking->customer_id,
+                            'channel' => 'sms',
+                            'message' => $parsedMessage,
+                            'status' => 'pending', // NOT sent yet, waiting for app to process
+                            'sent_at' => null,
+                        ]);
+
+                        Log::info("Queued custom SMS template for shop #{$booking->barber_shop_id} to {$booking->customer->phone}");
+
+                        // Push SEND_SMS trigger to the Gateway device specifically
+                        $gatewayDevice = DeviceToken::where('barber_shop_id', $shopId)->where('is_sms_gateway', true)->first();
+                        if ($gatewayDevice && $gatewayDevice->fcm_token) {
+                            $this->firebaseService->sendNotification(
+                                'SMS Gateway',
+                                'Duke dërguar SMS...',
+                                $gatewayDevice->fcm_token,
+                                [
+                                    'action' => 'SEND_SMS',
+                                    'sms_id' => (string) $queue->id,
+                                    'phone' => (string) $booking->customer->phone,
+                                    'body' => (string) $parsedMessage,
+                                ]
+                            );
+                            Log::info("Triggered SEND_SMS push directly to gateway device for shop #{$shopId}");
+                        }
+                    }
+                }
+            }
+
+            // 2. Dispatch FCM Push Notification STRICTLY ISOLATED PER SHOP ID!
             if (!$shopId && auth()->check()) {
                 $shopId = auth()->user()->barber_shop_id;
             }
