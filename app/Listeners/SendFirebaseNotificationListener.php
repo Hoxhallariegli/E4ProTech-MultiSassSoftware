@@ -88,14 +88,22 @@ class SendFirebaseNotificationListener
                             'customer_id' => $booking->customer_id,
                             'channel' => 'sms',
                             'message' => $parsedMessage,
-                            'status' => 'failed', // Përkohësisht derisa të konfirmohet dërgimi nga APK
+                            'status' => 'pending',
                             'sent_at' => null,
                         ]);
 
                         Log::info("Queued custom SMS template for shop #{$booking->barber_shop_id} to {$booking->customer->phone}");
 
-                        // Push SEND_SMS trigger to the Gateway device specifically
-                        $gatewayDevice = DeviceToken::where('barber_shop_id', $shopId)->where('is_sms_gateway', true)->first();
+                        // Find Gateway device for this shop OR user of this shop
+                        $gatewayDevice = DeviceToken::where('is_sms_gateway', true)
+                            ->where(function($q) use ($shopId) {
+                                $q->where('barber_shop_id', $shopId)
+                                  ->orWhereHas('user', function($userQuery) use ($shopId) {
+                                      $userQuery->where('barber_shop_id', $shopId);
+                                  });
+                            })
+                            ->first();
+
                         if ($gatewayDevice && $gatewayDevice->fcm_token) {
                             $this->firebaseService->sendNotification(
                                 'SMS Gateway',

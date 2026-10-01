@@ -34,8 +34,13 @@ class SendSmsToGatewayJob
             return;
         }
 
-        $gatewayDevice = DeviceToken::where('barber_shop_id', $queue->barber_shop_id)
-            ->where('is_sms_gateway', true)
+        $gatewayDevice = DeviceToken::where('is_sms_gateway', true)
+            ->where(function($q) use ($queue) {
+                $q->where('barber_shop_id', $queue->barber_shop_id)
+                  ->orWhereHas('user', function($userQuery) use ($queue) {
+                      $userQuery->where('barber_shop_id', $queue->barber_shop_id);
+                  });
+            })
             ->first();
 
         if (!$gatewayDevice || !$gatewayDevice->fcm_token) {

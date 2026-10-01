@@ -72,9 +72,13 @@ class FirebaseService
 
     public function sendToShop(int $shopId, string $title, string $body, array $customData = []): int
     {
-        // Send directly to all registered FCM device tokens for this specific shop
-        // NO MORE TOPIC MESSAGING to avoid duplicates
-        $tokens = DeviceToken::where('barber_shop_id', $shopId)
+        // Send directly to all registered FCM device tokens for this shop, or users belonging to this shop
+        $tokens = DeviceToken::where(function($q) use ($shopId) {
+                $q->where('barber_shop_id', $shopId)
+                  ->orWhereHas('user', function($userQuery) use ($shopId) {
+                      $userQuery->where('barber_shop_id', $shopId);
+                  });
+            })
             ->whereNotNull('fcm_token')
             ->pluck('fcm_token')
             ->filter()
