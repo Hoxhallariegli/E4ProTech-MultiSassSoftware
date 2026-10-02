@@ -181,12 +181,40 @@ _FilterDropdown(label: message_logTr(context, 'field.status'), value: _filters['
     if (ok == true && context.mounted) context.read<MessageLogCubit>().delete(item['id']);
   }
 
+  String _formatDateTime(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return '';
+    try {
+      final dt = DateTime.parse(raw.trim()).toLocal();
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final itemDate = DateTime(dt.year, dt.month, dt.day);
+
+      final hour = dt.hour.toString().padLeft(2, '0');
+      final minute = dt.minute.toString().padLeft(2, '0');
+      final timeStr = '$hour:$minute';
+
+      if (itemDate == today) {
+        return 'Sot në $timeStr';
+      } else if (itemDate == today.subtract(const Duration(days: 1))) {
+        return 'Dje në $timeStr';
+      } else {
+        final day = dt.day.toString().padLeft(2, '0');
+        final month = dt.month.toString().padLeft(2, '0');
+        final year = dt.year;
+        return '$day/$month/$year $timeStr';
+      }
+    } catch (_) {
+      return raw;
+    }
+  }
+
   void _showLogDetailsModal(BuildContext context, Map<String, dynamic> item) {
     final customer = (item['customer_name'] ?? item['customer']?['name'] ?? 'Klient').toString();
     final channel = (item['channel'] ?? 'sms').toString().toUpperCase();
     final message = (item['message'] ?? '').toString();
     final status = (item['status'] ?? 'sent').toString().toLowerCase();
-    final sentAt = item['sent_at']?.toString() ?? item['created_at']?.toString() ?? '';
+    final sentAtRaw = item['sent_at']?.toString() ?? item['created_at']?.toString() ?? '';
+    final sentAt = _formatDateTime(sentAtRaw);
     final error = item['error_message']?.toString() ?? '';
 
     showDialog(

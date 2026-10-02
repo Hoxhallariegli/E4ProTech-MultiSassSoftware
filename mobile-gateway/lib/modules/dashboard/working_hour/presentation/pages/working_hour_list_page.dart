@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
-import 'package:mobile_gateway/core/widgets/sidebar.dart';
+import 'package:mobile_gateway/core/widgets/app_scaffold.dart';
+import 'package:mobile_gateway/modules/dashboard/presentation/widgets/shop_switcher_widget.dart';
+import 'package:mobile_gateway/services/auth_service.dart';
 import 'package:mobile_gateway/l10n/working_hour_localization.dart';
 import 'package:mobile_gateway/core/branding/branding_cubit.dart';
 import '../../data/working_hour_repository.dart';
@@ -182,21 +184,40 @@ class _WorkingHourListPageState extends State<WorkingHourListPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      drawer: const Sidebar(),
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () {
-            if (Navigator.of(context).canPop()) {
-              Navigator.of(context).pop();
-            } else {
-              Navigator.of(context).pushNamedAndRemoveUntil('/dashboard', (route) => false);
-            }
-          },
-        ),
-        title: const Text('Orari Javor i Punës', style: TextStyle(fontWeight: FontWeight.w900)),
+    return AppScaffold(
+      currentNavIndex: 1,
+      showBackButton: true,
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Orari Javor i Punës', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          InkWell(
+            onTap: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => ShopSwitcherWidget(onSwitched: () => _loadBarbers()),
+              );
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(AuthService.instance.user?['business']?['name'] ?? 'Select Shop', style: TextStyle(fontSize: 10, color: theme.colorScheme.primary, fontWeight: FontWeight.bold)),
+                Icon(Icons.keyboard_arrow_down_rounded, size: 12, color: theme.colorScheme.primary),
+              ],
+            ),
+          ),
+        ],
       ),
+      actions: [
+        IconButton(
+          tooltip: 'Rifresko',
+          onPressed: () => _loadWeeklySchedule(),
+          icon: const Icon(Icons.refresh_rounded),
+        ),
+        const SizedBox(width: 8),
+      ],
       body: _loadingBarbers
           ? const Center(child: CircularProgressIndicator.adaptive())
           : Column(

@@ -17,6 +17,9 @@ class MessageLogResource extends JsonResource
             'message' => $this->message,
             'status' => $this->status,
             'sent_at' => $this->sent_at,
+            'created_at' => $this->created_at,
+            'customer_name' => $this->customer?->name,
+            'customer_phone' => $this->customer?->phone,
             'barberShop' => $this->whenLoaded('barberShop'),
             'customer' => $this->whenLoaded('customer'),
         ];

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_gateway/services/api_service.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
 import 'package:mobile_gateway/l10n/message_queue_localization.dart';
 
@@ -7,53 +6,253 @@ class MessageQueueCard extends StatelessWidget {
   final Map<String, dynamic> item;
   final VoidCallback? onTap;
   final VoidCallback? onDelete;
-  const MessageQueueCard({super.key, required this.item, this.onTap, this.onDelete});
 
-  String get title {
-    final value = (item['name'] ?? item['title'] ?? 'ID: ${item['id']}').toString();
-    return value.toString().trim().isEmpty ? 'ID: ' + item['id'].toString() : value.toString();
+  const MessageQueueCard({
+    super.key,
+    required this.item,
+    this.onTap,
+    this.onDelete,
+  });
+
+  String _formatDateTime(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return '';
+    try {
+      final dt = DateTime.parse(raw.trim()).toLocal();
+      final now = DateTime.now();
+
+      final hour = dt.hour.toString().padLeft(2, '0');
+      final minute = dt.minute.toString().padLeft(2, '0');
+      final timeStr = '$hour:$minute';
+
+      final isToday = dt.year == now.year && dt.month == now.month && dt.day == now.day;
+      final tomorrow = now.add(const Duration(days: 1));
+      final isTomorrow = dt.year == tomorrow.year && dt.month == tomorrow.month && dt.day == tomorrow.day;
+      final yesterday = now.subtract(const Duration(days: 1));
+      final isYesterday = dt.year == yesterday.year && dt.month == yesterday.month && dt.day == yesterday.day;
+
+      if (isToday) {
+        return 'Sot në $timeStr';
+      } else if (isTomorrow) {
+        return 'Nesër në $timeStr';
+      } else if (isYesterday) {
+        return 'Dje në $timeStr';
+      } else {
+        final day = dt.day.toString().padLeft(2, '0');
+        final month = dt.month.toString().padLeft(2, '0');
+        final year = dt.year;
+        return '$day/$month/$year $timeStr';
+      }
+    } catch (_) {
+      final clean = raw.replaceAll('Z', '').replaceAll('T', ' ');
+      final parts = clean.split(' ');
+      if (parts.length >= 2) {
+        final datePart = parts[0];
+        final timeParts = parts[1].split(':');
+        if (timeParts.length >= 2) {
+          return '$datePart ${timeParts[0]}:${timeParts[1]}';
+        }
+      }
+      return raw;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final customerName = (item['customer_name'] ?? item['booking']?['customer']?['name'] ?? item['phone_number'] ?? 'Radhë Mesazhi').toString();
+    final phone = (item['phone_number'] ?? '').toString();
+    final channel = (item['channel'] ?? 'sms').toString().toLowerCase();
+    final message = (item['message_content'] ?? '').toString();
+    final status = (item['status'] ?? 'pending').toString().toLowerCase();
+    final scheduledAtRaw = item['scheduled_at']?.toString() ?? item['created_at']?.toString();
+    final formattedDate = _formatDateTime(scheduledAtRaw);
+    final retryCount = int.tryParse(item['retry_count']?.toString() ?? '0') ?? 0;
+
+    IconData channelIcon = Icons.sms_rounded;
+    Color channelColor = Colors.blue;
+    String channelLabel = 'SMS';
+
+    if (channel == 'whatsapp') {
+      channelIcon = Icons.chat_bubble_rounded;
+      channelColor = const Color(0xFF25D366);
+      channelLabel = 'WhatsApp';
+    } else if (channel == 'email') {
+      channelIcon = Icons.email_rounded;
+      channelColor = Colors.amber.shade700;
+      channelLabel = 'Email';
+    }
+
+    Color statusColor = Colors.amber.shade700;
+    String statusLabel = 'PENDING';
+    if (status == 'processing') {
+      statusColor = Colors.blue.shade600;
+      statusLabel = 'PROCESSING';
+    } else if (status == 'sent') {
+      statusColor = Colors.green.shade600;
+      statusLabel = 'SENT';
+    } else if (status == 'failed') {
+      statusColor = Colors.red.shade600;
+      statusLabel = 'FAILED';
+    } else if (status == 'skipped_limit') {
+      statusColor = Colors.purple.shade600;
+      statusLabel = 'SKIPPED';
+    }
+
     return PremiumCard(
       onTap: onTap,
-      padding: const EdgeInsets.all(14),
-      child: Row(children: [
-          _Avatar(title: title),
-        const SizedBox(width: 14),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 7),
-          Wrap(spacing: 6, runSpacing: 6, children: [_InfoChip(label: message_queueTr(context, 'field.booking_id'), value: item['booking']?['name']?.toString() ?? '-'),
-_InfoChip(label: message_queueTr(context, 'field.channel'), value: item['channel']?.toString() ?? '-'),
-_InfoChip(label: message_queueTr(context, 'field.phone_number'), value: item['phone_number']?.toString() ?? '-'),]),
-        ])),
-        if (onTap != null || onDelete != null)
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'edit' && onTap != null) onTap!();
-              if (value == 'delete' && onDelete != null) onDelete!();
-            },
-            itemBuilder: (_) => [
-              if (onTap != null) PopupMenuItem(value: 'edit', child: Text(message_queueTr(context, 'list.edit'))),
-              if (onDelete != null) PopupMenuItem(value: 'delete', child: Text(message_queueTr(context, 'list.delete'))),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Row 1: Recipient + Badges + Popup Menu
+          Row(
+            children: [
+              Icon(channelIcon, size: 16, color: channelColor),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        customerName,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: isDark ? Colors.white : theme.colorScheme.onSurface,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (phone.isNotEmpty && phone != customerName) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        '($phone)',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade500,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 6),
+
+              // Channel Badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: channelColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  channelLabel,
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.bold,
+                    color: channelColor,
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 4),
+
+              // Status Badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.bold,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+
+              if (onTap != null || onDelete != null)
+                PopupMenuButton<String>(
+                  padding: EdgeInsets.zero,
+                  icon: Icon(Icons.more_vert_rounded, size: 18, color: isDark ? Colors.white70 : Colors.black54),
+                  onSelected: (value) {
+                    if (value == 'edit' && onTap != null) onTap!();
+                    if (value == 'delete' && onDelete != null) onDelete!();
+                  },
+                  itemBuilder: (_) => [
+                    if (onTap != null) PopupMenuItem(value: 'edit', child: Text(message_queueTr(context, 'list.edit'))),
+                    if (onDelete != null) PopupMenuItem(value: 'delete', child: Text(message_queueTr(context, 'list.delete'))),
+                  ],
+                ),
             ],
           ),
-      ]),
+
+          const SizedBox(height: 5),
+
+          // Message Content
+          Text(
+            message.isEmpty ? 'Përmbajtja e mesazhit nuk ekziston.' : message,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12.5,
+              height: 1.35,
+              color: isDark ? const Color(0xFFCBD5E1) : theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          // Footer Row: Scheduled Time & Retry count
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              if (formattedDate.isNotEmpty)
+                Row(
+                  children: [
+                    Icon(Icons.schedule_rounded, size: 11, color: theme.colorScheme.primary),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Për t\'u dërguar: $formattedDate',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                )
+              else
+                const SizedBox.shrink(),
+
+              if (retryCount > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'Provat: $retryCount',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
-}
-
-class _Avatar extends StatelessWidget {
-  final String title;
-  const _Avatar({required this.title});
-  @override Widget build(BuildContext context) => Container(width: 58, height: 58, decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primaryContainer, Theme.of(context).colorScheme.secondaryContainer]), borderRadius: BorderRadius.circular(17)), child: Center(child: Text(title.isEmpty ? '?' : title.substring(0,1).toUpperCase(), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900))));
-}
-
-class _InfoChip extends StatelessWidget {
-  final String label, value;
-  const _InfoChip({required this.label, required this.value});
-  @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(8)), child: Text('$label: $value', style: TextStyle(fontSize: 10.5, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600)));
 }

@@ -77,7 +77,7 @@ class MessageQueueController extends Controller
 
         $query = MessageQueue::query()->with([
             'barberShop',
-            'booking',
+            'booking.customer',
         ]);
 
         $search = trim((string) $request->input('search', ''));
@@ -118,7 +118,9 @@ class MessageQueueController extends Controller
 
     public function store(Request $request)
     {
-        abort_if_cannot('add_message_queues');
+        if (!user_can('add_message_queues') && !user_can('edit_message_queues')) {
+            abort(403, 'Ju nuk keni leje për këtë veprim.');
+        }
         $data = $this->prepareData($request);
 
         $validated = validator($data, MessageQueue::rules())->validate();
@@ -131,11 +133,13 @@ class MessageQueueController extends Controller
 
     public function update(Request $request, $id)
     {
-        abort_if_cannot('edit_message_queues');
+        if (!user_can('edit_message_queues') && !user_can('add_message_queues')) {
+            abort(403, 'Ju nuk keni leje për këtë veprim.');
+        }
         $item = MessageQueue::findOrFail($id);
         $data = $this->prepareData($request);
         $validated = validator($data, MessageQueue::rules($id))->validate();
-        $item = app(\App\Domain\MessageQueue\Actions\UpdateDeviceTokenAction::class)->execute($item, \App\Domain\MessageQueue\DTOs\MessageQueueDTO::fromArray($validated));
+        $item = app(\App\Domain\MessageQueue\Actions\UpdateMessageQueueAction::class)->execute($item, \App\Domain\MessageQueue\DTOs\MessageQueueDTO::fromArray($validated));
         return new MessageQueueResource($item->loadMissing([
             'barberShop',
             'booking',

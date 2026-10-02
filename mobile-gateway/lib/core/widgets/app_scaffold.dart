@@ -9,6 +9,8 @@ class AppScaffold extends StatelessWidget {
   final List<Widget>? actions;
   final Widget? floatingActionButton;
   final int? currentNavIndex;
+  final Widget? leading;
+  final bool? showBackButton;
 
   const AppScaffold({
     super.key,
@@ -17,13 +19,36 @@ class AppScaffold extends StatelessWidget {
     this.actions,
     this.floatingActionButton,
     this.currentNavIndex,
+    this.leading,
+    this.showBackButton,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    PreferredSizeWidget? appBarWidget;
+    final bool shouldShowBack = showBackButton ?? (currentNavIndex == 1 || Navigator.of(context).canPop());
+
+    Widget? leadingWidget = leading;
+    if (leadingWidget == null && shouldShowBack) {
+      leadingWidget = IconButton(
+        icon: const Icon(Icons.arrow_back_rounded),
+        tooltip: 'Mbrapa',
+        onPressed: () {
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          } else {
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              '/dashboard',
+              (route) => false,
+              arguments: 1,
+            );
+          }
+        },
+      );
+    }
+
+    PreferredSizeWidget appBarWidget;
     if (title is Text) {
       appBarWidget = PremiumHeader(
         title: (title as Text).data ?? '',
@@ -31,7 +56,8 @@ class AppScaffold extends StatelessWidget {
       );
     } else {
       appBarWidget = AppBar(
-        titleSpacing: title is Column ? 0 : null,
+        leading: leadingWidget,
+        titleSpacing: (title is Column || leadingWidget != null) ? 0 : null,
         title: title,
         actions: actions,
       );
@@ -43,36 +69,38 @@ class AppScaffold extends StatelessWidget {
       appBar: appBarWidget,
       body: body,
       floatingActionButton: floatingActionButton,
-      bottomNavigationBar: currentNavIndex != null ? BottomNavigationBar(
-        currentIndex: currentNavIndex ?? 0,
-        onTap: (index) {
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            '/dashboard',
-            (route) => false,
-            arguments: index,
-          );
-        },
-        backgroundColor: theme.colorScheme.surface,
-        selectedItemColor: theme.colorScheme.primary,
-        unselectedItemColor: Colors.grey,
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
-        type: BottomNavigationBarType.fixed,
-        items: [
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.dashboard_customize_rounded),
-            label: coreTr(context, 'nav.dashboard'),
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.layers_outlined),
-            label: coreTr(context, 'nav.modules'),
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.settings_suggest_outlined),
-            label: coreTr(context, 'nav.settings'),
-          ),
-        ],
-      ) : null,
+      bottomNavigationBar: currentNavIndex != null
+          ? BottomNavigationBar(
+              currentIndex: currentNavIndex ?? 0,
+              onTap: (index) {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  '/dashboard',
+                  (route) => false,
+                  arguments: index,
+                );
+              },
+              backgroundColor: theme.colorScheme.surface,
+              selectedItemColor: theme.colorScheme.primary,
+              unselectedItemColor: Colors.grey,
+              selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+              type: BottomNavigationBarType.fixed,
+              items: [
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.dashboard_customize_rounded),
+                  label: coreTr(context, 'nav.dashboard'),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.layers_outlined),
+                  label: coreTr(context, 'nav.modules'),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.settings_suggest_outlined),
+                  label: coreTr(context, 'nav.settings'),
+                ),
+              ],
+            )
+          : null,
     );
   }
 }

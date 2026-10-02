@@ -19,6 +19,7 @@ class MessageQueueResource extends JsonResource
             'scheduled_at' => $this->scheduled_at,
             'status' => $this->status,
             'retry_count' => $this->retry_count,
+            'customer_name' => $this->booking?->customer?->name ?? null,
             'barberShop' => $this->whenLoaded('barberShop'),
             'booking' => $this->whenLoaded('booking'),
         ];
