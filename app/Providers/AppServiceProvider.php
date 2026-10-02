@@ -28,11 +28,6 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        \Illuminate\Support\Facades\Event::listen(
-            \App\Events\FirebaseNotificationRequested::class,
-            \App\Listeners\SendFirebaseNotificationListener::class
-        );
-
         if (class_exists(\App\Models\BarberShop::class)) {
             \App\Models\BarberShop::observe(\App\Observers\BarberShopObserver::class);
         }
