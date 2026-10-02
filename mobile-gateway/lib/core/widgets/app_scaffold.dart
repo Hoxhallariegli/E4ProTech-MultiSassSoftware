@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/api_service.dart';
 import '../../l10n/core_localization.dart';
 import 'sidebar.dart';
 import 'premium_header.dart';
@@ -67,7 +68,73 @@ class AppScaffold extends StatelessWidget {
       backgroundColor: theme.colorScheme.surface,
       drawer: const Sidebar(),
       appBar: appBarWidget,
-      body: body,
+      body: Column(
+        children: [
+          // 1. Red Offline Banner
+          ValueListenableBuilder<bool>(
+            valueListenable: ApiService.isOffline,
+            builder: (context, offline, child) {
+              if (!offline) return const SizedBox.shrink();
+              return Container(
+                width: double.infinity,
+                color: Colors.red.shade800,
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.wifi_off_rounded, color: Colors.white, size: 14),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Nuk ka lidhje me serverin (Aplikacioni është Offline)',
+                        style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () {
+                        ApiService.checkServerHealth();
+                      },
+                      child: const Icon(Icons.refresh_rounded, color: Colors.white, size: 16),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+
+          // 2. Green Online Restored Banner (Shows for 4 seconds when connection returns)
+          ValueListenableBuilder<bool>(
+            valueListenable: ApiService.isOnlineRestored,
+            builder: (context, onlineRestored, child) {
+              if (!onlineRestored) return const SizedBox.shrink();
+              return Container(
+                width: double.infinity,
+                color: Colors.green.shade800,
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.wifi_rounded, color: Colors.white, size: 14),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Lidhja me serverin u rikthye (Online) 📶',
+                        style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+
+          Expanded(child: body),
+        ],
+      ),
       floatingActionButton: floatingActionButton,
       bottomNavigationBar: currentNavIndex != null
           ? BottomNavigationBar(

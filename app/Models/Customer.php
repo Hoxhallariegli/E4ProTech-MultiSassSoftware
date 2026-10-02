@@ -33,4 +33,22 @@ class Customer extends Model
 
     public function barberShop(): \Illuminate\Database\Eloquent\Relations\BelongsTo { return $this->belongsTo(\App\Models\BarberShop::class, 'barber_shop_id'); }
 
+    public static function recalculateStats(?int $customerId): void
+    {
+        if (!$customerId) return;
+
+        $totalBookings = Booking::where('customer_id', $customerId)
+            ->where('status', '!=', 'cancelled')
+            ->count();
+
+        $noShowCount = Booking::where('customer_id', $customerId)
+            ->where('status', 'no-show')
+            ->count();
+
+        static::where('id', $customerId)->update([
+            'total_bookings' => $totalBookings,
+            'no_show_count' => $noShowCount,
+        ]);
+    }
+
 }

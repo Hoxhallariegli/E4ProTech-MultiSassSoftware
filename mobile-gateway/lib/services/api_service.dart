@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -7,6 +8,38 @@ import '../modules/auth/presentation/pages/login_page.dart';
 
 class ApiService {
   static String? _customUrl;
+  static final ValueNotifier<bool> isOffline = ValueNotifier<bool>(false);
+  static final ValueNotifier<bool> isOnlineRestored = ValueNotifier<bool>(false);
+  static Timer? _healthCheckTimer;
+
+  static void initAutoHealthCheck() {
+    _healthCheckTimer?.cancel();
+    _healthCheckTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
+      await checkServerHealth();
+    });
+  }
+
+  static Future<void> checkServerHealth() async {
+    try {
+      final baseUrl = await serverUrl;
+      final uri = Uri.parse('$baseUrl$apiVersion/status');
+      final res = await http.get(uri).timeout(const Duration(seconds: 4));
+
+      if (res.statusCode >= 200 && res.statusCode < 500) {
+        if (isOffline.value == true) {
+          isOffline.value = false;
+          isOnlineRestored.value = true;
+          Future.delayed(const Duration(seconds: 4), () {
+            isOnlineRestored.value = false;
+          });
+        }
+      }
+    } catch (_) {
+      if (!isOffline.value) {
+        isOffline.value = true;
+      }
+    }
+  }
 
   static Future<String> get serverUrl async {
     if (_customUrl != null) return _customUrl!;
@@ -50,73 +83,148 @@ class ApiService {
   }
 
   static Future<http.Response> get(String url) async {
-    final baseUrl = await serverUrl;
-    final uri = Uri.parse('$baseUrl$apiVersion$url');
-    final headers = await _getHeaders();
-    final res = await http.get(uri, headers: headers);
-    _ensureSuccess(res);
-    return res;
+    try {
+      final baseUrl = await serverUrl;
+      final uri = Uri.parse('$baseUrl$apiVersion$url');
+      final headers = await _getHeaders();
+      final res = await http.get(uri, headers: headers);
+      if (isOffline.value) {
+        isOffline.value = false;
+        isOnlineRestored.value = true;
+        Future.delayed(const Duration(seconds: 4), () {
+          isOnlineRestored.value = false;
+        });
+      }
+      _ensureSuccess(res);
+      return res;
+    } catch (e) {
+      _handleNetworkError(e);
+      rethrow;
+    }
   }
 
   static Future<http.Response> post(String url, Map<String, dynamic> body) async {
-    final baseUrl = await serverUrl;
-    final uri = Uri.parse('$baseUrl$apiVersion$url');
-    final headers = await _getHeaders();
-    final res = await http.post(uri, headers: headers, body: jsonEncode(body));
-    _ensureSuccess(res);
-    return res;
+    try {
+      final baseUrl = await serverUrl;
+      final uri = Uri.parse('$baseUrl$apiVersion$url');
+      final headers = await _getHeaders();
+      final res = await http.post(uri, headers: headers, body: jsonEncode(body));
+      if (isOffline.value) {
+        isOffline.value = false;
+        isOnlineRestored.value = true;
+        Future.delayed(const Duration(seconds: 4), () {
+          isOnlineRestored.value = false;
+        });
+      }
+      _ensureSuccess(res);
+      return res;
+    } catch (e) {
+      _handleNetworkError(e);
+      rethrow;
+    }
   }
 
   static Future<http.Response> put(String url, Map<String, dynamic> body) async {
-    final baseUrl = await serverUrl;
-    final uri = Uri.parse('$baseUrl$apiVersion$url');
-    final headers = await _getHeaders();
-    final res = await http.put(uri, headers: headers, body: jsonEncode(body));
-    _ensureSuccess(res);
-    return res;
+    try {
+      final baseUrl = await serverUrl;
+      final uri = Uri.parse('$baseUrl$apiVersion$url');
+      final headers = await _getHeaders();
+      final res = await http.put(uri, headers: headers, body: jsonEncode(body));
+      if (isOffline.value) {
+        isOffline.value = false;
+        isOnlineRestored.value = true;
+        Future.delayed(const Duration(seconds: 4), () {
+          isOnlineRestored.value = false;
+        });
+      }
+      _ensureSuccess(res);
+      return res;
+    } catch (e) {
+      _handleNetworkError(e);
+      rethrow;
+    }
   }
 
   static Future<http.Response> delete(String url) async {
-    final baseUrl = await serverUrl;
-    final uri = Uri.parse('$baseUrl$apiVersion$url');
-    final headers = await _getHeaders();
-    final res = await http.delete(uri, headers: headers);
-    _ensureSuccess(res);
-    return res;
+    try {
+      final baseUrl = await serverUrl;
+      final uri = Uri.parse('$baseUrl$apiVersion$url');
+      final headers = await _getHeaders();
+      final res = await http.delete(uri, headers: headers);
+      if (isOffline.value) {
+        isOffline.value = false;
+        isOnlineRestored.value = true;
+        Future.delayed(const Duration(seconds: 4), () {
+          isOnlineRestored.value = false;
+        });
+      }
+      _ensureSuccess(res);
+      return res;
+    } catch (e) {
+      _handleNetworkError(e);
+      rethrow;
+    }
   }
 
   static Future<http.Response> postMultipart(
     String url,
     Map<String, dynamic> body, {
-    Map<String, String>? files, // fieldName -> filePath
+    Map<String, String>? files,
   }) async {
-    final baseUrl = await serverUrl;
-    final uri = Uri.parse('$baseUrl$apiVersion$url');
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
+    try {
+      final baseUrl = await serverUrl;
+      final uri = Uri.parse('$baseUrl$apiVersion$url');
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
 
-    final request = http.MultipartRequest('POST', uri);
-    request.headers.addAll({
-      'Accept': 'application/json',
-      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-    });
+      final request = http.MultipartRequest('POST', uri);
+      request.headers.addAll({
+        'Accept': 'application/json',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      });
 
-    body.forEach((key, value) {
-      if (value != null) {
-        request.fields[key] = value.toString();
-      }
-    });
+      body.forEach((key, value) {
+        if (value != null) {
+          request.fields[key] = value.toString();
+        }
+      });
 
-    if (files != null) {
-      for (var entry in files.entries) {
-        if (entry.value.isNotEmpty) {
-          request.files.add(await http.MultipartFile.fromPath(entry.key, entry.value));
+      if (files != null) {
+        for (var entry in files.entries) {
+          if (entry.value.isNotEmpty) {
+            request.files.add(await http.MultipartFile.fromPath(entry.key, entry.value));
+          }
         }
       }
-    }
 
-    final streamedResponse = await request.send();
-    return http.Response.fromStream(streamedResponse);
+      final streamedResponse = await request.send();
+      final res = await http.Response.fromStream(streamedResponse);
+      if (isOffline.value) {
+        isOffline.value = false;
+        isOnlineRestored.value = true;
+        Future.delayed(const Duration(seconds: 4), () {
+          isOnlineRestored.value = false;
+        });
+      }
+      _ensureSuccess(res);
+      return res;
+    } catch (e) {
+      _handleNetworkError(e);
+      rethrow;
+    }
+  }
+
+  static void _handleNetworkError(Object error) {
+    final str = error.toString();
+    if (str.contains('Failed to fetch') ||
+        str.contains('SocketException') ||
+        str.contains('ClientException') ||
+        str.contains('HandshakeException') ||
+        str.contains('Failed host lookup') ||
+        str.contains('Connection refused') ||
+        str.contains('Connection closed')) {
+      isOffline.value = true;
+    }
   }
 
   static void _ensureSuccess(dynamic res) {
@@ -142,15 +250,39 @@ class ApiService {
     }
   }
 
-  static String extractErrorMessage(dynamic res) {
-    try {
-      if (res is http.Response) {
-        final decoded = jsonDecode(res.body);
+  static String extractErrorMessage(dynamic error) {
+    if (error == null) return 'Ndodhi një gabim i papritur në server.';
+
+    final str = error.toString();
+
+    if (str.contains('Failed to fetch') ||
+        str.contains('SocketException') ||
+        str.contains('ClientException') ||
+        str.contains('HandshakeException') ||
+        str.contains('Failed host lookup') ||
+        str.contains('NetworkImageLoadException') ||
+        str.contains('Connection refused') ||
+        str.contains('Connection closed')) {
+      isOffline.value = true;
+      return 'Nuk ka lidhje me internetin ose serveri është offline.';
+    }
+
+    if (error is http.Response) {
+      try {
+        final decoded = jsonDecode(error.body);
         if (decoded is Map && decoded.containsKey('message')) {
           return decoded['message'].toString();
         }
-      }
-    } catch (_) {}
-    return 'An unexpected server error occurred.';
+      } catch (_) {}
+      if (error.statusCode == 403) return 'Ju nuk keni leje për këtë veprim.';
+      if (error.statusCode == 404) return 'Përmbajtja e kërkuar nuk u gjet.';
+      if (error.statusCode >= 500) return 'Serveri ka një problem të përkohshëm (500).';
+    }
+
+    if (str.startsWith('Exception: ')) {
+      return str.substring(11);
+    }
+
+    return str;
   }
 }

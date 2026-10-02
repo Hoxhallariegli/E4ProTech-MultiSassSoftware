@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile_gateway/services/api_service.dart';
 import '../../data/payment_repository.dart';
 import 'payment_state.dart';
 
@@ -90,8 +91,7 @@ class PaymentCubit extends Cubit<PaymentState> {
   }
 
   String _cleanError(Object error) {
-    final text = error.toString();
-    return text.startsWith('Exception: ') ? text.substring(11) : text;
+    return ApiService.extractErrorMessage(error);
   }
 
   void handleRealtime(String action, Map<String, dynamic> data) {

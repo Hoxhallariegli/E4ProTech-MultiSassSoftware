@@ -10,6 +10,7 @@ import 'package:mobile_gateway/core/notifications/push_service.dart';
 import 'package:mobile_gateway/modules/auth/presentation/pages/login_page.dart';
 import 'package:mobile_gateway/modules/dashboard/presentation/pages/app_shell.dart';
 import 'package:mobile_gateway/services/auth_service.dart';
+import 'package:mobile_gateway/services/api_service.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 
@@ -18,6 +19,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AuthService.instance.init();
+  ApiService.initAutoHealthCheck();
 
   try {
     await Firebase.initializeApp();
