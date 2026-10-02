@@ -3,9 +3,32 @@
     @if(auth()->user()->is_global_admin)
 <td class="px-6 py-5 font-bold text-gray-900 dark:text-white">{{ $item->barberShop?->name ?? '-' }}</td>
 @endif
-<td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->channel }}</td>
-<td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->type }}</td>
-<td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->content }}</td>
+<td class="px-6 py-5 text-gray-600 dark:text-gray-300 font-bold uppercase text-xs">{{ $item->channel }}</td>
+<td class="px-6 py-5 text-gray-600 dark:text-gray-300 font-bold uppercase text-xs">{{ $item->type }}</td>
+<td class="px-6 py-5 text-gray-600 dark:text-gray-300">
+    @php
+        $raw = $item->content;
+        $sq = ''; $en = '';
+        if (is_array($raw)) {
+            $sq = $raw['sq'] ?? '';
+            $en = $raw['en'] ?? '';
+        } elseif (is_string($raw)) {
+            $dec = json_decode($raw, true);
+            if (is_array($dec)) {
+                $sq = $dec['sq'] ?? '';
+                $en = $dec['en'] ?? '';
+            } else {
+                $sq = $raw;
+            }
+        }
+    @endphp
+    @if($sq)
+        <div class="text-xs font-semibold text-gray-900 dark:text-white">🇦🇱 {{ $sq }}</div>
+    @endif
+    @if($en)
+        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">🇬🇧 {{ $en }}</div>
+    @endif
+</td>
     <td class="px-6 py-5 text-right !transition-none">
         <div class="flex justify-end gap-3 !transition-none">
             @can('edit_message_templates')

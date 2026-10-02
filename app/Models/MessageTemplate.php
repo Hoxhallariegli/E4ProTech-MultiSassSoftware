@@ -12,7 +12,9 @@ class MessageTemplate extends Model
     protected $fillable = ['barber_shop_id', 'channel', 'type', 'content'];
 
     protected function casts(): array {
-        return [];
+        return [
+            'content' => 'array',
+        ];
     }
 
     public static function rules($id = null): array {
@@ -20,12 +22,12 @@ class MessageTemplate extends Model
             'barber_shop_id' => ['required', 'integer'],
             'channel' => ['required', \Illuminate\Validation\Rule::in(['sms', 'whatsapp'])],
             'type' => ['required', \Illuminate\Validation\Rule::in(['reminder', 'confirmation', 'welcome'])],
-            'content' => ['required', 'string', 'max:160'],
+            'content' => ['required'],
         ];
     }
 
     public static function sortable(): array {
-        return ['id', 'channel', 'type', 'content'];
+        return ['id', 'channel', 'type'];
     }
 
     protected static function booted(): void
@@ -37,19 +39,60 @@ class MessageTemplate extends Model
         return $this->belongsTo(\App\Models\BarberShop::class, 'barber_shop_id');
     }
 
-    public static function parseForBooking(Booking $booking, string $type = 'confirmation'): string
+    /**
+     * Parses the message template for a booking based on the customer's preferred language.
+     * Falls back to default env language (sq/en) if not specified.
+     */
+    public static function parseForBooking(Booking $booking, string $type = 'confirmation', ?string $locale = null): string
     {
         $shopId = $booking->barber_shop_id;
-        $template = static::where('barber_shop_id', $shopId)
+
+        if (!$locale) {
+            $customerLang = strtolower((string) ($booking->customer?->language ?? $booking->customer?->locale ?? $booking->source_locale ?? ''));
+            if (in_array($customerLang, ['en', 'english'], true)) {
+                $locale = 'en';
+            } elseif (in_array($customerLang, ['sq', 'al', 'albanian', 'shqip'], true)) {
+                $locale = 'sq';
+            } else {
+                $locale = strtolower((string) config('app.locale', env('DEFAULT_LANGUAGE', 'sq')));
+            }
+        }
+        $locale = in_array(strtolower($locale), ['en', 'sq'], true) ? strtolower($locale) : 'sq';
+
+        $templateRecord = static::where('barber_shop_id', $shopId)
             ->where('channel', 'sms')
             ->where('type', $type)
-            ->value('content');
+            ->first();
 
-        if (!$template) {
-            if ($type === 'reminder') {
-                $template = "Rikujtese: Pershendetje {customer_name}! Takimi juaj sot ne oren {time}. Faleminderit!";
+        $contentRaw = $templateRecord?->content;
+        $templateText = null;
+
+        if ($contentRaw) {
+            if (is_array($contentRaw)) {
+                $templateText = $contentRaw[$locale] ?? $contentRaw['sq'] ?? $contentRaw['en'] ?? null;
+            } elseif (is_string($contentRaw)) {
+                $decoded = json_decode($contentRaw, true);
+                if (is_array($decoded)) {
+                    $templateText = $decoded[$locale] ?? $decoded['sq'] ?? $decoded['en'] ?? null;
+                } else {
+                    $templateText = $contentRaw;
+                }
+            }
+        }
+
+        if (!$templateText) {
+            if ($locale === 'en') {
+                if ($type === 'reminder') {
+                    $templateText = "Reminder: Hello {customer_name}! Your appointment is today at {time}. Thank you!";
+                } else {
+                    $templateText = "Hello {customer_name}! Your booking for {service_name} at {shop_name} is confirmed for {time} {date}. Thank you!";
+                }
             } else {
-                $template = "Pershendetje {customer_name}! Rezervimi {service_name} ne {shop_name} u konfirmua {time} {date}. Faleminderit!";
+                if ($type === 'reminder') {
+                    $templateText = "Rikujtese: Pershendetje {customer_name}! Takimi juaj sot ne oren {time}. Faleminderit!";
+                } else {
+                    $templateText = "Pershendetje {customer_name}! Rezervimi {service_name} ne {shop_name} u konfirmua {time} {date}. Faleminderit!";
+                }
             }
         }
 
@@ -62,15 +105,14 @@ class MessageTemplate extends Model
             '{date}' => $booking->appointment_at ? $booking->appointment_at->format('d/m/Y') : date('d/m/Y'),
         ];
 
-        $parsed = strtr($template, $replacements);
+        $parsed = strtr($templateText, $replacements);
 
-        // Convert special Albanian characters (ë -> e, ç -> c) to fit 160-char 1 GSM SMS segment
+        // Convert special Albanian characters (ë -> e, ç -> c) for 1 GSM SMS segment
         $parsed = strtr($parsed, [
             'ë' => 'e', 'Ë' => 'E',
             'ç' => 'c', 'Ç' => 'C',
         ]);
 
-        // Max 160 characters limit for single GSM SMS segment
         return mb_substr($parsed, 0, 160);
     }
 }

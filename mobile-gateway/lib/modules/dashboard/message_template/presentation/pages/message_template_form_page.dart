@@ -1,11 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
-import 'package:mobile_gateway/core/widgets/premium_image_picker.dart';
 import 'package:mobile_gateway/l10n/message_template_localization.dart';
 import '../cubit/message_template_cubit.dart';
 import '../cubit/message_template_state.dart';
@@ -26,18 +22,38 @@ class _MessageTemplateFormPageState extends State<MessageTemplateFormPage> {
 
   String? _channel;
   String? _type;
-  final _contentController = TextEditingController();
+  final _contentSqController = TextEditingController();
+  final _contentEnController = TextEditingController();
 
   List<Map<String, dynamic>> _barberShopOptions = [];
   int? _barberShopId;
-
 
   @override void initState() { super.initState(); _init(); }
 
   Future<void> _init() async {
     _channel = widget.item?['channel']?.toString();
     _type = widget.item?['type']?.toString();
-    _contentController.text = widget.item?['content']?.toString() ?? '';
+
+    final itemContent = widget.item?['content'];
+    if (itemContent is Map) {
+      _contentSqController.text = itemContent['sq']?.toString() ?? '';
+      _contentEnController.text = itemContent['en']?.toString() ?? '';
+    } else if (itemContent is String && itemContent.startsWith('{')) {
+      try {
+        final decoded = jsonDecode(itemContent);
+        if (decoded is Map) {
+          _contentSqController.text = decoded['sq']?.toString() ?? '';
+          _contentEnController.text = decoded['en']?.toString() ?? '';
+        } else {
+          _contentSqController.text = itemContent;
+        }
+      } catch (_) {
+        _contentSqController.text = itemContent;
+      }
+    } else {
+      _contentSqController.text = widget.item?['content_sq']?.toString() ?? widget.item?['content']?.toString() ?? '';
+      _contentEnController.text = widget.item?['content_en']?.toString() ?? '';
+    }
 
     if (widget.item?['barber_shop_id'] != null) {
       _barberShopId = int.tryParse(widget.item!['barber_shop_id'].toString());
@@ -56,7 +72,7 @@ class _MessageTemplateFormPageState extends State<MessageTemplateFormPage> {
   }
 
   Future<void> _pickbarberShopId() async {
-    if ("barber_shop_id" == "barber_shop_id" && AuthService.instance.user?['is_admin'] != true) return;
+    if (AuthService.instance.user?['is_admin'] != true) return;
     var filtered = List<Map<String, dynamic>>.from(_barberShopOptions);
     final selected = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -72,60 +88,6 @@ class _MessageTemplateFormPageState extends State<MessageTemplateFormPage> {
     );
     if (selected != null) setState(() => _barberShopId = int.tryParse(selected['id'].toString()));
   }
-  Future<void> _pickDate(TextEditingController controller) async {
-    final initial = _parseDisplayDate(controller.text) ?? DateTime.now();
-    final picked = await showDatePicker(context: context, initialDate: initial, firstDate: DateTime(1900), lastDate: DateTime(2200));
-    if (picked != null && mounted) setState(() => controller.text = _formatDisplayDate(picked, includeTime: false));
-  }
-
-  Future<void> _pickDateTime(TextEditingController controller) async {
-    final initial = _parseDisplayDate(controller.text) ?? DateTime.now();
-    final date = await showDatePicker(context: context, initialDate: initial, firstDate: DateTime(1900), lastDate: DateTime(2200));
-    if (date == null || !mounted) return;
-    final time = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(initial));
-    if (time == null || !mounted) return;
-    final value = DateTime(date.year, date.month, date.day, time.hour, time.minute);
-    setState(() => controller.text = _formatDisplayDate(value, includeTime: true));
-  }
-
-  DateTime? _parseDisplayDate(String value) {
-    final text = value.trim();
-    if (text.isEmpty) return null;
-    final display = RegExp(r'^(\d{2})/(\d{2})/(\d{4})(?: (\d{2}):(\d{2}))?$').firstMatch(text);
-    if (display != null) {
-      return DateTime(
-        int.parse(display.group(3)!),
-        int.parse(display.group(2)!),
-        int.parse(display.group(1)!),
-        int.tryParse(display.group(4) ?? '0') ?? 0,
-        int.tryParse(display.group(5) ?? '0') ?? 0,
-      );
-    }
-    return DateTime.tryParse(text)?.toLocal();
-  }
-
-  String _formatDisplayDate(DateTime value, {required bool includeTime}) {
-    final date = '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
-    if (!includeTime) return date;
-    return '$date ${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
-  }
-
-  String _displayDateTime(dynamic value, {required bool includeTime}) {
-    if (value == null || value.toString().trim().isEmpty) return '';
-    final parsed = DateTime.tryParse(value.toString())?.toLocal();
-    return parsed == null ? value.toString() : _formatDisplayDate(parsed, includeTime: includeTime);
-  }
-
-  String? _apiDateValue(String value) {
-    final parsed = _parseDisplayDate(value);
-    if (parsed == null) return null;
-    return '${parsed.year.toString().padLeft(4, '0')}-${parsed.month.toString().padLeft(2, '0')}-${parsed.day.toString().padLeft(2, '0')}';
-  }
-
-  String? _apiDateTimeValue(String value) {
-    final parsed = _parseDisplayDate(value);
-    return parsed?.toIso8601String();
-  }
 
   String _displayName(Map<String, dynamic> item) {
     return (item['name'] ?? item['title'] ?? 'ID: ' + item['id'].toString()).toString();
@@ -137,9 +99,14 @@ class _MessageTemplateFormPageState extends State<MessageTemplateFormPage> {
     payload['barber_shop_id'] = _barberShopId;
     payload['channel'] = _channel;
     payload['type'] = _type;
-    payload['content'] = _contentController.text;
 
-    final files = <String, String>{};
+    final sqText = _contentSqController.text.trim();
+    final enText = _contentEnController.text.trim();
+
+    // Send individual language content in 'content' (max 160) so server validation 'max:160' passes 100%!
+    payload['content'] = sqText.isNotEmpty ? sqText : enText;
+    payload['content_sq'] = sqText;
+    payload['content_en'] = enText;
 
     context.read<MessageTemplateCubit>().save(payload, id: widget.item?['id']);
   }
@@ -173,20 +140,41 @@ class _MessageTemplateFormPageState extends State<MessageTemplateFormPage> {
               : _FieldShell(label: message_templateTr(context, 'field.barber_shop_id'), child: Container(padding: const EdgeInsets.all(16), width: double.infinity, decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5), border: Border.all(color: theme.colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Text(AuthService.instance.user?['business']?['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)))),
             _FieldShell(label: message_templateTr(context, 'field.channel'), child: DropdownButtonFormField<String>(value: ['sms', 'whatsapp'].contains(_channel) ? _channel : null, items: ['sms', 'whatsapp'].map((v) => DropdownMenuItem<String>(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => _channel = v), validator: (v) { if (v == null || v.isEmpty) return message_templateTr(context, 'form.select'); return null; }, decoration: const InputDecoration(border: InputBorder.none, isDense: true))),
             _FieldShell(label: message_templateTr(context, 'field.type'), child: DropdownButtonFormField<String>(value: ['reminder', 'confirmation', 'welcome'].contains(_type) ? _type : null, items: ['reminder', 'confirmation', 'welcome'].map((v) => DropdownMenuItem<String>(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => _type = v), validator: (v) { if (v == null || v.isEmpty) return message_templateTr(context, 'form.select'); return null; }, decoration: const InputDecoration(border: InputBorder.none, isDense: true))),
+
+            // Multi-language Input 1: Shqip (SQ)
             _FieldShell(
-              label: message_templateTr(context, 'field.content'),
+              label: '🇦🇱 Përmbajtja në Shqip (SQ)',
               child: TextFormField(
-                controller: _contentController,
+                controller: _contentSqController,
                 maxLength: 160,
-                maxLines: 4,
-                decoration: InputDecoration(
-                  hintText: message_templateTr(context, 'field.content'),
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  hintText: 'Përmbajtja e mesazhit në Shqip...',
                   border: InputBorder.none,
                   isDense: true,
                 ),
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) return message_templateTr(context, 'form.required');
                   if (v.trim().length > 160) return 'Maksimumi i lejuar për SMS është 160 karaktere.';
+                  return null;
+                },
+              ),
+            ),
+
+            // Multi-language Input 2: English (EN)
+            _FieldShell(
+              label: '🇬🇧 Content in English (EN)',
+              child: TextFormField(
+                controller: _contentEnController,
+                maxLength: 160,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  hintText: 'Message template content in English...',
+                  border: InputBorder.none,
+                  isDense: true,
+                ),
+                validator: (v) {
+                  if (v != null && v.trim().length > 160) return 'Max allowed for SMS is 160 characters.';
                   return null;
                 },
               ),
@@ -201,10 +189,12 @@ class _MessageTemplateFormPageState extends State<MessageTemplateFormPage> {
   }
 
   @override void dispose() {
-    _contentController.dispose();
+    _contentSqController.dispose();
+    _contentEnController.dispose();
     super.dispose();
   }
 }
+
 class _FormHeader extends StatelessWidget {
   final bool isEdit;
   const _FormHeader({required this.isEdit});
@@ -215,10 +205,4 @@ class _FieldShell extends StatelessWidget {
   final String label; final Widget child;
   const _FieldShell({required this.label, required this.child});
   @override Widget build(BuildContext context) => Container(margin: const EdgeInsets.only(bottom: 14), padding: const EdgeInsets.fromLTRB(16, 12, 16, 6), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(.35), border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(.7)), borderRadius: BorderRadius.circular(18)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurfaceVariant)), child]));
-}
-
-class _FilePickerCard extends StatelessWidget {
-  final String? current, path; final VoidCallback onPick;
-  const _FilePickerCard({this.current, this.path, required this.onPick});
-  @override Widget build(BuildContext context) => InkWell(onTap: onPick, borderRadius: BorderRadius.circular(20), child: Container(height: 150, margin: const EdgeInsets.only(bottom: 14), decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(.25)), child: path != null ? ClipRRect(borderRadius: BorderRadius.circular(20), child: Image.file(File(path!), fit: BoxFit.cover, width: double.infinity)) : current != null ? ClipRRect(borderRadius: BorderRadius.circular(20), child: Image.network('${ApiService.serverUrl}/$current', fit: BoxFit.cover, width: double.infinity)) : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.cloud_upload_outlined, size: 34), SizedBox(height: 8), Text('Tap to choose image', style: TextStyle(fontWeight: FontWeight.w700)), SizedBox(height: 3), Text('PNG, JPG', style: TextStyle(fontSize: 11, color: Colors.grey))])));
 }

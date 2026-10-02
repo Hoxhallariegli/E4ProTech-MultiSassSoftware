@@ -19,7 +19,8 @@ class Edit extends Component
     public $barber_shop_id = '';
     public $channel = '';
     public $type = '';
-    public $content = '';
+    public $content_sq = '';
+    public $content_en = '';
 
     #[On('barber-shop-created')]
     public function refreshBarberShops($id)
@@ -36,7 +37,24 @@ class Edit extends Component
     public function mount(MessageTemplate $messageTemplate)
     {
         $this->item = $messageTemplate;
-        $this->fill($messageTemplate->toArray());
+        $this->barber_shop_id = $messageTemplate->barber_shop_id;
+        $this->channel = $messageTemplate->channel;
+        $this->type = $messageTemplate->type;
+
+        $rawContent = $messageTemplate->content;
+        if (is_array($rawContent)) {
+            $this->content_sq = $rawContent['sq'] ?? '';
+            $this->content_en = $rawContent['en'] ?? '';
+        } elseif (is_string($rawContent)) {
+            $decoded = json_decode($rawContent, true);
+            if (is_array($decoded)) {
+                $this->content_sq = $decoded['sq'] ?? '';
+                $this->content_en = $decoded['en'] ?? '';
+            } else {
+                $this->content_sq = $rawContent;
+                $this->content_en = $rawContent;
+            }
+        }
 
         if (empty($this->barber_shop_id) && auth()->check() && auth()->user()->barber_shop_id) {
             $this->barber_shop_id = (int) auth()->user()->barber_shop_id;
@@ -57,22 +75,25 @@ class Edit extends Component
             $this->barber_shop_id = (int) auth()->user()->barber_shop_id;
         }
 
-        $this->validate();
+        $this->validate([
+            'content_sq' => ['required', 'string', 'max:160'],
+            'content_en' => ['nullable', 'string', 'max:160'],
+        ]);
+
+        $contentArr = [
+            'sq' => (string) $this->content_sq,
+            'en' => (string) $this->content_en,
+        ];
 
         $dto = MessageTemplateDTO::fromArray([
             'barber_shop_id' => (int) $this->barber_shop_id,
             'channel' => $this->channel,
             'type' => $this->type,
-            'content' => $this->content,
+            'content' => $contentArr,
         ]);
 
         $action->execute($this->item, $dto);
         session()->flash('success', __('message-templates.updated'));
         return to_route('admin.message-templates.index');
-    }
-
-    protected function rules(): array
-    {
-        return MessageTemplate::rules($this->item->id);
     }
 }

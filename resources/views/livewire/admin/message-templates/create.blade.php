@@ -53,8 +53,15 @@
                     </select>
                 </div>
 
-                <div class="md:col-span-2">
-                    <x-form.textarea name="content" wire:model="content" :label="__('message-templates.Content')" placeholder="Përdorni variablat: {customer_name}, {service_name}, {staff_name}, {shop_name}, {time}, {date}" class="dark:bg-gray-900 font-mono text-sm" />
+                <div class="md:col-span-2 space-y-6">
+                    <div>
+                        <x-form.textarea name="content_sq" wire:model="content_sq" label="🇦🇱 Përmbajtja në Shqip (SQ)" placeholder="Përdorni variablat: {customer_name}, {service_name}, {staff_name}, {shop_name}, {time}, {date}" class="dark:bg-gray-900 font-mono text-sm" />
+                    </div>
+
+                    <div>
+                        <x-form.textarea name="content_en" wire:model="content_en" label="🇬🇧 Content in English (EN)" placeholder="Use variables: {customer_name}, {service_name}, {staff_name}, {shop_name}, {time}, {date}" class="dark:bg-gray-900 font-mono text-sm" />
+                    </div>
+
                     <p class="text-xs text-gray-500 mt-2">Variablat e lejuara: <code class="bg-gray-100 dark:bg-gray-900 px-1.5 py-0.5 rounded">{customer_name}</code>, <code class="bg-gray-100 dark:bg-gray-900 px-1.5 py-0.5 rounded">{service_name}</code>, <code class="bg-gray-100 dark:bg-gray-900 px-1.5 py-0.5 rounded">{staff_name}</code>, <code class="bg-gray-100 dark:bg-gray-900 px-1.5 py-0.5 rounded">{shop_name}</code>, <code class="bg-gray-100 dark:bg-gray-900 px-1.5 py-0.5 rounded">{time}</code>, <code class="bg-gray-100 dark:bg-gray-900 px-1.5 py-0.5 rounded">{date}</code></p>
                 </div>
             </div>

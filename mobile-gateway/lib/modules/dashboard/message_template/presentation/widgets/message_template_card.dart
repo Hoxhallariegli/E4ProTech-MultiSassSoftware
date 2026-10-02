@@ -21,7 +21,9 @@ class MessageTemplateCard extends StatelessWidget {
 
     final channel = (item['channel'] ?? 'sms').toString().toLowerCase();
     final type = (item['type'] ?? 'confirmation').toString().toLowerCase();
-    final content = (item['content'] ?? '').toString();
+
+    final String contentSq = (item['content_sq'] ?? (item['content'] is Map ? item['content']['sq'] : item['content']) ?? '').toString();
+    final String contentEn = (item['content_en'] ?? (item['content'] is Map ? item['content']['en'] : '') ?? '').toString();
 
     IconData channelIcon = Icons.sms_rounded;
     Color channelColor = primaryColor;
@@ -129,31 +131,75 @@ class MessageTemplateCard extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          // Content Box
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? primaryColor.withOpacity(0.08)
-                  : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
+          // Content Box - Shqip (SQ)
+          if (contentSq.isNotEmpty) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
                 color: isDark
-                    ? primaryColor.withOpacity(0.2)
-                    : theme.colorScheme.outlineVariant.withOpacity(0.5),
+                    ? primaryColor.withOpacity(0.08)
+                    : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark
+                      ? primaryColor.withOpacity(0.2)
+                      : theme.colorScheme.outlineVariant.withOpacity(0.5),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('🇦🇱 Shqip (SQ):', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Colors.grey)),
+                  const SizedBox(height: 3),
+                  Text(
+                    contentSq,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      height: 1.35,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? const Color(0xFFE2E8F0) : theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: Text(
-              content.isEmpty ? 'Përmbajtja e shabllonit është bosh.' : content,
-              style: TextStyle(
-                fontSize: 12.5,
-                height: 1.4,
-                fontWeight: FontWeight.w500,
-                color: isDark ? const Color(0xFFE2E8F0) : theme.colorScheme.onSurfaceVariant,
+          ],
+
+          if (contentSq.isNotEmpty && contentEn.isNotEmpty) const SizedBox(height: 6),
+
+          // Content Box - English (EN)
+          if (contentEn.isNotEmpty) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.2)
+                    : theme.colorScheme.surfaceContainerHighest.withOpacity(0.25),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: theme.colorScheme.outlineVariant.withOpacity(0.4),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('🇬🇧 English (EN):', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Colors.grey)),
+                  const SizedBox(height: 3),
+                  Text(
+                    contentEn,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      height: 1.35,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? const Color(0xFFE2E8F0) : theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
+          ],
         ],
       ),
     );

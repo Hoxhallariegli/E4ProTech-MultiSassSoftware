@@ -18,7 +18,8 @@ class Create extends Component
     public $barber_shop_id = '';
     public $channel = 'sms';
     public $type = 'confirmation';
-    public $content = '';
+    public $content_sq = '';
+    public $content_en = '';
 
     #[On('barber-shop-created')]
     public function refreshBarberShops($id)
@@ -53,22 +54,25 @@ class Create extends Component
             $this->barber_shop_id = (int) auth()->user()->barber_shop_id;
         }
 
-        $this->validate();
+        $this->validate([
+            'content_sq' => ['required', 'string', 'max:160'],
+            'content_en' => ['nullable', 'string', 'max:160'],
+        ]);
+
+        $contentArr = [
+            'sq' => (string) $this->content_sq,
+            'en' => (string) $this->content_en,
+        ];
 
         $dto = MessageTemplateDTO::fromArray([
             'barber_shop_id' => (int) $this->barber_shop_id,
             'channel' => $this->channel,
             'type' => $this->type,
-            'content' => $this->content,
+            'content' => $contentArr,
         ]);
 
         $action->execute($dto);
         session()->flash('success', __('message-templates.created'));
         return to_route('admin.message-templates.index');
-    }
-
-    protected function rules(): array
-    {
-        return MessageTemplate::rules();
     }
 }

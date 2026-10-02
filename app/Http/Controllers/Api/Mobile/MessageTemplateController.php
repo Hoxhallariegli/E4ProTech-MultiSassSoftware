@@ -4,13 +4,9 @@ namespace App\Http\Controllers\Api\Mobile;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Mobile\MessageTemplateResource;
-use \App\Models\MessageTemplate;
+use App\Models\MessageTemplate;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Storage;
-use App\Domain\MessageTemplate\DTOs\MessageTemplateDTO;
-use App\Domain\MessageTemplate\Actions\CreateMessageTemplateAction;
-use App\Domain\MessageTemplate\Actions\UpdateMessageTemplateAction;
 
 class MessageTemplateController extends Controller
 {
@@ -25,28 +21,18 @@ class MessageTemplateController extends Controller
         $sortField = in_array($sortField, $allowedSorts, true) ? $sortField : 'id';
         $direction = in_array($direction, ['asc', 'desc'], true) ? $direction : 'desc';
 
-        $query = MessageTemplate::query()->with(array (
-  0 => 'barberShop',
-));
+        $query = MessageTemplate::query()->with(['barberShop']);
 
         $search = trim((string) $request->input('search', ''));
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
-                $q->where('id', 'like', "%{$search}%");
-                foreach (array (
-  0 => 'content',
-) as $field) {
-                    $q->orWhere($field, 'like', "%{$search}%");
-                }
+                $q->where('id', 'like', "%{$search}%")
+                  ->orWhere('content', 'like', "%{$search}%");
             });
         }
 
         foreach ($request->all() as $key => $value) {
             if ($value === null || $value === '' || !str_ends_with($key, '_id')) {
-                continue;
-            }
-            if (in_array($key, array (
-), true)) {
                 continue;
             }
             if (in_array($key, array_keys(MessageTemplate::rules()), true)) {
@@ -61,34 +47,61 @@ class MessageTemplateController extends Controller
     public function show($id)
     {
         abort_if_cannot('view_message_templates');
-        $item = MessageTemplate::with(array (
-  0 => 'barberShop',
-))->findOrFail($id);
+        $item = MessageTemplate::with(['barberShop'])->findOrFail($id);
         return new MessageTemplateResource($item);
     }
 
     public function store(Request $request)
     {
-        abort_if_cannot('add_message_templates');
-                $data = $this->prepareData($request);
-        
+        if (!user_can('add_message_templates') && !user_can('edit_message_templates')) {
+            abort(403, 'Ju nuk keni leje për këtë veprim.');
+        }
+
+        $data = $this->prepareData($request);
+
+        $rawContent = $request->input('content');
+        $contentSq = $request->input('content_sq', is_array($rawContent) ? ($rawContent['sq'] ?? '') : (is_string($rawContent) ? $rawContent : ''));
+        $contentEn = $request->input('content_en', is_array($rawContent) ? ($rawContent['en'] ?? '') : '');
+
+        $contentArr = [
+            'sq' => (string) $contentSq,
+            'en' => (string) $contentEn,
+        ];
+
+        $data['content'] = json_encode($contentArr, JSON_UNESCAPED_UNICODE);
+
         $validated = validator($data, MessageTemplate::rules())->validate();
+        $validated['content'] = $contentArr;
+
         $item = app(\App\Domain\MessageTemplate\Actions\CreateMessageTemplateAction::class)->execute(\App\Domain\MessageTemplate\DTOs\MessageTemplateDTO::fromArray($validated));
-        return (new MessageTemplateResource($item->loadMissing(array (
-  0 => 'barberShop',
-))))->response()->setStatusCode(201);
+        return (new MessageTemplateResource($item->loadMissing(['barberShop'])))->response()->setStatusCode(201);
     }
 
     public function update(Request $request, $id)
     {
-        abort_if_cannot('edit_message_templates');
-                $item = MessageTemplate::findOrFail($id);
+        if (!user_can('edit_message_templates') && !user_can('add_message_templates')) {
+            abort(403, 'Ju nuk keni leje për këtë veprim.');
+        }
+
+        $item = MessageTemplate::findOrFail($id);
         $data = $this->prepareData($request);
+
+        $rawContent = $request->input('content');
+        $contentSq = $request->input('content_sq', is_array($rawContent) ? ($rawContent['sq'] ?? '') : (is_string($rawContent) ? $rawContent : ''));
+        $contentEn = $request->input('content_en', is_array($rawContent) ? ($rawContent['en'] ?? '') : '');
+
+        $contentArr = [
+            'sq' => (string) $contentSq,
+            'en' => (string) $contentEn,
+        ];
+
+        $data['content'] = json_encode($contentArr, JSON_UNESCAPED_UNICODE);
+
         $validated = validator($data, MessageTemplate::rules($id))->validate();
+        $validated['content'] = $contentArr;
+
         $item = app(\App\Domain\MessageTemplate\Actions\UpdateMessageTemplateAction::class)->execute($item, \App\Domain\MessageTemplate\DTOs\MessageTemplateDTO::fromArray($validated));
-        return new MessageTemplateResource($item->loadMissing(array (
-  0 => 'barberShop',
-)));
+        return new MessageTemplateResource($item->loadMissing(['barberShop']));
     }
 
     public function destroy($id): JsonResponse
@@ -98,7 +111,7 @@ class MessageTemplateController extends Controller
         try {
             $item = MessageTemplate::findOrFail($id);
             $item->delete();
-            return response()->json(['success' => true, 'message' => 'MessageTemplate deleted.']);
+            return response()->json(['success' => true, 'message' => 'Template deleted.']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Delete Error: " . $e->getMessage());
             return response()->json([
@@ -110,25 +123,6 @@ class MessageTemplateController extends Controller
 
     private function prepareData(Request $request): array
     {
-        $data = $request->all();
-
-        foreach (array (
-) as $field) {
-            if (isset($data[$field]) && is_string($data[$field])) {
-                $decoded = json_decode($data[$field], true);
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    $data[$field] = $decoded;
-                }
-            }
-        }
-
-        foreach (array (
-) as $field) {
-            if ($request->hasFile($field)) {
-                $data[$field] = app(\App\Services\ImageUploadService::class)->upload($request->file($field), 'uploads/message-templates');
-            }
-        }
-
-        return $data;
+        return $request->all();
     }
 }

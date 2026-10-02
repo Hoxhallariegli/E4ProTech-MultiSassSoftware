@@ -16,7 +16,8 @@ class QuickCreate extends Component
     public $barber_shop_id = '';
     public $channel = 'sms';
     public $type = 'confirmation';
-    public $content = '';
+    public $content_sq = '';
+    public $content_en = '';
 
     public bool $created = false;
     public ?int $createdId = null;
@@ -54,13 +55,21 @@ class QuickCreate extends Component
             $this->barber_shop_id = (int) auth()->user()->barber_shop_id;
         }
 
-        $this->validate();
+        $this->validate([
+            'content_sq' => ['required', 'string', 'max:160'],
+            'content_en' => ['nullable', 'string', 'max:160'],
+        ]);
+
+        $contentArr = [
+            'sq' => (string) $this->content_sq,
+            'en' => (string) $this->content_en,
+        ];
 
         $dto = MessageTemplateDTO::fromArray([
             'barber_shop_id' => (int) $this->barber_shop_id,
             'channel' => $this->channel,
             'type' => $this->type,
-            'content' => $this->content,
+            'content' => $contentArr,
         ]);
 
         $item = $action->execute($dto);
@@ -70,7 +79,7 @@ class QuickCreate extends Component
         $this->created = true;
         $this->createdId = $item->id;
         $this->createdLabel = (string) ($item->id ?? $item->id);
-        $this->reset(['channel', 'type', 'content']);
+        $this->reset(['channel', 'type', 'content_sq', 'content_en']);
     }
 
     public function addAnother()
@@ -78,10 +87,5 @@ class QuickCreate extends Component
         $this->created = false;
         $this->createdId = null;
         $this->createdLabel = '';
-    }
-
-    protected function rules(): array
-    {
-        return MessageTemplate::rules();
     }
 }
