@@ -47,9 +47,9 @@ class MessageTemplate extends Model
 
         if (!$template) {
             if ($type === 'reminder') {
-                $template = "Rikujtese: Pershendetje {customer_name}! Ju kujtojme takimin tuaj per {service_name} me {staff_name} ne {shop_name} sot ne oren {time}. Faleminderit!";
+                $template = "Rikujtese: Pershendetje {customer_name}! Takimi juaj sot ne oren {time}. Faleminderit!";
             } else {
-                $template = "Pershendetje {customer_name}! Rezervimi juaj per {service_name} me {staff_name} ne {shop_name} u konfirmua per oren {time} me date {date}. Faleminderit!";
+                $template = "Pershendetje {customer_name}! Rezervimi {service_name} ne {shop_name} u konfirmua {time} {date}. Faleminderit!";
             }
         }
 

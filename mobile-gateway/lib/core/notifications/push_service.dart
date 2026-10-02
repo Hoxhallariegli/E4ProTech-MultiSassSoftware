@@ -10,6 +10,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile_gateway/services/api_service.dart';
 import 'package:mobile_gateway/services/auth_service.dart';
+import 'package:mobile_gateway/core/realtime/realtime_service.dart';
 import 'package:telephony/telephony.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
@@ -225,6 +226,20 @@ class PushService {
 
         FirebaseMessaging.onMessage.listen((message) async {
           debugPrint('FCM Foreground Message: ${message.notification?.title} - ${message.notification?.body}');
+
+          // Trigger FCM-driven Realtime UI Updates across Flutter screens
+          final String model = message.data['model'] ?? '';
+          final String action = message.data['action'] ?? '';
+          if (model.isNotEmpty) {
+            String resource = model.toLowerCase();
+            if (resource == 'booking') resource = 'bookings';
+            if (resource == 'customer') resource = 'customers';
+            if (resource == 'payment') resource = 'payments';
+            if (resource == 'messagelog') resource = 'message-logs';
+            if (resource == 'messagequeue') resource = 'message-queues';
+
+            RealtimeService.instance.notifyListeners(resource, action, message.data);
+          }
 
           if (message.data['action'] == 'SEND_SMS') {
             Map<String, dynamic> taskData = Map<String, dynamic>.from(message.data);
