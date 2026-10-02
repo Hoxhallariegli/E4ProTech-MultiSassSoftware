@@ -171,7 +171,7 @@ class SendFirebaseNotificationListener
                                     'action' => 'SEND_SMS',
                                     'sms_id' => (string) $queue->id,
                                     'phone' => (string) $booking->customer->phone,
-                                    'body' => (string) $parsedMessage,
+                                    'body' => (string) $parsedConfirmation,
                                 ]
                             );
                             Log::info("📱 [STEP 4b] Triggered silent SEND_SMS FCM data message directly to gateway device [{$gatewayDevice->device_name}] (Token: {$gatewayDevice->fcm_token}) for shop #{$shopId}. FCM Status: " . ($fcmSent ? 'SUCCESS' : 'FAILED'));

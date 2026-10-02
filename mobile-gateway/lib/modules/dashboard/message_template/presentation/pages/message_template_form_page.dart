@@ -103,8 +103,10 @@ class _MessageTemplateFormPageState extends State<MessageTemplateFormPage> {
     final sqText = _contentSqController.text.trim();
     final enText = _contentEnController.text.trim();
 
-    // Send individual language content in 'content' (max 160) so server validation 'max:160' passes 100%!
-    payload['content'] = sqText.isNotEmpty ? sqText : enText;
+    payload['content'] = {
+      'sq': sqText,
+      'en': enText,
+    };
     payload['content_sq'] = sqText;
     payload['content_en'] = enText;
 

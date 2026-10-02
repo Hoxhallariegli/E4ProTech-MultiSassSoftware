@@ -57,9 +57,16 @@ class MessageTemplateController extends Controller
             abort(403, 'Ju nuk keni leje për këtë veprim.');
         }
 
-        $data = $this->prepareData($request);
+        $data = $request->all();
 
         $rawContent = $request->input('content');
+        if (is_string($rawContent) && str_starts_with($rawContent, '{')) {
+            $decoded = json_decode($rawContent, true);
+            if (is_array($decoded)) {
+                $rawContent = $decoded;
+            }
+        }
+
         $contentSq = $request->input('content_sq', is_array($rawContent) ? ($rawContent['sq'] ?? '') : (is_string($rawContent) ? $rawContent : ''));
         $contentEn = $request->input('content_en', is_array($rawContent) ? ($rawContent['en'] ?? '') : '');
 
@@ -68,7 +75,7 @@ class MessageTemplateController extends Controller
             'en' => (string) $contentEn,
         ];
 
-        $data['content'] = json_encode($contentArr, JSON_UNESCAPED_UNICODE);
+        $data['content'] = $contentArr;
 
         $validated = validator($data, MessageTemplate::rules())->validate();
         $validated['content'] = $contentArr;
@@ -84,9 +91,16 @@ class MessageTemplateController extends Controller
         }
 
         $item = MessageTemplate::findOrFail($id);
-        $data = $this->prepareData($request);
+        $data = $request->all();
 
         $rawContent = $request->input('content');
+        if (is_string($rawContent) && str_starts_with($rawContent, '{')) {
+            $decoded = json_decode($rawContent, true);
+            if (is_array($decoded)) {
+                $rawContent = $decoded;
+            }
+        }
+
         $contentSq = $request->input('content_sq', is_array($rawContent) ? ($rawContent['sq'] ?? '') : (is_string($rawContent) ? $rawContent : ''));
         $contentEn = $request->input('content_en', is_array($rawContent) ? ($rawContent['en'] ?? '') : '');
 
@@ -95,7 +109,7 @@ class MessageTemplateController extends Controller
             'en' => (string) $contentEn,
         ];
 
-        $data['content'] = json_encode($contentArr, JSON_UNESCAPED_UNICODE);
+        $data['content'] = $contentArr;
 
         $validated = validator($data, MessageTemplate::rules($id))->validate();
         $validated['content'] = $contentArr;
