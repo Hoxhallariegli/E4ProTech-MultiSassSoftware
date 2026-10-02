@@ -51,18 +51,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _checkReverb() async {
     await RealtimeService.instance.start();
-    final client = RealtimeService.instance.client;
-
-    if (client == null) {
-      if (mounted) setState(() => _reverbStatus = 'OFFLINE');
-      return;
-    }
-
-    if (mounted) setState(() => _reverbStatus = client.connectionState.name.toUpperCase());
-
-    client.onConnectionStateChange.listen((state) {
-      if (mounted) setState(() => _reverbStatus = state.name.toUpperCase());
-    });
+    if (mounted) setState(() => _reverbStatus = 'ONLINE (FCM)');
   }
 
   Future<void> _loadStatus() async {
