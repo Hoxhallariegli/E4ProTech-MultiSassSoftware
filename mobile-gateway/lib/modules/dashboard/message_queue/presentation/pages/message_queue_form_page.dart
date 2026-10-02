@@ -45,17 +45,30 @@ class _MessageQueueFormPageState extends State<MessageQueueFormPage> {
     _messageContentController.text = widget.item?['message_content']?.toString() ?? '';
     _scheduledAtController.text = _displayDateTime(widget.item?['scheduled_at'], includeTime: true);
     _status = widget.item?['status']?.toString();
-    _retryCountController.text = widget.item?['retry_count']?.toString() ?? '';
+    _retryCountController.text = widget.item?['retry_count']?.toString() ?? '0';
+
+    if (widget.item?['barber_shop_id'] != null) {
+      _barberShopId = int.tryParse(widget.item!['barber_shop_id'].toString());
+    }
+    _barberShopId ??= AuthService.instance.user?['barber_shop_id'] as int?;
+
+    if (widget.item?['booking_id'] != null) {
+      _bookingId = int.tryParse(widget.item!['booking_id'].toString());
+    }
 
     try {
-    _barberShopOptions = await repository.lookup('barber-shops');
-    if (widget.item?['barber_shop_id'] != null) _barberShopId = int.tryParse(widget.item!['barber_shop_id'].toString());
-    if (_barberShopId == null && AuthService.instance.user?['is_admin'] != true) _barberShopId = AuthService.instance.user?['barber_shop_id'] as int?;
-    _bookingOptions = await repository.lookup('bookings');
-    if (widget.item?['booking_id'] != null) _bookingId = int.tryParse(widget.item!['booking_id'].toString());
-    } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message_queueTr(context, 'form.could_not_load')), behavior: SnackBarBehavior.floating));
-    } finally { if (mounted) setState(() => _loading = false); }
+      if (AuthService.instance.user?['is_admin'] == true) {
+        _barberShopOptions = await repository.lookup('barber-shops');
+      }
+    } catch (_) {}
+
+    try {
+      _bookingOptions = await repository.lookup('bookings');
+    } catch (_) {}
+
+    if (mounted) {
+      setState(() => _loading = false);
+    }
   }
 
   Future<void> _pickbarberShopId() async {
@@ -191,7 +204,7 @@ class _MessageQueueFormPageState extends State<MessageQueueFormPage> {
           body: _loading ? const Center(child: CircularProgressIndicator.adaptive()) : Form(key: _formKey, child: Builder(builder: (formContext) => ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 120), children: [
             _FormHeader(isEdit: widget.item != null),
             const SizedBox(height: 22),
-            (AuthService.instance.user?['is_admin'] == true) 
+            (AuthService.instance.user?['is_admin'] == true)
               ? _FieldShell(label: message_queueTr(context, 'field.barber_shop_id'), child: InkWell(onTap: _pickbarberShopId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_barberShopOptions.firstWhere((e) => e['id'].toString() == _barberShopId?.toString(), orElse: () => {'id': '', 'name': message_queueTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)]))))
               : _FieldShell(label: message_queueTr(context, 'field.barber_shop_id'), child: Container(padding: const EdgeInsets.all(16), width: double.infinity, decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5), border: Border.all(color: theme.colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Text(AuthService.instance.user?['business']?['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)))),
             _FieldShell(label: message_queueTr(context, 'field.booking_id'), child: InkWell(onTap: _pickbookingId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_bookingOptions.firstWhere((e) => e['id'].toString() == _bookingId?.toString(), orElse: () => {'id': '', 'name': message_queueTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)])))),
