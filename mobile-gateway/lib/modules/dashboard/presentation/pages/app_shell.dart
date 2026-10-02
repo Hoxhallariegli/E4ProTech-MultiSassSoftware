@@ -41,16 +41,17 @@ class _AppShellState extends State<AppShell> {
     PushService.initialize();
   }
 
+  bool _routeArgsApplied = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final args = ModalRoute.of(context)?.settings.arguments;
-    if (args is int && args >= 0 && args < _pages.length) {
-      if (_currentIndex != args) {
-        setState(() {
-          _currentIndex = args;
-        });
+    if (!_routeArgsApplied) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is int && args >= 0 && args < _pages.length) {
+        _currentIndex = args;
       }
+      _routeArgsApplied = true;
     }
   }
 
