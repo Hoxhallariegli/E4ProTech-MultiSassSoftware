@@ -213,6 +213,7 @@ class PublicShopBooking extends Component
             'bookingTime' => 'required',
             'customerName' => 'required|string|max:100',
             'customerPhone' => 'required|string|max:30',
+            'notes' => 'nullable|string|max:80',
         ], [
             'customerName.required' => 'Ju lutemi vendosni Emrin dhe Mbiemrin tuaj.',
             'customerPhone.required' => 'Ju lutemi vendosni Numrin e Telefonit.',

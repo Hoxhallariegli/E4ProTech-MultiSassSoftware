@@ -161,12 +161,29 @@ class _MessageTemplateFormPageState extends State<MessageTemplateFormPage> {
           body: _loading ? const Center(child: CircularProgressIndicator.adaptive()) : Form(key: _formKey, child: Builder(builder: (formContext) => ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 120), children: [
             _FormHeader(isEdit: widget.item != null),
             const SizedBox(height: 22),
-            (AuthService.instance.user?['is_admin'] == true) 
+            (AuthService.instance.user?['is_admin'] == true)
               ? _FieldShell(label: message_templateTr(context, 'field.barber_shop_id'), child: InkWell(onTap: _pickbarberShopId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_barberShopOptions.firstWhere((e) => e['id'].toString() == _barberShopId?.toString(), orElse: () => {'id': '', 'name': message_templateTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)]))))
               : _FieldShell(label: message_templateTr(context, 'field.barber_shop_id'), child: Container(padding: const EdgeInsets.all(16), width: double.infinity, decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5), border: Border.all(color: theme.colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Text(AuthService.instance.user?['business']?['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)))),
             _FieldShell(label: message_templateTr(context, 'field.channel'), child: DropdownButtonFormField<String>(value: ['sms', 'whatsapp'].contains(_channel) ? _channel : null, items: ['sms', 'whatsapp'].map((v) => DropdownMenuItem<String>(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => _channel = v), validator: (v) { if (v == null || v.isEmpty) return message_templateTr(context, 'form.select'); return null; }, decoration: const InputDecoration(border: InputBorder.none, isDense: true))),
             _FieldShell(label: message_templateTr(context, 'field.type'), child: DropdownButtonFormField<String>(value: ['reminder', 'confirmation', 'welcome'].contains(_type) ? _type : null, items: ['reminder', 'confirmation', 'welcome'].map((v) => DropdownMenuItem<String>(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => _type = v), validator: (v) { if (v == null || v.isEmpty) return message_templateTr(context, 'form.select'); return null; }, decoration: const InputDecoration(border: InputBorder.none, isDense: true))),
-            _FieldShell(label: message_templateTr(context, 'field.content'), child: TextFormField(controller: _contentController,  decoration: InputDecoration(hintText: message_templateTr(context, 'field.content'), border: InputBorder.none, isDense: true), validator: (v) { if (v == null || v.trim().isEmpty) return message_templateTr(context, 'form.required');  return null; })),
+            _FieldShell(
+              label: message_templateTr(context, 'field.content'),
+              child: TextFormField(
+                controller: _contentController,
+                maxLength: 160,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  hintText: message_templateTr(context, 'field.content'),
+                  border: InputBorder.none,
+                  isDense: true,
+                ),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return message_templateTr(context, 'form.required');
+                  if (v.trim().length > 160) return 'Maksimumi i lejuar për SMS është 160 karaktere.';
+                  return null;
+                },
+              ),
+            ),
 
             const SizedBox(height: 14),
             BlocBuilder<MessageTemplateCubit, MessageTemplateState>(builder: (context, state) => PremiumButton(onPressed: () => _save(context), label: state is MessageTemplateSaving ? message_templateTr(context, 'form.saving') : message_templateTr(context, 'form.save'), icon: Icons.check_rounded, loading: state is MessageTemplateSaving, expand: true)),

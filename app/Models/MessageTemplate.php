@@ -20,7 +20,7 @@ class MessageTemplate extends Model
             'barber_shop_id' => ['required', 'integer'],
             'channel' => ['required', \Illuminate\Validation\Rule::in(['sms', 'whatsapp'])],
             'type' => ['required', \Illuminate\Validation\Rule::in(['reminder', 'confirmation', 'welcome'])],
-            'content' => ['required', 'string'],
+            'content' => ['required', 'string', 'max:160'],
         ];
     }
 
@@ -65,9 +65,12 @@ class MessageTemplate extends Model
         $parsed = strtr($template, $replacements);
 
         // Convert special Albanian characters (ë -> e, ç -> c) to fit 160-char 1 GSM SMS segment
-        return strtr($parsed, [
+        $parsed = strtr($parsed, [
             'ë' => 'e', 'Ë' => 'E',
             'ç' => 'c', 'Ç' => 'C',
         ]);
+
+        // Max 160 characters limit for single GSM SMS segment
+        return mb_substr($parsed, 0, 160);
     }
 }
