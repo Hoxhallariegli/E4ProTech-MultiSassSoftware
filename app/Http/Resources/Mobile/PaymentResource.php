@@ -31,6 +31,7 @@ class PaymentResource extends JsonResource
             'customer_name' => $customerName,
             'service_name' => $serviceName,
             'barber_name' => $booking?->barber?->name,
+            'created_at' => $this->created_at,
             'barberShop' => $this->whenLoaded('barberShop'),
             'booking' => $this->relationLoaded('booking') && $this->booking ? new BookingResource($this->booking) : null,
         ];

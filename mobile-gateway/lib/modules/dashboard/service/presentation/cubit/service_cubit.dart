@@ -114,6 +114,12 @@ class ServiceCubit extends Cubit<ServiceState> {
   }
 
   @override
+  void emit(ServiceState state) {
+    if (isClosed) return;
+    super.emit(state);
+  }
+
+  @override
   Future<void> close() {
     _searchDebounce?.cancel();
     return super.close();

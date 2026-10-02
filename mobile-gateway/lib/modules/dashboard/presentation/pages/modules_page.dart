@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
 import 'package:mobile_gateway/services/auth_service.dart';
 import 'package:mobile_gateway/modules/dashboard/presentation/pages/module_registry.dart';
-import 'package:mobile_gateway/core/branding/branding_cubit.dart';
 import 'package:mobile_gateway/l10n/core_localization.dart';
 
 class ModulesPage extends StatefulWidget {
@@ -43,6 +42,23 @@ class _ModulesPageState extends State<ModulesPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Responsive columns and aspect ratios for Mobile, Tablet, and Desktop
+    int crossAxisCount = 2;
+    double aspectRatio = 1.1;
+
+    if (screenWidth >= 1100) {
+      crossAxisCount = 5;
+      aspectRatio = 1.25;
+    } else if (screenWidth >= 800) {
+      crossAxisCount = 4;
+      aspectRatio = 1.2;
+    } else if (screenWidth >= 600) {
+      crossAxisCount = 3;
+      aspectRatio = 1.15;
+    }
+
     final allModules = ModuleRegistry.modules;
     final modules = allModules.where((m) => m.permission == null || AuthService.instance.hasPermission(m.permission!)).toList();
 
@@ -81,41 +97,45 @@ class _ModulesPageState extends State<ModulesPage> {
       );
     } else {
       content = GridView.builder(
-        padding: const EdgeInsets.all(18),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
+        padding: const EdgeInsets.all(16),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
           crossAxisSpacing: 14,
           mainAxisSpacing: 14,
-          childAspectRatio: 1.15,
+          childAspectRatio: aspectRatio,
         ),
         itemCount: modules.length,
         itemBuilder: (context, index) {
           final module = modules[index];
           return PremiumCard(
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => module.page)),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 54,
-                  height: 54,
+                  width: 50,
+                  height: 50,
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Icon(module.icon, size: 28, color: theme.colorScheme.primary),
+                  child: Icon(module.icon, size: 26, color: theme.colorScheme.primary),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  module.getTitle(context),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
-                    color: isDark ? Colors.white : theme.colorScheme.onSurface,
+                const SizedBox(height: 10),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      module.getTitle(context),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13.5,
+                        color: isDark ? Colors.white : theme.colorScheme.onSurface,
+                      ),
+                    ),
                   ),
                 ),
               ],

@@ -114,6 +114,12 @@ class WorkingHourCubit extends Cubit<WorkingHourState> {
   }
 
   @override
+  void emit(WorkingHourState state) {
+    if (isClosed) return;
+    super.emit(state);
+  }
+
+  @override
   Future<void> close() {
     _searchDebounce?.cancel();
     return super.close();

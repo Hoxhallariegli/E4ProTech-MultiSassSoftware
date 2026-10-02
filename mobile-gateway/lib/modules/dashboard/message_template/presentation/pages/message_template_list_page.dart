@@ -155,7 +155,7 @@ _FilterDropdown(label: message_templateTr(context, 'field.type'), value: _filter
                   if (index == items.length) return state is MessageTemplateLoaded && state.hasMore ? const Padding(padding: EdgeInsets.all(22), child: Center(child: CircularProgressIndicator.adaptive())) : const SizedBox(height: 20);
                   return MessageTemplateCard(
                     item: items[index],
-                    onTap: canEdit ? () => _openForm(items[index]) : null,
+                    onTap: () => _openForm(items[index]),
                     onDelete: canDelete ? () => _confirmDelete(context, items[index]) : null,
                   );
                 },

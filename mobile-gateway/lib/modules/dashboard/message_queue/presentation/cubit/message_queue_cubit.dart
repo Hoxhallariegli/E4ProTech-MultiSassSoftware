@@ -114,6 +114,12 @@ class MessageQueueCubit extends Cubit<MessageQueueState> {
   }
 
   @override
+  void emit(MessageQueueState state) {
+    if (isClosed) return;
+    super.emit(state);
+  }
+
+  @override
   Future<void> close() {
     _searchDebounce?.cancel();
     return super.close();

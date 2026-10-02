@@ -114,6 +114,12 @@ class NotificationChannelCubit extends Cubit<NotificationChannelState> {
   }
 
   @override
+  void emit(NotificationChannelState state) {
+    if (isClosed) return;
+    super.emit(state);
+  }
+
+  @override
   Future<void> close() {
     _searchDebounce?.cancel();
     return super.close();

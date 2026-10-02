@@ -134,7 +134,6 @@ class BookingCubit extends Cubit<BookingState> {
     int? preferredBarberId,
     bool reloadBarbersList = true,
   }) async {
-    if (_isCalendarLoading) return;
     _isCalendarLoading = true;
 
     if (reloadBarbersList || _cachedBarbers.isEmpty) {
@@ -231,6 +230,12 @@ class BookingCubit extends Cubit<BookingState> {
       preferredBarberId: barberId,
       reloadBarbersList: false,
     );
+  }
+
+  @override
+  void emit(BookingState state) {
+    if (isClosed) return;
+    super.emit(state);
   }
 
   @override

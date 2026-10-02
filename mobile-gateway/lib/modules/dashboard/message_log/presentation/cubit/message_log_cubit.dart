@@ -114,6 +114,12 @@ class MessageLogCubit extends Cubit<MessageLogState> {
   }
 
   @override
+  void emit(MessageLogState state) {
+    if (isClosed) return;
+    super.emit(state);
+  }
+
+  @override
   Future<void> close() {
     _searchDebounce?.cancel();
     return super.close();

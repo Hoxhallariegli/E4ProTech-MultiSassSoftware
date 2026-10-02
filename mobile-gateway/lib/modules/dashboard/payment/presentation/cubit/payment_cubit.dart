@@ -114,6 +114,12 @@ class PaymentCubit extends Cubit<PaymentState> {
   }
 
   @override
+  void emit(PaymentState state) {
+    if (isClosed) return;
+    super.emit(state);
+  }
+
+  @override
   Future<void> close() {
     _searchDebounce?.cancel();
     return super.close();

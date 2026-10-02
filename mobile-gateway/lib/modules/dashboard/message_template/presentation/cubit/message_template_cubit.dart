@@ -114,6 +114,12 @@ class MessageTemplateCubit extends Cubit<MessageTemplateState> {
   }
 
   @override
+  void emit(MessageTemplateState state) {
+    if (isClosed) return;
+    super.emit(state);
+  }
+
+  @override
   Future<void> close() {
     _searchDebounce?.cancel();
     return super.close();

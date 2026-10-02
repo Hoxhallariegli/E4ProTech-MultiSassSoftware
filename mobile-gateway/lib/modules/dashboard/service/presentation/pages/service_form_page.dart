@@ -142,7 +142,20 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
               ? _FieldShell(label: serviceTr(context, 'field.barber_shop_id'), child: InkWell(onTap: _pickbarberShopId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_barberShopOptions.firstWhere((e) => e['id'].toString() == _barberShopId?.toString(), orElse: () => {'id': '', 'name': serviceTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)]))))
               : _FieldShell(label: serviceTr(context, 'field.barber_shop_id'), child: Container(padding: const EdgeInsets.all(16), width: double.infinity, decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5), border: Border.all(color: theme.colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Text(AuthService.instance.user?['business']?['name'] ?? 'BERBERANA 2', style: const TextStyle(fontWeight: FontWeight.bold)))),
             _FieldShell(label: serviceTr(context, 'field.name'), child: TextFormField(controller: _nameController,  decoration: InputDecoration(hintText: serviceTr(context, 'field.name'), border: InputBorder.none, isDense: true), validator: (v) { if (v == null || v.trim().isEmpty) return serviceTr(context, 'form.required');  return null; })),
-            _FieldShell(label: serviceTr(context, 'field.description'), child: TextFormField(controller: _descriptionController,  decoration: InputDecoration(hintText: serviceTr(context, 'field.description'), border: InputBorder.none, isDense: true), validator: (v) {  return null; })),
+            _FieldShell(
+              label: serviceTr(context, 'field.description'),
+              child: TextFormField(
+                controller: _descriptionController,
+                maxLines: 3,
+                minLines: 1,
+                decoration: InputDecoration(
+                  hintText: serviceTr(context, 'field.description'),
+                  border: InputBorder.none,
+                  isDense: true,
+                ),
+                validator: (v) { return null; },
+              ),
+            ),
             _FieldShell(label: serviceTr(context, 'field.price'), child: TextFormField(controller: _priceController, keyboardType: const TextInputType.numberWithOptions(decimal: true), inputFormatters: [TextInputFormatter.withFunction((oldValue, newValue) { final text = newValue.text; if (text.isEmpty || RegExp(r'^\d*\.?\d{0,2}$').hasMatch(text)) return newValue; return oldValue; })],  decoration: InputDecoration(hintText: serviceTr(context, 'field.price'), border: InputBorder.none, isDense: true), validator: (v) { if (v == null || v.trim().isEmpty) return serviceTr(context, 'form.required'); if (v != null && v.isNotEmpty && (double.tryParse(v) == null || !RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(v))) return 'Enter a valid number with up to 2 decimals';  return null; })),
             _FieldShell(label: serviceTr(context, 'field.duration_minutes'), child: TextFormField(controller: _durationMinutesController, keyboardType: const TextInputType.numberWithOptions(decimal: false), inputFormatters: [FilteringTextInputFormatter.digitsOnly],  decoration: InputDecoration(hintText: serviceTr(context, 'field.duration_minutes'), border: InputBorder.none, isDense: true), validator: (v) { if (v == null || v.trim().isEmpty) return serviceTr(context, 'form.required'); if (v != null && v.isNotEmpty && int.tryParse(v) == null) return serviceTr(context, 'form.invalid_integer');  return null; })),
             _FieldShell(label: serviceTr(context, 'field.category'), child: TextFormField(controller: _categoryController,  decoration: InputDecoration(hintText: serviceTr(context, 'field.category'), border: InputBorder.none, isDense: true), validator: (v) {  return null; })),

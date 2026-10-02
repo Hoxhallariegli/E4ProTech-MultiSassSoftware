@@ -8,16 +8,19 @@ class ServiceCard extends StatelessWidget {
   final VoidCallback? onDelete;
   const ServiceCard({super.key, required this.item, this.onTap, this.onDelete});
 
+  String rawAmountStr(dynamic val) => val?.toString() ?? '0';
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = theme.colorScheme.primary;
 
     final name = (item['name'] ?? item['title'] ?? 'Shërbim').toString();
     final description = item['description']?.toString() ?? '';
     final rawPrice = item['price'];
     final priceStr = rawPrice != null && double.tryParse(rawPrice.toString()) != null
-        ? '${double.parse(rawPrice.toString()).toStringAsFixed(2)} Lekë'
+        ? '${double.parse(rawAmountStr(rawPrice)).toStringAsFixed(2)} Lekë'
         : '0.00 Lekë';
     final duration = item['duration_minutes']?.toString() ?? '30';
     final category = item['category']?.toString() ?? '';
@@ -27,40 +30,43 @@ class ServiceCard extends StatelessWidget {
       onTap: onTap,
       padding: const EdgeInsets.all(14),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 50,
-            height: 52,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(16),
+              color: primaryColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(15),
             ),
             child: Icon(
               Icons.content_cut_rounded,
-              color: theme.colorScheme.primary,
+              color: primaryColor,
               size: 24,
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Row 1: Full Name (maxLines 2) + Status Badge
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: Text(
                         name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 15.5,
                           fontWeight: FontWeight.w900,
+                          height: 1.25,
                           color: isDark ? Colors.white : theme.colorScheme.onSurface,
                         ),
                       ),
                     ),
+                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
@@ -78,7 +84,10 @@ class ServiceCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 5),
+
+                const SizedBox(height: 6),
+
+                // Row 2: Price + Duration + Category Badge in Global Theme Primary Color
                 Row(
                   children: [
                     Text(
@@ -86,7 +95,7 @@ class ServiceCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w900,
-                        color: theme.colorScheme.primary,
+                        color: primaryColor,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -114,31 +123,42 @@ class ServiceCard extends StatelessWidget {
                     ),
                     if (category.isNotEmpty) ...[
                       const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          category,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.amber,
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: primaryColor.withOpacity(0.3)),
+                          ),
+                          child: Text(
+                            category,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: primaryColor,
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ],
                 ),
+
+                // Row 3: Full Description
                 if (description.isNotEmpty) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 5),
                   Text(
                     description,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11.5, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.3,
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                    ),
                   ),
                 ],
               ],
@@ -146,6 +166,7 @@ class ServiceCard extends StatelessWidget {
           ),
           if (onTap != null || onDelete != null)
             PopupMenuButton<String>(
+              padding: EdgeInsets.zero,
               icon: Icon(Icons.more_vert_rounded, color: isDark ? Colors.white70 : Colors.black54),
               onSelected: (value) {
                 if (value == 'edit' && onTap != null) onTap!();

@@ -114,6 +114,12 @@ class ReviewCubit extends Cubit<ReviewState> {
   }
 
   @override
+  void emit(ReviewState state) {
+    if (isClosed) return;
+    super.emit(state);
+  }
+
+  @override
   Future<void> close() {
     _searchDebounce?.cancel();
     return super.close();

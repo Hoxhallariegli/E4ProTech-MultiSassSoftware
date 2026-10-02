@@ -1,59 +1,161 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_gateway/services/api_service.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
-import 'package:mobile_gateway/l10n/message_template_localization.dart';
 
 class MessageTemplateCard extends StatelessWidget {
   final Map<String, dynamic> item;
   final VoidCallback? onTap;
   final VoidCallback? onDelete;
-  const MessageTemplateCard({super.key, required this.item, this.onTap, this.onDelete});
 
-  String get title {
-    final value = (item['name'] ?? item['title'] ?? 'ID: ${item['id']}').toString();
-    return value.toString().trim().isEmpty ? 'ID: ' + item['id'].toString() : value.toString();
-  }
+  const MessageTemplateCard({
+    super.key,
+    required this.item,
+    this.onTap,
+    this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = theme.colorScheme.primary;
+
+    final channel = (item['channel'] ?? 'sms').toString().toLowerCase();
+    final type = (item['type'] ?? 'confirmation').toString().toLowerCase();
+    final content = (item['content'] ?? '').toString();
+
+    IconData channelIcon = Icons.sms_rounded;
+    Color channelColor = primaryColor;
+    String channelLabel = 'SMS';
+
+    if (channel == 'whatsapp') {
+      channelIcon = Icons.chat_bubble_rounded;
+      channelColor = const Color(0xFF25D366);
+      channelLabel = 'WhatsApp';
+    } else if (channel == 'email') {
+      channelIcon = Icons.email_rounded;
+      channelColor = Colors.amber.shade700;
+      channelLabel = 'Email';
+    }
+
+    Color typeColor = primaryColor;
+    String typeLabel = 'Konfirmim';
+    if (type == 'reminder') {
+      typeColor = Colors.amber.shade700;
+      typeLabel = 'Rikujtesë';
+    } else if (type == 'welcome') {
+      typeColor = Colors.green.shade600;
+      typeLabel = 'Mirëseardhje';
+    }
+
     return PremiumCard(
       onTap: onTap,
-      padding: const EdgeInsets.all(14),
-      child: Row(children: [
-          _Avatar(title: title),
-        const SizedBox(width: 14),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 7),
-          Wrap(spacing: 6, runSpacing: 6, children: [_InfoChip(label: message_templateTr(context, 'field.channel'), value: item['channel']?.toString() ?? '-'),
-_InfoChip(label: message_templateTr(context, 'field.type'), value: item['type']?.toString() ?? '-'),
-_InfoChip(label: message_templateTr(context, 'field.content'), value: item['content']?.toString() ?? '-'),]),
-        ])),
-        if (onTap != null || onDelete != null)
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'edit' && onTap != null) onTap!();
-              if (value == 'delete' && onDelete != null) onDelete!();
-            },
-            itemBuilder: (_) => [
-              if (onTap != null) PopupMenuItem(value: 'edit', child: Text(message_templateTr(context, 'list.edit'))),
-              if (onDelete != null) PopupMenuItem(value: 'delete', child: Text(message_templateTr(context, 'list.delete'))),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Row: Channel Icon + Title + Badges
+          Row(
+            children: [
+              Icon(channelIcon, size: 16, color: channelColor),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  typeLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : theme.colorScheme.onSurface,
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 6),
+
+              // Channel Badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: channelColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: channelColor.withOpacity(0.3)),
+                ),
+                child: Text(
+                  channelLabel,
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.bold,
+                    color: channelColor,
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 4),
+
+              // Type Badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: typeColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: typeColor.withOpacity(0.3)),
+                ),
+                child: Text(
+                  typeLabel.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.bold,
+                    color: typeColor,
+                  ),
+                ),
+              ),
+
+              if (onTap != null || onDelete != null)
+                PopupMenuButton<String>(
+                  padding: EdgeInsets.zero,
+                  icon: Icon(Icons.more_vert_rounded, size: 18, color: isDark ? Colors.white70 : Colors.black54),
+                  onSelected: (value) {
+                    if (value == 'edit' && onTap != null) onTap!();
+                    if (value == 'delete' && onDelete != null) onDelete!();
+                  },
+                  itemBuilder: (_) => [
+                    if (onTap != null) const PopupMenuItem(value: 'edit', child: Text('✏️ Edito')),
+                    if (onDelete != null) const PopupMenuItem(value: 'delete', child: Text('🗑️ Fshi')),
+                  ],
+                ),
             ],
           ),
-      ]),
+
+          const SizedBox(height: 8),
+
+          // Content Box
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? primaryColor.withOpacity(0.08)
+                  : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isDark
+                    ? primaryColor.withOpacity(0.2)
+                    : theme.colorScheme.outlineVariant.withOpacity(0.5),
+              ),
+            ),
+            child: Text(
+              content.isEmpty ? 'Përmbajtja e shabllonit është bosh.' : content,
+              style: TextStyle(
+                fontSize: 12.5,
+                height: 1.4,
+                fontWeight: FontWeight.w500,
+                color: isDark ? const Color(0xFFE2E8F0) : theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
-}
-
-class _Avatar extends StatelessWidget {
-  final String title;
-  const _Avatar({required this.title});
-  @override Widget build(BuildContext context) => Container(width: 58, height: 58, decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primaryContainer, Theme.of(context).colorScheme.secondaryContainer]), borderRadius: BorderRadius.circular(17)), child: Center(child: Text(title.isEmpty ? '?' : title.substring(0,1).toUpperCase(), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900))));
-}
-
-class _InfoChip extends StatelessWidget {
-  final String label, value;
-  const _InfoChip({required this.label, required this.value});
-  @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(8)), child: Text('$label: $value', style: TextStyle(fontSize: 10.5, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600)));
 }

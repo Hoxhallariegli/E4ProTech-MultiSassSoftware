@@ -75,7 +75,7 @@ class _CustomerListViewState extends State<_CustomerListView> {
           const SizedBox(height: 20),
           Align(alignment: Alignment.centerLeft, child: Text(customerTr(context, 'list.filters'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800))),
           const SizedBox(height: 18),
-          
+
           if (1 > 0) const SizedBox(height: 8),
           Row(children: [
             Expanded(child: OutlinedButton(onPressed: () { _filters.clear(); setState(() {}); Navigator.pop(context); context.read<CustomerCubit>().load(refresh: true, filters: {}); }, child: Text(customerTr(context, 'list.clear')))),
@@ -154,7 +154,7 @@ class _CustomerListViewState extends State<_CustomerListView> {
                   if (index == items.length) return state is CustomerLoaded && state.hasMore ? const Padding(padding: EdgeInsets.all(22), child: Center(child: CircularProgressIndicator.adaptive())) : const SizedBox(height: 20);
                   return CustomerCard(
                     item: items[index],
-                    onTap: canEdit ? () => _openForm(items[index]) : null,
+                    onTap: () => _openForm(items[index]),
                     onDelete: canDelete ? () => _confirmDelete(context, items[index]) : null,
                   );
                 },

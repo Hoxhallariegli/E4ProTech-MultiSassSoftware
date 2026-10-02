@@ -52,6 +52,8 @@ class BookingCard extends StatelessWidget {
                   children: [
                     Text(
                       customer,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
@@ -132,12 +134,16 @@ class BookingCard extends StatelessWidget {
             children: [
               const Icon(Icons.person_outline_rounded, size: 13, color: Colors.grey),
               const SizedBox(width: 4),
-              Text(
-                barber,
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              Flexible(
+                child: Text(
+                  barber,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
               ),
               if (source != null && source.isNotEmpty) ...[
-                const Spacer(),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(

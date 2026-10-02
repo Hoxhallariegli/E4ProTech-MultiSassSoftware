@@ -8,7 +8,14 @@ use Illuminate\Support\Facades\Storage;
 if (! function_exists('can')) {
     function can(string $action): bool
     {
-        return auth()->user()->can($action);
+        return auth()->check() ? auth()->user()->can($action) : false;
+    }
+}
+
+if (! function_exists('user_can')) {
+    function user_can(string $action): bool
+    {
+        return auth()->check() ? auth()->user()->can($action) : false;
     }
 }
 

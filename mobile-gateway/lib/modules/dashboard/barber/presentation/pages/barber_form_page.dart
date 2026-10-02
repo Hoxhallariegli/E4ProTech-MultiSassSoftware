@@ -51,15 +51,23 @@ class _BarberFormPageState extends State<BarberFormPage> {
       _barberShopId = AuthService.instance.user?['barber_shop_id'] as int?;
     }
 
+    final rawUserId = widget.item?['user_id'] ?? widget.item?['user']?['id'];
+    if (rawUserId != null) {
+      _userId = rawUserId.toString();
+    }
+
     try {
       if (AuthService.instance.user?['is_admin'] == true) {
         _barberShopOptions = await repository.lookup('barber-shops');
       }
+    } catch (_) {}
+
+    try {
       _userOptions = await repository.lookup('users');
-      if (widget.item?['user_id'] != null) _userId = widget.item!['user_id'].toString();
-    } catch (_) {
-    } finally {
-      if (mounted) setState(() => _loading = false);
+    } catch (_) {}
+
+    if (mounted) {
+      setState(() => _loading = false);
     }
   }
 
@@ -203,11 +211,50 @@ class _BarberFormPageState extends State<BarberFormPage> {
             (AuthService.instance.user?['is_admin'] == true)
               ? _FieldShell(label: barberTr(context, 'field.barber_shop_id'), child: InkWell(onTap: _pickbarberShopId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_barberShopOptions.firstWhere((e) => e['id'].toString() == _barberShopId?.toString(), orElse: () => {'id': '', 'name': barberTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)]))))
               : _FieldShell(label: barberTr(context, 'field.barber_shop_id'), child: Container(padding: const EdgeInsets.all(16), width: double.infinity, decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5), border: Border.all(color: theme.colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Text(AuthService.instance.user?['business']?['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)))),
-            _FieldShell(label: barberTr(context, 'field.user_id'), child: InkWell(onTap: _pickuserId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_userOptions.firstWhere((e) => e['id'].toString() == _userId?.toString(), orElse: () => {'id': '', 'name': barberTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)])))),
+            _FieldShell(
+              label: barberTr(context, 'field.user_id'),
+              child: InkWell(
+                onTap: _pickuserId,
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _displayName(_userOptions.firstWhere(
+                            (e) => e['id'].toString() == _userId?.toString(),
+                            orElse: () => {
+                              'id': _userId ?? '',
+                              'name': widget.item?['user_name'] ?? widget.item?['user']?['name'] ?? (_userId != null ? 'Përdorues #$_userId' : barberTr(context, 'form.select')),
+                            },
+                          )),
+                        ),
+                      ),
+                      const Icon(Icons.keyboard_arrow_down_rounded),
+                    ],
+                  ),
+                ),
+              ),
+            ),
             _FieldShell(label: barberTr(context, 'field.name'), child: TextFormField(controller: _nameController,  decoration: InputDecoration(hintText: barberTr(context, 'field.name'), border: InputBorder.none, isDense: true), validator: (v) { if (v == null || v.trim().isEmpty) return barberTr(context, 'form.required');  return null; })),
             _FieldShell(label: barberTr(context, 'field.phone'), child: TextFormField(controller: _phoneController,  decoration: InputDecoration(hintText: barberTr(context, 'field.phone'), border: InputBorder.none, isDense: true), validator: (v) { if (v == null || v.trim().isEmpty) return barberTr(context, 'form.required');  return null; })),
             PremiumImagePicker(label: barberTr(context, 'field.photo'), path: _photoPath, currentUrl: widget.item?['photo'] != null ? '${ApiService.serverUrl}/${widget.item!['photo']}' : null, onPicked: (p) => setState(() => _photoPath = p)),
-            _FieldShell(label: barberTr(context, 'field.bio'), child: TextFormField(controller: _bioController,  decoration: InputDecoration(hintText: barberTr(context, 'field.bio'), border: InputBorder.none, isDense: true), validator: (v) {  return null; })),
+            _FieldShell(
+              label: barberTr(context, 'field.bio'),
+              child: TextFormField(
+                controller: _bioController,
+                maxLines: 3,
+                minLines: 1,
+                decoration: InputDecoration(
+                  hintText: barberTr(context, 'field.bio'),
+                  border: InputBorder.none,
+                  isDense: true,
+                ),
+                validator: (v) { return null; },
+              ),
+            ),
             Container(decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: SwitchListTile.adaptive(contentPadding: const EdgeInsets.symmetric(horizontal: 16), title: Text(barberTr(context, 'field.active'), style: const TextStyle(fontWeight: FontWeight.w700)), value: _active, onChanged: (v) => setState(() => _active = v))),
 
             const SizedBox(height: 14),

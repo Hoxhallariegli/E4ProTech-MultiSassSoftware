@@ -60,6 +60,7 @@ class MessageQueueCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = theme.colorScheme.primary;
 
     final customerName = (item['customer_name'] ?? item['booking']?['customer']?['name'] ?? item['phone_number'] ?? 'Radhë Mesazhi').toString();
     final phone = (item['phone_number'] ?? '').toString();
@@ -71,7 +72,7 @@ class MessageQueueCard extends StatelessWidget {
     final retryCount = int.tryParse(item['retry_count']?.toString() ?? '0') ?? 0;
 
     IconData channelIcon = Icons.sms_rounded;
-    Color channelColor = Colors.blue;
+    Color channelColor = primaryColor;
     String channelLabel = 'SMS';
 
     if (channel == 'whatsapp') {
@@ -87,7 +88,7 @@ class MessageQueueCard extends StatelessWidget {
     Color statusColor = Colors.amber.shade700;
     String statusLabel = 'PENDING';
     if (status == 'processing') {
-      statusColor = Colors.blue.shade600;
+      statusColor = primaryColor;
       statusLabel = 'PROCESSING';
     } else if (status == 'sent') {
       statusColor = Colors.green.shade600;
@@ -131,7 +132,7 @@ class MessageQueueCard extends StatelessWidget {
                         '($phone)',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.grey.shade500,
+                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                           fontWeight: FontWeight.w600,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -149,6 +150,7 @@ class MessageQueueCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: channelColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: channelColor.withOpacity(0.3)),
                 ),
                 child: Text(
                   channelLabel,
@@ -168,6 +170,7 @@ class MessageQueueCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: statusColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: statusColor.withOpacity(0.3)),
                 ),
                 child: Text(
                   statusLabel,
@@ -197,15 +200,31 @@ class MessageQueueCard extends StatelessWidget {
 
           const SizedBox(height: 5),
 
-          // Message Content
-          Text(
-            message.isEmpty ? 'Përmbajtja e mesazhit nuk ekziston.' : message,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 12.5,
-              height: 1.35,
-              color: isDark ? const Color(0xFFCBD5E1) : theme.colorScheme.onSurfaceVariant,
+          // Message Content Container with Dynamic Surface/Accent
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? primaryColor.withOpacity(0.08)
+                  : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isDark
+                    ? primaryColor.withOpacity(0.2)
+                    : theme.colorScheme.outlineVariant.withOpacity(0.5),
+              ),
+            ),
+            child: Text(
+              message.isEmpty ? 'Përmbajtja e mesazhit nuk ekziston.' : message,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12.5,
+                height: 1.35,
+                fontWeight: FontWeight.w500,
+                color: isDark ? const Color(0xFFE2E8F0) : theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
 
@@ -218,14 +237,14 @@ class MessageQueueCard extends StatelessWidget {
               if (formattedDate.isNotEmpty)
                 Row(
                   children: [
-                    Icon(Icons.schedule_rounded, size: 11, color: theme.colorScheme.primary),
+                    Icon(Icons.schedule_rounded, size: 11, color: primaryColor),
                     const SizedBox(width: 4),
                     Text(
                       'Për t\'u dërguar: $formattedDate',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary,
+                        color: primaryColor,
                       ),
                     ),
                   ],
@@ -239,6 +258,7 @@ class MessageQueueCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.orange.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
                   ),
                   child: Text(
                     'Provat: $retryCount',

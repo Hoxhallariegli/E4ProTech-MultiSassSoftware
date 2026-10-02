@@ -114,6 +114,12 @@ class EventSettingCubit extends Cubit<EventSettingState> {
   }
 
   @override
+  void emit(EventSettingState state) {
+    if (isClosed) return;
+    super.emit(state);
+  }
+
+  @override
   Future<void> close() {
     _searchDebounce?.cancel();
     return super.close();

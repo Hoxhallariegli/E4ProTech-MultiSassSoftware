@@ -114,6 +114,12 @@ class CustomerCubit extends Cubit<CustomerState> {
   }
 
   @override
+  void emit(CustomerState state) {
+    if (isClosed) return;
+    super.emit(state);
+  }
+
+  @override
   Future<void> close() {
     _searchDebounce?.cancel();
     return super.close();

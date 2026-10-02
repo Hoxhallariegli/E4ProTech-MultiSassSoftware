@@ -158,7 +158,7 @@ SwitchListTile.adaptive(contentPadding: EdgeInsets.zero, title: Text(barberTr(co
                   if (index == items.length) return state is BarberLoaded && state.hasMore ? const Padding(padding: EdgeInsets.all(22), child: Center(child: CircularProgressIndicator.adaptive())) : const SizedBox(height: 20);
                   return BarberCard(
                     item: items[index],
-                    onTap: canEdit ? () => _openForm(items[index]) : null,
+                    onTap: () => _openForm(items[index]),
                     onDelete: canDelete ? () => _confirmDelete(context, items[index]) : null,
                   );
                 },

@@ -114,6 +114,12 @@ class PlanCubit extends Cubit<PlanState> {
   }
 
   @override
+  void emit(PlanState state) {
+    if (isClosed) return;
+    super.emit(state);
+  }
+
+  @override
   Future<void> close() {
     _searchDebounce?.cancel();
     return super.close();

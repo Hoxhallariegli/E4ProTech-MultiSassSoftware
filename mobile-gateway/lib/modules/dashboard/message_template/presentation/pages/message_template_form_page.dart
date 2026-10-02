@@ -39,13 +39,20 @@ class _MessageTemplateFormPageState extends State<MessageTemplateFormPage> {
     _type = widget.item?['type']?.toString();
     _contentController.text = widget.item?['content']?.toString() ?? '';
 
+    if (widget.item?['barber_shop_id'] != null) {
+      _barberShopId = int.tryParse(widget.item!['barber_shop_id'].toString());
+    }
+    _barberShopId ??= AuthService.instance.user?['barber_shop_id'] as int?;
+
     try {
-    _barberShopOptions = await repository.lookup('barber-shops');
-    if (widget.item?['barber_shop_id'] != null) _barberShopId = int.tryParse(widget.item!['barber_shop_id'].toString());
-    if (_barberShopId == null && AuthService.instance.user?['is_admin'] != true) _barberShopId = AuthService.instance.user?['barber_shop_id'] as int?;
-    } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message_templateTr(context, 'form.could_not_load')), behavior: SnackBarBehavior.floating));
-    } finally { if (mounted) setState(() => _loading = false); }
+      if (AuthService.instance.user?['is_admin'] == true) {
+        _barberShopOptions = await repository.lookup('barber-shops');
+      }
+    } catch (_) {}
+
+    if (mounted) {
+      setState(() => _loading = false);
+    }
   }
 
   Future<void> _pickbarberShopId() async {

@@ -18,16 +18,18 @@ class MessageLogCard extends StatelessWidget {
     try {
       final dt = DateTime.parse(raw.trim()).toLocal();
       final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final itemDate = DateTime(dt.year, dt.month, dt.day);
 
       final hour = dt.hour.toString().padLeft(2, '0');
       final minute = dt.minute.toString().padLeft(2, '0');
       final timeStr = '$hour:$minute';
 
-      if (itemDate == today) {
+      final isToday = dt.year == now.year && dt.month == now.month && dt.day == now.day;
+      final yesterday = now.subtract(const Duration(days: 1));
+      final isYesterday = dt.year == yesterday.year && dt.month == yesterday.month && dt.day == yesterday.day;
+
+      if (isToday) {
         return 'Sot në $timeStr';
-      } else if (itemDate == today.subtract(const Duration(days: 1))) {
+      } else if (isYesterday) {
         return 'Dje në $timeStr';
       } else {
         final day = dt.day.toString().padLeft(2, '0');
@@ -36,14 +38,14 @@ class MessageLogCard extends StatelessWidget {
         return '$day/$month/$year $timeStr';
       }
     } catch (_) {
-      if (raw.contains('T')) {
-        final parts = raw.split('T');
-        final date = parts[0];
+      final clean = raw.replaceAll('Z', '').replaceAll('T', ' ');
+      final parts = clean.split(' ');
+      if (parts.length >= 2) {
+        final datePart = parts[0];
         final timeParts = parts[1].split(':');
         if (timeParts.length >= 2) {
-          return '$date ${timeParts[0]}:${timeParts[1]}';
+          return '$datePart ${timeParts[0]}:${timeParts[1]}';
         }
-        return date;
       }
       return raw;
     }
@@ -53,6 +55,7 @@ class MessageLogCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = theme.colorScheme.primary;
 
     final customerName = (item['customer_name'] ?? item['customer']?['name'] ?? 'Klient').toString();
     final customerPhone = (item['customer_phone'] ?? item['customer']?['phone'] ?? '').toString();
@@ -64,7 +67,7 @@ class MessageLogCard extends StatelessWidget {
     final errorMsg = item['error_message']?.toString() ?? '';
 
     IconData channelIcon = Icons.sms_rounded;
-    Color channelColor = Colors.blue;
+    Color channelColor = primaryColor;
     String channelLabel = 'SMS';
 
     if (channel == 'whatsapp') {
@@ -93,10 +96,9 @@ class MessageLogCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Row 1: Customer info + Badges + Popup menu
+          // Row 1: Customer Info & Badges
           Row(
             children: [
-              // Customer icon & name
               Icon(channelIcon, size: 16, color: channelColor),
               const SizedBox(width: 8),
               Expanded(
@@ -119,7 +121,7 @@ class MessageLogCard extends StatelessWidget {
                         '($customerPhone)',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.grey.shade500,
+                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                           fontWeight: FontWeight.w600,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -137,6 +139,7 @@ class MessageLogCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: channelColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: channelColor.withOpacity(0.3)),
                 ),
                 child: Text(
                   channelLabel,
@@ -156,6 +159,7 @@ class MessageLogCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: statusColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: statusColor.withOpacity(0.3)),
                 ),
                 child: Text(
                   statusLabel,
@@ -185,15 +189,31 @@ class MessageLogCard extends StatelessWidget {
 
           const SizedBox(height: 5),
 
-          // Message Preview Text
-          Text(
-            message.isEmpty ? 'Përmbajtja e mesazhit nuk ekziston.' : message,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 12.5,
-              height: 1.35,
-              color: isDark ? const Color(0xFFCBD5E1) : theme.colorScheme.onSurfaceVariant,
+          // Message Container with Dynamic Surface/Accent
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? primaryColor.withOpacity(0.08)
+                  : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isDark
+                    ? primaryColor.withOpacity(0.2)
+                    : theme.colorScheme.outlineVariant.withOpacity(0.5),
+              ),
+            ),
+            child: Text(
+              message.isEmpty ? 'Përmbajtja e mesazhit nuk ekziston.' : message,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12.5,
+                height: 1.35,
+                fontWeight: FontWeight.w500,
+                color: isDark ? const Color(0xFFE2E8F0) : theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
 
@@ -209,18 +229,18 @@ class MessageLogCard extends StatelessWidget {
 
           const SizedBox(height: 6),
 
-          // Footer Row: Formatted Date
+          // Footer Row: Formatted Date in Dynamic Primary Color
           if (formattedDate.isNotEmpty)
             Row(
               children: [
-                Icon(Icons.access_time_rounded, size: 11, color: theme.colorScheme.primary),
+                Icon(Icons.access_time_rounded, size: 11, color: primaryColor),
                 const SizedBox(width: 4),
                 Text(
                   formattedDate,
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
+                    color: primaryColor,
                   ),
                 ),
               ],

@@ -18,6 +18,7 @@ class BarberResource extends JsonResource
             'photo' => $this->photo ? asset(ltrim((string) $this->photo, '/')) : null,
             'bio' => $this->bio,
             'active' => $this->active,
+            'user_name' => $this->user?->name,
             'barberShop' => $this->whenLoaded('barberShop'),
             'user' => $this->whenLoaded('user'),
         ];

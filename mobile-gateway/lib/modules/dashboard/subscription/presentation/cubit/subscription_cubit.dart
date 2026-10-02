@@ -114,6 +114,12 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   }
 
   @override
+  void emit(SubscriptionState state) {
+    if (isClosed) return;
+    super.emit(state);
+  }
+
+  @override
   Future<void> close() {
     _searchDebounce?.cancel();
     return super.close();
