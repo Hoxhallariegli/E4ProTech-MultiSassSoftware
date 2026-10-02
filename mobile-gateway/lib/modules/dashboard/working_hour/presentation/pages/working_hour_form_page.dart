@@ -37,13 +37,22 @@ class _WorkingHourFormPageState extends State<WorkingHourFormPage> {
 
   @override void initState() { super.initState(); _init(); }
 
+  String _fmtTime(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return '';
+    final parts = raw.trim().split(':');
+    if (parts.length >= 2) {
+      return '${parts[0].padLeft(2, '0')}:${parts[1].padLeft(2, '0')}';
+    }
+    return raw.trim();
+  }
+
   Future<void> _init() async {
     _dayOfWeek = widget.item?['day_of_week']?.toString();
-    _openTimeController.text = widget.item?['open_time']?.toString() ?? '';
-    _closeTimeController.text = widget.item?['close_time']?.toString() ?? '';
-    _lunchStartController.text = widget.item?['lunch_start']?.toString() ?? '';
-    _lunchEndController.text = widget.item?['lunch_end']?.toString() ?? '';
-    _isClosed = widget.item?['is_closed'] == true || widget.item?['is_closed'] == 1 || widget.item?['is_closed'] == '1';
+    _openTimeController.text = _fmtTime(widget.item?['open_time']?.toString());
+    _closeTimeController.text = _fmtTime(widget.item?['close_time']?.toString());
+    _lunchStartController.text = _fmtTime(widget.item?['lunch_start']?.toString());
+    _lunchEndController.text = _fmtTime(widget.item?['lunch_end']?.toString());
+    _isClosed = widget.item?['is_closed'] == true || widget.item?['is_closed'] == 1 || widget.item?['is_closed'] == '1' || widget.item?['is_closed'] == 'true';
 
     try {
     _barberOptions = await repository.lookup('barbers');

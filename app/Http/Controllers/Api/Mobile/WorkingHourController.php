@@ -35,7 +35,7 @@ class WorkingHourController extends Controller
             if ($existingHours->has($day)) {
                 $schedule[] = $existingHours->get($day);
             } else {
-                $schedule[] = new WorkingHour([
+                $schedule[] = (new WorkingHour())->forceFill([
                     'id' => null,
                     'barber_id' => (int)$barberId,
                     'day_of_week' => $day,
@@ -56,7 +56,9 @@ class WorkingHourController extends Controller
      */
     public function store(Request $request)
     {
-        abort_if_cannot('add_working_hours');
+        if (!user_can('add_working_hours') && !user_can('edit_working_hours')) {
+            abort(403, 'Ju nuk keni leje për këtë veprim.');
+        }
 
         $barberId = $request->input('barber_id');
         $daysData = $request->input('days', []);
@@ -70,16 +72,21 @@ class WorkingHourController extends Controller
         foreach ($daysData as $dayName => $data) {
             $isClosed = filter_var($data['is_closed'] ?? true, FILTER_VALIDATE_BOOLEAN);
 
+            $openTime = !empty($data['open_time']) ? substr($data['open_time'], 0, 5) : null;
+            $closeTime = !empty($data['close_time']) ? substr($data['close_time'], 0, 5) : null;
+            $lunchStart = !empty($data['lunch_start']) ? substr($data['lunch_start'], 0, 5) : null;
+            $lunchEnd = !empty($data['lunch_end']) ? substr($data['lunch_end'], 0, 5) : null;
+
             $item = WorkingHour::updateOrCreate(
                 [
                     'barber_id' => $barberId,
                     'day_of_week' => $dayName
                 ],
                 [
-                    'open_time' => $isClosed ? null : ($data['open_time'] ?? null),
-                    'close_time' => $isClosed ? null : ($data['close_time'] ?? null),
-                    'lunch_start' => $isClosed ? null : (!empty($data['lunch_start']) ? $data['lunch_start'] : null),
-                    'lunch_end' => $isClosed ? null : (!empty($data['lunch_end']) ? $data['lunch_end'] : null),
+                    'open_time' => $isClosed ? null : $openTime,
+                    'close_time' => $isClosed ? null : $closeTime,
+                    'lunch_start' => $isClosed ? null : $lunchStart,
+                    'lunch_end' => $isClosed ? null : $lunchEnd,
                     'is_closed' => $isClosed
                 ]
             );

@@ -1,12 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
 import 'package:mobile_gateway/core/widgets/sidebar.dart';
 import 'package:mobile_gateway/l10n/working_hour_localization.dart';
 import 'package:mobile_gateway/core/branding/branding_cubit.dart';
-import '../cubit/working_hour_cubit.dart';
-import '../cubit/working_hour_state.dart';
 import '../../data/working_hour_repository.dart';
 import 'package:mobile_gateway/services/api_service.dart';
 
@@ -24,7 +21,7 @@ class _WorkingHourListPageState extends State<WorkingHourListPage> {
   bool _loadingBarbers = true;
   bool _saving = false;
 
-  // Map to hold our local state for the 7 days
+  // Map to hold local state for 7 days
   final List<String> _daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   final Map<String, Map<String, dynamic>> _scheduleData = {};
 
@@ -34,19 +31,33 @@ class _WorkingHourListPageState extends State<WorkingHourListPage> {
     _loadBarbers();
   }
 
+  String _formatTime(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return '';
+    final parts = raw.trim().split(':');
+    if (parts.length >= 2) {
+      final h = parts[0].padLeft(2, '0');
+      final m = parts[1].padLeft(2, '0');
+      return '$h:$m';
+    }
+    return raw.trim();
+  }
+
   Future<void> _loadBarbers() async {
     try {
       final res = await repository.lookup('barbers');
+      if (!mounted) return;
       setState(() {
         _barbers = res;
         _loadingBarbers = false;
         if (_barbers.isNotEmpty) {
           _selectedBarberId = int.tryParse(_barbers.first['id'].toString());
-          _loadWeeklySchedule();
         }
       });
-    } catch (_) {
-      setState(() => _loadingBarbers = false);
+      if (_selectedBarberId != null) {
+        await _loadWeeklySchedule();
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loadingBarbers = false);
     }
   }
 
@@ -76,19 +87,38 @@ class _WorkingHourListPageState extends State<WorkingHourListPage> {
         for (var item in items) {
           final day = item['day_of_week']?.toString();
           if (day != null && _scheduleData.containsKey(day)) {
+            final isClosedVal = item['is_closed'];
+            final bool isClosed = isClosedVal == true ||
+                isClosedVal == 1 ||
+                isClosedVal == '1' ||
+                isClosedVal == 'true';
+
+            final open = _formatTime(item['open_time']?.toString());
+            final close = _formatTime(item['close_time']?.toString());
+            final lunchStart = _formatTime(item['lunch_start']?.toString());
+            final lunchEnd = _formatTime(item['lunch_end']?.toString());
+
             _scheduleData[day] = {
-              'open_time': item['open_time']?.toString() ?? '08:00',
-              'close_time': item['close_time']?.toString() ?? '20:00',
-              'lunch_start': item['lunch_start']?.toString() ?? '',
-              'lunch_end': item['lunch_end']?.toString() ?? '',
-              'is_closed': item['is_closed'] == true || item['is_closed'] == 1 || item['is_closed'] == '1',
+              'open_time': open.isNotEmpty ? open : '08:00',
+              'close_time': close.isNotEmpty ? close : '20:00',
+              'lunch_start': lunchStart,
+              'lunch_end': lunchEnd,
+              'is_closed': isClosed,
             };
           }
         }
       }
-    } catch (_) {}
-
-    setState(() => _loadingBarbers = false);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Gabim gjatë ngarkimit të orarit: ${e.toString().replaceAll('Exception: ', '')}'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.red,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _loadingBarbers = false);
+    }
   }
 
   Future<void> _pickTime(String day, String fieldKey, {String defaultTime = '08:00'}) async {
@@ -103,7 +133,7 @@ class _WorkingHourListPageState extends State<WorkingHourListPage> {
       initialTime: TimeOfDay(hour: initialHour, minute: initialMinute),
     );
 
-    if (picked != null) {
+    if (picked != null && mounted) {
       final hour = picked.hour.toString().padLeft(2, '0');
       final minute = picked.minute.toString().padLeft(2, '0');
       setState(() {
@@ -124,24 +154,28 @@ class _WorkingHourListPageState extends State<WorkingHourListPage> {
 
       final res = await ApiService.post('/working-hours', payload);
       if (res.statusCode >= 200 && res.statusCode < 300) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Orari javor u ruajt me sukses!'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.green,
-        ));
-        _loadWeeklySchedule();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Orari javor u ruajt me sukses!'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.green,
+          ));
+        }
+        await _loadWeeklySchedule();
       } else {
-        throw Exception();
+        throw Exception(ApiService.extractErrorMessage(res));
       }
-    } catch (_) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Ndodhi një gabim gjatë ruajtjes.'),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.red,
-      ));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.red,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
-
-    setState(() => _saving = false);
   }
 
   @override
@@ -196,8 +230,8 @@ class _WorkingHourListPageState extends State<WorkingHourListPage> {
                               if (v != null) {
                                 setState(() {
                                   _selectedBarberId = v;
-                                  _loadWeeklySchedule();
                                 });
+                                _loadWeeklySchedule();
                               }
                             },
                           ),

@@ -14,13 +14,22 @@ class WorkingHourCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    String formatTime(String? raw) {
+      if (raw == null || raw.trim().isEmpty) return '';
+      final parts = raw.trim().split(':');
+      if (parts.length >= 2) {
+        return '${parts[0].padLeft(2, '0')}:${parts[1].padLeft(2, '0')}';
+      }
+      return raw.trim();
+    }
+
     final barberName = (item['barber_name'] ?? item['barber']?['name'] ?? context.staffLabel).toString();
     final dayOfWeek = (item['day_of_week'] ?? 'Monday').toString();
-    final openTime = (item['open_time'] ?? '08:00').toString();
-    final closeTime = (item['close_time'] ?? '20:00').toString();
-    final lunchStart = item['lunch_start']?.toString() ?? '';
-    final lunchEnd = item['lunch_end']?.toString() ?? '';
-    final bool isClosed = item['is_closed'] == true || item['is_closed'] == 1 || item['is_closed'] == '1';
+    final openTime = formatTime(item['open_time']?.toString() ?? '08:00');
+    final closeTime = formatTime(item['close_time']?.toString() ?? '20:00');
+    final lunchStart = formatTime(item['lunch_start']?.toString());
+    final lunchEnd = formatTime(item['lunch_end']?.toString());
+    final bool isClosed = item['is_closed'] == true || item['is_closed'] == 1 || item['is_closed'] == '1' || item['is_closed'] == 'true';
 
     final shortDay = dayOfWeek.length >= 3 ? dayOfWeek.substring(0, 3).toUpperCase() : dayOfWeek.toUpperCase();
 
