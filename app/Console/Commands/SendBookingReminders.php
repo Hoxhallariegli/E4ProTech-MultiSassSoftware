@@ -50,10 +50,19 @@ class SendBookingReminders extends Command
                 continue;
             }
 
-            $reminderMins = (int) ($shop->reminder_hours_before ?: 30);
-            if ($reminderMins <= 6) {
-                $reminderMins = $reminderMins * 60; // Convert 1h, 2h, 4h to minutes
+            $rawVal = $shop?->reminder_hours_before;
+            $reminderMins = 30; // Default minimum 30 minutes before appointment if unconfigured
+
+            if ($rawVal !== null && is_numeric($rawVal) && (float)$rawVal > 0) {
+                $num = (float) $rawVal;
+                if ($num <= 12) {
+                    $reminderMins = (int) round($num * 60);
+                } else {
+                    $reminderMins = (int) round($num);
+                }
             }
+
+            $reminderMins = max(15, $reminderMins);
 
             $appointmentTime = Carbon::parse($booking->appointment_at);
 
