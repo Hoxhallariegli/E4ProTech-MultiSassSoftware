@@ -68,7 +68,7 @@ class MessageQueueCard extends StatelessWidget {
     final message = (item['message_content'] ?? '').toString();
     final status = (item['status'] ?? 'pending').toString().toLowerCase();
     final scheduledAtRaw = item['scheduled_at']?.toString() ?? item['created_at']?.toString();
-    final formattedDate = _formatDateTime(scheduledAtRaw);
+    final updatedAtRaw = item['updated_at']?.toString();
     final retryCount = int.tryParse(item['retry_count']?.toString() ?? '0') ?? 0;
 
     IconData channelIcon = Icons.sms_rounded;
@@ -198,9 +198,9 @@ class MessageQueueCard extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 5),
+          const SizedBox(height: 6),
 
-          // Message Content Container with Dynamic Surface/Accent
+          // Message Content Container (FULL MESSAGE DISPLAY)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(10),
@@ -217,34 +217,32 @@ class MessageQueueCard extends StatelessWidget {
             ),
             child: Text(
               message.isEmpty ? 'Përmbajtja e mesazhit nuk ekziston.' : message,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 12.5,
-                height: 1.35,
+                height: 1.4,
                 fontWeight: FontWeight.w500,
                 color: isDark ? const Color(0xFFE2E8F0) : theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ),
 
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
 
-          // Footer Row: Scheduled Time & Retry count
+          // Footer Row: Timestamps (Scheduled At & Sent At)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              if (formattedDate.isNotEmpty)
+              if (scheduledAtRaw != null && scheduledAtRaw.isNotEmpty)
                 Row(
                   children: [
-                    Icon(Icons.schedule_rounded, size: 11, color: primaryColor),
+                    Icon(Icons.schedule_rounded, size: 11, color: isDark ? Colors.white70 : Colors.black54),
                     const SizedBox(width: 4),
                     Text(
-                      'Për t\'u dërguar: $formattedDate',
+                      'Planifikuar: ${_formatDateTime(scheduledAtRaw)}',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 10.5,
                         fontWeight: FontWeight.bold,
-                        color: primaryColor,
+                        color: isDark ? Colors.white70 : Colors.black87,
                       ),
                     ),
                   ],
@@ -252,23 +250,33 @@ class MessageQueueCard extends StatelessWidget {
               else
                 const SizedBox.shrink(),
 
-              if (retryCount > 0)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+              Row(
+                children: [
+                  Icon(
+                    status == 'sent' ? Icons.check_circle_rounded : Icons.access_time_rounded,
+                    size: 11,
+                    color: status == 'sent' ? Colors.green : primaryColor,
                   ),
-                  child: Text(
-                    'Provat: $retryCount',
-                    style: const TextStyle(
-                      fontSize: 10,
+                  const SizedBox(width: 4),
+                  Text(
+                    status == 'sent' && updatedAtRaw != null
+                        ? 'Dërguar: ${_formatDateTime(updatedAtRaw)}'
+                        : (status == 'failed' ? 'Dështoi' : 'Në Pritje'),
+                    style: TextStyle(
+                      fontSize: 10.5,
                       fontWeight: FontWeight.bold,
-                      color: Colors.orange,
+                      color: status == 'sent' ? Colors.green : primaryColor,
                     ),
                   ),
-                ),
+                  if (retryCount > 0) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      '($retryCount)',
+                      style: const TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ],
+              ),
             ],
           ),
         ],

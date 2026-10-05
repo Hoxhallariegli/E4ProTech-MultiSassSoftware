@@ -10,25 +10,41 @@ class ApiService {
   static String? _customUrl;
   static final ValueNotifier<bool> isOffline = ValueNotifier<bool>(false);
   static final ValueNotifier<bool> isOnlineRestored = ValueNotifier<bool>(false);
-  static Timer? _healthCheckTimer;
+  static Timer? _recoveryTimer;
 
   static void initAutoHealthCheck() {
-    _healthCheckTimer?.cancel();
-    _healthCheckTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
+    isOffline.addListener(() {
+      if (isOffline.value) {
+        _startRecoveryTimer();
+      } else {
+        _stopRecoveryTimer();
+      }
+    });
+  }
+
+  static void _startRecoveryTimer() {
+    _recoveryTimer?.cancel();
+    _recoveryTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
       await checkServerHealth();
     });
+  }
+
+  static void _stopRecoveryTimer() {
+    _recoveryTimer?.cancel();
+    _recoveryTimer = null;
   }
 
   static Future<void> checkServerHealth() async {
     try {
       final baseUrl = await serverUrl;
       final uri = Uri.parse('$baseUrl$apiVersion/status');
-      final res = await http.get(uri).timeout(const Duration(seconds: 4));
+      final res = await http.get(uri).timeout(const Duration(seconds: 5));
 
-      if (res.statusCode >= 200 && res.statusCode < 500) {
-        if (isOffline.value == true) {
+      if (res.statusCode >= 200 && res.statusCode < 400) {
+        if (isOffline.value) {
           isOffline.value = false;
           isOnlineRestored.value = true;
+          _stopRecoveryTimer();
           Future.delayed(const Duration(seconds: 4), () {
             isOnlineRestored.value = false;
           });
@@ -91,6 +107,7 @@ class ApiService {
       if (isOffline.value) {
         isOffline.value = false;
         isOnlineRestored.value = true;
+        _stopRecoveryTimer();
         Future.delayed(const Duration(seconds: 4), () {
           isOnlineRestored.value = false;
         });
@@ -112,6 +129,7 @@ class ApiService {
       if (isOffline.value) {
         isOffline.value = false;
         isOnlineRestored.value = true;
+        _stopRecoveryTimer();
         Future.delayed(const Duration(seconds: 4), () {
           isOnlineRestored.value = false;
         });
@@ -133,6 +151,7 @@ class ApiService {
       if (isOffline.value) {
         isOffline.value = false;
         isOnlineRestored.value = true;
+        _stopRecoveryTimer();
         Future.delayed(const Duration(seconds: 4), () {
           isOnlineRestored.value = false;
         });
@@ -154,6 +173,7 @@ class ApiService {
       if (isOffline.value) {
         isOffline.value = false;
         isOnlineRestored.value = true;
+        _stopRecoveryTimer();
         Future.delayed(const Duration(seconds: 4), () {
           isOnlineRestored.value = false;
         });
@@ -202,6 +222,7 @@ class ApiService {
       if (isOffline.value) {
         isOffline.value = false;
         isOnlineRestored.value = true;
+        _stopRecoveryTimer();
         Future.delayed(const Duration(seconds: 4), () {
           isOnlineRestored.value = false;
         });

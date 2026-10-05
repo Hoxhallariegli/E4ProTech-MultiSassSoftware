@@ -64,8 +64,13 @@ class SendFirebaseNotificationListener
                         $body = "Rezervimi i {$customerName} u përditësua për {$time}.";
                     }
 
-                    // Queue SMS confirmation AND scheduled reminder when booking is newly created
-                    if ($event->action === 'created' && $booking->customer && $booking->customer->phone) {
+                    // Queue SMS confirmation AND scheduled reminder when booking is newly created and send_sms is true
+                    $sendSmsParam = request()->input('send_sms');
+                    $sendSmsRequested = $sendSmsParam !== null ? filter_var($sendSmsParam, FILTER_VALIDATE_BOOLEAN) : true;
+
+                    Log::info("📌 [SMS QUEUE CHECK] Booking #{$booking->id} Action: {$event->action}, SendSMS Requested: " . ($sendSmsRequested ? 'YES' : 'NO') . ", Has Customer: " . ($booking->customer ? 'YES' : 'NO') . ", Customer Phone: " . ($booking->customer?->phone ?? 'NONE'));
+
+                    if ($event->action === 'created' && $booking->customer && $booking->customer->phone && $sendSmsRequested) {
                         $parsedConfirmation = MessageTemplate::parseForBooking($booking, 'confirmation');
                         $formattedPhone = $this->formatPhone($booking->customer->phone);
 
@@ -119,7 +124,7 @@ class SendFirebaseNotificationListener
                             $reminderMins = max(15, $reminderMins);
 
                             $scheduledReminderTime = $booking->appointment_at->copy()->subMinutes($reminderMins);
-                            if ($scheduledReminderTime->isFuture()) {
+                            if ($scheduledReminderTime->isFuture() && $booking->appointment_at->diffInMinutes(now()) >= 45) {
                                 $parsedReminder = MessageTemplate::parseForBooking($booking, 'reminder');
 
                                 $existingReminder = MessageQueue::where('booking_id', $booking->id)

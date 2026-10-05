@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mobile_gateway/core/widgets/app_scaffold.dart';
-import 'package:mobile_gateway/core/widgets/premium_header.dart';
 import 'package:mobile_gateway/services/api_service.dart';
 import 'package:mobile_gateway/services/auth_service.dart';
 import 'package:mobile_gateway/modules/dashboard/presentation/widgets/shop_switcher_widget.dart';
 import 'package:mobile_gateway/modules/dashboard/payment/presentation/pages/payment_form_page.dart';
 import 'package:mobile_gateway/core/branding/branding_cubit.dart';
 import 'package:mobile_gateway/l10n/booking_localization.dart';
+import 'package:mobile_gateway/core/realtime/realtime_service.dart';
 import '../cubit/booking_cubit.dart';
 import '../cubit/booking_state.dart';
 import '../../data/booking_repository.dart';
@@ -29,6 +28,11 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
     super.initState();
     AuthService.instance.addListener(_onAuthChanged);
     refreshAll(reloadBarbers: true);
+
+    RealtimeService.instance.subscribe('bookings', (action, data) {
+      if (!mounted) return;
+      refreshAll(reloadBarbers: false);
+    }, tenantId: AuthService.instance.user?['barber_shop_id']);
   }
 
   @override
@@ -143,33 +147,110 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      body: BlocBuilder<BookingCubit, BookingState>(
-        builder: (context, state) {
-          final isCalendarLoaded = state is BookingCalendarLoaded;
-          final barbers = isCalendarLoaded ? state.barbers : const <Map<String, dynamic>>[];
-          final calendarStats = isCalendarLoaded ? state.calendarStats : const <String, int>{};
-          final daySlots = isCalendarLoaded ? state.daySlots : const [];
-          final isLoading = isCalendarLoaded ? state.isLoading : true;
-          final calendarMessage = isCalendarLoaded ? state.calendarMessage : null;
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Red Offline Banner
+            ValueListenableBuilder<bool>(
+              valueListenable: ApiService.isOffline,
+              builder: (context, offline, child) {
+                if (!offline) return const SizedBox.shrink();
+                return Container(
+                  width: double.infinity,
+                  color: Colors.red.shade800,
+                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.wifi_off_rounded, color: Colors.white, size: 14),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Nuk ka lidhje me serverin (Aplikacioni është Offline)',
+                          style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () {
+                          ApiService.checkServerHealth();
+                        },
+                        child: const Icon(Icons.refresh_rounded, color: Colors.white, size: 16),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
 
-          if (isCalendarLoaded && state.selectedBarberId != null) {
-            _selectedBarberId = state.selectedBarberId;
-          }
+            // Green Online Restored Banner
+            ValueListenableBuilder<bool>(
+              valueListenable: ApiService.isOnlineRestored,
+              builder: (context, onlineRestored, child) {
+                if (!onlineRestored) return const SizedBox.shrink();
+                return Container(
+                  width: double.infinity,
+                  color: Colors.green.shade800,
+                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.wifi_rounded, color: Colors.white, size: 14),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Lidhja me serverin u rikthye (Online) 📶',
+                          style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
 
-          return Column(
-            children: [
-              _buildBarberFilter(barbers),
-              const SizedBox(height: 8),
-              _buildCustomWeekCalendar(calendarStats),
-              const SizedBox(height: 4),
-              Expanded(
-                child: isLoading
-                    ? const Center(child: CircularProgressIndicator.adaptive())
-                    : _buildFilteredTimeline(daySlots, calendarMessage),
+            Expanded(
+              child: BlocConsumer<BookingCubit, BookingState>(
+                listener: (context, state) {
+                  if (state is BookingFailure) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(state.message), behavior: SnackBarBehavior.floating),
+                    );
+                  }
+                },
+                builder: (context, state) {
+                  final isCalendarLoaded = state is BookingCalendarLoaded;
+                  final barbers = isCalendarLoaded ? state.barbers : const <Map<String, dynamic>>[];
+                  final calendarStats = isCalendarLoaded ? state.calendarStats : const <String, int>{};
+                  final daySlots = isCalendarLoaded ? state.daySlots : const [];
+                  final isLoading = isCalendarLoaded ? state.isLoading : true;
+                  final calendarMessage = isCalendarLoaded ? state.calendarMessage : null;
+
+                  if (isCalendarLoaded && state.selectedBarberId != null) {
+                    _selectedBarberId = state.selectedBarberId;
+                  }
+
+                  return Column(
+                    children: [
+                      _buildBarberFilter(barbers),
+                      const SizedBox(height: 8),
+                      _buildCustomWeekCalendar(calendarStats),
+                      const SizedBox(height: 4),
+                      Expanded(
+                        child: isLoading
+                            ? const Center(child: CircularProgressIndicator.adaptive())
+                            : _buildFilteredTimeline(daySlots, calendarMessage),
+                      ),
+                    ],
+                  );
+                },
               ),
-            ],
-          );
-        },
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: theme.colorScheme.primary,
@@ -188,7 +269,7 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
   Widget _buildBarberFilter(List<Map<String, dynamic>> barbers) {
     if (barbers.isEmpty) return const SizedBox.shrink();
 
-    return Container(
+    return SizedBox(
       height: 60,
       child: ListView(
         scrollDirection: Axis.horizontal,
@@ -337,8 +418,6 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
     final isSelectedToday = _selectedDay.year == today.year && _selectedDay.month == today.month && _selectedDay.day == today.day;
     final isSelectedPast = _selectedDay.isBefore(today);
 
-    // Nuk ka më tab/filter: shfaqim gjithë axhendën e ditës nga fillimi deri
-    // në mbyllje, pa e ndërprerë listën te ora aktuale.
     final displaySlots = slots;
     _scrollToCurrentTime(displaySlots);
 
@@ -347,57 +426,57 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
       padding: const EdgeInsets.all(16),
       itemCount: displaySlots.length,
       itemBuilder: (context, index) {
-          final slot = displaySlots[index];
-          final time = (slot['time'] ?? '00:00').toString();
-          final isFree = slot['is_free'] == true;
+        final slot = displaySlots[index];
+        final time = (slot['time'] ?? '00:00').toString();
+        final isFree = slot['is_free'] == true;
 
-          final parts = time.split(':');
-          final slotTime = DateTime(
-            _selectedDay.year,
-            _selectedDay.month,
-            _selectedDay.day,
-            int.tryParse(parts[0]) ?? 0,
-            int.tryParse(parts.length > 1 ? parts[1] : '0') ?? 0,
-          );
-          final isPast = isSelectedPast || (isSelectedToday && slotTime.isBefore(now));
+        final parts = time.split(':');
+        final slotTime = DateTime(
+          _selectedDay.year,
+          _selectedDay.month,
+          _selectedDay.day,
+          int.tryParse(parts[0]) ?? 0,
+          int.tryParse(parts.length > 1 ? parts[1] : '0') ?? 0,
+        );
+        final isPast = isSelectedPast || (isSelectedToday && slotTime.isBefore(now));
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Opacity(
-              opacity: isPast ? 0.55 : 1.0,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: 48,
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 14),
-                      child: Text(
-                        time,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: isPast ? Colors.grey.shade400 : Colors.grey,
-                          fontSize: 13,
-                        ),
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Opacity(
+            opacity: isPast ? 0.55 : 1.0,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 48,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 14),
+                    child: Text(
+                      time,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: isPast ? Colors.grey.shade400 : Colors.grey,
+                        fontSize: 13,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: isFree
-                        ? _buildFreeSlot(time, isPast)
-                        : (slot['booking'] != null && (slot['booking'] as Map).isNotEmpty
-                            ? ((slot['booking']['status'] ?? '').toString() == 'break'
-                                ? _buildBreakCard(slot['booking'])
-                                : _buildBookingCard(slot['booking']))
-                            : _buildUnavailableSlot(time, slot['message'])),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: isFree
+                      ? _buildFreeSlot(time, isPast)
+                      : (slot['booking'] != null && (slot['booking'] as Map).isNotEmpty
+                          ? ((slot['booking']['status'] ?? '').toString() == 'break'
+                              ? _buildBreakCard(slot['booking'])
+                              : _buildBookingCard(slot['booking']))
+                          : _buildUnavailableSlot(time, slot['message'])),
+                ),
+              ],
             ),
-          );
-        },
-      );
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildUnavailableSlot(String time, String? message) {
@@ -417,9 +496,11 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
         children: [
           const Icon(Icons.block_rounded, color: Colors.grey, size: 18),
           const SizedBox(width: 8),
-          Text(
-            message ?? bookingTr(context, 'calendar.unavailable'),
-            style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.grey, fontSize: 12),
+          Expanded(
+            child: Text(
+              message ?? bookingTr(context, 'calendar.unavailable'),
+              style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.grey, fontSize: 12),
+            ),
           ),
         ],
       ),
@@ -514,67 +595,69 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
     }
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.10),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.orange.withOpacity(0.45),
-          width: 1.2,
-        ),
+        color: Colors.amber.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.amber.withOpacity(0.4), width: 1.2),
       ),
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.15),
+              color: Colors.amber.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.free_breakfast_rounded,
-              color: Colors.orange,
-              size: 22,
-            ),
+            child: const Icon(Icons.free_breakfast_rounded, color: Colors.amber, size: 18),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'PUSHIM',
-                  style: TextStyle(
-                    color: Colors.orange,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 14,
-                  ),
+                Row(
+                  children: [
+                    const Text(
+                      'PUSHIM',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.amber,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${durationMinutes}m',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.amber,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  timeRangeText.isNotEmpty ? timeRangeText : 'Pushim i orarit',
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurface,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
+                if (timeRangeText.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    timeRangeText,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).brightness == Brightness.dark ? Colors.amber.shade200 : Colors.amber.shade900,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Orar Pushimi / Dreka',
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontSize: 11,
-                  ),
-                ),
+                ],
               ],
             ),
-          ),
-          const Icon(
-            Icons.restaurant_rounded,
-            color: Colors.orange,
-            size: 20,
           ),
         ],
       ),
@@ -584,15 +667,17 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
   Widget _buildBookingCard(Map<String, dynamic> booking) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final customer = (booking['customer_name'] ?? booking['customer']?['name'] ?? 'Klient').toString();
-    final service = (booking['service_name'] ?? booking['service']?['name'] ?? 'Shërbim').toString();
-    final barber = (booking['barber_name'] ?? booking['barber']?['name'] ?? context.staffLabel).toString();
+
+    final id = booking['id'];
+    final customer = (booking['customer_name'] ?? 'Klient').toString();
+    final service = (booking['service_name'] ?? 'Shërbim').toString();
+    final barber = (booking['barber_name'] ?? context.staffLabel).toString();
     final status = (booking['status'] ?? 'pending').toString();
-    final totalPrice = booking['total_price']?.toString();
-    final durationMinutes = booking['duration_minutes']?.toString();
+    final paymentStatus = (booking['payment_status'] ?? 'unpaid').toString();
+    final totalPrice = booking['total_price']?.toString() ?? '0';
+    final durationMinutes = int.tryParse(booking['duration_minutes']?.toString() ?? '30') ?? 30;
     final appointmentAtStr = booking['appointment_at']?.toString();
 
-    final durationMin = int.tryParse(durationMinutes ?? '30') ?? 30;
     String timeRangeText = '';
     if (appointmentAtStr != null && appointmentAtStr.isNotEmpty) {
       final clean = appointmentAtStr.replaceAll('T', ' ');
@@ -603,7 +688,7 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
           final startHour = int.tryParse(timeParts[0]) ?? 0;
           final startMinute = int.tryParse(timeParts[1]) ?? 0;
           final startDt = DateTime(_selectedDay.year, _selectedDay.month, _selectedDay.day, startHour, startMinute);
-          final endDt = startDt.add(Duration(minutes: durationMin));
+          final endDt = startDt.add(Duration(minutes: durationMinutes));
           final startFormatted = "${startDt.hour.toString().padLeft(2, '0')}:${startDt.minute.toString().padLeft(2, '0')}";
           final endFormatted = "${endDt.hour.toString().padLeft(2, '0')}:${endDt.minute.toString().padLeft(2, '0')}";
           timeRangeText = "$startFormatted - $endFormatted";
@@ -615,85 +700,74 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
     if (status == 'completed') statusColor = Colors.green;
     if (status == 'confirmed') statusColor = Colors.blue;
     if (status == 'cancelled') statusColor = Colors.red;
-    if (status == 'no-show') statusColor = Colors.purple;
-
-    final isPendingOrConfirmed = status == 'pending' || status == 'confirmed';
 
     return InkWell(
-      onTap: () => _showBookingActionSheet(booking),
+      onTap: () async {
+        final res = await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (c) => BookingFormPage(item: booking)),
+        );
+        if (res == true) _refresh();
+      },
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1E212B) : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.25 : 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            )
-          ],
           border: Border.all(
-            color: isDark ? const Color(0xFF3B4052) : theme.colorScheme.outlineVariant,
+            color: isDark ? const Color(0xFF2E3446) : theme.colorScheme.outlineVariant.withOpacity(0.8),
             width: 1.2,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        customer,
-                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
-                      ),
-                      if (timeRangeText.isNotEmpty) ...[
-                        const SizedBox(height: 3),
-                        Row(
-                          children: [
-                            Icon(Icons.access_time_rounded, size: 12, color: theme.colorScheme.primary),
-                            const SizedBox(width: 4),
-                            Text(
-                              timeRangeText,
-                              style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
+                  child: Text(
+                    customer,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? Colors.white : theme.colorScheme.onSurface,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const SizedBox(width: 8),
                 Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (booking['payment_status'] != null && booking['payment_status'].toString().isNotEmpty && booking['payment_status'].toString() != 'unpaid') ...[
+                    if (paymentStatus == 'paid')
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                        margin: const EdgeInsets.only(right: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        margin: const EdgeInsets.only(right: 4),
                         decoration: BoxDecoration(
-                          color: _paymentStatusColor(booking['payment_status'].toString()).withOpacity(0.15),
+                          color: Colors.green.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: _paymentStatusColor(booking['payment_status'].toString()).withOpacity(0.5), width: 0.8),
                         ),
-                        child: Row(
+                        child: const Row(
                           children: [
-                            Icon(_paymentStatusIcon(booking['payment_status'].toString()), size: 10, color: _paymentStatusColor(booking['payment_status'].toString())),
-                            const SizedBox(width: 3),
-                            Text(booking['payment_status'].toString().toUpperCase(), style: TextStyle(color: _paymentStatusColor(booking['payment_status'].toString()), fontWeight: FontWeight.bold, fontSize: 9)),
+                            Icon(Icons.check_circle_rounded, size: 10, color: Colors.green),
+                            SizedBox(width: 3),
+                            Text('PAID', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 9)),
                           ],
                         ),
                       ),
-                    ],
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(8),
+                        color: statusColor.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         status.toUpperCase(),
@@ -704,280 +778,104 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
                 ),
               ],
             ),
+            if (timeRangeText.isNotEmpty) ...[
+              const SizedBox(height: 3),
+              Row(
+                children: [
+                  Icon(Icons.access_time_rounded, size: 12, color: theme.colorScheme.primary),
+                  const SizedBox(width: 4),
+                  Text(
+                    timeRangeText,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 6),
             Row(
               children: [
                 Expanded(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          service,
-                          style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 13),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (durationMinutes != null && durationMinutes.isNotEmpty) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            '${durationMinutes}m',
-                            style: TextStyle(color: theme.colorScheme.primary, fontSize: 10, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ],
+                  child: Text(
+                    service,
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFFF1F5F9) : theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (totalPrice != null && totalPrice.isNotEmpty) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    '($totalPrice Lekë)',
-                    style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 11, fontWeight: FontWeight.w700),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(4),
                   ),
-                ],
+                  child: Text(
+                    '${durationMinutes}m',
+                    style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '($totalPrice Lekë)',
+                  style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.black87, fontSize: 11.5, fontWeight: FontWeight.bold),
+                ),
               ],
             ),
             const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(Icons.person_outline_rounded, size: 13, color: Colors.grey),
+                Icon(Icons.person_outline_rounded, size: 12, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
                 const SizedBox(width: 4),
                 Text(
                   barber,
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 11.5),
                 ),
               ],
             ),
-            if (isPendingOrConfirmed && booking['payment_status'] != 'paid') ...[
-              const SizedBox(height: 10),
-              const Divider(height: 1, thickness: 0.5),
+            if (paymentStatus != 'paid' && status != 'cancelled') ...[
               const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () => _completeAndPay(booking),
-                    icon: const Icon(Icons.check_circle_outline_rounded, size: 16, color: Colors.green),
-                    label: const Text('Kryej & Regjistro Pagesën', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11.5)),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.green),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
+              SizedBox(
+                width: double.infinity,
+                height: 32,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.green,
+                    side: const BorderSide(color: Colors.green, width: 1.2),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: EdgeInsets.zero,
                   ),
-                ],
+                  onPressed: () async {
+                    final res = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (c) => PaymentFormPage(
+                          item: {
+                            'booking_id': id,
+                            'customer_id': booking['customer_id'],
+                            'amount': totalPrice,
+                            'status': 'completed',
+                            'payment_method': 'cash',
+                          },
+                        ),
+                      ),
+                    );
+                    if (res == true) _refresh();
+                  },
+                  icon: const Icon(Icons.check_circle_outline_rounded, size: 15),
+                  label: const Text('Kryej & Regjistro Pagesën', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                ),
               ),
             ],
           ],
         ),
       ),
     );
-  }
-
-  Future<void> _showBookingActionSheet(Map<String, dynamic> booking) async {
-    final bookingId = booking['id'];
-    final customer = (booking['customer_name'] ?? booking['customer']?['name'] ?? 'Klient').toString();
-    final service = (booking['service_name'] ?? booking['service']?['name'] ?? 'Shërbim').toString();
-    final status = (booking['status'] ?? '').toString();
-    final paymentStatus = (booking['payment_status'] ?? '').toString();
-    final bool isPaid = paymentStatus == 'paid';
-    final bool isCompleted = status == 'completed';
-    final bool isClosed = isPaid || isCompleted;
-
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            20,
-            20,
-            20,
-            20 + MediaQuery.of(sheetContext).padding.bottom,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10))),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(child: Text(customer, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900))),
-                  if (paymentStatus.isNotEmpty && paymentStatus != 'unpaid')
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _paymentStatusColor(paymentStatus).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(_paymentStatusIcon(paymentStatus), color: _paymentStatusColor(paymentStatus), size: 14),
-                          const SizedBox(width: 4),
-                          Text(paymentStatus.toUpperCase(), style: TextStyle(color: _paymentStatusColor(paymentStatus), fontWeight: FontWeight.w900, fontSize: 11)),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(service, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 20),
-
-              if (!isPaid) ...[
-                ListTile(
-                  leading: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 26),
-                  title: const Text('Kryej Takimin & Regjistro Pagesën', style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Ndryshon statusin në completed dhe regjistron arketimin'),
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    _completeAndPay(booking);
-                  },
-                ),
-                const Divider(height: 1),
-              ],
-
-              ListTile(
-                leading: const Icon(Icons.edit_note_rounded, color: Colors.blueAccent, size: 26),
-                title: const Text('Ndrysho / Shto Shërbim Shtesë', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('Modifiko shërbimin, çmimin ose oren e takimit'),
-                onTap: () async {
-                  Navigator.pop(sheetContext);
-                  final res = await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => BookingFormPage(item: booking)),
-                  );
-                  if (res == true) _refresh();
-                },
-              ),
-
-              if (!isClosed) ...[
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.person_off_rounded, color: Colors.purple, size: 26),
-                  title: const Text('Klienti Nuk Erdhi (No-Show)', style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Shënon takimin si mosardhje të klientit'),
-                  onTap: () async {
-                    Navigator.pop(sheetContext);
-                    await _updateBookingStatus(bookingId, 'no-show');
-                  },
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.cancel_rounded, color: Colors.red, size: 26),
-                  title: const Text('Anulo Rezervimin', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
-                  onTap: () async {
-                    Navigator.pop(sheetContext);
-                    await _updateBadgeAndRefreshStatus(bookingId, 'cancelled');
-                  },
-                ),
-              ],
-              const SizedBox(height: 10),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _updateBadgeAndRefreshStatus(dynamic bookingId, String status) async {
-    await _updateBookingStatus(bookingId, status);
-  }
-
-  Future<void> _completeAndPay(Map<String, dynamic> booking) async {
-    final bookingId = booking['id'];
-    try {
-      if (bookingId != null) {
-        await ApiService.put('/bookings/$bookingId', {'status': 'completed'});
-      }
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Rezervimi u krye me sukses! Po hapet faqja e pagesës...'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.green,
-        ));
-      }
-      final res = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => PaymentFormPage(
-            item: {
-              'booking_id': bookingId,
-              'amount': booking['total_price'],
-              'customer_name': booking['customer_name'] ?? booking['customer']?['name'],
-              'service_name': booking['service_name'] ?? booking['service']?['name'],
-              'barber_shop_id': booking['barber_shop_id'],
-              'method': 'cash',
-              'status': 'completed',
-            },
-          ),
-        ),
-      );
-      _refresh();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Gabim: $e'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.red,
-        ));
-      }
-    }
-  }
-
-  Future<void> _updateBookingStatus(dynamic bookingId, String status) async {
-    try {
-      await ApiService.put('/bookings/$bookingId', {'status': status});
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Statusi u ndryshua në: ${status.toUpperCase()}'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.green,
-        ));
-      }
-      _refresh();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Gabim gjatë përditësimit të statusit: $e'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.red,
-        ));
-      }
-    }
-  }
-
-  Color _paymentStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'paid': return Colors.green;
-      case 'pending': return Colors.orange;
-      case 'failed': return Colors.red;
-      case 'refunded': return Colors.purple;
-      default: return Colors.grey;
-    }
-  }
-
-  IconData _paymentStatusIcon(String status) {
-    switch (status.toLowerCase()) {
-      case 'paid': return Icons.check_circle_rounded;
-      case 'pending': return Icons.hourglass_top_rounded;
-      case 'failed': return Icons.error_rounded;
-      case 'refunded': return Icons.replay_rounded;
-      default: return Icons.payment_rounded;
-    }
   }
 }

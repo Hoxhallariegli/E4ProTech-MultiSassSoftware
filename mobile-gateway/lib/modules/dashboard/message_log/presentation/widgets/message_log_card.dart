@@ -62,8 +62,8 @@ class MessageLogCard extends StatelessWidget {
     final channel = (item['channel'] ?? 'sms').toString().toLowerCase();
     final message = (item['message'] ?? '').toString();
     final status = (item['status'] ?? 'pending').toString().toLowerCase();
-    final sentAtRaw = item['sent_at']?.toString() ?? item['created_at']?.toString();
-    final formattedDate = _formatDateTime(sentAtRaw);
+    final createdAtRaw = item['created_at']?.toString() ?? item['scheduled_at']?.toString();
+    final sentAtRaw = item['sent_at']?.toString();
     final errorMsg = item['error_message']?.toString() ?? '';
 
     IconData channelIcon = Icons.sms_rounded;
@@ -189,7 +189,7 @@ class MessageLogCard extends StatelessWidget {
 
           const SizedBox(height: 5),
 
-          // Message Container with Dynamic Surface/Accent
+          // Message Container
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(10),
@@ -229,22 +229,47 @@ class MessageLogCard extends StatelessWidget {
 
           const SizedBox(height: 6),
 
-          // Footer Row: Formatted Date in Dynamic Primary Color
-          if (formattedDate.isNotEmpty)
-            Row(
-              children: [
-                Icon(Icons.access_time_rounded, size: 11, color: primaryColor),
-                const SizedBox(width: 4),
-                Text(
-                  formattedDate,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: primaryColor,
-                  ),
+          // Footer Row: Scheduled/Created At & Sent At Timestamps
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              if (createdAtRaw != null && createdAtRaw.isNotEmpty)
+                Row(
+                  children: [
+                    Icon(Icons.schedule_rounded, size: 11, color: isDark ? Colors.white70 : Colors.black54),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Krijuar: ${_formatDateTime(createdAtRaw)}',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white70 : Colors.black87,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              Row(
+                children: [
+                  Icon(
+                    status == 'sent' ? Icons.check_circle_rounded : Icons.access_time_rounded,
+                    size: 11,
+                    color: status == 'sent' ? Colors.green : primaryColor,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    status == 'sent' && sentAtRaw != null
+                        ? 'Dërguar: ${_formatDateTime(sentAtRaw)}'
+                        : (status == 'failed' ? 'Dështoi Dërgimi' : 'Në Pritje'),
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.bold,
+                      color: status == 'sent' ? Colors.green : primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ],
       ),
     );

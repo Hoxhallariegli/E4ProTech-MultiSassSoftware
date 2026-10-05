@@ -65,9 +65,10 @@ class SendBookingReminders extends Command
             $reminderMins = max(15, $reminderMins);
 
             $appointmentTime = Carbon::parse($booking->appointment_at);
+            $createdAtTime = Carbon::parse($booking->created_at);
 
-            // Do not send reminder if appointment is less than 15 minutes away (too close to creation)
-            if ($appointmentTime->diffInMinutes($now) < 15) {
+            // Do not send separate reminder if appointment was booked last-minute (less than 45 min before appointment)
+            if ($appointmentTime->diffInMinutes($now) < 15 || $appointmentTime->diffInMinutes($createdAtTime) < 45) {
                 continue;
             }
 

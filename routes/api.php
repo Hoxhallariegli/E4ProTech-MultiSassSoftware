@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\Mobile\AuthController;
 Route::get('/health', fn () => response()->json(['ok' => true]))->withoutMiddleware(['auth:sanctum']);
+Route::get('mobile/status', fn () => response()->json(['status' => 'online', 'timestamp' => now()->toIso8601String()]));
 Route::get('app-version', [\App\Http\Controllers\Api\Mobile\AppVersionController::class, 'check']);
 Route::get('mobile/app-version', [\App\Http\Controllers\Api\Mobile\AppVersionController::class, 'check']);
 Route::post('mobile/login', [AuthController::class, 'login']);
@@ -96,15 +97,6 @@ Route::middleware(['auth:sanctum'])->prefix('mobile')->group(function () {
         if ($search !== '') { $query->where('name', 'like', '%' . $search . '%'); }
         $items = $query->limit(50)->get()->map(fn ($item) => ['id' => $item->getKey(), 'name' => $item->name])->values();
         return response()->json(['data' => $items]);
-    });
-
-
-    Route::get('status', function () {
-        return response()->json([
-            'api' => 'online',
-            'database' => \Illuminate\Support\Facades\DB::connection()->getPdo() ? 'online' : 'offline',
-            'cache' => \Illuminate\Support\Facades\Cache::driver()->getStore() instanceof \Illuminate\Cache\FileStore ? 'file-active' : 'redis-live',
-        ]);
     });
 
     // Notification Settings

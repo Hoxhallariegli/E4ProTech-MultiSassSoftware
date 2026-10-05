@@ -1,13 +1,10 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
-import 'package:mobile_gateway/core/widgets/premium_image_picker.dart';
 import 'package:mobile_gateway/l10n/booking_localization.dart';
-import 'package:mobile_gateway/core/branding/branding_cubit.dart';
 import '../cubit/booking_cubit.dart';
 import '../cubit/booking_state.dart';
 import '../../data/booking_repository.dart';
@@ -33,6 +30,7 @@ class _BookingFormPageState extends State<BookingFormPage> {
   final _totalPriceController = TextEditingController();
   final _notesController = TextEditingController();
   String? _source;
+  bool _sendSms = true;
 
   List<Map<String, dynamic>> _barberShopOptions = [];
   int? _barberShopId;
@@ -40,17 +38,17 @@ class _BookingFormPageState extends State<BookingFormPage> {
   int? _barberId;
   List<Map<String, dynamic>> _serviceOptions = [];
   int? _serviceId;
+  List<int> _selectedServiceIds = [];
   List<Map<String, dynamic>> _customerOptions = [];
   int? _customerId;
-
 
   @override void initState() { super.initState(); _init(); }
 
   Future<void> _init() async {
     _appointmentAtController.text = _displayDateTime(widget.item?['appointment_at'], includeTime: true);
     _status = widget.item?['status']?.toString() ?? 'pending';
-    final _initialtotalPrice = widget.item?['total_price'];
-    _totalPriceController.text = _initialtotalPrice == null ? '' : (double.tryParse(_initialtotalPrice.toString())?.toStringAsFixed(2) ?? _initialtotalPrice.toString());
+    final initialTotalPrice = widget.item?['total_price'];
+    _totalPriceController.text = initialTotalPrice == null ? '' : (double.tryParse(initialTotalPrice.toString())?.toStringAsFixed(2) ?? initialTotalPrice.toString());
     _notesController.text = widget.item?['notes']?.toString() ?? '';
     _source = widget.item?['source']?.toString() ?? 'walk-in';
 
@@ -59,6 +57,9 @@ class _BookingFormPageState extends State<BookingFormPage> {
     }
     if (widget.item?['service_id'] != null) {
       _serviceId = int.tryParse(widget.item!['service_id'].toString());
+      if (_serviceId != null && !_selectedServiceIds.contains(_serviceId)) {
+        _selectedServiceIds.add(_serviceId!);
+      }
     }
     if (widget.item?['customer_id'] != null) {
       _customerId = int.tryParse(widget.item!['customer_id'].toString());
@@ -89,18 +90,12 @@ class _BookingFormPageState extends State<BookingFormPage> {
       _customerOptions = await repository.lookup('customers');
     } catch (_) {}
 
-    // Ensure preselected options exist in lookup lists so names are displayed immediately
-    if (_barberId != null) {
-      final exists = _barberOptions.any((b) => b['id'].toString() == _barberId.toString());
-      if (!exists) {
-        _barberOptions.insert(0, {
-          'id': _barberId,
-          'name': widget.item?['barber_name'] ?? 'Berber #$_barberId',
-        });
-      }
+    // Preselect barber if only 1 available or matching
+    if (_barberId == null && _barberOptions.isNotEmpty) {
+      _barberId = int.tryParse(_barberOptions.first['id']?.toString() ?? '');
     }
 
-    // Parse multi-services from notes if present (e.g. "Shërbimet: rroje + Rrojre qethje")
+    // Parse multi-services from notes if present
     final notesText = _notesController.text;
     if (notesText.startsWith("Shërbimet: ")) {
       final namesString = notesText.replaceFirst("Shërbimet: ", "").trim();
@@ -120,65 +115,61 @@ class _BookingFormPageState extends State<BookingFormPage> {
       }
     }
 
-    if (_selectedServiceIds.isEmpty && _serviceId != null) {
-      _selectedServiceIds.add(_serviceId!);
+    if (mounted) {
+      setState(() => _loading = false);
     }
+  }
 
-    if (_serviceId != null) {
-      final exists = _serviceOptions.any((s) => s['id'].toString() == _serviceId.toString());
-      if (!exists) {
-        _serviceOptions.insert(0, {
-          'id': _serviceId,
-          'name': widget.item?['service_name'] ?? 'Shërbim #$_serviceId',
-          'price': widget.item?['total_price'],
-        });
+  void _toggleServiceChip(int id) {
+    setState(() {
+      if (_selectedServiceIds.contains(id)) {
+        _selectedServiceIds.remove(id);
+      } else {
+        _selectedServiceIds.add(id);
       }
-    }
+      _serviceId = _selectedServiceIds.isNotEmpty ? _selectedServiceIds.first : null;
 
-    if (_customerId != null) {
-      final exists = _customerOptions.any((c) => c['id'].toString() == _customerId.toString());
-      if (!exists) {
-        _customerOptions.insert(0, {
-          'id': _customerId,
-          'name': widget.item?['customer_name'] ?? 'Klient #$_customerId',
-        });
+      double total = 0;
+      final selectedNames = <String>[];
+      for (final sId in _selectedServiceIds) {
+        final opt = _serviceOptions.firstWhere((e) => e['id'].toString() == sId.toString(), orElse: () => {});
+        final price = double.tryParse(opt['price']?.toString() ?? '0') ?? 0;
+        total += price;
+        if (opt['name'] != null) selectedNames.add(opt['name'].toString());
       }
-    }
 
-    if (mounted) setState(() => _loading = false);
+      if (total > 0) {
+        _totalPriceController.text = total.toStringAsFixed(2);
+      }
+
+      if (selectedNames.isNotEmpty) {
+        _notesController.text = "Shërbimet: ${selectedNames.join(' + ')}";
+      } else {
+        _notesController.text = '';
+      }
+    });
+    _validateCurrentSlotForService();
   }
 
   Future<void> _pickbarberShopId() async {
-    if ("barber_shop_id" == "barber_shop_id" && AuthService.instance.user?['is_admin'] != true) return;
+    if (AuthService.instance.user?['is_admin'] != true) return;
     var filtered = List<Map<String, dynamic>>.from(_barberShopOptions);
     final selected = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
-      useSafeArea: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
-      builder: (sheetContext) => SafeArea(
-        child: StatefulBuilder(
-          builder: (context, setSheet) => SizedBox(
-            height: MediaQuery.of(context).size.height * .72,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(sheetContext).padding.bottom),
-              child: Column(children: [
-                Container(width: 42, height: 4, decoration: BoxDecoration(color: Theme.of(context).dividerColor, borderRadius: BorderRadius.circular(10))),
-                const SizedBox(height: 18), Align(alignment: Alignment.centerLeft, child: Text(bookingTr(sheetContext, 'field.barber_shop_id'), style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800))),
-                const SizedBox(height: 14), TextField(decoration: InputDecoration(prefixIcon: const Icon(Icons.search_rounded), hintText: bookingTr(sheetContext, 'form.search'), border: const OutlineInputBorder()), onChanged: (q) => setSheet(() => filtered = _barberShopOptions.where((e) => _displayName(e).toLowerCase().contains(q.toLowerCase())).toList())),
-                const SizedBox(height: 12), Expanded(child: ListView.separated(itemCount: filtered.length, separatorBuilder: (_, __) => const Divider(height: 1), itemBuilder: (_, i) { final option = filtered[i]; return ListTile(title: Text(_displayName(option), style: const TextStyle(fontWeight: FontWeight.w700)), trailing: option['id'].toString() == _barberShopId?.toString() ? const Icon(Icons.check_circle_rounded) : null, onTap: () => Navigator.pop(sheetContext, option)); })),
-              ]),
-            ),
-          ),
-        ),
-      ),
+      builder: (sheetContext) => StatefulBuilder(builder: (context, setSheet) => SizedBox(height: MediaQuery.of(context).size.height * .72, child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
+        Container(width: 42, height: 4, decoration: BoxDecoration(color: Theme.of(context).dividerColor, borderRadius: BorderRadius.circular(10))),
+        const SizedBox(height: 18), Align(alignment: Alignment.centerLeft, child: Text(bookingTr(sheetContext, 'field.barber_shop_id'), style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800))),
+        const SizedBox(height: 14), TextField(decoration: InputDecoration(prefixIcon: const Icon(Icons.search_rounded), hintText: bookingTr(sheetContext, 'form.search'), border: const OutlineInputBorder()), onChanged: (q) => setSheet(() => filtered = _barberShopOptions.where((e) => _displayName(e).toLowerCase().contains(q.toLowerCase())).toList())),
+        const SizedBox(height: 12), Expanded(child: ListView.separated(itemCount: filtered.length, separatorBuilder: (_, __) => const Divider(height: 1), itemBuilder: (_, i) { final option = filtered[i]; return ListTile(title: Text(_displayName(option), style: const TextStyle(fontWeight: FontWeight.w700)), trailing: option['id'].toString() == _barberShopId?.toString() ? const Icon(Icons.check_circle_rounded) : null, onTap: () => Navigator.pop(sheetContext, option)); })),
+      ])))),
     );
     if (selected != null) setState(() => _barberShopId = int.tryParse(selected['id'].toString()));
   }
 
   Future<void> _pickbarberId() async {
-    if ("barber_id" == "barber_shop_id" && AuthService.instance.user?['is_admin'] != true) return;
     var filtered = List<Map<String, dynamic>>.from(_barberOptions);
     final selected = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -202,14 +193,14 @@ class _BookingFormPageState extends State<BookingFormPage> {
                     const SizedBox(width: 8),
                     TextButton.icon(
                       onPressed: () async {
-                        final res = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => const BarberFormPage()));
-                        if (res == true) {
+                        final newBarber = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => const BarberFormPage()));
+                        if (newBarber == true) {
                           _barberOptions = await repository.lookup('barbers');
                           if (mounted) setSheet(() => filtered = List<Map<String, dynamic>>.from(_barberOptions));
                         }
                       },
                       icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
-                      label: Text('Shto ${context.staffLabel}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      label: const Text('Shto Staf', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                     ),
                   ],
                 ),
@@ -223,155 +214,21 @@ class _BookingFormPageState extends State<BookingFormPage> {
         ),
       ),
     );
-    if (selected != null) setState(() => _barberId = int.tryParse(selected['id'].toString()));
+    if (selected != null) {
+      setState(() => _barberId = int.tryParse(selected['id'].toString()));
+      _validateCurrentSlotForService();
+    }
   }
 
-  List<int> _selectedServiceIds = [];
-
   Future<void> _pickserviceId() async {
-    var filtered = List<Map<String, dynamic>>.from(_serviceOptions);
-    List<int> tempSelectedIds = List<int>.from(_selectedServiceIds);
-    if (tempSelectedIds.isEmpty && _serviceId != null) {
-      tempSelectedIds.add(_serviceId!);
+    final newService = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => const ServiceFormPage()));
+    if (newService == true) {
+      _serviceOptions = await repository.lookup('services');
+      if (mounted) setState(() {});
     }
-
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
-      builder: (sheetContext) => SafeArea(
-        child: StatefulBuilder(
-          builder: (context, setSheet) {
-            double totalPrice = 0;
-            int totalDuration = 0;
-            final selectedNames = <String>[];
-
-            for (final id in tempSelectedIds) {
-              final opt = _serviceOptions.firstWhere((e) => e['id'].toString() == id.toString(), orElse: () => {});
-              final price = double.tryParse(opt['price']?.toString() ?? '0') ?? 0;
-              final dur = int.tryParse(opt['duration_minutes']?.toString() ?? '30') ?? 30;
-              totalPrice += price;
-              totalDuration += dur;
-              if (opt['name'] != null) selectedNames.add(opt['name'].toString());
-            }
-
-            return SizedBox(
-              height: MediaQuery.of(context).size.height * 0.78,
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(sheetContext).padding.bottom),
-                child: Column(
-                  children: [
-                    Container(width: 42, height: 4, decoration: BoxDecoration(color: Theme.of(context).dividerColor, borderRadius: BorderRadius.circular(10))),
-                    const SizedBox(height: 18),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(bookingTr(sheetContext, 'field.service_id'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-                              if (tempSelectedIds.isNotEmpty)
-                                Text("${tempSelectedIds.length} shërbime zgjedhur ($totalDuration min)", style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ),
-                        TextButton.icon(
-                          onPressed: () async {
-                            final res = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => const ServiceFormPage()));
-                            if (res == true) {
-                              _serviceOptions = await repository.lookup('services');
-                              if (mounted) setSheet(() => filtered = List<Map<String, dynamic>>.from(_serviceOptions));
-                            }
-                          },
-                          icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
-                          label: const Text('Shto Shërbim', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.search_rounded),
-                        hintText: bookingTr(sheetContext, 'form.search'),
-                        border: const OutlineInputBorder(),
-                      ),
-                      onChanged: (q) => setSheet(() => filtered = _serviceOptions.where((e) => _displayName(e).toLowerCase().contains(q.toLowerCase())).toList()),
-                    ),
-                    const SizedBox(height: 12),
-                    Expanded(
-                      child: ListView.separated(
-                        itemCount: filtered.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (_, i) {
-                          final option = filtered[i];
-                          final optionId = int.tryParse(option['id'].toString());
-                          final isSelected = optionId != null && tempSelectedIds.contains(optionId);
-
-                          return CheckboxListTile(
-                            value: isSelected,
-                            title: Text(_displayName(option), style: const TextStyle(fontWeight: FontWeight.w700)),
-                            subtitle: Text("${option['price'] ?? '0.00'} Lekë (${option['duration_minutes'] ?? '30'} min)"),
-                            activeColor: Theme.of(context).colorScheme.primary,
-                            onChanged: (checked) {
-                              setSheet(() {
-                                if (optionId != null) {
-                                  if (checked == true) {
-                                    if (!tempSelectedIds.contains(optionId)) tempSelectedIds.add(optionId);
-                                  } else {
-                                    tempSelectedIds.remove(optionId);
-                                  }
-                                }
-                              });
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: tempSelectedIds.isEmpty ? null : () {
-                          setState(() {
-                            _selectedServiceIds = List<int>.from(tempSelectedIds);
-                            _serviceId = _selectedServiceIds.isNotEmpty ? _selectedServiceIds.first : null;
-                            if (totalPrice > 0 && (widget.item == null || _totalPriceController.text.isEmpty)) {
-                              _totalPriceController.text = totalPrice.toStringAsFixed(2);
-                            }
-                            if (selectedNames.isNotEmpty) {
-                              _notesController.text = "Shërbimet: ${selectedNames.join(' + ')}";
-                            }
-                          });
-                          _validateCurrentSlotForService();
-                          Navigator.pop(sheetContext);
-                        },
-                        icon: const Icon(Icons.check_circle_rounded),
-                        label: Text(
-                          tempSelectedIds.isEmpty
-                              ? 'Zgjidh të paktën 1 shërbim'
-                              : 'Konfirmo (${totalPrice.toStringAsFixed(2)} Lekë - $totalDuration min)',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
   }
 
   Future<void> _pickcustomerId() async {
-    if ("customer_id" == "barber_shop_id" && AuthService.instance.user?['is_admin'] != true) return;
     var filtered = List<Map<String, dynamic>>.from(_customerOptions);
     final selected = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -508,80 +365,53 @@ class _BookingFormPageState extends State<BookingFormPage> {
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(sheetContext).padding.bottom),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Center(
-                        child: Container(width: 42, height: 4, decoration: BoxDecoration(color: isDark ? const Color(0xFF4B5563) : Theme.of(context).dividerColor, borderRadius: BorderRadius.circular(10))),
-                      ),
-                      const SizedBox(height: 18),
+                      Container(width: 42, height: 4, decoration: BoxDecoration(color: Theme.of(context).dividerColor, borderRadius: BorderRadius.circular(10))),
+                      const SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Zgjidh Orarin e Lirë', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: isDark ? Colors.white : null)),
+                          const Text('Orarët e Lirë', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
                           OutlinedButton.icon(
                             onPressed: () async {
                               final picked = await showDatePicker(
                                 context: context,
                                 initialDate: selectedDate,
-                                firstDate: DateTime.now().subtract(const Duration(days: 1)),
-                                lastDate: DateTime.now().add(const Duration(days: 365)),
+                                firstDate: DateTime.now().subtract(const Duration(days: 30)),
+                                lastDate: DateTime.now().add(const Duration(days: 180)),
                               );
                               if (picked != null) {
                                 setSheetState(() => selectedDate = picked);
                               }
                             },
-                            icon: Icon(Icons.calendar_month_rounded, size: 16, color: isDark ? theme.colorScheme.primary : null),
-                            label: Text("${selectedDate.day}/${selectedDate.month}/${selectedDate.year}", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: isDark ? Colors.white : null)),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: isDark ? const Color(0xFF3B82F6) : theme.colorScheme.outlineVariant),
-                            ),
+                            icon: const Icon(Icons.calendar_month_rounded, size: 16),
+                            label: Text(_formatDisplayDate(selectedDate, includeTime: false), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      Text('Orare të lira për këtë shërbim (${_serviceDurationText()}):', style: TextStyle(fontSize: 12.5, color: isDark ? const Color(0xFFCBD5E1) : theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
                       Expanded(
-                        child: FutureBuilder<dynamic>(
-                          future: ApiService.get('/bookings/day-schedule?date=$dateStr&barber_id=${_barberId ?? ''}&service_id=${_serviceId ?? ''}'),
+                        child: FutureBuilder<http.Response>(
+                          future: ApiService.get('/bookings/day-schedule?date=$dateStr&barber_id=${_barberId ?? ''}&service_id=${_serviceId ?? ''}&ignore_booking_id=${widget.item?['id'] ?? ''}'),
                           builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
+                            if (connectionStateLoading(snapshot)) {
                               return const Center(child: CircularProgressIndicator.adaptive());
                             }
-                            if (snapshot.hasError) {
-                              return Center(child: Text('Gabim: ${snapshot.error}'));
+                            if (!snapshot.hasData || snapshot.data?.statusCode != 200) {
+                              return const Center(child: Text('Dështoi ngarkimi i orarëve.', style: TextStyle(color: Colors.grey)));
                             }
-                            final res = snapshot.data;
-                            if (res == null || res.statusCode != 200) {
-                              return const Center(child: Text('Nuk u ngarkuan oraret.'));
-                            }
-                            final body = jsonDecode(res.body);
-                            final slots = (body['daySlots'] as List? ?? []);
-                            final freeSlots = slots.where((s) => s['is_free'] == true).toList();
 
-                            if (freeSlots.isEmpty) {
+                            final body = jsonDecode(snapshot.data!.body);
+                            final slots = (body['daySlots'] as List? ?? []).where((s) => s['is_free'] == true).toList();
+
+                            if (slots.isEmpty) {
                               return Center(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Icon(Icons.event_busy_rounded, size: 48, color: Colors.grey),
-                                    const SizedBox(height: 12),
-                                    Text('Nuk ka orare të lira me këtë kohëzgjatje për këtë datë.', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : null)),
-                                    const SizedBox(height: 16),
-                                    ElevatedButton(
-                                      onPressed: () async {
-                                        final picked = await showDatePicker(
-                                          context: context,
-                                          initialDate: selectedDate.add(const Duration(days: 1)),
-                                          firstDate: DateTime.now(),
-                                          lastDate: DateTime.now().add(const Duration(days: 365)),
-                                        );
-                                        if (picked != null) {
-                                          setSheetState(() => selectedDate = picked);
-                                        }
-                                      },
-                                      child: const Text('Zgjidh një datë tjetër'),
-                                    ),
+                                    const Icon(Icons.event_busy_rounded, size: 40, color: Colors.grey),
+                                    const SizedBox(height: 10),
+                                    Text(body['calendarMessage'] ?? 'Nuk ka orarë të lirë për këtë datë.', style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
                                   ],
                                 ),
                               );
@@ -589,14 +419,14 @@ class _BookingFormPageState extends State<BookingFormPage> {
 
                             return GridView.builder(
                               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                childAspectRatio: 2.3,
-                                crossAxisSpacing: 10,
-                                mainAxisSpacing: 10,
+                                crossAxisCount: 4,
+                                childAspectRatio: 2.2,
+                                crossAxisSpacing: 8,
+                                mainAxisSpacing: 8,
                               ),
-                              itemCount: freeSlots.length,
-                              itemBuilder: (context, i) {
-                                final slot = freeSlots[i];
+                              itemCount: slots.length,
+                              itemBuilder: (context, index) {
+                                final slot = slots[index];
                                 final timeStr = slot['time'].toString();
                                 return InkWell(
                                   onTap: () {
@@ -659,10 +489,8 @@ class _BookingFormPageState extends State<BookingFormPage> {
     );
   }
 
-  String _serviceDurationText() {
-    final serv = _serviceOptions.firstWhere((e) => e['id'].toString() == _serviceId?.toString(), orElse: () => {});
-    final dur = serv['duration_minutes'] ?? 30;
-    return "$dur min";
+  bool connectionStateLoading(AsyncSnapshot snapshot) {
+    return snapshot.connectionState == ConnectionState.waiting;
   }
 
   Future<void> _pickDate(TextEditingController controller) async {
@@ -709,12 +537,6 @@ class _BookingFormPageState extends State<BookingFormPage> {
     return parsed == null ? value.toString() : _formatDisplayDate(parsed, includeTime: includeTime);
   }
 
-  String? _apiDateValue(String value) {
-    final parsed = _parseDisplayDate(value);
-    if (parsed == null) return null;
-    return '${parsed.year.toString().padLeft(4, '0')}-${parsed.month.toString().padLeft(2, '0')}-${parsed.day.toString().padLeft(2, '0')}';
-  }
-
   String? _apiDateTimeValue(String value) {
     final parsed = _parseDisplayDate(value);
     return parsed?.toIso8601String();
@@ -722,36 +544,6 @@ class _BookingFormPageState extends State<BookingFormPage> {
 
   String _displayName(Map<String, dynamic> item) {
     return (item['name'] ?? item['title'] ?? 'ID: ' + item['id'].toString()).toString();
-  }
-
-  String _selectedServiceDisplay() {
-    if (_selectedServiceIds.isEmpty && _serviceId == null) {
-      return bookingTr(context, 'form.select');
-    }
-
-    final names = <String>[];
-    for (final id in _selectedServiceIds) {
-      final opt = _serviceOptions.firstWhere((e) => e['id'].toString() == id.toString(), orElse: () => {});
-      if (opt['name'] != null && opt['name'].toString().isNotEmpty) {
-        names.add(opt['name'].toString());
-      }
-    }
-
-    if (names.isEmpty && _serviceId != null) {
-      final opt = _serviceOptions.firstWhere((e) => e['id'].toString() == _serviceId.toString(), orElse: () => {});
-      if (opt['name'] != null && opt['name'].toString().isNotEmpty) {
-        names.add(opt['name'].toString());
-      }
-    }
-
-    if (names.isEmpty) {
-      return widget.item?['service_name'] ?? bookingTr(context, 'form.select');
-    }
-
-    if (names.length > 1) {
-      return "${names.join(' + ')} (${names.length} shërbime)";
-    }
-    return names.first;
   }
 
   Future<void> _save(BuildContext context) async {
@@ -766,6 +558,7 @@ class _BookingFormPageState extends State<BookingFormPage> {
     payload['total_price'] = double.tryParse(_totalPriceController.text);
     payload['notes'] = _notesController.text;
     payload['source'] = _source;
+    payload['send_sms'] = _sendSms;
 
     final files = <String, String>{};
 
@@ -783,6 +576,7 @@ class _BookingFormPageState extends State<BookingFormPage> {
     payload['total_price'] = double.tryParse(_totalPriceController.text);
     payload['notes'] = _notesController.text;
     payload['source'] = _source;
+    payload['send_sms'] = _sendSms;
     payload['override_lunch'] = true;
 
     final confirm = await showDialog<bool>(
@@ -824,6 +618,13 @@ class _BookingFormPageState extends State<BookingFormPage> {
 
   @override Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = theme.colorScheme.primary;
+
+    final displayTimeStr = _appointmentAtController.text.isEmpty ? 'Sot, Në Pritje' : _appointmentAtController.text;
+    final displayPriceStr = _totalPriceController.text.isEmpty ? '0.00 Lekë' : '${_totalPriceController.text} Lekë';
+    final displayDurationStr = '${_totalSelectedDuration()} min';
+
     return BlocProvider(
       create: (_) => BookingCubit(repository),
       child: BlocListener<BookingCubit, BookingState>(
@@ -843,50 +644,320 @@ class _BookingFormPageState extends State<BookingFormPage> {
             leading: IconButton(
               tooltip: 'Back',
               icon: const Icon(Icons.arrow_back_rounded),
-              onPressed: () {
-                if (Navigator.of(context).canPop()) {
-                  Navigator.of(context).pop();
-                } else {
-                  Navigator.of(context).pushNamedAndRemoveUntil('/dashboard', (route) => false);
-                }
-              },
+              onPressed: () => Navigator.of(context).maybePop(),
             ),
             title: Text(widget.item?['id'] == null ? bookingTr(context, 'form.create_title') : bookingTr(context, 'form.edit_title'), style: const TextStyle(fontWeight: FontWeight.w800)),
           ),
           body: _loading ? const Center(child: CircularProgressIndicator.adaptive()) : Form(key: _formKey, child: Builder(builder: (formContext) => ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 120), children: [
-            const SizedBox(height: 12),
-            (AuthService.instance.user?['is_admin'] == true)
-              ? _FieldShell(label: bookingTr(context, 'field.barber_shop_id'), child: InkWell(onTap: _pickbarberShopId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_barberShopOptions.firstWhere((e) => e['id'].toString() == _barberShopId?.toString(), orElse: () => {'id': '', 'name': bookingTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)]))))
-              : _FieldShell(label: bookingTr(context, 'field.barber_shop_id'), child: Container(padding: const EdgeInsets.all(16), width: double.infinity, decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5), border: Border.all(color: theme.colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Text(AuthService.instance.user?['business']?['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)))),
-            _FieldShell(label: bookingTr(context, 'field.barber_id'), child: InkWell(onTap: _pickbarberId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_barberOptions.firstWhere((e) => e['id'].toString() == _barberId?.toString(), orElse: () => {'id': '', 'name': bookingTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)])))),
-            _FieldShell(label: bookingTr(context, 'field.service_id'), child: InkWell(onTap: _pickserviceId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_selectedServiceDisplay(), style: const TextStyle(fontWeight: FontWeight.bold))), const Icon(Icons.keyboard_arrow_down_rounded)])))),
-            _FieldShell(label: bookingTr(context, 'field.customer_id'), child: InkWell(onTap: _pickcustomerId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_customerOptions.firstWhere((e) => e['id'].toString() == _customerId?.toString(), orElse: () => {'id': '', 'name': bookingTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)])))),
-            _FieldShell(label: bookingTr(context, 'field.appointment_at'), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              InkWell(onTap: _pickAvailableSlot, borderRadius: BorderRadius.circular(12), child: InputDecorator(decoration: InputDecoration(border: InputBorder.none, isDense: true, suffixIcon: const Icon(Icons.event_available_rounded)), child: Text(_appointmentAtController.text.isEmpty ? bookingTr(context, 'form.select_datetime') : _appointmentAtController.text, style: TextStyle(color: _appointmentAtController.text.isEmpty ? Theme.of(context).colorScheme.onSurfaceVariant : null, fontWeight: FontWeight.bold, fontSize: 15)))),
-              if (_slotWarning != null) ...[
-                const SizedBox(height: 6),
-                InkWell(
-                  onTap: _pickAvailableSlot,
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(color: Colors.red.withOpacity(0.12), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.red.withOpacity(0.5))),
-                    child: Row(children: [
-                      const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 16),
-                      const SizedBox(width: 6),
-                      Expanded(child: Text(_slotWarning!, style: const TextStyle(color: Colors.red, fontSize: 11.5, fontWeight: FontWeight.bold))),
-                    ]),
-                  ),
+            // 🌟 SLEEK SUMMARY HEADER CARD
+            Container(
+              margin: const EdgeInsets.only(bottom: 18),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    primaryColor.withOpacity(isDark ? 0.25 : 0.12),
+                    primaryColor.withOpacity(isDark ? 0.10 : 0.04),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-              ],
-            ])),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: primaryColor.withOpacity(0.3), width: 1.2),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.event_available_rounded, size: 20, color: primaryColor),
+                          const SizedBox(width: 8),
+                          Text(
+                            displayTimeStr,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: isDark ? Colors.white : theme.colorScheme.onSurface,
+                            ),
+                          ),
+                        ],
+                      ),
+                      InkWell(
+                        onTap: _pickAvailableSlot,
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: primaryColor,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.edit_calendar_rounded, size: 12, color: Colors.white),
+                              SizedBox(width: 4),
+                              Text('Ndrysho', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          displayPriceStr,
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: primaryColor),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.access_time_rounded, size: 12, color: isDark ? Colors.white70 : Colors.black54),
+                            const SizedBox(width: 4),
+                            Text(
+                              displayDurationStr,
+                              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black87),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            if (AuthService.instance.user?['is_admin'] == true)
+              _FieldShell(label: bookingTr(context, 'field.barber_shop_id'), child: InkWell(onTap: _pickbarberShopId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_barberShopOptions.firstWhere((e) => e['id'].toString() == _barberShopId?.toString(), orElse: () => {'id': '', 'name': bookingTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)])))),
+
+            // 1. BARBER SELECTOR
+            _FieldShell(label: bookingTr(context, 'field.barber_id'), child: InkWell(onTap: _pickbarberId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_barberOptions.firstWhere((e) => e['id'].toString() == _barberId?.toString(), orElse: () => {'id': '', 'name': bookingTr(context, 'form.select')})), style: const TextStyle(fontWeight: FontWeight.bold))), const Icon(Icons.keyboard_arrow_down_rounded)])))),
+
+            // 2. VISUAL SERVICE CHIPS SELECTOR (1-Tap Selection!)
+            _FieldShell(
+              label: '✂️ ZGJIDH SHËRBIMET (Kliko mbi shërbimin)',
+              child: _serviceOptions.isEmpty
+                  ? InkWell(
+                      onTap: _pickserviceId,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Text(bookingTr(context, 'form.select'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    )
+                  : Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _serviceOptions.map((service) {
+                          final id = int.tryParse(service['id']?.toString() ?? '');
+                          if (id == null) return const SizedBox.shrink();
+                          final isSelected = _selectedServiceIds.contains(id);
+                          final name = service['name']?.toString() ?? 'Shërbim';
+                          final price = service['price'] != null ? '${service['price']}L' : '';
+                          final duration = service['duration_minutes'] != null ? '${service['duration_minutes']}m' : '';
+
+                          return InkWell(
+                            onTap: () => _toggleServiceChip(id),
+                            borderRadius: BorderRadius.circular(12),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? primaryColor
+                                    : (isDark ? const Color(0xFF262B38) : theme.colorScheme.surfaceContainerHighest.withOpacity(0.5)),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? primaryColor
+                                      : (isDark ? const Color(0xFF3B4052) : theme.colorScheme.outlineVariant),
+                                  width: 1.2,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    isSelected ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded,
+                                    size: 16,
+                                    color: isSelected ? Colors.white : (isDark ? Colors.grey.shade300 : Colors.black87),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    name,
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: isSelected ? Colors.white : (isDark ? Colors.white : Colors.black87),
+                                    ),
+                                  ),
+                                  if (price.isNotEmpty) ...[
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '($price)',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: isSelected ? Colors.white70 : primaryColor,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+            ),
+
+            // 3. CUSTOMER SELECTOR WITH QUICK INLINE ADD
+            _FieldShell(
+              label: bookingTr(context, 'field.customer_id'),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: _pickcustomerId,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _displayName(_customerOptions.firstWhere((e) => e['id'].toString() == _customerId?.toString(), orElse: () => {'id': '', 'name': bookingTr(context, 'form.select')})),
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            const Icon(Icons.keyboard_arrow_down_rounded),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filledTonal(
+                    tooltip: 'Shto Klient të Ri',
+                    icon: const Icon(Icons.person_add_alt_1_rounded, size: 20),
+                    onPressed: () async {
+                      final newCust = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => const CustomerFormPage()));
+                      if (newCust == true) {
+                        _customerOptions = await repository.lookup('customers');
+                        if (mounted) setState(() {});
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            _FieldShell(
+              label: bookingTr(context, 'field.appointment_at'),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  InkWell(
+                    onTap: _pickAvailableSlot,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InputDecorator(
+                      decoration: const InputDecoration(border: InputBorder.none, isDense: true, suffixIcon: Icon(Icons.event_available_rounded)),
+                      child: Text(
+                        _appointmentAtController.text.isEmpty ? bookingTr(context, 'form.select_datetime') : _appointmentAtController.text,
+                        style: TextStyle(color: _appointmentAtController.text.isEmpty ? Theme.of(context).colorScheme.onSurfaceVariant : null, fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                    ),
+                  ),
+                  if (_slotWarning != null) ...[
+                    const SizedBox(height: 6),
+                    InkWell(
+                      onTap: _pickAvailableSlot,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(color: Colors.red.withOpacity(0.12), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.red.withOpacity(0.5))),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 16),
+                            const SizedBox(width: 6),
+                            Expanded(child: Text(_slotWarning!, style: const TextStyle(color: Colors.red, fontSize: 11.5, fontWeight: FontWeight.bold))),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
             _FieldShell(label: bookingTr(context, 'field.status'), child: DropdownButtonFormField<String>(value: ['pending', 'confirmed', 'completed', 'cancelled', 'no-show'].contains(_status) ? _status : null, items: ['pending', 'confirmed', 'completed', 'cancelled', 'no-show'].map((v) => DropdownMenuItem<String>(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => _status = v), validator: (v) { if (v == null || v.isEmpty) return bookingTr(context, 'form.select'); return null; }, decoration: const InputDecoration(border: InputBorder.none, isDense: true))),
             _FieldShell(label: bookingTr(context, 'field.total_price'), child: TextFormField(controller: _totalPriceController, keyboardType: const TextInputType.numberWithOptions(decimal: true), inputFormatters: [TextInputFormatter.withFunction((oldValue, newValue) { final text = newValue.text; if (text.isEmpty || RegExp(r'^\d*\.?\d{0,2}$').hasMatch(text)) return newValue; return oldValue; })],  decoration: InputDecoration(hintText: bookingTr(context, 'field.total_price'), border: InputBorder.none, isDense: true), validator: (v) { if (v == null || v.trim().isEmpty) return bookingTr(context, 'form.required'); if (v != null && v.isNotEmpty && (double.tryParse(v) == null || !RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(v))) return 'Enter a valid number with up to 2 decimals';  return null; })),
             _FieldShell(label: bookingTr(context, 'field.notes'), child: TextFormField(controller: _notesController,  decoration: InputDecoration(hintText: bookingTr(context, 'field.notes'), border: InputBorder.none, isDense: true), validator: (v) {  return null; })),
             _FieldShell(label: bookingTr(context, 'field.source'), child: DropdownButtonFormField<String>(value: ['online', 'walk-in', 'phone'].contains(_source) ? _source : null, items: ['online', 'walk-in', 'phone'].map((v) => DropdownMenuItem<String>(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => _source = v), validator: (v) { if (v == null || v.isEmpty) return bookingTr(context, 'form.select'); return null; }, decoration: const InputDecoration(border: InputBorder.none, isDense: true))),
 
+            // Toggle for SMS Notification
+            Container(
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E212B) : theme.colorScheme.surfaceContainerHighest.withOpacity(.5),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF3B4052) : theme.colorScheme.outlineVariant,
+                  width: 1.2,
+                ),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: SwitchListTile.adaptive(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                title: Row(
+                  children: [
+                    Icon(Icons.sms_rounded, size: 18, color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Dërgo SMS Njoftimi',
+                      style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                subtitle: Text(
+                  _sendSms ? 'Automatike: Dërgohet SMS konfirmimi & rikujtesa' : 'Mos dërgo SMS njoftimi për këtë rezervim',
+                  style: TextStyle(fontSize: 11, color: _sendSms ? Colors.green.shade700 : Colors.grey),
+                ),
+                value: _sendSms,
+                onChanged: (v) => setState(() => _sendSms = v),
+              ),
+            ),
+
             const SizedBox(height: 14),
-            BlocBuilder<BookingCubit, BookingState>(builder: (context, state) => PremiumButton(onPressed: () => _save(context), label: state is BookingSaving ? bookingTr(context, 'form.saving') : bookingTr(context, 'form.save'), icon: Icons.check_rounded, loading: state is BookingSaving, expand: true)),
+            BlocBuilder<BookingCubit, BookingState>(
+              builder: (context, state) => PremiumButton(
+                onPressed: () => _save(context),
+                label: state is BookingSaving ? bookingTr(context, 'form.saving') : 'Krijo Rezervimin ($displayPriceStr)',
+                icon: Icons.check_circle_rounded,
+                loading: state is BookingSaving,
+                expand: true,
+              ),
+            ),
           ]))),
         ),
       ),
@@ -900,6 +971,7 @@ class _BookingFormPageState extends State<BookingFormPage> {
     super.dispose();
   }
 }
+
 class _FormHeader extends StatelessWidget {
   final bool isEdit;
   const _FormHeader({required this.isEdit});
@@ -927,24 +999,10 @@ class _FieldShell extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w800,
-              color: isDark ? theme.colorScheme.primary : theme.colorScheme.primary.withOpacity(0.85),
-            ),
-          ),
-          const SizedBox(height: 2),
+          Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurfaceVariant)),
           child,
         ],
       ),
     );
   }
-}
-
-class _FilePickerCard extends StatelessWidget {
-  final String? current, path; final VoidCallback onPick;
-  const _FilePickerCard({this.current, this.path, required this.onPick});
-  @override Widget build(BuildContext context) => InkWell(onTap: onPick, borderRadius: BorderRadius.circular(20), child: Container(height: 150, margin: const EdgeInsets.only(bottom: 14), decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(.25)), child: path != null ? ClipRRect(borderRadius: BorderRadius.circular(20), child: Image.file(File(path!), fit: BoxFit.cover, width: double.infinity)) : current != null ? ClipRRect(borderRadius: BorderRadius.circular(20), child: Image.network('${ApiService.serverUrl}/$current', fit: BoxFit.cover, width: double.infinity)) : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.cloud_upload_outlined, size: 34), SizedBox(height: 8), Text('Tap to choose image', style: TextStyle(fontWeight: FontWeight.w700)), SizedBox(height: 3), Text('PNG, JPG', style: TextStyle(fontSize: 11, color: Colors.grey))])));
 }
