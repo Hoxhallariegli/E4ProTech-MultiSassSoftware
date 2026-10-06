@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_gateway/services/api_service.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
-import 'package:mobile_gateway/l10n/device_token_localization.dart';
 
 class DeviceTokenCard extends StatelessWidget {
   final Map<String, dynamic> item;
@@ -9,51 +7,109 @@ class DeviceTokenCard extends StatelessWidget {
   final VoidCallback? onDelete;
   const DeviceTokenCard({super.key, required this.item, this.onTap, this.onDelete});
 
-  String get title {
-    final value = (item['name'] ?? item['title'] ?? 'ID: ${item['id']}').toString();
-    return value.toString().trim().isEmpty ? 'ID: ' + item['id'].toString() : value.toString();
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = theme.colorScheme.primary;
+
+    final deviceName = (item['device_name'] ?? item['name'] ?? 'Pajisje Mobile').toString();
+    final userName = (item['user_name'] ?? item['user']?['name'] ?? '').toString();
+    final platform = (item['platform'] ?? 'android').toString().toUpperCase();
+    final isGateway = item['is_sms_gateway'] == true || item['is_sms_gateway'] == 1 || item['is_sms_gateway'] == '1';
+
+    const gatewayColor = Color(0xFF059669);
+
     return PremiumCard(
       onTap: onTap,
-      padding: const EdgeInsets.all(14),
-      child: Row(children: [
-          _Avatar(title: title),
-        const SizedBox(width: 14),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 7),
-          Wrap(spacing: 6, runSpacing: 6, children: [_InfoChip(label: device_tokenTr(context, 'field.fcm_token'), value: item['fcm_token']?.toString() ?? '-'),
-_InfoChip(label: device_tokenTr(context, 'field.platform'), value: item['platform']?.toString() ?? '-'),
-_InfoChip(label: device_tokenTr(context, 'field.last_used_at'), value: item['last_used_at']?.toString() ?? '-'),]),
-        ])),
-        if (onTap != null || onDelete != null)
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'edit' && onTap != null) onTap!();
-              if (value == 'delete' && onDelete != null) onDelete!();
-            },
-            itemBuilder: (_) => [
-              if (onTap != null) PopupMenuItem(value: 'edit', child: Text(device_tokenTr(context, 'list.edit'))),
-              if (onDelete != null) PopupMenuItem(value: 'delete', child: Text(device_tokenTr(context, 'list.delete'))),
-            ],
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: isGateway ? gatewayColor.withOpacity(0.15) : primaryColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              isGateway ? Icons.smartphone_rounded : Icons.phone_android_rounded,
+              color: isGateway ? gatewayColor : primaryColor,
+              size: 24,
+            ),
           ),
-      ]),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        deviceName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: isDark ? Colors.white : theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    if (isGateway)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: gatewayColor.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: gatewayColor.withOpacity(0.4)),
+                        ),
+                        child: const Text(
+                          '📱 SMS GATEWAY',
+                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: gatewayColor),
+                        ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          platform,
+                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurfaceVariant),
+                        ),
+                      ),
+                  ],
+                ),
+                if (userName.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    'Përdoruesi: $userName',
+                    style: TextStyle(fontSize: 11.5, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (onTap != null || onDelete != null)
+            PopupMenuButton<String>(
+              padding: EdgeInsets.zero,
+              icon: Icon(Icons.more_vert_rounded, color: isDark ? Colors.white70 : Colors.black54),
+              onSelected: (value) {
+                if (value == 'edit' && onTap != null) onTap!();
+                if (value == 'delete' && onDelete != null) onDelete!();
+              },
+              itemBuilder: (_) => [
+                if (onTap != null) const PopupMenuItem(value: 'edit', child: Text('✏️ Edito')),
+                if (onDelete != null) const PopupMenuItem(value: 'delete', child: Text('🗑️ Fshi')),
+              ],
+            ),
+        ],
+      ),
     );
   }
-}
-
-class _Avatar extends StatelessWidget {
-  final String title;
-  const _Avatar({required this.title});
-  @override Widget build(BuildContext context) => Container(width: 58, height: 58, decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primaryContainer, Theme.of(context).colorScheme.secondaryContainer]), borderRadius: BorderRadius.circular(17)), child: Center(child: Text(title.isEmpty ? '?' : title.substring(0,1).toUpperCase(), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900))));
-}
-
-class _InfoChip extends StatelessWidget {
-  final String label, value;
-  const _InfoChip({required this.label, required this.value});
-  @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(8)), child: Text('$label: $value', style: TextStyle(fontSize: 10.5, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600)));
 }

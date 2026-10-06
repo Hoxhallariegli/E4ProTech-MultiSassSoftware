@@ -59,10 +59,18 @@ class MessageTemplate extends Model
         }
         $locale = in_array(strtolower($locale), ['en', 'sq'], true) ? strtolower($locale) : 'sq';
 
+        // 1. Try shop-specific template for this exact type
         $templateRecord = static::where('barber_shop_id', $shopId)
             ->where('channel', 'sms')
             ->where('type', $type)
             ->first();
+
+        // 2. Fallback to global template for this exact type if shop-specific template is missing
+        if (!$templateRecord) {
+            $templateRecord = static::where('channel', 'sms')
+                ->where('type', $type)
+                ->first();
+        }
 
         $contentRaw = $templateRecord?->content;
         $templateText = null;

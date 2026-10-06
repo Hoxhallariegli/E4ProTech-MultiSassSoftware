@@ -160,23 +160,19 @@ class SendFirebaseNotificationListener
                             }
                         }
 
-                        // Find Gateway device for this shop OR user of this shop
+                        // Find active SMS Gateway device for this shop or shop owner (supports 1 phone for multiple shops OR multiple phones per shop)
                         $gatewayDevice = DeviceToken::where('is_sms_gateway', true)
+                            ->whereNotNull('fcm_token')
                             ->where(function($q) use ($shopId) {
                                 $q->where('barber_shop_id', $shopId)
                                   ->orWhereHas('user', function($userQuery) use ($shopId) {
-                                      $userQuery->where('barber_shop_id', $shopId);
+                                      $userQuery->where('barber_shop_id', $shopId)
+                                                ->orWhere('is_admin', true)
+                                                ->orWhere('is_global_admin', true);
                                   });
                             })
+                            ->orderByDesc('last_used_at')
                             ->first();
-
-                        // Global fallback if no shop-specific gateway device found
-                        if (!$gatewayDevice || !$gatewayDevice->fcm_token) {
-                            $gatewayDevice = DeviceToken::where('is_sms_gateway', true)->whereNotNull('fcm_token')->first();
-                            if ($gatewayDevice) {
-                                Log::info("ℹ️ [SMS Gateway Fallback] Using global active SMS Gateway device #{$gatewayDevice->id} ({$gatewayDevice->device_name}) for Shop #{$shopId}");
-                            }
-                        }
 
                         if ($gatewayDevice && $gatewayDevice->fcm_token) {
                             $fcmSent = $this->firebaseService->sendDataMessage(
@@ -188,9 +184,9 @@ class SendFirebaseNotificationListener
                                     'body' => (string) $parsedConfirmation,
                                 ]
                             );
-                            Log::info("📱 [STEP 4b] Triggered silent SEND_SMS FCM data message directly to gateway device [{$gatewayDevice->device_name}] (Token: {$gatewayDevice->fcm_token}) for shop #{$shopId}. FCM Status: " . ($fcmSent ? 'SUCCESS' : 'FAILED'));
+                            Log::info("📱 [STEP 4b] Triggered silent SEND_SMS FCM data message directly to gateway device #{$gatewayDevice->id} [{$gatewayDevice->device_name}] for Shop #{$shopId}. FCM Status: " . ($fcmSent ? 'SUCCESS' : 'FAILED'));
                         } else {
-                            Log::warning("⚠️ [STEP 4b] No active SMS Gateway device found in DB for Shop #{$shopId}. SMS queued as pending.");
+                            Log::warning("⚠️ [STEP 4b] No active SMS Gateway device found in DB for Shop #{$shopId}. SMS queued as pending for Shop #{$shopId}.");
                         }
                     }
                 }

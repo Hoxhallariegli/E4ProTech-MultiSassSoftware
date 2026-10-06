@@ -1,11 +1,6 @@
-import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
-import 'package:mobile_gateway/core/widgets/premium_image_picker.dart';
 import 'package:mobile_gateway/l10n/device_token_localization.dart';
 import '../cubit/device_token_cubit.dart';
 import '../cubit/device_token_state.dart';
@@ -24,36 +19,36 @@ class _DeviceTokenFormPageState extends State<DeviceTokenFormPage> {
   final repository = DeviceTokenRepository();
   bool _loading = true;
 
+  final _deviceNameController = TextEditingController();
   final _fcmTokenController = TextEditingController();
   String? _platform;
-  final _lastUsedAtController = TextEditingController();
+  bool _isSmsGateway = false;
 
   List<Map<String, dynamic>> _barberShopOptions = [];
   int? _barberShopId;
   List<Map<String, dynamic>> _userOptions = [];
   String? _userId;
 
-
   @override void initState() { super.initState(); _init(); }
 
   Future<void> _init() async {
+    _deviceNameController.text = widget.item?['device_name']?.toString() ?? 'Mobile Device';
     _fcmTokenController.text = widget.item?['fcm_token']?.toString() ?? '';
-    _platform = widget.item?['platform']?.toString();
-    _lastUsedAtController.text = _displayDateTime(widget.item?['last_used_at'], includeTime: true);
+    _platform = widget.item?['platform']?.toString() ?? 'android';
+    _isSmsGateway = widget.item?['is_sms_gateway'] == true || widget.item?['is_sms_gateway'] == 1 || widget.item?['is_sms_gateway'] == '1';
 
     try {
-    _barberShopOptions = await repository.lookup('barber-shops');
-    if (widget.item?['barber_shop_id'] != null) _barberShopId = int.tryParse(widget.item!['barber_shop_id'].toString());
-    if (_barberShopId == null && AuthService.instance.user?['is_admin'] != true) _barberShopId = AuthService.instance.user?['barber_shop_id'] as int?;
-    _userOptions = await repository.lookup('users');
-    if (widget.item?['user_id'] != null) _userId = widget.item!['user_id'].toString();
+      _barberShopOptions = await repository.lookup('barber-shops');
+      if (widget.item?['barber_shop_id'] != null) _barberShopId = int.tryParse(widget.item!['barber_shop_id'].toString());
+      if (_barberShopId == null && AuthService.instance.user?['is_admin'] != true) _barberShopId = AuthService.instance.user?['barber_shop_id'] as int?;
+      _userOptions = await repository.lookup('users');
+      if (widget.item?['user_id'] != null) _userId = widget.item!['user_id'].toString();
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(device_tokenTr(context, 'form.could_not_load')), behavior: SnackBarBehavior.floating));
     } finally { if (mounted) setState(() => _loading = false); }
   }
 
   Future<void> _pickbarberShopId() async {
-    if ("barber_shop_id" == "barber_shop_id" && AuthService.instance.user?['is_admin'] != true) return;
+    if (AuthService.instance.user?['is_admin'] != true) return;
     var filtered = List<Map<String, dynamic>>.from(_barberShopOptions);
     final selected = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -68,8 +63,10 @@ class _DeviceTokenFormPageState extends State<DeviceTokenFormPage> {
       ])))),
     );
     if (selected != null) setState(() => _barberShopId = int.tryParse(selected['id'].toString()));
-  }  Future<void> _pickuserId() async {
-    if ("user_id" == "barber_shop_id" && AuthService.instance.user?['is_admin'] != true) return;
+  }
+
+  Future<void> _pickuserId() async {
+    if (AuthService.instance.user?['is_admin'] != true) return;
     var filtered = List<Map<String, dynamic>>.from(_userOptions);
     final selected = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -85,60 +82,6 @@ class _DeviceTokenFormPageState extends State<DeviceTokenFormPage> {
     );
     if (selected != null) setState(() => _userId = selected['id'].toString());
   }
-  Future<void> _pickDate(TextEditingController controller) async {
-    final initial = _parseDisplayDate(controller.text) ?? DateTime.now();
-    final picked = await showDatePicker(context: context, initialDate: initial, firstDate: DateTime(1900), lastDate: DateTime(2200));
-    if (picked != null && mounted) setState(() => controller.text = _formatDisplayDate(picked, includeTime: false));
-  }
-
-  Future<void> _pickDateTime(TextEditingController controller) async {
-    final initial = _parseDisplayDate(controller.text) ?? DateTime.now();
-    final date = await showDatePicker(context: context, initialDate: initial, firstDate: DateTime(1900), lastDate: DateTime(2200));
-    if (date == null || !mounted) return;
-    final time = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(initial));
-    if (time == null || !mounted) return;
-    final value = DateTime(date.year, date.month, date.day, time.hour, time.minute);
-    setState(() => controller.text = _formatDisplayDate(value, includeTime: true));
-  }
-
-  DateTime? _parseDisplayDate(String value) {
-    final text = value.trim();
-    if (text.isEmpty) return null;
-    final display = RegExp(r'^(\d{2})/(\d{2})/(\d{4})(?: (\d{2}):(\d{2}))?$').firstMatch(text);
-    if (display != null) {
-      return DateTime(
-        int.parse(display.group(3)!),
-        int.parse(display.group(2)!),
-        int.parse(display.group(1)!),
-        int.tryParse(display.group(4) ?? '0') ?? 0,
-        int.tryParse(display.group(5) ?? '0') ?? 0,
-      );
-    }
-    return DateTime.tryParse(text)?.toLocal();
-  }
-
-  String _formatDisplayDate(DateTime value, {required bool includeTime}) {
-    final date = '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
-    if (!includeTime) return date;
-    return '$date ${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
-  }
-
-  String _displayDateTime(dynamic value, {required bool includeTime}) {
-    if (value == null || value.toString().trim().isEmpty) return '';
-    final parsed = DateTime.tryParse(value.toString())?.toLocal();
-    return parsed == null ? value.toString() : _formatDisplayDate(parsed, includeTime: includeTime);
-  }
-
-  String? _apiDateValue(String value) {
-    final parsed = _parseDisplayDate(value);
-    if (parsed == null) return null;
-    return '${parsed.year.toString().padLeft(4, '0')}-${parsed.month.toString().padLeft(2, '0')}-${parsed.day.toString().padLeft(2, '0')}';
-  }
-
-  String? _apiDateTimeValue(String value) {
-    final parsed = _parseDisplayDate(value);
-    return parsed?.toIso8601String();
-  }
 
   String _displayName(Map<String, dynamic> item) {
     return (item['name'] ?? item['title'] ?? 'ID: ' + item['id'].toString()).toString();
@@ -149,17 +92,19 @@ class _DeviceTokenFormPageState extends State<DeviceTokenFormPage> {
     final payload = <String, dynamic>{};
     payload['barber_shop_id'] = _barberShopId;
     payload['user_id'] = _userId;
-    payload['fcm_token'] = _fcmTokenController.text;
+    payload['device_name'] = _deviceNameController.text.trim();
+    payload['fcm_token'] = _fcmTokenController.text.trim();
     payload['platform'] = _platform;
-    payload['last_used_at'] = _lastUsedAtController.text.isEmpty ? null : _apiDateTimeValue(_lastUsedAtController.text);
-
-    final files = <String, String>{};
+    payload['is_sms_gateway'] = _isSmsGateway;
 
     context.read<DeviceTokenCubit>().save(payload, id: widget.item?['id']);
   }
 
   @override Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    const gatewayColor = Color(0xFF059669);
+
     return BlocProvider(
       create: (_) => DeviceTokenCubit(repository),
       child: BlocListener<DeviceTokenCubit, DeviceTokenState>(
@@ -182,13 +127,35 @@ class _DeviceTokenFormPageState extends State<DeviceTokenFormPage> {
           body: _loading ? const Center(child: CircularProgressIndicator.adaptive()) : Form(key: _formKey, child: Builder(builder: (formContext) => ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 120), children: [
             _FormHeader(isEdit: widget.item != null),
             const SizedBox(height: 22),
-            (AuthService.instance.user?['is_admin'] == true) 
+            (AuthService.instance.user?['is_admin'] == true)
               ? _FieldShell(label: device_tokenTr(context, 'field.barber_shop_id'), child: InkWell(onTap: _pickbarberShopId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_barberShopOptions.firstWhere((e) => e['id'].toString() == _barberShopId?.toString(), orElse: () => {'id': '', 'name': device_tokenTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)]))))
               : _FieldShell(label: device_tokenTr(context, 'field.barber_shop_id'), child: Container(padding: const EdgeInsets.all(16), width: double.infinity, decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5), border: Border.all(color: theme.colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Text(AuthService.instance.user?['business']?['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)))),
             _FieldShell(label: device_tokenTr(context, 'field.user_id'), child: InkWell(onTap: _pickuserId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_userOptions.firstWhere((e) => e['id'].toString() == _userId?.toString(), orElse: () => {'id': '', 'name': device_tokenTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)])))),
-            _FieldShell(label: device_tokenTr(context, 'field.fcm_token'), child: TextFormField(controller: _fcmTokenController,  decoration: InputDecoration(hintText: device_tokenTr(context, 'field.fcm_token'), border: InputBorder.none, isDense: true), validator: (v) { if (v == null || v.trim().isEmpty) return device_tokenTr(context, 'form.required');  return null; })),
+            _FieldShell(label: 'Emri i Pajisjes (Device Name)', child: TextFormField(controller: _deviceNameController, decoration: const InputDecoration(hintText: 'p.sh. Mobile Device (Mario) / Telefoni Banak', border: InputBorder.none, isDense: true), validator: (v) { if (v == null || v.trim().isEmpty) return device_tokenTr(context, 'form.required'); return null; })),
+            _FieldShell(label: device_tokenTr(context, 'field.fcm_token'), child: TextFormField(controller: _fcmTokenController, decoration: InputDecoration(hintText: device_tokenTr(context, 'field.fcm_token'), border: InputBorder.none, isDense: true), validator: (v) { if (v == null || v.trim().isEmpty) return device_tokenTr(context, 'form.required'); return null; })),
             _FieldShell(label: device_tokenTr(context, 'field.platform'), child: DropdownButtonFormField<String>(value: ['android', 'ios'].contains(_platform) ? _platform : null, items: ['android', 'ios'].map((v) => DropdownMenuItem<String>(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => _platform = v), validator: (v) { if (v == null || v.isEmpty) return device_tokenTr(context, 'form.select'); return null; }, decoration: const InputDecoration(border: InputBorder.none, isDense: true))),
-            _FieldShell(label: device_tokenTr(context, 'field.last_used_at'), child: InkWell(onTap: () => _pickDateTime(_lastUsedAtController), borderRadius: BorderRadius.circular(12), child: InputDecorator(decoration: InputDecoration(border: InputBorder.none, isDense: true, suffixIcon: const Icon(Icons.event_rounded)), child: Text(_lastUsedAtController.text.isEmpty ? device_tokenTr(context, 'form.select_datetime') : _lastUsedAtController.text, style: TextStyle(color: _lastUsedAtController.text.isEmpty ? Theme.of(context).colorScheme.onSurfaceVariant : null, fontWeight: FontWeight.w600))))),
+
+            Container(
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E212B) : theme.colorScheme.surfaceContainerHighest.withOpacity(.5),
+                border: Border.all(color: isDark ? const Color(0xFF3B4052) : theme.colorScheme.outlineVariant, width: 1.2),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: SwitchListTile.adaptive(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                title: const Row(
+                  children: [
+                    Icon(Icons.smartphone_rounded, size: 18, color: gatewayColor),
+                    SizedBox(width: 8),
+                    Text('Cakto si SMS Gateway', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                subtitle: Text(_isSmsGateway ? 'Pajisja është SMS Gateway aktiv për dërgimin e mesazheve' : 'Pajisje standarde për njoftime push', style: TextStyle(fontSize: 11, color: _isSmsGateway ? gatewayColor : Colors.grey)),
+                value: _isSmsGateway,
+                onChanged: (v) => setState(() => _isSmsGateway = v),
+              ),
+            ),
 
             const SizedBox(height: 14),
             BlocBuilder<DeviceTokenCubit, DeviceTokenState>(builder: (context, state) => PremiumButton(onPressed: () => _save(context), label: state is DeviceTokenSaving ? device_tokenTr(context, 'form.saving') : device_tokenTr(context, 'form.save'), icon: Icons.check_rounded, loading: state is DeviceTokenSaving, expand: true)),
@@ -199,11 +166,12 @@ class _DeviceTokenFormPageState extends State<DeviceTokenFormPage> {
   }
 
   @override void dispose() {
+    _deviceNameController.dispose();
     _fcmTokenController.dispose();
-    _lastUsedAtController.dispose();
     super.dispose();
   }
 }
+
 class _FormHeader extends StatelessWidget {
   final bool isEdit;
   const _FormHeader({required this.isEdit});
@@ -214,10 +182,4 @@ class _FieldShell extends StatelessWidget {
   final String label; final Widget child;
   const _FieldShell({required this.label, required this.child});
   @override Widget build(BuildContext context) => Container(margin: const EdgeInsets.only(bottom: 14), padding: const EdgeInsets.fromLTRB(16, 12, 16, 6), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(.35), border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(.7)), borderRadius: BorderRadius.circular(18)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurfaceVariant)), child]));
-}
-
-class _FilePickerCard extends StatelessWidget {
-  final String? current, path; final VoidCallback onPick;
-  const _FilePickerCard({this.current, this.path, required this.onPick});
-  @override Widget build(BuildContext context) => InkWell(onTap: onPick, borderRadius: BorderRadius.circular(20), child: Container(height: 150, margin: const EdgeInsets.only(bottom: 14), decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(.25)), child: path != null ? ClipRRect(borderRadius: BorderRadius.circular(20), child: Image.file(File(path!), fit: BoxFit.cover, width: double.infinity)) : current != null ? ClipRRect(borderRadius: BorderRadius.circular(20), child: Image.network('${ApiService.serverUrl}/$current', fit: BoxFit.cover, width: double.infinity)) : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.cloud_upload_outlined, size: 34), SizedBox(height: 8), Text('Tap to choose image', style: TextStyle(fontWeight: FontWeight.w700)), SizedBox(height: 3), Text('PNG, JPG', style: TextStyle(fontSize: 11, color: Colors.grey))])));
 }
