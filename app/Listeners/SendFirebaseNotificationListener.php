@@ -10,6 +10,7 @@ use App\Models\MessageTemplate;
 use App\Models\DeviceToken;
 use App\Services\FirebaseService;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class SendFirebaseNotificationListener
 {
@@ -70,12 +71,12 @@ class SendFirebaseNotificationListener
                         ->get();
 
                     // 1. Direct Confirmation SMS (Immediate)
-                    $existingConfirmation = $existingSmsQueues->first(fn($q) => !str_contains($q->message_content, 'Rikujtes') && !str_contains($q->message_content, 'Reminder'));
+                    $existingConfirmation = $existingSmsQueues->first(fn($q) => ($q->template_type ?? $q->resolved_template_type) === 'confirmation');
 
                     $queue = $existingConfirmation;
 
                     if (!$queue) {
-                        $queue = MessageQueue::create([
+                        $queueData = [
                             'barber_shop_id' => $booking->barber_shop_id,
                             'booking_id' => $booking->id,
                             'channel' => 'sms',
@@ -84,17 +85,25 @@ class SendFirebaseNotificationListener
                             'scheduled_at' => now(),
                             'status' => 'pending',
                             'retry_count' => 0,
-                        ]);
+                        ];
+                        if (Schema::hasColumn('message_queues', 'template_type')) {
+                            $queueData['template_type'] = 'confirmation';
+                        }
+                        $queue = MessageQueue::create($queueData);
                         \App\Models\AuditTrail::log($queue, 'create', 'MessageQueues');
 
-                        $msgLog = MessageLog::create([
+                        $logData = [
                             'barber_shop_id' => $booking->barber_shop_id,
                             'customer_id' => $booking->customer_id,
                             'channel' => 'sms',
                             'message' => $parsedConfirmation,
                             'status' => 'pending',
                             'sent_at' => null,
-                        ]);
+                        ];
+                        if (Schema::hasColumn('message_logs', 'template_type')) {
+                            $logData['template_type'] = 'confirmation';
+                        }
+                        $msgLog = MessageLog::create($logData);
                         \App\Models\AuditTrail::log($msgLog, 'create', 'MessageLogs');
 
                         Log::info("📝 [STEP 4a] SMS Confirmation Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
@@ -102,7 +111,7 @@ class SendFirebaseNotificationListener
 
                     // 2. Scheduled Reminder SMS (Pending until reminder hours before appointment)
                     $shop = $booking->barberShop;
-                    if ($booking->appointment_at && $booking->appointment_at->isFuture()) {
+                    if ($booking->appointment_at) {
                         $rawVal = $shop?->reminder_hours_before;
                         $reminderMins = 30; // Default minimum 30 minutes before appointment if unconfigured
 
@@ -124,10 +133,10 @@ class SendFirebaseNotificationListener
 
                         $parsedReminder = MessageTemplate::parseForBooking($booking, 'reminder');
 
-                        $existingReminder = $existingSmsQueues->first(fn($q) => str_contains($q->message_content, 'Rikujtes') || str_contains($q->message_content, 'Reminder'));
+                        $existingReminder = $existingSmsQueues->first(fn($q) => ($q->template_type ?? $q->resolved_template_type) === 'reminder');
 
                         if (!$existingReminder) {
-                            $reminderQueue = MessageQueue::create([
+                            $reminderQueueData = [
                                 'barber_shop_id' => $booking->barber_shop_id,
                                 'booking_id' => $booking->id,
                                 'channel' => 'sms',
@@ -136,17 +145,25 @@ class SendFirebaseNotificationListener
                                 'scheduled_at' => $scheduledReminderTime,
                                 'status' => 'pending',
                                 'retry_count' => 0,
-                            ]);
+                            ];
+                            if (Schema::hasColumn('message_queues', 'template_type')) {
+                                $reminderQueueData['template_type'] = 'reminder';
+                            }
+                            $reminderQueue = MessageQueue::create($reminderQueueData);
                             \App\Models\AuditTrail::log($reminderQueue, 'create', 'MessageQueues');
 
-                            $reminderLog = MessageLog::create([
+                            $reminderLogData = [
                                 'barber_shop_id' => $booking->barber_shop_id,
                                 'customer_id' => $booking->customer_id,
                                 'channel' => 'sms',
                                 'message' => $parsedReminder,
                                 'status' => 'pending',
                                 'sent_at' => null,
-                            ]);
+                            ];
+                            if (Schema::hasColumn('message_logs', 'template_type')) {
+                                $reminderLogData['template_type'] = 'reminder';
+                            }
+                            $reminderLog = MessageLog::create($reminderLogData);
                             \App\Models\AuditTrail::log($reminderLog, 'create', 'MessageLogs');
 
                             Log::info("⏰ [STEP 4a] SMS Reminder Message scheduled for Booking #{$booking->id} at {$scheduledReminderTime} (Shop #{$booking->barber_shop_id})");
