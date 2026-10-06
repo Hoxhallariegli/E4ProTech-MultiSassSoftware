@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Events\BookingChanged;
+use App\Events\FirebaseNotificationRequested;
 use App\Models\Booking;
 use App\Models\Customer;
 use App\Services\NotificationRouter;
@@ -15,7 +16,13 @@ class BookingObserver
             \Illuminate\Support\Facades\Log::info("📌 [STEP 1] BookingObserver::created triggered for Booking #{$item->id} (Shop #{$item->barber_shop_id})");
             Customer::recalculateStats($item->customer_id);
             event(new BookingChanged($item, 'created'));
-            app(NotificationRouter::class)->maybeNotify('bookings.created', $item, 'created');
+
+            event(new FirebaseNotificationRequested(
+                event: 'bookings.created',
+                modelClass: Booking::class,
+                modelId: $item->getKey(),
+                action: 'created',
+            ));
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning("❌ Observer (created) failure for Booking #{$item->id}: " . $e->getMessage());
         }
@@ -29,7 +36,13 @@ class BookingObserver
                 Customer::recalculateStats((int) $item->getOriginal('customer_id'));
             }
             event(new BookingChanged($item, 'updated'));
-            app(NotificationRouter::class)->maybeNotify('bookings.updated', $item, 'updated');
+
+            event(new FirebaseNotificationRequested(
+                event: 'bookings.updated',
+                modelClass: Booking::class,
+                modelId: $item->getKey(),
+                action: 'updated',
+            ));
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning("Observer (updated) failure for Booking: " . $e->getMessage());
         }
@@ -40,7 +53,13 @@ class BookingObserver
         try {
             Customer::recalculateStats($item->customer_id);
             event(new BookingChanged($item, 'deleted'));
-            app(NotificationRouter::class)->maybeNotify('bookings.deleted', $item, 'deleted');
+
+            event(new FirebaseNotificationRequested(
+                event: 'bookings.deleted',
+                modelClass: Booking::class,
+                modelId: $item->getKey(),
+                action: 'deleted',
+            ));
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning("Observer (deleted) failure for Booking: " . $e->getMessage());
         }
