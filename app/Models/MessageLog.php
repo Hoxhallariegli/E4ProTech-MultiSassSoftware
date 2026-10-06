@@ -35,10 +35,12 @@ class MessageLog extends Model
 
     public function getResolvedTemplateTypeAttribute(): string
     {
-        if ($this->template_type) {
-            return $this->template_type;
+        $type = $this->attributes['template_type'] ?? null;
+        if ($type) {
+            return (string) $type;
         }
-        $content = $this->message ?? '';
+
+        $content = $this->attributes['message'] ?? '';
         if (str_contains($content, 'Rikujtes') || str_contains($content, 'Reminder')) {
             return 'reminder';
         }

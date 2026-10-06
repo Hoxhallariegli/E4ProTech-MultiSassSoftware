@@ -38,10 +38,12 @@ class MessageQueue extends Model
 
     public function getResolvedTemplateTypeAttribute(): string
     {
-        if ($this->template_type) {
-            return $this->template_type;
+        $type = $this->attributes['template_type'] ?? null;
+        if ($type) {
+            return (string) $type;
         }
-        $content = $this->message_content ?? '';
+
+        $content = $this->attributes['message_content'] ?? '';
         if (str_contains($content, 'Rikujtes') || str_contains($content, 'Reminder')) {
             return 'reminder';
         }
