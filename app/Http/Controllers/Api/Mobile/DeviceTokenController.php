@@ -31,7 +31,7 @@ class DeviceTokenController extends Controller
             'barber_shop_id' => 'nullable|integer',
         ]);
 
-        $user = $request->user() ?: auth()->user();
+        $user = $request->user() ?: auth()->user() ?: auth('web')->user();
         $fcmToken = $request->input('fcm_token');
         $platform = $request->input('platform', 'android');
         $deviceName = $request->input('device_name', 'Mobile Device');
@@ -98,7 +98,7 @@ class DeviceTokenController extends Controller
             'barber_shop_id' => 'nullable|integer',
         ]);
 
-        $user = $request->user() ?: auth()->user();
+        $user = $request->user() ?: auth()->user() ?: auth('web')->user();
         $fcmToken = $request->input('fcm_token');
         $isSmsGateway = $request->boolean('is_sms_gateway');
 
