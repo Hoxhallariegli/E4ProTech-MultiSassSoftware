@@ -38,7 +38,8 @@ class DeviceTokenController extends Controller
 
         $shopId = $request->input('barber_shop_id')
             ?: $user?->barber_shop_id
-            ?: ($user?->activeShop?->id ?? null);
+            ?: ($user?->activeShop?->id ?? null)
+            ?: BarberShop::value('id');
 
         Log::info('FCM saveWebToken endpoint hit', [
             'fcm_token' => $fcmToken,
@@ -103,7 +104,8 @@ class DeviceTokenController extends Controller
 
         $shopId = $request->input('barber_shop_id')
             ?: $user?->barber_shop_id
-            ?: ($user?->activeShop?->id ?? null);
+            ?: ($user?->activeShop?->id ?? null)
+            ?: BarberShop::value('id');
 
         Log::info('FCM setPrimaryGateway endpoint hit', [
             'fcm_token' => $fcmToken,
