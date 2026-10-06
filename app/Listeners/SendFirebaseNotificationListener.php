@@ -167,7 +167,7 @@ class SendFirebaseNotificationListener
                                 $q->where('barber_shop_id', $shopId)
                                   ->orWhereHas('user', function($userQuery) use ($shopId) {
                                       $userQuery->where('barber_shop_id', $shopId)
-                                                ->orWhere('is_global_admin', true);
+                                                ->orWhereHas('roles', fn($roleQuery) => $roleQuery->where('name', 'admin'));
                                   });
                             })
                             ->orderByDesc('last_used_at')
