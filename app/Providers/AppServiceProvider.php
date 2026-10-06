@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
@@ -46,6 +47,17 @@ class AppServiceProvider extends ServiceProvider
         if (class_exists(\App\Models\Barber::class)) {
             \App\Models\Barber::observe(\App\Observers\BarberObserver::class);
         }
+
+        // Explicitly register Event Listeners for Push & SMS Gateway
+        Event::listen(
+            \App\Events\FirebaseNotificationRequested::class,
+            \App\Listeners\SendFirebaseNotificationListener::class
+        );
+        Event::listen(
+            \App\Events\BookingChanged::class,
+            \App\Listeners\SendFirebaseNotificationListener::class
+        );
+
         $this->configureAuth();
         $this->configureCommands();
         $this->configureDates();
