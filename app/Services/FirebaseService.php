@@ -111,11 +111,12 @@ class FirebaseService
 
     public function sendToShop(int $shopId, string $title, string $body, array $customData = []): int
     {
-        // Send directly to all registered FCM device tokens for this shop, or users belonging to this shop
+        // Send directly to all registered FCM device tokens for this shop, or users belonging to this shop, or global admins
         $tokens = DeviceToken::where(function($q) use ($shopId) {
                 $q->where('barber_shop_id', $shopId)
                   ->orWhereHas('user', function($userQuery) use ($shopId) {
-                      $userQuery->where('barber_shop_id', $shopId);
+                      $userQuery->where('barber_shop_id', $shopId)
+                                ->orWhere('is_global_admin', true);
                   });
             })
             ->whereNotNull('fcm_token')

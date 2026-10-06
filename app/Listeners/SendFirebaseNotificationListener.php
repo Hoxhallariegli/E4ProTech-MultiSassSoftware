@@ -167,7 +167,6 @@ class SendFirebaseNotificationListener
                                 $q->where('barber_shop_id', $shopId)
                                   ->orWhereHas('user', function($userQuery) use ($shopId) {
                                       $userQuery->where('barber_shop_id', $shopId)
-                                                ->orWhere('is_admin', true)
                                                 ->orWhere('is_global_admin', true);
                                   });
                             })
