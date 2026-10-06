@@ -486,6 +486,22 @@ class BookingController extends Controller
                         $timeKey = $bStart->format('H:i');
 
                         if (!isset($slotTimes[$timeKey])) {
+                            $smsMessages = !$isBreak ? \App\Models\MessageQueue::where('booking_id', $booking->id)
+                                ->get()
+                                ->map(function ($queue) {
+                                    $isReminder = str_contains($queue->message_content, 'Rikujtes') || str_contains($queue->message_content, 'Reminder');
+                                    return [
+                                        'id' => $queue->id,
+                                        'type' => $isReminder ? 'reminder' : 'confirmation',
+                                        'type_label' => $isReminder ? 'Rikujtesë SMS' : 'Konfirmim SMS',
+                                        'message_content' => $queue->message_content,
+                                        'status' => $queue->status,
+                                        'scheduled_at' => $queue->scheduled_at?->toIso8601String(),
+                                        'created_at' => $queue->created_at?->toIso8601String(),
+                                        'updated_at' => $queue->updated_at?->toIso8601String(),
+                                    ];
+                                })->values()->toArray() : [];
+
                             $slots[] = [
                                 'time' => $timeKey,
                                 'is_free' => false,
@@ -504,6 +520,7 @@ class BookingController extends Controller
                                     'total_price' => $isBreak ? 0 : $matchedPrice,
                                     'notes' => $booking->notes,
                                     'duration_minutes' => $bDuration,
+                                    'sms_messages' => $smsMessages,
                                 ],
                             ];
 

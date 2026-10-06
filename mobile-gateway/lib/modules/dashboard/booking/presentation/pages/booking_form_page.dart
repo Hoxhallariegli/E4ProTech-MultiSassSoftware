@@ -948,6 +948,64 @@ class _BookingFormPageState extends State<BookingFormPage> {
               ),
             ),
 
+            // 🌟 DETAILED SMS MESSAGES STATUS SECTION FOR THIS BOOKING
+            if (widget.item?['sms_messages'] != null && (widget.item!['sms_messages'] as List).isNotEmpty) ...[
+              _FieldShell(
+                label: '📱 STATUSI I MESAZHEVE SMS',
+                child: Column(
+                  children: (widget.item!['sms_messages'] as List).map((msg) {
+                    final typeLabel = (msg['type_label'] ?? 'SMS').toString();
+                    final status = (msg['status'] ?? 'pending').toString().toLowerCase();
+                    final content = (msg['message_content'] ?? '').toString();
+                    final scheduledAt = msg['scheduled_at']?.toString();
+                    final sentAt = msg['updated_at']?.toString();
+
+                    Color color = Colors.amber.shade700;
+                    if (status == 'sent') color = Colors.green.shade600;
+                    if (status == 'failed') color = Colors.red.shade600;
+
+                    return Container(
+                      margin: const EdgeInsets.only(top: 6, bottom: 4),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: color.withOpacity(0.3)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(typeLabel, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: color)),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(color: color.withOpacity(0.15), borderRadius: BorderRadius.circular(6)),
+                                child: Text(status.toUpperCase(), style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: color)),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(content, style: TextStyle(fontSize: 11.5, height: 1.3, color: isDark ? Colors.white70 : Colors.black87)),
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              if (scheduledAt != null)
+                                Text('Planifikuar: ${_formatDisplayDate(DateTime.tryParse(scheduledAt) ?? DateTime.now(), includeTime: true)}', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                              if (status == 'sent' && sentAt != null)
+                                Text('Dërguar: ${_formatDisplayDate(DateTime.tryParse(sentAt) ?? DateTime.now(), includeTime: true)}', style: TextStyle(fontSize: 10, color: Colors.green.shade700, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+
             const SizedBox(height: 14),
             BlocBuilder<BookingCubit, BookingState>(
               builder: (context, state) => PremiumButton(

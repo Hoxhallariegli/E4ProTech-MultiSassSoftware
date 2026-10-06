@@ -21,6 +21,7 @@ class BookingCard extends StatelessWidget {
     final totalPrice = item['total_price']?.toString();
     final appointmentAtStr = item['appointment_at']?.toString();
     final source = item['source']?.toString();
+    final smsMessages = (item['sms_messages'] as List? ?? []);
 
     String formattedDate = '';
     if (appointmentAtStr != null && appointmentAtStr.isNotEmpty) {
@@ -158,6 +159,49 @@ class BookingCard extends StatelessWidget {
               ],
             ],
           ),
+
+          // SMS Messages Status Badges
+          if (smsMessages.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: smsMessages.map((msg) {
+                final typeLabel = (msg['type_label'] ?? 'SMS').toString();
+                final status = (msg['status'] ?? 'pending').toString().toLowerCase();
+
+                Color color = Colors.amber.shade700;
+                IconData icon = Icons.access_time_rounded;
+                if (status == 'sent') {
+                  color = Colors.green.shade600;
+                  icon = Icons.check_circle_rounded;
+                } else if (status == 'failed') {
+                  color = Colors.red.shade600;
+                  icon = Icons.cancel_rounded;
+                }
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: color.withOpacity(0.3), width: 1),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, size: 10, color: color),
+                      const SizedBox(width: 3),
+                      Text(
+                        '$typeLabel: ${status.toUpperCase()}',
+                        style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: color),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
         ],
       ),
     );

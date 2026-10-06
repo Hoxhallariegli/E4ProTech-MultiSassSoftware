@@ -80,6 +80,11 @@
                                             if (token) {
                                                 console.log('🔑 Web FCM Token:', token);
 
+                                                const savedToken = sessionStorage.getItem('saved_fcm_token');
+                                                if (savedToken === token) {
+                                                    return;
+                                                }
+
                                                 // Direct HTTP fetch to save Web FCM token in database
                                                 fetch('/api/mobile/device-tokens/save-web-token', {
                                                     method: 'POST',
@@ -97,6 +102,7 @@
                                                         barber_shop_id: @json(auth()->user()?->barber_shop_id)
                                                     })
                                                 }).then(r => r.json()).then(data => {
+                                                    sessionStorage.setItem('saved_fcm_token', token);
                                                     console.log('✅ Web FCM Token saved to DB:', data);
                                                 }).catch(err => {
                                                     console.error('❌ Error saving Web FCM Token to DB:', err);

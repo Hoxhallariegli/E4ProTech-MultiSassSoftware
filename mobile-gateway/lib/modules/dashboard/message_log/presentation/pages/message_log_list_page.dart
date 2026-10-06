@@ -10,7 +10,6 @@ import '../cubit/message_log_cubit.dart';
 import '../cubit/message_log_state.dart';
 import '../widgets/message_log_card.dart';
 import '../../data/message_log_repository.dart';
-import 'message_log_form_page.dart';
 
 class MessageLogListPage extends StatelessWidget {
   const MessageLogListPage({super.key});
@@ -35,7 +34,6 @@ class _MessageLogListViewState extends State<_MessageLogListView> {
   final _filters = <String, dynamic>{};
   final repository = MessageLogRepository();
   List<Map<String, dynamic>> _customerIdFilterOptions = [];
-
 
   @override
   void initState() {
@@ -78,9 +76,9 @@ class _MessageLogListViewState extends State<_MessageLogListView> {
           Align(alignment: Alignment.centerLeft, child: Text(message_logTr(context, 'list.filters'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800))),
           const SizedBox(height: 18),
           _FilterRelationDropdown(label: message_logTr(context, 'field.customer_id'), value: _filters['customer_id']?.toString(), options: _customerIdFilterOptions, onChanged: (v) => setState(() => _filters['customer_id'] = v)),
-_FilterDropdown(label: message_logTr(context, 'field.channel'), value: _filters['channel']?.toString(), options: ['sms', 'whatsapp'], onChanged: (v) => setState(() => _filters['channel'] = v)),
-_FilterDropdown(label: message_logTr(context, 'field.status'), value: _filters['status']?.toString(), options: ['sent', 'failed'], onChanged: (v) => setState(() => _filters['status'] = v)),
-          if (4 > 0) const SizedBox(height: 8),
+          _FilterDropdown(label: message_logTr(context, 'field.channel'), value: _filters['channel']?.toString(), options: const ['sms', 'whatsapp'], onChanged: (v) => setState(() => _filters['channel'] = v)),
+          _FilterDropdown(label: message_logTr(context, 'field.status'), value: _filters['status']?.toString(), options: const ['sent', 'failed'], onChanged: (v) => setState(() => _filters['status'] = v)),
+          const SizedBox(height: 8),
           Row(children: [
             Expanded(child: OutlinedButton(onPressed: () { _filters.clear(); setState(() {}); Navigator.pop(context); context.read<MessageLogCubit>().load(refresh: true, filters: {}); }, child: Text(message_logTr(context, 'list.clear')))),
             const SizedBox(width: 12),
@@ -91,16 +89,9 @@ _FilterDropdown(label: message_logTr(context, 'field.status'), value: _filters['
     );
   }
 
-  Future<void> _openForm([Map<String, dynamic>? item]) async {
-    final changed = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => MessageLogFormPage(item: item)));
-    if (changed == true && mounted) context.read<MessageLogCubit>().load(refresh: true);
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final canAdd = AuthService.instance.hasPermission('add_message_logs');
-    final canEdit = AuthService.instance.hasPermission('edit_message_logs');
     final canDelete = AuthService.instance.hasPermission('delete_message_logs');
 
     return AppScaffold(
@@ -109,12 +100,12 @@ _FilterDropdown(label: message_logTr(context, 'field.status'), value: _filters['
         Text(message_logTr(context, 'list.title'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
         InkWell(
           onTap: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (_) => ShopSwitcherWidget(onSwitched: () => context.read<MessageLogCubit>().refresh()),
-              );
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => ShopSwitcherWidget(onSwitched: () => context.read<MessageLogCubit>().refresh()),
+            );
           },
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -126,11 +117,11 @@ _FilterDropdown(label: message_logTr(context, 'field.status'), value: _filters['
         ),
       ]),
       actions: [
-        IconButton(tooltip: message_logTr(context, 'list.filters'), onPressed: 4 > 0 ? _openFilters : null, icon: const Icon(Icons.tune_rounded)),
+        IconButton(tooltip: message_logTr(context, 'list.filters'), onPressed: _openFilters, icon: const Icon(Icons.tune_rounded)),
         IconButton(tooltip: message_logTr(context, 'list.refresh'), onPressed: () => context.read<MessageLogCubit>().refresh(), icon: const Icon(Icons.refresh_rounded)),
         const SizedBox(width: 8),
       ],
-      floatingActionButton: canAdd ? FloatingActionButton.extended(onPressed: () => _openForm(), icon: const Icon(Icons.add_rounded), label: Text(message_logTr(context, 'list.add'))) : null,
+      floatingActionButton: null, // Read-Only Logs list
       body: Column(children: [
         Padding(padding: const EdgeInsets.fromLTRB(20, 8, 20, 12), child: PremiumSearchBar(
           controller: _search,
@@ -140,12 +131,11 @@ _FilterDropdown(label: message_logTr(context, 'field.status'), value: _filters['
         Expanded(child: BlocConsumer<MessageLogCubit, MessageLogState>(
           listener: (context, state) {
             if (state is MessageLogFailure) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), behavior: SnackBarBehavior.floating));
-            if (state is MessageLogSaved) Navigator.of(context).pop(true);
           },
           builder: (context, state) {
             final items = state is MessageLogLoaded ? state.items : state is MessageLogLoading ? state.items : state is MessageLogFailure ? state.items : const <Map<String,dynamic>>[];
-            if (state is MessageLogLoading && items.isEmpty) return ListView.separated(padding: const EdgeInsets.all(20), itemCount: 7, separatorBuilder: (_, __) => const SizedBox(height: 12), itemBuilder: (_, __) => PremiumSkeleton());
-            if (items.isEmpty) return PremiumEmptyState(title: _search.text.isEmpty ? message_logTr(context, 'list.nothing') : message_logTr(context, 'list.no_results'), message: _search.text.isEmpty ? message_logTr(context, 'list.create_first') : message_logTr(context, 'list.try_different'), icon: _search.text.isEmpty ? Icons.inbox_rounded : Icons.search_off_rounded, actionLabel: _search.text.isEmpty && canAdd ? message_logTr(context, 'list.create_record') : null, action: _search.text.isEmpty && canAdd ? () => _openForm() : null);
+            if (state is MessageLogLoading && items.isEmpty) return ListView.separated(padding: const EdgeInsets.all(20), itemCount: 7, separatorBuilder: (_, __) => const SizedBox(height: 12), itemBuilder: (_, __) => const PremiumSkeleton());
+            if (items.isEmpty) return PremiumEmptyState(title: _search.text.isEmpty ? message_logTr(context, 'list.nothing') : message_logTr(context, 'list.no_results'), message: message_logTr(context, 'list.try_different'), icon: _search.text.isEmpty ? Icons.inbox_rounded : Icons.search_off_rounded);
             return RefreshIndicator(
               onRefresh: context.read<MessageLogCubit>().refresh,
               child: ListView.separated(
@@ -213,9 +203,11 @@ _FilterDropdown(label: message_logTr(context, 'field.status'), value: _filters['
     final channel = (item['channel'] ?? 'sms').toString().toUpperCase();
     final message = (item['message'] ?? '').toString();
     final status = (item['status'] ?? 'sent').toString().toLowerCase();
-    final sentAtRaw = item['sent_at']?.toString() ?? item['created_at']?.toString() ?? '';
-    final sentAt = _formatDateTime(sentAtRaw);
+    final appointmentAt = _formatDateTime(item['appointment_at']?.toString());
+    final createdAt = _formatDateTime(item['created_at']?.toString() ?? item['scheduled_at']?.toString());
+    final sentAt = _formatDateTime(item['sent_at']?.toString());
     final error = item['error_message']?.toString() ?? '';
+    final typeLabel = (item['template_type_label'] ?? 'SMS').toString();
 
     showDialog(
       context: context,
@@ -231,7 +223,7 @@ _FilterDropdown(label: message_logTr(context, 'field.status'), value: _filters['
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Detajet e Logut #$customer',
+                '$typeLabel (#${item['id']})',
                 style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -258,12 +250,27 @@ _FilterDropdown(label: message_logTr(context, 'field.status'), value: _filters['
               ],
             ),
             const SizedBox(height: 10),
-            Text('Klienti: $customer', style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
-            if (sentAt.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text('Koha: $sentAt', style: const TextStyle(color: Colors.grey, fontSize: 11)),
-            ],
-            const SizedBox(height: 14),
+            Text('Klienti: $customer', style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (appointmentAt.isNotEmpty) ...[
+                    Text('📅 Takimi Për: $appointmentAt', style: const TextStyle(color: Colors.amber, fontSize: 11.5, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 3),
+                  ],
+                  if (createdAt.isNotEmpty) ...[
+                    Text('⏰ Krijuar / Planifikuar: $createdAt', style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                    const SizedBox(height: 3),
+                  ],
+                  Text(status == 'sent' && sentAt.isNotEmpty ? '✅ Dërguar Më: $sentAt' : '⏳ Statusi: ${status.toUpperCase()}', style: TextStyle(color: status == 'sent' ? Colors.greenAccent : Colors.orangeAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
             const Text('Përmbajtja e Mesazhit:', style: TextStyle(color: Colors.amber, fontSize: 12, fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
             Container(
@@ -296,28 +303,6 @@ _FilterDropdown(label: message_logTr(context, 'field.status'), value: _filters['
       ),
     );
   }
-}
-
-class _PremiumLoadingList extends StatelessWidget {
-  const _PremiumLoadingList();
-  @override Widget build(BuildContext context) => ListView.separated(padding: const EdgeInsets.all(20), itemCount: 7, separatorBuilder: (_, __) => const SizedBox(height: 12), itemBuilder: (_, __) => Container(height: 92, decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(22))));
-}
-
-class _EmptyState extends StatelessWidget {
-  final VoidCallback onAdd; final String query;
-  const _EmptyState({required this.onAdd, required this.query});
-  @override Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(32), child: Column(mainAxisSize: MainAxisSize.min, children: [
-    Container(width: 76, height: 76, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer, shape: BoxShape.circle), child: Icon(query.isEmpty ? Icons.inbox_rounded : Icons.search_off_rounded, size: 34)),
-    const SizedBox(height: 18), Text(query.isEmpty ? message_logTr(context, 'list.nothing') : message_logTr(context, 'list.no_results'), style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
-    const SizedBox(height: 7), Text(query.isEmpty ? message_logTr(context, 'list.create_first') : message_logTr(context, 'list.try_different'), textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
-    if (query.isEmpty) ...[const SizedBox(height: 18), FilledButton.icon(onPressed: onAdd, icon: const Icon(Icons.add_rounded), label: Text(message_logTr(context, 'list.create_record')))],
-  ])));
-}
-
-class _FilterText extends StatelessWidget {
-  final String label, value; final ValueChanged<String> onChanged;
-  const _FilterText({required this.label, required this.value, required this.onChanged});
-  @override Widget build(BuildContext context) => Padding(padding: const EdgeInsets.only(bottom: 12), child: TextFormField(initialValue: value, onChanged: onChanged, decoration: InputDecoration(labelText: label, border: const OutlineInputBorder())));
 }
 
 class _FilterRelationDropdown extends StatelessWidget {

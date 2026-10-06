@@ -21,13 +21,31 @@ class BookingResource extends JsonResource
 
         $paymentRecord = \App\Models\Payment::where('booking_id', $this->id)->latest()->first();
         $paymentStatus = $paymentRecord?->status ?? $this->payment_status ?? 'unpaid';
-        $isPaid = ($paymentStatus === 'paid');
 
         $displayPrice = ($paymentRecord && (float) $paymentRecord->amount > 0)
             ? $paymentRecord->amount
             : (($this->total_price && (float) $this->total_price > 0)
                 ? $this->total_price
                 : ($this->service?->price ?? 0));
+
+        $smsMessages = \App\Models\MessageQueue::where('booking_id', $this->id)
+            ->get()
+            ->map(function ($queue) {
+                $isReminder = str_contains($queue->message_content, 'Rikujtes') || str_contains($queue->message_content, 'Reminder');
+                return [
+                    'id' => $queue->id,
+                    'type' => $isReminder ? 'reminder' : 'confirmation',
+                    'type_label' => $isReminder ? 'Rikujtesë SMS' : 'Konfirmim SMS',
+                    'message_content' => $queue->message_content,
+                    'phone_number' => $queue->phone_number,
+                    'status' => $queue->status,
+                    'scheduled_at' => $queue->scheduled_at?->toIso8601String(),
+                    'created_at' => $queue->created_at?->toIso8601String(),
+                    'updated_at' => $queue->updated_at?->toIso8601String(),
+                ];
+            })
+            ->values()
+            ->toArray();
 
         return [
             'id' => $this->id,
@@ -43,6 +61,7 @@ class BookingResource extends JsonResource
             'notes' => $this->notes,
             'source' => $this->source,
             'service_name' => $serviceName,
+            'sms_messages' => $smsMessages,
             'barberShop' => $this->whenLoaded('barberShop'),
             'barber' => $this->whenLoaded('barber'),
             'service' => $this->whenLoaded('service'),

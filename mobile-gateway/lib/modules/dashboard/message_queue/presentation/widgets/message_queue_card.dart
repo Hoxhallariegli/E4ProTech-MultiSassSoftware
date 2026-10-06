@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
-import 'package:mobile_gateway/l10n/message_queue_localization.dart';
 
 class MessageQueueCard extends StatelessWidget {
   final Map<String, dynamic> item;
@@ -67,9 +66,14 @@ class MessageQueueCard extends StatelessWidget {
     final channel = (item['channel'] ?? 'sms').toString().toLowerCase();
     final message = (item['message_content'] ?? '').toString();
     final status = (item['status'] ?? 'pending').toString().toLowerCase();
+
+    final appointmentAtRaw = item['appointment_at']?.toString();
     final scheduledAtRaw = item['scheduled_at']?.toString() ?? item['created_at']?.toString();
     final updatedAtRaw = item['updated_at']?.toString();
     final retryCount = int.tryParse(item['retry_count']?.toString() ?? '0') ?? 0;
+
+    final templateType = (item['template_type'] ?? 'confirmation').toString().toLowerCase();
+    final templateTypeLabel = (item['template_type_label'] ?? (templateType == 'reminder' ? 'Rikujtesë' : (templateType == 'welcome' ? 'Mirëseardhje' : 'Konfirmim'))).toString();
 
     IconData channelIcon = Icons.sms_rounded;
     Color channelColor = primaryColor;
@@ -83,6 +87,13 @@ class MessageQueueCard extends StatelessWidget {
       channelIcon = Icons.email_rounded;
       channelColor = Colors.amber.shade700;
       channelLabel = 'Email';
+    }
+
+    Color typeColor = primaryColor;
+    if (templateType == 'reminder') {
+      typeColor = Colors.amber.shade700;
+    } else if (templateType == 'welcome') {
+      typeColor = Colors.green.shade600;
     }
 
     Color statusColor = Colors.amber.shade700;
@@ -164,6 +175,26 @@ class MessageQueueCard extends StatelessWidget {
 
               const SizedBox(width: 4),
 
+              // Template Type Badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: typeColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: typeColor.withOpacity(0.3)),
+                ),
+                child: Text(
+                  templateTypeLabel.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.bold,
+                    color: typeColor,
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 4),
+
               // Status Badge
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -182,17 +213,15 @@ class MessageQueueCard extends StatelessWidget {
                 ),
               ),
 
-              if (onTap != null || onDelete != null)
+              if (onDelete != null)
                 PopupMenuButton<String>(
                   padding: EdgeInsets.zero,
                   icon: Icon(Icons.more_vert_rounded, size: 18, color: isDark ? Colors.white70 : Colors.black54),
                   onSelected: (value) {
-                    if (value == 'edit' && onTap != null) onTap!();
                     if (value == 'delete' && onDelete != null) onDelete!();
                   },
                   itemBuilder: (_) => [
-                    if (onTap != null) PopupMenuItem(value: 'edit', child: Text(message_queueTr(context, 'list.edit'))),
-                    if (onDelete != null) PopupMenuItem(value: 'delete', child: Text(message_queueTr(context, 'list.delete'))),
+                    if (onDelete != null) const PopupMenuItem(value: 'delete', child: Text('🗑️ Fshi nga Radha')),
                   ],
                 ),
             ],
@@ -200,7 +229,7 @@ class MessageQueueCard extends StatelessWidget {
 
           const SizedBox(height: 6),
 
-          // Message Content Container (FULL MESSAGE DISPLAY)
+          // Message Content Container (FULL TEXT DISPLAY)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(10),
@@ -228,56 +257,72 @@ class MessageQueueCard extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          // Footer Row: Timestamps (Scheduled At & Sent At)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              if (scheduledAtRaw != null && scheduledAtRaw.isNotEmpty)
-                Row(
-                  children: [
-                    Icon(Icons.schedule_rounded, size: 11, color: isDark ? Colors.white70 : Colors.black54),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Planifikuar: ${_formatDateTime(scheduledAtRaw)}',
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white70 : Colors.black87,
+          // Footer Row: Full Booking & Scheduled Timestamps
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.black26 : Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Column(
+              children: [
+                if (appointmentAtRaw != null && appointmentAtRaw.isNotEmpty)
+                  Row(
+                    children: [
+                      Icon(Icons.event_available_rounded, size: 11, color: primaryColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Takimi Për: ${_formatDateTime(appointmentAtRaw)}',
+                        style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: primaryColor),
                       ),
+                    ],
+                  ),
+                if (appointmentAtRaw != null && appointmentAtRaw.isNotEmpty) const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (scheduledAtRaw != null && scheduledAtRaw.isNotEmpty)
+                      Row(
+                        children: [
+                          Icon(Icons.schedule_rounded, size: 11, color: isDark ? Colors.white70 : Colors.black54),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Planifikuar: ${_formatDateTime(scheduledAtRaw)}',
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black87),
+                          ),
+                        ],
+                      ),
+                    Row(
+                      children: [
+                        Icon(
+                          status == 'sent' ? Icons.check_circle_rounded : Icons.access_time_rounded,
+                          size: 11,
+                          color: status == 'sent' ? Colors.green : primaryColor,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          status == 'sent' && updatedAtRaw != null
+                              ? 'Dërguar: ${_formatDateTime(updatedAtRaw)}'
+                              : (status == 'failed' ? 'Dështoi' : 'Në Pritje'),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: status == 'sent' ? Colors.green : primaryColor,
+                          ),
+                        ),
+                        if (retryCount > 0) ...[
+                          const SizedBox(width: 6),
+                          Text(
+                            '($retryCount)',
+                            style: const TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
-                )
-              else
-                const SizedBox.shrink(),
-
-              Row(
-                children: [
-                  Icon(
-                    status == 'sent' ? Icons.check_circle_rounded : Icons.access_time_rounded,
-                    size: 11,
-                    color: status == 'sent' ? Colors.green : primaryColor,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    status == 'sent' && updatedAtRaw != null
-                        ? 'Dërguar: ${_formatDateTime(updatedAtRaw)}'
-                        : (status == 'failed' ? 'Dështoi' : 'Në Pritje'),
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.bold,
-                      color: status == 'sent' ? Colors.green : primaryColor,
-                    ),
-                  ),
-                  if (retryCount > 0) ...[
-                    const SizedBox(width: 6),
-                    Text(
-                      '($retryCount)',
-                      style: const TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
