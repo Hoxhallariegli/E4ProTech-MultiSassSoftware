@@ -2,50 +2,32 @@
 
 namespace App\Listeners;
 
-use App\Events\FirebaseNotificationRequested;
-use App\Services\FirebaseService;
+use App\Events\BookingChanged;
 use App\Models\Booking;
-use App\Models\MessageTemplate;
 use App\Models\MessageQueue;
 use App\Models\MessageLog;
+use App\Models\MessageTemplate;
 use App\Models\DeviceToken;
-use Illuminate\Support\Facades\Log;
+use App\Services\FirebaseService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\Log;
 
 class SendFirebaseNotificationListener
 {
-    public $tries = 3;
+    protected FirebaseService $firebaseService;
 
-    public function __construct(protected FirebaseService $firebaseService)
+    public function __construct(FirebaseService $firebaseService)
     {
+        $this->firebaseService = $firebaseService;
     }
 
-    public function handle(FirebaseNotificationRequested $event): void
+    public function handle(object $event): void
     {
         try {
-            Log::info("📌 [STEP 4] SendFirebaseNotificationListener received event [{$event->event}] Action: [{$event->action}] Model ID: [{$event->modelId}]");
             $shopId = null;
-
-            $actionLabel = match ($event->action) {
-                'created' => 'krijua',
-                'updated' => 'përditësua',
-                'deleted' => 'fshi',
-                default => 'ndryshua',
-            };
-
-            $moduleName = match (class_basename($event->modelClass)) {
-                'Booking' => 'Rezervim',
-                'Customer' => 'Klient',
-                'Payment' => 'Pagesë',
-                'Barber' => 'Punonjës',
-                'Service' => 'Shërbim',
-                'BarberShop' => 'Sallon',
-                default => class_basename($event->modelClass),
-            };
-
-            $title = "Njoftim: {$moduleName} u {$actionLabel}! 🔔";
-            $body = "Regjistrimi #{$event->modelId} te moduli {$moduleName} u {$actionLabel} me sukses.";
+            $title = "Njoftim nga Aplikacioni";
+            $body = "Ka një përditësim të ri.";
 
             // 1. If Booking action, custom logic for Push and SMS Gateway
             if ($event->modelClass === Booking::class || is_a($event->modelClass, Booking::class, true)) {
@@ -77,7 +59,7 @@ class SendFirebaseNotificationListener
                         // 1. Direct Confirmation SMS (Immediate) - Check if already created
                         $existingConfirmation = MessageQueue::where('booking_id', $booking->id)
                             ->where('channel', 'sms')
-                            ->where('message_content', $parsedConfirmation)
+                            ->where('template_type', 'confirmation')
                             ->exists();
 
                         if (!$existingConfirmation) {
@@ -160,18 +142,13 @@ class SendFirebaseNotificationListener
                                     'status' => 'pending',
                                     'sent_at' => null,
                                 ]);
-                                        'message' => $parsedReminder,
-                                        'status' => 'pending',
-                                        'sent_at' => null,
-                                    ]);
-                                    \App\Models\AuditTrail::log($reminderLog, 'create', 'MessageLogs');
+                                \App\Models\AuditTrail::log($reminderLog, 'create', 'MessageLogs');
 
-                                    Log::info("⏰ [STEP 4a] SMS Reminder Message scheduled for Booking #{$booking->id} at {$scheduledReminderTime} (Shop #{$booking->barber_shop_id})");
-                                }
+                                Log::info("⏰ [STEP 4a] SMS Reminder Message scheduled for Booking #{$booking->id} at {$scheduledReminderTime} (Shop #{$booking->barber_shop_id})");
                             }
                         }
 
-                        // Find active SMS Gateway device for this shop or shop owner (supports 1 phone for multiple shops OR multiple phones per shop)
+                        // Find active SMS Gateway device for this shop or shop owner
                         $gatewayDevice = DeviceToken::where('is_sms_gateway', true)
                             ->whereNotNull('fcm_token')
                             ->where(function($q) use ($shopId) {
