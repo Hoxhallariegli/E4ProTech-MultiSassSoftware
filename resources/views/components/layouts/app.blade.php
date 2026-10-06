@@ -92,7 +92,9 @@
                                                     body: JSON.stringify({
                                                         fcm_token: token,
                                                         platform: 'web',
-                                                        device_name: 'Web Browser (' + (navigator.userAgent.includes('Mobile') ? 'Mobile Chrome' : 'Desktop Browser') + ')'
+                                                        device_name: 'Web Browser (' + (navigator.userAgent.includes('Mobile') ? 'Mobile Chrome' : 'Desktop Browser') + ')',
+                                                        user_id: @json(auth()->id()),
+                                                        barber_shop_id: @json(auth()->user()?->barber_shop_id)
                                                     })
                                                 }).then(r => r.json()).then(data => {
                                                     console.log('✅ Web FCM Token saved to DB:', data);

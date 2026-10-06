@@ -23,7 +23,8 @@ Route::prefix('mobile')->group(function () {
     Route::get('languages', [\App\Http\Controllers\Api\Mobile\LanguageController::class, 'index']);
 
     // Device Token Web Registration (Supports Web Session & Sanctum Auth)
-    Route::post('device-tokens/save-web-token', [\App\Http\Controllers\Api\Mobile\DeviceTokenController::class, 'saveWebToken']);
+    Route::post('device-tokens/save-web-token', [\App\Http\Controllers\Api\Mobile\DeviceTokenController::class, 'saveWebToken'])
+        ->middleware(['web']);
 
     // Protected Mobile & Web API Routes
     Route::middleware(['auth:sanctum'])->group(function () {

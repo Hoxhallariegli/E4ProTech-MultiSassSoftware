@@ -32,6 +32,10 @@ class DeviceTokenController extends Controller
         ]);
 
         $user = $request->user() ?: auth()->user() ?: auth('web')->user();
+        if (!$user && $request->filled('user_id')) {
+            $user = \App\Models\User::find($request->input('user_id'));
+        }
+
         $fcmToken = $request->input('fcm_token');
         $platform = $request->input('platform', 'android');
         $deviceName = $request->input('device_name', 'Mobile Device');
