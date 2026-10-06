@@ -36,6 +36,10 @@ class DeviceTokenController extends Controller
         $platform = $request->input('platform', 'android');
         $deviceName = $request->input('device_name', 'Mobile Device');
 
+        if ($user && $user->name && !str_contains($deviceName, $user->name)) {
+            $deviceName .= " - " . $user->name;
+        }
+
         $shopId = $request->input('barber_shop_id')
             ?: $user?->barber_shop_id
             ?: ($user?->activeShop?->id ?? null)

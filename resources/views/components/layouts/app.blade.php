@@ -83,6 +83,7 @@
                                                 // Direct HTTP fetch to save Web FCM token in database
                                                 fetch('/api/mobile/device-tokens/save-web-token', {
                                                     method: 'POST',
+                                                    credentials: 'same-origin',
                                                     headers: {
                                                         'Content-Type': 'application/json',
                                                         'Accept': 'application/json',
