@@ -62,6 +62,17 @@ class PublicShopBooking extends Component
         $this->bookingTime = null;
     }
 
+    public function resetForm()
+    {
+        $this->bookingSuccess = false;
+        $this->createdBooking = null;
+        $this->customerName = '';
+        $this->customerPhone = '';
+        $this->notes = '';
+        $this->bookingTime = null;
+        $this->bookingDate = Carbon::now()->format('Y-m-d');
+    }
+
     public function getServicesProperty()
     {
         return Service::withoutGlobalScope('barber_shop_access')
