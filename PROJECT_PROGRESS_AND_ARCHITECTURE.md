@@ -41,24 +41,27 @@
 - **In-App Message Logs Viewer:**
   - Direct shortcut button in Settings opening `MessageLogListPage` with real-time delivery status and local SharedPreferences logs (`sms_logs`).
 
-### 🛠️ C. Java 17 JDK & Automated Release Script (`release-apk.ps1`)
-- **Java 17 JDK Environment Setup:**
-  - **Installed Location:** `C:\Program Files\Eclipse Adoptium\jdk-17.0.14.7-hotspot`
-  - **Flutter JDK Config Command:** `flutter config --jdk-dir="C:\Program Files\Eclipse Adoptium\jdk-17.0.14.7-hotspot"`
-  - **PowerShell Session Setup:**
-    ```powershell
-    $env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-17.0.14.7-hotspot"
-    $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
-    ```
+### 🛠️ C. Java 17 JDK, Project-Internal Android Homes & Automated Build (`release-apk.ps1`)
+- **Java 17 JDK & Android SDK Setup:**
+  - **Java 17 JDK:** `C:\Program Files\Eclipse Adoptium\jdk-17.0.14.7-hotspot`
+  - **Android SDK:** `C:\Users\Admin\AppData\Local\Android\sdk`
+  - **Flutter JDK Config:** `flutter config --jdk-dir="C:\Program Files\Eclipse Adoptium\jdk-17.0.14.7-hotspot"`
+- **Project-Internal Android & Gradle Build Homes:**
+  - To prevent C: drive permission issues, Gradle daemon locks, or slow build performance, Android & Gradle build homes are kept **project-internal**:
+    - `ANDROID_USER_HOME`: `C:\laragon\www\LaraFluterAuto\mobile-gateway\android\.android_home`
+    - `GRADLE_USER_HOME`: `C:\laragon\www\LaraFluterAuto\mobile-gateway\android\.gradle_home`
 - **Automated 1-Command Build Script (`release-apk.ps1`):**
   - **Command:** `powershell -ExecutionPolicy Bypass -File .\release-apk.ps1`
   - **Automated Steps:**
     1. Reads version from `version.json` and increments build code and patch version.
     2. Updates `version.json`, `.env`, and `mobile-gateway/pubspec.yaml`.
-    3. Sets Java 17 JDK environment variables.
-    4. Runs `flutter build apk --release --no-pub`.
-    5. Copies built APK to `public/downloads/app-release.apk`.
-    6. Clears Laravel config and view caches (`php artisan config:clear`, `php artisan view:clear`).
+    3. Configures Java 17 JDK and project-internal `.android_home` / `.gradle_home`.
+    4. Executes `flutter clean` and `flutter pub get`.
+    5. Runs `flutter build apk --release`.
+    6. Copies built APK to **BOTH**:
+       - `D:\Share\Apk\app-release.apk`
+       - `public/downloads/app-release.apk`
+    7. Clears Laravel config and view caches (`php artisan config:clear`, `php artisan view:clear`).
 
 ### 🌐 D. Public Landing Pages & Interactive Online Booking (`/s/{slug}`)
 - **Multi-Tenant Landing Pages:**
@@ -92,7 +95,10 @@ LaraFluterAuto/
 │   └── Services/                         # FirebaseService (FCM REST v1), NotificationRouter
 ├── database/migrations/                  # Database migrations (device_tokens, settings, customers, reminder_hours_before)
 ├── mobile-gateway/                       # Flutter Application Root
-│   ├── android/app/src/main/AndroidManifest.xml # Android permissions & BackgroundService declaration
+│   ├── android/
+│   │   ├── .android_home/                # Project-internal Android home cache
+│   │   ├── .gradle_home/                 # Project-internal Gradle home cache
+│   │   └── app/src/main/AndroidManifest.xml # Android permissions & BackgroundService declaration
 │   └── lib/
 │       ├── core/branding/branding_cubit.dart # Branding state with reminder_hours_before
 │       ├── core/notifications/push_service.dart # FCM init, BackgroundService, Telephony SMS handler
@@ -109,4 +115,4 @@ LaraFluterAuto/
 
 ## 4. Instructions for Starting a New Chat
 When you start a new chat session, you can simply paste or refer to this summary:
-> *"The project documentation and architecture are saved in `C:\laragon\www\LaraFluterAuto\PROJECT_PROGRESS_AND_ARCHITECTURE.md`. The system uses Laravel 12 + Livewire + Flutter built with Java 17 JDK (`C:\Program Files\Eclipse Adoptium\jdk-17.0.14.7-hotspot`), 100% Firebase FCM Push Notifications (isolated per shop/user), Android SIM SMS Gateway using `FlutterBackgroundService` and `telephony`, and In-App APK Updates via `release-apk.ps1`."*
+> *"The project documentation and architecture are saved in `C:\laragon\www\LaraFluterAuto\PROJECT_PROGRESS_AND_ARCHITECTURE.md`. The system uses Laravel 12 + Livewire + Flutter built with Java 17 JDK (`C:\Program Files\Eclipse Adoptium\jdk-17.0.14.7-hotspot`), project-internal Android & Gradle build homes (`mobile-gateway/android/.android_home` & `.gradle_home`), 100% Firebase FCM Push Notifications (isolated per shop/user), Android SIM SMS Gateway using `FlutterBackgroundService` and `telephony`, and In-App APK Updates via `release-apk.ps1` (published to `D:\Share\Apk` and `public/downloads`)."*

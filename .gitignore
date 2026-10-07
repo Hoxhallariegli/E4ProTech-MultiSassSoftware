@@ -17,16 +17,26 @@ yarn-error.log
 /.vscode
 /.gradle_home/
 /.android/
+/.android_home/
+/.gradle_cache/
+/.android_cache/
 /.artifacts/
-mobile-gateway/.dart_tool/
-mobile-gateway/.flutter-plugins
-mobile-gateway/.flutter-plugins-dependencies
-mobile-gateway/build/
 PROJECT_PROGRESS_AND_ARCHITECTURE.md
 /storage/app/firebase-service-account.json
 mobile-gateway/android/app/google-services.json
 /storage/logs/laravel.log
 
-.android_home/
-.gradle_cache/
 public/downloads/app-debug.apk
+
+# Local Android/Gradle Build Homes
+mobile-gateway/.dart_tool/
+mobile-gateway/.flutter-plugins
+mobile-gateway/.flutter-plugins-dependencies
+mobile-gateway/build/
+mobile-gateway/android/.android_home/
+mobile-gateway/android/.gradle_home/
+mobile-gateway/android/.tmp_home/
+mobile-gateway/android/.gradle/
+mobile-gateway/android/.kotlin/
+*.lock
+test_booking_trigger.php

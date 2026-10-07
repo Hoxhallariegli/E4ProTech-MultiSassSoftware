@@ -489,11 +489,12 @@ class BookingController extends Controller
                             $smsMessages = !$isBreak ? \App\Models\MessageQueue::where('booking_id', $booking->id)
                                 ->get()
                                 ->map(function ($queue) {
-                                    $isReminder = str_contains($queue->message_content, 'Rikujtes') || str_contains($queue->message_content, 'Reminder');
+                                    $type = $queue->resolved_template_type;
+                                    $typeLabel = $type === 'reminder' ? 'Rikujtesë SMS' : ($type === 'welcome' ? 'Mirëseardhje SMS' : 'Konfirmim SMS');
                                     return [
                                         'id' => $queue->id,
-                                        'type' => $isReminder ? 'reminder' : 'confirmation',
-                                        'type_label' => $isReminder ? 'Rikujtesë SMS' : 'Konfirmim SMS',
+                                        'type' => $type,
+                                        'type_label' => $typeLabel,
                                         'message_content' => $queue->message_content,
                                         'status' => $queue->status,
                                         'scheduled_at' => $queue->scheduled_at?->toIso8601String(),

@@ -120,9 +120,12 @@ class FirebaseService
                   });
             })
             ->whereNotNull('fcm_token')
+            ->orderByDesc('last_used_at')
+            ->get()
+            ->unique(fn($d) => $d->user_id ? "user_{$d->user_id}" : "token_{$d->fcm_token}")
             ->pluck('fcm_token')
             ->filter()
-            ->unique();
+            ->values();
 
         Log::info("🔍 [FirebaseService::sendToShop] Found " . $tokens->count() . " device token(s) for Shop #{$shopId}: ", $tokens->toArray());
 
