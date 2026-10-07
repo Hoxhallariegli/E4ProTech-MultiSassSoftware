@@ -87,15 +87,13 @@ class PublicShopBooking extends Component
         $now = Carbon::now();
         $date = Carbon::parse($this->bookingDate);
 
-        // Get working hours for the selected day
-        $dayOfWeek = strtolower($date->format('l'));
-        $workingHour = WorkingHour::withoutGlobalScope('barber_shop_access')
-            ->where('barber_shop_id', $this->shop->id)
-            ->where('day', $dayOfWeek)
-            ->where('is_closed', false)
+        // Get working hours for the selected barber and day of week
+        $dayOfWeek = ucfirst(strtolower($date->format('l'))); // e.g. 'Wednesday'
+        $workingHour = WorkingHour::where('barber_id', $this->selectedBarberId)
+            ->where('day_of_week', $dayOfWeek)
             ->first();
 
-        if (!$workingHour) {
+        if ($workingHour && $workingHour->is_closed) {
             return []; // Closed day
         }
 
@@ -108,8 +106,8 @@ class PublicShopBooking extends Component
             }
         };
 
-        $openTimeStr = $normalizeTime($workingHour?->open_time) ?? '08:00';
-        $closeTimeStr = $normalizeTime($workingHour?->close_time) ?? '20:00';
+        $openTimeStr = ($workingHour && $workingHour->open_time) ? $normalizeTime($workingHour->open_time) : '08:00';
+        $closeTimeStr = ($workingHour && $workingHour->close_time) ? $normalizeTime($workingHour->close_time) : '20:00';
 
         $openDt = Carbon::parse("{$this->bookingDate} {$openTimeStr}:00");
         $closeDt = Carbon::parse("{$this->bookingDate} {$closeTimeStr}:00");
