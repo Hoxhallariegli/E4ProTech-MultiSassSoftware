@@ -88,10 +88,11 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">4. Ora e Takimit</label>
-                    @if(!empty($this->availableSlots))
+                    @if(!empty($availableTimeSlots))
                         <select wire:model.live="bookingTime"
                                 class="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-white font-bold text-sm focus:border-amber-500 focus:outline-none">
-                            @foreach($this->availableSlots as $timeSlot)
+                            <option value="">-- Zgjidhni Orarin --</option>
+                            @foreach($availableTimeSlots as $timeSlot)
                                 <option value="{{ $timeSlot }}">{{ $timeSlot }}</option>
                             @endforeach
                         </select>
