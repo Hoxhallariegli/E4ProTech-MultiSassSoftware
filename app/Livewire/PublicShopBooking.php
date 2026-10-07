@@ -9,93 +9,94 @@ use App\Models\Service;
 use App\Models\Booking;
 use App\Models\Customer;
 use App\Models\WorkingHour;
-use App\Services\NotificationRouter;
-use App\Events\BookingChanged;
 use Carbon\Carbon;
 
 class PublicShopBooking extends Component
 {
     public BarberShop $shop;
 
-    public ?int $selectedBarberId = null;
-    public ?int $selectedServiceId = null;
-    public string $bookingDate = '';
-    public string $bookingTime = '';
-    public string $customerName = '';
-    public string $customerPhone = '';
-    public string $notes = '';
+    public $selectedServiceId = null;
+    public $selectedBarberId = null;
+    public $bookingDate = null;
+    public $bookingTime = null;
 
-    public bool $bookingSuccess = false;
-    public ?int $createdBookingId = null;
+    public $customerName = '';
+    public $customerPhone = '';
+    public $notes = '';
+
+    public $bookingSuccess = false;
+    public $createdBooking = null;
 
     public function mount(BarberShop $shop)
     {
         $this->shop = $shop;
-        $this->bookingDate = now()->format('Y-m-d');
+        $this->bookingDate = Carbon::now()->format('Y-m-d');
 
-        $firstBarber = Barber::where('barber_shop_id', $this->shop->id)->where('active', true)->first();
-        if ($firstBarber) {
-            $this->selectedBarberId = $firstBarber->id;
+        // Preselect first service if available
+        $services = $this->services;
+        if ($services->isNotEmpty()) {
+            $this->selectedServiceId = $services->first()->id;
         }
 
-        $firstService = Service::where('barber_shop_id', $this->shop->id)->where('active', true)->first();
-        if ($firstService) {
-            $this->selectedServiceId = $firstService->id;
-        }
-
-        $slots = $this->availableSlots;
-        if (!empty($slots)) {
-            $this->bookingTime = $slots[0];
+        // Preselect first barber if available
+        $barbers = $this->barbers;
+        if ($barbers->isNotEmpty()) {
+            $this->selectedBarberId = $barbers->first()->id;
         }
     }
 
     public function selectService($serviceId)
     {
-        $this->selectedServiceId = (int) $serviceId;
-        $this->autoSelectFirstAvailableSlot();
+        $this->selectedServiceId = $serviceId;
+        $this->bookingTime = null;
     }
 
     public function selectBarber($barberId)
     {
-        $this->selectedBarberId = (int) $barberId;
-        $this->autoSelectFirstAvailableSlot();
+        $this->selectedBarberId = $barberId;
+        $this->bookingTime = null;
     }
 
     public function updatedBookingDate()
     {
-        $this->autoSelectFirstAvailableSlot();
+        $this->bookingTime = null;
     }
 
-    private function autoSelectFirstAvailableSlot()
+    public function getServicesProperty()
     {
-        $slots = $this->availableSlots;
-        if (!empty($slots) && !in_array($this->bookingTime, $slots, true)) {
-            $this->bookingTime = $slots[0];
-        } elseif (empty($slots)) {
-            $this->bookingTime = '';
-        }
+        return Service::withoutGlobalScope('barber_shop_access')
+            ->where('barber_shop_id', $this->shop->id)
+            ->where('active', true)
+            ->get();
     }
 
-    public function getAvailableSlotsProperty(): array
+    public function getBarbersProperty()
+    {
+        return Barber::withoutGlobalScope('barber_shop_access')
+            ->where('barber_shop_id', $this->shop->id)
+            ->where('is_active', true)
+            ->get();
+    }
+
+    public function getAvailableTimeSlotsProperty()
     {
         if (!$this->selectedBarberId || !$this->bookingDate) {
             return [];
         }
 
-        try {
-            $date = Carbon::parse($this->bookingDate);
-        } catch (\Throwable $e) {
-            return [];
-        }
+        $now = Carbon::now();
+        $date = Carbon::parse($this->bookingDate);
 
-        $dayName = $date->format('l');
-
-        $workingHour = WorkingHour::where('barber_id', $this->selectedBarberId)
-            ->where('day_of_week', $dayName)
+        // Get working hours for the selected day
+        $dayOfWeek = strtolower($date->format('l'));
+        $workingHour = WorkingHour::withoutGlobalScope('barber_shop_access')
+            ->where('barber_shop_id', $this->shop->id)
+            ->where('day', $dayOfWeek)
+            ->where('is_closed', false)
             ->first();
 
-        if ($workingHour && $workingHour->is_closed) {
-            return [];
+        if (!$workingHour) {
+            return []; // Closed day
         }
 
         $normalizeTime = function ($val) {
@@ -180,7 +181,7 @@ class PublicShopBooking extends Component
             }
 
             // Skip past times if selected date is today
-            if ($date->isToday() && $slotStart->isPast()) {
+            if ($date->isSameDay($now) && $slotStart->isBefore($now)) {
                 $cursor->addMinutes($minServiceTime);
                 continue;
             }
@@ -260,39 +261,16 @@ class PublicShopBooking extends Component
             'source' => 'online',
         ]);
 
-        $customer->increment('total_bookings');
-
-        // Trigger Notification Router explicitly (Deduplicated automatically by NotificationRouter)
-        try {
-            app(NotificationRouter::class)->maybeNotify('bookings.created', $booking, 'created');
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error("Failed to trigger NotificationRouter from Livewire: " . $e->getMessage());
-        }
-
-        $this->createdBookingId = $booking->id;
+        $this->createdBooking = $booking;
         $this->bookingSuccess = true;
-    }
-
-    public function resetForm()
-    {
-        $this->bookingSuccess = false;
-        $this->createdBookingId = null;
-        $this->customerName = '';
-        $this->customerPhone = '';
-        $this->notes = '';
-        $this->autoSelectFirstAvailableSlot();
     }
 
     public function render()
     {
-        $staff = Barber::where('barber_shop_id', $this->shop->id)->where('active', true)->get();
-        $services = Service::where('barber_shop_id', $this->shop->id)->where('active', true)->get();
-        $createdBooking = $this->createdBookingId ? Booking::with(['barber', 'service', 'barberShop'])->find($this->createdBookingId) : null;
-
         return view('livewire.public-shop-booking', [
-            'staff' => $staff,
-            'services' => $services,
-            'createdBooking' => $createdBooking,
-        ]);
+            'services' => $this->services,
+            'barbers' => $this->barbers,
+            'availableTimeSlots' => $this->availableTimeSlots,
+        ])->layout('components.layouts.blank');
     }
 }
