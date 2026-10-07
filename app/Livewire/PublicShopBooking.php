@@ -86,13 +86,11 @@ class PublicShopBooking extends Component
 
         $now = Carbon::now();
 
-        // Robust date parsing
-        $cleanDate = str_replace('/', '-', (string) $this->bookingDate);
-        if (preg_match('/^\d{1,2}-\d{1,2}-\d{4}$/', $cleanDate)) {
-            $parts = explode('-', $cleanDate);
-            $cleanDate = sprintf('%04d-%02d-%02d', (int)$parts[2], (int)$parts[1], (int)$parts[0]);
+        try {
+            $date = Carbon::parse($this->bookingDate);
+        } catch (\Throwable $e) {
+            $date = Carbon::today();
         }
-        $date = Carbon::parse($cleanDate);
         $dateStr = $date->format('Y-m-d');
 
         $workingHour = null;
@@ -236,11 +234,12 @@ class PublicShopBooking extends Component
             'bookingDate.after_or_equal' => 'Data e rezervimit duhet të jetë sot ose në ditët në vijim.',
         ]);
 
-        $cleanDate = str_replace('/', '-', (string) $this->bookingDate);
-        if (preg_match('/^\d{1,2}-\d{1,2}-\d{4}$/', $cleanDate)) {
-            $parts = explode('-', $cleanDate);
-            $cleanDate = sprintf('%04d-%02d-%02d', (int)$parts[2], (int)$parts[1], (int)$parts[0]);
+        try {
+            $date = Carbon::parse($this->bookingDate);
+        } catch (\Throwable $e) {
+            $date = Carbon::today();
         }
+        $cleanDate = $date->format('Y-m-d');
 
         $appointmentAt = Carbon::parse("{$cleanDate} {$this->bookingTime}:00");
 
