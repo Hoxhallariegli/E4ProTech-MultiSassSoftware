@@ -268,6 +268,7 @@ class PublicShopBooking extends Component
         return view('livewire.public-shop-booking', [
             'services' => $this->services,
             'barbers' => $this->barbers,
+            'staff' => $this->barbers,
             'availableTimeSlots' => $this->availableTimeSlots,
         ])->layout('components.layouts.blank');
     }
