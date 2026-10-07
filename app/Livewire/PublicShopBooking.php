@@ -74,7 +74,7 @@ class PublicShopBooking extends Component
     {
         return Barber::withoutGlobalScope('barber_shop_access')
             ->where('barber_shop_id', $this->shop->id)
-            ->where('is_active', true)
+            ->where('active', true)
             ->get();
     }
 
