@@ -88,12 +88,15 @@ class PublicShopBooking extends Component
         $date = Carbon::parse($this->bookingDate);
 
         // Get working hours for the selected barber and day of week
-        $dayOfWeek = ucfirst(strtolower($date->format('l'))); // e.g. 'Wednesday'
+        $dayOfWeekLower = strtolower($date->format('l')); // e.g. 'thursday'
         $workingHour = WorkingHour::where('barber_id', $this->selectedBarberId)
-            ->where('day_of_week', $dayOfWeek)
+            ->where(function($q) use ($dayOfWeekLower) {
+                $q->whereRaw('LOWER(day_of_week) = ?', [$dayOfWeekLower]);
+            })
             ->first();
 
-        if ($workingHour && $workingHour->is_closed) {
+        // Only block if explicitly marked closed
+        if ($workingHour && (bool)$workingHour->is_closed === true) {
             return []; // Closed day
         }
 
@@ -106,8 +109,11 @@ class PublicShopBooking extends Component
             }
         };
 
-        $openTimeStr = ($workingHour && $workingHour->open_time) ? $normalizeTime($workingHour->open_time) : '08:00';
-        $closeTimeStr = ($workingHour && $workingHour->close_time) ? $normalizeTime($workingHour->close_time) : '20:00';
+        $openTimeStr = ($workingHour && !empty($workingHour->open_time)) ? $normalizeTime($workingHour->open_time) : '08:00';
+        $closeTimeStr = ($workingHour && !empty($workingHour->close_time)) ? $normalizeTime($workingHour->close_time) : '20:00';
+
+        if (!$openTimeStr) $openTimeStr = '08:00';
+        if (!$closeTimeStr) $closeTimeStr = '20:00';
 
         $openDt = Carbon::parse("{$this->bookingDate} {$openTimeStr}:00");
         $closeDt = Carbon::parse("{$this->bookingDate} {$closeTimeStr}:00");
