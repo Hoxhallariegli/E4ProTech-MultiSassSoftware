@@ -91,7 +91,6 @@
                     @if(!empty($availableTimeSlots))
                         <select wire:model.live="bookingTime"
                                 class="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-white font-bold text-sm focus:border-amber-500 focus:outline-none">
-                            <option value="">-- Zgjidhni Orarin --</option>
                             @foreach($availableTimeSlots as $timeSlot)
                                 <option value="{{ $timeSlot }}">{{ $timeSlot }}</option>
                             @endforeach

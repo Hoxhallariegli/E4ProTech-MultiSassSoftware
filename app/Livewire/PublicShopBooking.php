@@ -214,6 +214,10 @@ class PublicShopBooking extends Component
             $cursor->addMinutes(30);
         }
 
+        if (empty($this->bookingTime) || !in_array($this->bookingTime, $slots, true)) {
+            $this->bookingTime = $slots[0] ?? null;
+        }
+
         return $slots;
     }
 
