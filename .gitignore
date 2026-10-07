@@ -26,6 +26,8 @@ PROJECT_PROGRESS_AND_ARCHITECTURE.md
 mobile-gateway/android/app/google-services.json
 /storage/logs/laravel.log
 
+public/downloads/*.apk
+public/downloads/app-release.apk
 public/downloads/app-debug.apk
 
 # Local Android/Gradle Build Homes
