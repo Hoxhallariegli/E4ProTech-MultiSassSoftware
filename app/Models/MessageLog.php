@@ -40,11 +40,11 @@ class MessageLog extends Model
             return (string) $type;
         }
 
-        $content = $this->attributes['message'] ?? '';
-        if (str_contains($content, 'Rikujtes') || str_contains($content, 'Reminder')) {
+        $content = mb_strtolower($this->attributes['message'] ?? '');
+        if (str_contains($content, 'kujtoj') || str_contains($content, 'rikujtes') || str_contains($content, 'reminder')) {
             return 'reminder';
         }
-        if (str_contains($content, 'Mirë se erdhe') || str_contains($content, 'Welcome')) {
+        if (str_contains($content, 'mire se erdhe') || str_contains($content, 'welcome')) {
             return 'welcome';
         }
         return 'confirmation';
