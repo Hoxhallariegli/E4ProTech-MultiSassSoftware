@@ -80,24 +80,36 @@ class PublicShopBooking extends Component
 
     public function getAvailableTimeSlotsProperty()
     {
-        if (!$this->selectedBarberId || !$this->bookingDate) {
+        if (!$this->bookingDate) {
             return [];
         }
 
         $now = Carbon::now();
-        $date = Carbon::parse($this->bookingDate);
 
-        // Get working hours for the selected barber and day of week
-        $dayOfWeekLower = strtolower($date->format('l')); // e.g. 'thursday'
-        $workingHour = WorkingHour::where('barber_id', $this->selectedBarberId)
-            ->where(function($q) use ($dayOfWeekLower) {
-                $q->whereRaw('LOWER(day_of_week) = ?', [$dayOfWeekLower]);
-            })
-            ->first();
+        // Robust date parsing
+        $cleanDate = str_replace('/', '-', (string) $this->bookingDate);
+        if (preg_match('/^\d{1,2}-\d{1,2}-\d{4}$/', $cleanDate)) {
+            $parts = explode('-', $cleanDate);
+            $cleanDate = sprintf('%04d-%02d-%02d', (int)$parts[2], (int)$parts[1], (int)$parts[0]);
+        }
+        $date = Carbon::parse($cleanDate);
+        $dateStr = $date->format('Y-m-d');
 
-        // Only block if explicitly marked closed
-        if ($workingHour && (bool)$workingHour->is_closed === true) {
-            return []; // Closed day
+        $workingHour = null;
+
+        // Check if barber has an explicit working hours record marked as closed
+        if ($this->selectedBarberId) {
+            $dayOfWeekLower = strtolower($date->format('l'));
+            $workingHour = WorkingHour::where('barber_id', $this->selectedBarberId)
+                ->where(function($q) use ($dayOfWeekLower) {
+                    $q->whereRaw('LOWER(day_of_week) = ?', [$dayOfWeekLower]);
+                })
+                ->first();
+
+            // ONLY if explicitly closed, return []
+            if ($workingHour && (bool)$workingHour->is_closed === true) {
+                return [];
+            }
         }
 
         $normalizeTime = function ($val) {
@@ -109,37 +121,22 @@ class PublicShopBooking extends Component
             }
         };
 
-        $openTimeStr = ($workingHour && !empty($workingHour->open_time)) ? $normalizeTime($workingHour->open_time) : '08:00';
+        $openTimeStr = ($workingHour && !empty($workingHour->open_time)) ? $normalizeTime($workingHour->open_time) : '09:00';
         $closeTimeStr = ($workingHour && !empty($workingHour->close_time)) ? $normalizeTime($workingHour->close_time) : '20:00';
 
-        if (!$openTimeStr) $openTimeStr = '08:00';
+        if (!$openTimeStr) $openTimeStr = '09:00';
         if (!$closeTimeStr) $closeTimeStr = '20:00';
 
-        $openDt = Carbon::parse("{$this->bookingDate} {$openTimeStr}:00");
-        $closeDt = Carbon::parse("{$this->bookingDate} {$closeTimeStr}:00");
+        $openDt = Carbon::parse("{$dateStr} {$openTimeStr}:00");
+        $closeDt = Carbon::parse("{$dateStr} {$closeTimeStr}:00");
 
         if ($closeDt <= $openDt) {
-            return [];
+            $openDt = Carbon::parse("{$dateStr} 09:00:00");
+            $closeDt = Carbon::parse("{$dateStr} 20:00:00");
         }
 
-        $lunchStartStr = $normalizeTime($workingHour?->lunch_start);
-        $lunchEndStr = $normalizeTime($workingHour?->lunch_end);
-
-        $lunchStartDt = null;
-        $lunchEndDt = null;
-        if ($lunchStartStr && $lunchEndStr) {
-            $lunchStartDt = Carbon::parse("{$this->bookingDate} {$lunchStartStr}:00");
-            $lunchEndDt = Carbon::parse("{$this->bookingDate} {$lunchEndStr}:00");
-            if ($lunchEndDt <= $lunchStartDt) {
-                $lunchStartDt = null;
-                $lunchEndDt = null;
-            }
-        }
-
-        // Min service time for this shop ID
-        $minServiceTime = $this->shop->resolved_min_service_time;
-
-        $reqDuration = $minServiceTime;
+        // Duration for selected service or 30 min default
+        $reqDuration = 30;
         if ($this->selectedServiceId) {
             $service = Service::find($this->selectedServiceId);
             if ($service && $service->duration_minutes > 0) {
@@ -147,15 +144,21 @@ class PublicShopBooking extends Component
             }
         }
 
-        $bookings = Booking::query()
-            ->where('barber_id', $this->selectedBarberId)
+        // Fetch existing bookings for this barber or shop on this day
+        $bookingQuery = Booking::query()
             ->whereBetween('appointment_at', [
                 $date->copy()->startOfDay(),
                 $date->copy()->endOfDay(),
             ])
-            ->where('status', '!=', 'cancelled')
-            ->with('service')
-            ->get();
+            ->where('status', '!=', 'cancelled');
+
+        if ($this->selectedBarberId) {
+            $bookingQuery->where('barber_id', $this->selectedBarberId);
+        } else {
+            $bookingQuery->where('barber_shop_id', $this->shop->id);
+        }
+
+        $bookings = $bookingQuery->with('service')->get();
 
         $bookingEntries = $bookings->map(function ($b) {
             $start = $b->appointment_at->copy();
@@ -166,11 +169,18 @@ class PublicShopBooking extends Component
             ];
         });
 
-        if ($lunchStartDt && $lunchEndDt) {
-            $bookingEntries->push([
-                'start' => $lunchStartDt->copy(),
-                'end' => $lunchEndDt->copy(),
-            ]);
+        // Add lunch break if configured for workingHour
+        $lunchStartStr = $normalizeTime($workingHour?->lunch_start);
+        $lunchEndStr = $normalizeTime($workingHour?->lunch_end);
+        if ($lunchStartStr && $lunchEndStr) {
+            $lunchStartDt = Carbon::parse("{$dateStr} {$lunchStartStr}:00");
+            $lunchEndDt = Carbon::parse("{$dateStr} {$lunchEndStr}:00");
+            if ($lunchEndDt > $lunchStartDt) {
+                $bookingEntries->push([
+                    'start' => $lunchStartDt,
+                    'end' => $lunchEndDt,
+                ]);
+            }
         }
 
         $slots = [];
@@ -185,12 +195,12 @@ class PublicShopBooking extends Component
             }
 
             // Skip past times if selected date is today
-            if ($date->isSameDay($now) && $slotStart->isBefore($now)) {
-                $cursor->addMinutes($minServiceTime);
+            if ($date->isToday() && $slotStart->isBefore($now)) {
+                $cursor->addMinutes(30);
                 continue;
             }
 
-            // Check overlap
+            // Check overlap with existing bookings
             $hasOverlap = false;
             foreach ($bookingEntries as $entry) {
                 if ($slotStart < $entry['end'] && $slotEnd > $entry['start']) {
@@ -203,7 +213,7 @@ class PublicShopBooking extends Component
                 $slots[] = $slotStart->format('H:i');
             }
 
-            $cursor->addMinutes($minServiceTime);
+            $cursor->addMinutes(30);
         }
 
         return $slots;
@@ -226,7 +236,13 @@ class PublicShopBooking extends Component
             'bookingDate.after_or_equal' => 'Data e rezervimit duhet të jetë sot ose në ditët në vijim.',
         ]);
 
-        $appointmentAt = Carbon::parse("{$this->bookingDate} {$this->bookingTime}:00");
+        $cleanDate = str_replace('/', '-', (string) $this->bookingDate);
+        if (preg_match('/^\d{1,2}-\d{1,2}-\d{4}$/', $cleanDate)) {
+            $parts = explode('-', $cleanDate);
+            $cleanDate = sprintf('%04d-%02d-%02d', (int)$parts[2], (int)$parts[1], (int)$parts[0]);
+        }
+
+        $appointmentAt = Carbon::parse("{$cleanDate} {$this->bookingTime}:00");
 
         try {
             // Check overlap
