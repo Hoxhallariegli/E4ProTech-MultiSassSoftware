@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Schema;
 class SendFirebaseNotificationListener
 {
     protected FirebaseService $firebaseService;
+    protected static array $processedBookings = [];
 
     public function __construct(FirebaseService $firebaseService)
     {
@@ -34,6 +35,12 @@ class SendFirebaseNotificationListener
             }
 
             if ($booking) {
+                $dedupKey = "booking_sms:{$booking->id}:{$action}";
+                if (isset(static::$processedBookings[$dedupKey])) {
+                    Log::info("⏭️ [SendFirebaseNotificationListener] Skipped duplicate execution for {$dedupKey}");
+                    return;
+                }
+                static::$processedBookings[$dedupKey] = true;
                 $booking->loadMissing(['customer', 'service', 'barber', 'barberShop']);
                 $shopId = $booking->barber_shop_id;
                 $customerName = $booking->customer?->name ?? 'Klient';
