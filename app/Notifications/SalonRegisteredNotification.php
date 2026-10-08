@@ -36,12 +36,14 @@ class SalonRegisteredNotification extends Notification
             ]
         );
 
+        $shopLandingUrl = url("s/{$this->shop->slug}");
+
         return (new MailMessage)
             ->subject("Aktivizoni Sallonin Tuaj {$this->shop->name} 🚀 — E4ProTech Engine")
             ->greeting("Përshëndetje {$notifiable->name}!")
             ->line("Urimë për regjistrimin e sallonit tuaj **{$this->shop->name}** në platformën E4ProTech Engine.")
             ->line("Llogaria juaj ka përfituar **30 ditë provë falas (Trial)**. Faqja juaj e re e rezervimeve online është gati te adresa:")
-            ->line("**app.e4protech.com/s/{$this->shop->slug}**")
+            ->line("[{$shopLandingUrl}]({$shopLandingUrl})")
             ->action('Konfirmo E-mailin & Hyr në Panel ↗', $verificationUrl)
             ->line("Ju lutemi klikoni butonin e mësipërm për të verifikuar adresën tuaj të e-mailit dhe për të hapur panelin tuaj të menaxhimit.")
             ->line("Nëse nuk keni krijuar ju këtë llogari, mund ta anashkaloni këtë e-mail.")
