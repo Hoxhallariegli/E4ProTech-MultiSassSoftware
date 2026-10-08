@@ -103,6 +103,10 @@
             @elseif($step === 2)
                 <!-- Step 2 Form -->
                 <div>
+                    <input type="hidden" wire:model="salonName">
+                    <input type="hidden" wire:model="salonSlug">
+                    <input type="hidden" wire:model="businessType">
+
                     <div class="flex items-center justify-between mb-4">
                         <span class="text-xs font-black uppercase text-[#7C5CFC]">Hapi 2 nga 3</span>
                         <span class="text-xs font-bold text-slate-400">Të dhënat e Pronarit</span>

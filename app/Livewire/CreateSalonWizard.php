@@ -50,6 +50,13 @@ class CreateSalonWizard extends Component
                 'salonSlug.required' => 'Ju lutemi vendosni adresën e faqes tuaj.',
                 'salonSlug.unique' => 'Kjo adresë është e zënë. Ju lutemi zgjidhni një adresë tjetër.',
             ]);
+
+            session([
+                'wizard_salon_name' => trim($this->salonName),
+                'wizard_salon_slug' => Str::slug($this->salonSlug),
+                'wizard_business_type' => $this->businessType,
+            ]);
+
             $this->step = 2;
         } elseif ($this->step === 2) {
             $this->validate([
@@ -80,9 +87,14 @@ class CreateSalonWizard extends Component
     {
         $trialEnd = now()->addDays(30);
 
-        // Ensure clean shop name
-        $finalShopName = !empty(trim($this->salonName)) ? trim($this->salonName) : 'Sallon ' . trim($this->ownerName);
-        $finalShopSlug = !empty(trim($this->salonSlug)) ? Str::slug($this->salonSlug) : Str::slug($finalShopName);
+        // Retrieve Step 1 values safely from session or properties
+        $sessName = session('wizard_salon_name');
+        $sessSlug = session('wizard_salon_slug');
+        $sessType = session('wizard_business_type');
+
+        $finalShopName = !empty($sessName) ? $sessName : (!empty(trim($this->salonName)) ? trim($this->salonName) : 'Sallon ' . trim($this->ownerName));
+        $finalShopSlug = !empty($sessSlug) ? $sessSlug : (!empty(trim($this->salonSlug)) ? Str::slug($this->salonSlug) : Str::slug($finalShopName));
+        $finalType = !empty($sessType) ? $sessType : $this->businessType;
 
         // 1. Create Admin/Owner User (Inactive until email verification)
         $userData = [
@@ -105,7 +117,7 @@ class CreateSalonWizard extends Component
             'name' => $finalShopName,
             'app_name' => $finalShopName,
             'slug' => $finalShopSlug,
-            'business_type' => $this->businessType,
+            'business_type' => $finalType,
             'primary_color' => '#FF9F0A',
             'secondary_color' => '#1C1C1E',
             'active' => true, // Shop is active for 30-day trial
@@ -221,6 +233,9 @@ class CreateSalonWizard extends Component
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning("Email notification sending warning: " . $e->getMessage());
         }
+
+        // Clean session
+        session()->forget(['wizard_salon_name', 'wizard_salon_slug', 'wizard_business_type']);
 
         $this->createdShop = $shop;
         $this->step = 3;
