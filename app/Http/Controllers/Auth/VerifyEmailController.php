@@ -12,17 +12,22 @@ use Illuminate\Http\RedirectResponse;
 class VerifyEmailController extends Controller
 {
     /**
-     * Mark the authenticated user's email address as verified.
+     * Mark the authenticated user's email address as verified and activate user.
      */
     public function __invoke(EmailVerificationRequest $request): RedirectResponse
     {
-        if ($request->user()->markEmailAsVerified()) {
+        $user = $request->user();
+
+        if ($user->markEmailAsVerified()) {
             /** @phpstan-ignore-next-line */
-            event(new Verified($request->user()));
+            event(new Verified($user));
         }
 
-        auth()->loginUsingId($request->user()->id, true);
+        // Activate User upon email verification
+        $user->update(['is_active' => true]);
 
-        return redirect()->intended(route('dashboard'));
+        auth()->loginUsingId($user->id, true);
+
+        return redirect()->route('dashboard')->with('success', 'Adresa juaj e emailit u verifikua me sukses!');
     }
 }

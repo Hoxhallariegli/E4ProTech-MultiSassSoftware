@@ -78,12 +78,12 @@ class CreateSalonWizard extends Component
     {
         $trialEnd = now()->addDays(30);
 
-        // 1. Create Admin/Owner User (Pending Verification)
+        // 1. Create Admin/Owner User (Inactive until email verification)
         $userData = [
             'name' => trim($this->ownerName),
             'email' => strtolower(trim($this->email)),
             'password' => Hash::make($this->password),
-            'is_active' => false, // Requires email verification to activate
+            'is_active' => false, // Activated via email verification
             'email_verified_at' => null,
         ];
 
@@ -98,7 +98,7 @@ class CreateSalonWizard extends Component
             try { $user->assignRole('admin'); } catch (\Throwable $e) {}
         }
 
-        // 2. Create BarberShop (Pending Verification)
+        // 2. Create BarberShop (Active with 30-day Free Trial)
         $shopData = [
             'owner_id' => (string) $user->id,
             'name' => trim($this->salonName),
@@ -107,7 +107,7 @@ class CreateSalonWizard extends Component
             'business_type' => $this->businessType,
             'primary_color' => '#FF9F0A',
             'secondary_color' => '#1C1C1E',
-            'active' => false, // Requires email verification to activate
+            'active' => true, // Shop is active for 30-day trial
             'sms_enabled' => true,
             'timezone' => 'Europe/Tirane',
             'trial_ends_at' => $trialEnd,
@@ -115,7 +115,7 @@ class CreateSalonWizard extends Component
         ];
 
         if (\Illuminate\Support\Facades\Schema::hasColumn('barber_shops', 'status')) {
-            $shopData['status'] = 'pending';
+            $shopData['status'] = 'active';
         }
         if (\Illuminate\Support\Facades\Schema::hasColumn('barber_shops', 'phone')) {
             $shopData['phone'] = trim($this->ownerPhone);
@@ -137,7 +137,7 @@ class CreateSalonWizard extends Component
         }
 
         // 3. Create 30-Day Free Trial Subscription
-        $firstPlan = Plan::first();
+        $firstPlan = \App\Models\Plan::first();
         if ($firstPlan) {
             try {
                 Subscription::create([
@@ -183,7 +183,7 @@ class CreateSalonWizard extends Component
             'active' => true,
         ]);
 
-        // Send Email Verification Link
+        // Send Email Verification Notification
         try {
             $user->sendEmailVerificationNotification();
         } catch (\Throwable $e) {}
