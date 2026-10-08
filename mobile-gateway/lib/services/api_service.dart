@@ -65,7 +65,7 @@ class ApiService {
       _customUrl = savedUrl;
       return savedUrl;
     }
-    return const String.fromEnvironment('API_BASE_URL', defaultValue: 'https://app.e4protech.com');
+    return const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.10.12.14:5000');
   }
 
   static Future<void> setCustomBaseUrl(String url) async {

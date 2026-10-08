@@ -1,5 +1,15 @@
 <div id="booking-section" class="py-12 bg-slate-900/80 border-t border-slate-800/80 rounded-3xl p-6 sm:p-10 shadow-2xl">
-    @if($bookingSuccess && $createdBooking)
+    @if($shop->is_expired)
+        <div class="text-center py-12 space-y-4">
+            <div class="w-16 h-16 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-3xl flex items-center justify-center mx-auto text-3xl font-black shadow-lg">
+                ⚠️
+            </div>
+            <h3 class="text-2xl font-black text-white">Rezervimet Online janë të Pezulluara</h3>
+            <p class="text-slate-400 text-xs max-w-md mx-auto leading-relaxed">
+                Faqja e rezervimeve online për <strong class="text-white">{{ $shop->name }}</strong> është e pezulluar përkohësisht pasi abonimi i sallonit ka përfunduar. Ju lutemi kontaktoni drejtpërdrejt sallonin.
+            </p>
+        </div>
+    @elseif($bookingSuccess && $createdBooking)
         <div class="text-center py-10 space-y-6">
             <div class="w-20 h-20 bg-emerald-500/20 border-2 border-emerald-500 text-emerald-400 rounded-full flex items-center justify-center mx-auto text-4xl shadow-lg">
                 ✓

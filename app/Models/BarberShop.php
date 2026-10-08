@@ -93,8 +93,17 @@ class BarberShop extends Model
         return $this->hasMany(\App\Models\Subscription::class, 'barber_shop_id');
     }
 
+    public function getIsExpiredAttribute(): bool
+    {
+        return $this->getDaysLeftAttribute() <= 0;
+    }
+
     public function getActivePlanNameAttribute(): string
     {
+        if ($this->is_expired) {
+            return 'Abonimi Ka Skaduar ⚠️';
+        }
+
         $sub = $this->subscriptions()->with('plan')->whereIn('status', ['active', 'trial'])->where('ends_at', '>=', now())->latest()->first();
         if ($sub && $sub->plan) {
             return $sub->plan->name;
@@ -106,15 +115,15 @@ class BarberShop extends Model
     {
         $sub = $this->subscriptions()->whereIn('status', ['active', 'trial'])->where('ends_at', '>=', now())->latest()->first();
         if ($sub && $sub->ends_at) {
-            return (int) max(0, now()->diffInDays($sub->ends_at, false));
+            return (int) max(0, ceil(now()->diffInDays($sub->ends_at, false)));
         }
-        if ($this->expires_at) {
-            return (int) max(0, now()->diffInDays($this->expires_at, false));
+        if ($this->expires_at && $this->expires_at->isFuture()) {
+            return (int) max(0, ceil(now()->diffInDays($this->expires_at, false)));
         }
-        if ($this->trial_ends_at) {
-            return (int) max(0, now()->diffInDays($this->trial_ends_at, false));
+        if ($this->trial_ends_at && $this->trial_ends_at->isFuture()) {
+            return (int) max(0, ceil(now()->diffInDays($this->trial_ends_at, false)));
         }
-        return 30;
+        return 0; // Expired!
     }
 
     public function getLogoUrlAttribute() {
