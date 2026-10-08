@@ -80,12 +80,18 @@ class CreateSalonWizard extends Component
         $trialEnd = now()->addDays(30);
 
         // 1. Create Admin/Owner User FIRST
-        $user = User::create([
+        $userData = [
             'name' => trim($this->ownerName),
             'email' => strtolower(trim($this->email)),
             'password' => Hash::make($this->password),
             'is_active' => true,
-        ]);
+        ];
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'slug')) {
+            $userData['slug'] = Str::slug($this->ownerName) ?: Str::random(10);
+        }
+
+        $user = User::create($userData);
 
         // Assign 'admin' role if Spatie roles exist
         if (method_exists($user, 'assignRole')) {
