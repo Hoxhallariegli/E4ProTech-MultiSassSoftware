@@ -215,10 +215,12 @@ class CreateSalonWizard extends Component
             'active' => true,
         ]);
 
-        // Send Email Verification Notification
+        // Send Custom E4ProTech Branded Registration Email Notification
         try {
-            $user->sendEmailVerificationNotification();
-        } catch (\Throwable $e) {}
+            $user->notify(new \App\Notifications\SalonRegisteredNotification($shop));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Email notification sending warning: " . $e->getMessage());
+        }
 
         $this->createdShop = $shop;
         $this->step = 3;
