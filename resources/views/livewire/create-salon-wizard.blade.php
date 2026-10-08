@@ -157,20 +157,24 @@
                 </div>
 
             @elseif($step === 3)
-                <!-- Step 3 Success -->
-                <div class="text-center py-4">
-                    <div class="w-16 h-16 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-600 flex items-center justify-center mx-auto mb-4 text-2xl font-black">
-                        ✓
+                <!-- Step 3 Email Verification Notice -->
+                <div class="text-center py-6">
+                    <div class="w-16 h-16 rounded-3xl bg-[#FF9F0A]/10 border border-[#FF9F0A]/30 text-[#FF9F0A] flex items-center justify-center mx-auto mb-6 text-3xl font-black shadow-lg">
+                        📩
                     </div>
-                    <h2 class="text-2xl font-black text-[#1A1D20] mb-2">Salloni juaj u krijua me sukses! 🎉</h2>
-                    <p class="text-xs text-slate-600 leading-relaxed mb-6">
-                        Urimë! Faqja juaj e re publike është aktive te adresa:<br>
-                        <strong class="text-[#7C5CFC]">app.e4protech.com/s/{{ $createdShop?->slug }}</strong>
+                    <h2 class="text-2xl font-black text-[#1A1D20] mb-2">Kontrolloni emailin tuaj!</h2>
+                    <p class="text-xs text-slate-600 leading-relaxed max-w-sm mx-auto mb-6">
+                        Dërguam një lidhje konfirmimi te <strong class="text-[#7C5CFC] font-bold">{{ $email }}</strong>.<br>
+                        Klikojeni lidhjen për të aktivizuar llogarinë dhe sallonin tuaj, pastaj hyni për të hapur panelin tuaj.
                     </p>
 
-                    <a href="{{ route('dashboard') }}"
+                    <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 text-xs font-bold text-left mb-6">
+                        💡 Nuk e shihni emailin? Ju lutemi kontrolloni edhe dosjen e <strong>Spam / Junk</strong>.
+                    </div>
+
+                    <a href="{{ route('login') }}"
                        class="w-full py-4 rounded-full font-black text-sm text-white bg-[#7C5CFC] hover:bg-[#6366F1] shadow-lg shadow-[#7C5CFC]/20 transition block text-center">
-                        Hyr në Panelin Admin 🚀
+                        Shko te Hyrja ↗
                     </a>
                 </div>
             @endif
@@ -181,7 +185,7 @@
     <!-- Footer (E4ProTech Dark Teal `#0A4D44`) -->
     <footer class="py-10 bg-[#0A4D44] text-white mt-auto">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 text-teal-100 font-bold">
                 <div class="w-8 h-8 rounded-xl bg-white text-[#0A4D44] font-black flex items-center justify-center text-sm">
                     E4
                 </div>

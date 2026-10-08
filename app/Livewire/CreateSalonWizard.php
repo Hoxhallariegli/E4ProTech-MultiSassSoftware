@@ -12,7 +12,6 @@ use App\Models\Subscription;
 use App\Models\Plan;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Auth;
 
 class CreateSalonWizard extends Component
 {
@@ -79,12 +78,13 @@ class CreateSalonWizard extends Component
     {
         $trialEnd = now()->addDays(30);
 
-        // 1. Create Admin/Owner User FIRST
+        // 1. Create Admin/Owner User (Pending Verification)
         $userData = [
             'name' => trim($this->ownerName),
             'email' => strtolower(trim($this->email)),
             'password' => Hash::make($this->password),
-            'is_active' => true,
+            'is_active' => false, // Requires email verification to activate
+            'email_verified_at' => null,
         ];
 
         if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'slug')) {
@@ -98,7 +98,7 @@ class CreateSalonWizard extends Component
             try { $user->assignRole('admin'); } catch (\Throwable $e) {}
         }
 
-        // 2. Create BarberShop WITH owner_id
+        // 2. Create BarberShop (Pending Verification)
         $shopData = [
             'owner_id' => (string) $user->id,
             'name' => trim($this->salonName),
@@ -107,7 +107,7 @@ class CreateSalonWizard extends Component
             'business_type' => $this->businessType,
             'primary_color' => '#FF9F0A',
             'secondary_color' => '#1C1C1E',
-            'active' => true,
+            'active' => false, // Requires email verification to activate
             'sms_enabled' => true,
             'timezone' => 'Europe/Tirane',
             'trial_ends_at' => $trialEnd,
@@ -115,7 +115,7 @@ class CreateSalonWizard extends Component
         ];
 
         if (\Illuminate\Support\Facades\Schema::hasColumn('barber_shops', 'status')) {
-            $shopData['status'] = 'active';
+            $shopData['status'] = 'pending';
         }
         if (\Illuminate\Support\Facades\Schema::hasColumn('barber_shops', 'phone')) {
             $shopData['phone'] = trim($this->ownerPhone);
@@ -183,8 +183,10 @@ class CreateSalonWizard extends Component
             'active' => true,
         ]);
 
-        // Login user
-        Auth::login($user);
+        // Send Email Verification Link
+        try {
+            $user->sendEmailVerificationNotification();
+        } catch (\Throwable $e) {}
 
         $this->createdShop = $shop;
         $this->step = 3;
