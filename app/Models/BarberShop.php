@@ -95,23 +95,26 @@ class BarberShop extends Model
 
     public function getActivePlanNameAttribute(): string
     {
-        $sub = $this->subscriptions()->with('plan')->where('status', 'active')->where('ends_at', '>=', now())->latest()->first();
+        $sub = $this->subscriptions()->with('plan')->whereIn('status', ['active', 'trial'])->where('ends_at', '>=', now())->latest()->first();
         if ($sub && $sub->plan) {
             return $sub->plan->name;
         }
-        return 'Plani Aktiv';
+        return 'Trial (30 Ditë Falas)';
     }
 
     public function getDaysLeftAttribute(): int
     {
-        $sub = $this->subscriptions()->where('status', 'active')->where('ends_at', '>=', now())->latest()->first();
+        $sub = $this->subscriptions()->whereIn('status', ['active', 'trial'])->where('ends_at', '>=', now())->latest()->first();
         if ($sub && $sub->ends_at) {
             return (int) max(0, now()->diffInDays($sub->ends_at, false));
         }
         if ($this->expires_at) {
             return (int) max(0, now()->diffInDays($this->expires_at, false));
         }
-        return 0;
+        if ($this->trial_ends_at) {
+            return (int) max(0, now()->diffInDays($this->trial_ends_at, false));
+        }
+        return 30;
     }
 
     public function getLogoUrlAttribute() {
