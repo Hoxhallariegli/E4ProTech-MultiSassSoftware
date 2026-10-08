@@ -79,8 +79,22 @@ class CreateSalonWizard extends Component
     {
         $trialEnd = now()->addDays(30);
 
-        // 1. Create BarberShop with 30-day Free Trial
+        // 1. Create Admin/Owner User FIRST
+        $user = User::create([
+            'name' => trim($this->ownerName),
+            'email' => strtolower(trim($this->email)),
+            'password' => Hash::make($this->password),
+            'is_active' => true,
+        ]);
+
+        // Assign 'admin' role if Spatie roles exist
+        if (method_exists($user, 'assignRole')) {
+            try { $user->assignRole('admin'); } catch (\Throwable $e) {}
+        }
+
+        // 2. Create BarberShop WITH owner_id
         $shopData = [
+            'owner_id' => (string) $user->id,
             'name' => trim($this->salonName),
             'app_name' => trim($this->salonName),
             'slug' => Str::slug($this->salonSlug),
@@ -109,25 +123,11 @@ class CreateSalonWizard extends Component
 
         $shop = BarberShop::create($shopData);
 
-        // 2. Create Admin/Owner User for this shop
-        $user = User::create([
-            'barber_shop_id' => $shop->id,
-            'name' => trim($this->ownerName),
-            'email' => strtolower(trim($this->email)),
-            'password' => Hash::make($this->password),
-            'is_active' => true,
-        ]);
-
-        // Link owner to shop
-        $shop->update(['owner_id' => (string) $user->id]);
+        // Link shop_id to user
+        $user->update(['barber_shop_id' => $shop->id]);
 
         if (method_exists($shop, 'users')) {
             try { $shop->users()->syncWithoutDetaching([$user->id]); } catch (\Throwable $e) {}
-        }
-
-        // Assign 'admin' role
-        if (method_exists($user, 'assignRole')) {
-            try { $user->assignRole('admin'); } catch (\Throwable $e) {}
         }
 
         // 3. Create 30-Day Free Trial Subscription
