@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Models\Barber;
 use App\Models\Service;
 use App\Models\WorkingHour;
+use App\Models\Subscription;
+use App\Models\Plan;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -75,21 +77,39 @@ class CreateSalonWizard extends Component
 
     public function createSalon()
     {
-        // 1. Create BarberShop
-        $shop = BarberShop::create([
+        $trialEnd = now()->addDays(30);
+
+        // 1. Create BarberShop with 30-day Free Trial
+        $shopData = [
             'name' => trim($this->salonName),
+            'app_name' => trim($this->salonName),
             'slug' => Str::slug($this->salonSlug),
             'business_type' => $this->businessType,
-            'status' => 'active',
-            'phone' => trim($this->ownerPhone),
-            'email' => trim($this->email),
             'primary_color' => '#FF9F0A',
             'secondary_color' => '#1C1C1E',
-            'reminder_hours_before' => 2,
+            'active' => true,
             'sms_enabled' => true,
-        ]);
+            'timezone' => 'Europe/Tirane',
+            'trial_ends_at' => $trialEnd,
+            'expires_at' => $trialEnd,
+        ];
 
-        // 2. Create Admin User for this shop
+        if (\Illuminate\Support\Facades\Schema::hasColumn('barber_shops', 'status')) {
+            $shopData['status'] = 'active';
+        }
+        if (\Illuminate\Support\Facades\Schema::hasColumn('barber_shops', 'phone')) {
+            $shopData['phone'] = trim($this->ownerPhone);
+        }
+        if (\Illuminate\Support\Facades\Schema::hasColumn('barber_shops', 'email')) {
+            $shopData['email'] = strtolower(trim($this->email));
+        }
+        if (\Illuminate\Support\Facades\Schema::hasColumn('barber_shops', 'reminder_hours_before')) {
+            $shopData['reminder_hours_before'] = 2;
+        }
+
+        $shop = BarberShop::create($shopData);
+
+        // 2. Create Admin/Owner User for this shop
         $user = User::create([
             'barber_shop_id' => $shop->id,
             'name' => trim($this->ownerName),
@@ -98,12 +118,33 @@ class CreateSalonWizard extends Component
             'is_active' => true,
         ]);
 
-        // Assign 'admin' role if Spatie roles exist
+        // Link owner to shop
+        $shop->update(['owner_id' => (string) $user->id]);
+
+        if (method_exists($shop, 'users')) {
+            try { $shop->users()->syncWithoutDetaching([$user->id]); } catch (\Throwable $e) {}
+        }
+
+        // Assign 'admin' role
         if (method_exists($user, 'assignRole')) {
             try { $user->assignRole('admin'); } catch (\Throwable $e) {}
         }
 
-        // 3. Create Default Staff (Owner)
+        // 3. Create 30-Day Free Trial Subscription
+        $firstPlan = Plan::first();
+        if ($firstPlan) {
+            try {
+                Subscription::create([
+                    'barber_shop_id' => $shop->id,
+                    'plan_id' => $firstPlan->id,
+                    'status' => 'active',
+                    'starts_at' => now(),
+                    'ends_at' => $trialEnd,
+                ]);
+            } catch (\Throwable $e) {}
+        }
+
+        // 4. Create Default Staff (Owner)
         $barber = Barber::create([
             'barber_shop_id' => $shop->id,
             'user_id' => $user->id,
@@ -112,7 +153,7 @@ class CreateSalonWizard extends Component
             'active' => true,
         ]);
 
-        // 4. Create Default Working Hours for Owner
+        // 5. Create Default Working Hours for Owner
         $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         foreach ($days as $day) {
             WorkingHour::create([
@@ -126,7 +167,7 @@ class CreateSalonWizard extends Component
             ]);
         }
 
-        // 5. Create Default Sample Service
+        // 6. Create Default Sample Service
         Service::create([
             'barber_shop_id' => $shop->id,
             'name' => 'Shërbim Kryesor',

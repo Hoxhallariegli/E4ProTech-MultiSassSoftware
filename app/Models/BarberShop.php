@@ -16,6 +16,10 @@ class BarberShop extends Model
         'slug',
         'logo',
         'banner',
+        'phone',
+        'email',
+        'status',
+        'reminder_hours_before',
         'primary_color',
         'secondary_color',
         'trial_ends_at',
@@ -45,9 +49,9 @@ class BarberShop extends Model
 
     public static function rules($id = null): array {
         return [
-            'owner_id' => ['required', 'string'],
+            'owner_id' => ['nullable', 'string'],
             'name' => ['required', 'string', 'max:255'],
-            'app_name' => ['required', 'string', 'max:255'],
+            'app_name' => ['nullable', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255'],
             'logo' => ['nullable', 'string', 'max:255'],
             'banner' => ['nullable', 'string', 'max:255'],
@@ -57,7 +61,7 @@ class BarberShop extends Model
             'expires_at' => ['nullable', 'date'],
             'active' => ['boolean'],
             'sms_enabled' => ['boolean'],
-            'timezone' => ['required', 'string', 'max:255'],
+            'timezone' => ['nullable', 'string', 'max:255'],
             'max_no_show_before_block' => ['nullable', 'integer'],
             'min_service_time' => ['nullable', 'integer', 'min:1', 'max:480'],
             'business_type' => ['nullable', 'string', 'max:255'],
