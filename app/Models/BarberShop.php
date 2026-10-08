@@ -93,37 +93,51 @@ class BarberShop extends Model
         return $this->hasMany(\App\Models\Subscription::class, 'barber_shop_id');
     }
 
-    public function getIsExpiredAttribute(): bool
-    {
-        return $this->getDaysLeftAttribute() <= 0;
-    }
-
     public function getActivePlanNameAttribute(): string
     {
-        if ($this->is_expired) {
+        $sub = $this->subscriptions()->with('plan')->latest('ends_at')->first();
+        if ($sub) {
+            if ($sub->ends_at < now()) {
+                return 'Abonimi Ka Skaduar ⚠️';
+            }
+            return $sub->plan?->name ?? 'Plani Aktiv';
+        }
+
+        if ($this->expires_at && $this->expires_at->isPast()) {
+            return 'Abonimi Ka Skaduar ⚠️';
+        }
+        if ($this->trial_ends_at && $this->trial_ends_at->isPast()) {
             return 'Abonimi Ka Skaduar ⚠️';
         }
 
-        $sub = $this->subscriptions()->with('plan')->whereIn('status', ['active', 'trial'])->where('ends_at', '>=', now())->latest()->first();
-        if ($sub && $sub->plan) {
-            return $sub->plan->name;
-        }
         return 'Trial (30 Ditë Falas)';
     }
 
     public function getDaysLeftAttribute(): int
     {
-        $sub = $this->subscriptions()->whereIn('status', ['active', 'trial'])->where('ends_at', '>=', now())->latest()->first();
-        if ($sub && $sub->ends_at) {
-            return (int) max(0, ceil(now()->diffInDays($sub->ends_at, false)));
+        $sub = $this->subscriptions()->latest('ends_at')->first();
+        if ($sub) {
+            if ($sub->ends_at < now()) {
+                return 0; // Expired!
+            }
+            return (int) max(0, (int) ceil(now()->diffInDays($sub->ends_at, false)));
         }
-        if ($this->expires_at && $this->expires_at->isFuture()) {
-            return (int) max(0, ceil(now()->diffInDays($this->expires_at, false)));
+
+        if ($this->expires_at) {
+            if ($this->expires_at->isPast()) return 0;
+            return (int) max(0, (int) ceil(now()->diffInDays($this->expires_at, false)));
         }
-        if ($this->trial_ends_at && $this->trial_ends_at->isFuture()) {
-            return (int) max(0, ceil(now()->diffInDays($this->trial_ends_at, false)));
+        if ($this->trial_ends_at) {
+            if ($this->trial_ends_at->isPast()) return 0;
+            return (int) max(0, (int) ceil(now()->diffInDays($this->trial_ends_at, false)));
         }
-        return 0; // Expired!
+
+        return 0;
+    }
+
+    public function getIsExpiredAttribute(): bool
+    {
+        return $this->getDaysLeftAttribute() <= 0;
     }
 
     public function getLogoUrlAttribute() {
