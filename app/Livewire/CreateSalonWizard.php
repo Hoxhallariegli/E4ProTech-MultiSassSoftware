@@ -168,13 +168,13 @@ class CreateSalonWizard extends Component
             \Illuminate\Support\Facades\Log::warning("Role assignment warning: " . $e->getMessage());
         }
 
-        // 4. Create 30-Day Free Trial Subscription
-        $firstPlan = Plan::first();
-        if ($firstPlan) {
+        // 4. Create 30-Day Free Trial Subscription with 'Trial' Plan
+        $trialPlan = Plan::where('name', 'Trial')->orWhere('price', 0)->first() ?? Plan::first();
+        if ($trialPlan) {
             try {
                 Subscription::create([
                     'barber_shop_id' => $shop->id,
-                    'plan_id' => $firstPlan->id,
+                    'plan_id' => $trialPlan->id,
                     'status' => 'active',
                     'starts_at' => now(),
                     'ends_at' => $trialEnd,
