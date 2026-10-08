@@ -36,7 +36,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->appendToGroup('web', \App\Http\Middleware\LanguageMiddleware::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\SetPermissionsTeamId::class);
+        $middleware->appendToGroup('web', \App\Http\Middleware\EnforceSubscriptionMiddleware::class);
         $middleware->appendToGroup('api', \App\Http\Middleware\SetPermissionsTeamId::class);
+        $middleware->appendToGroup('api', \App\Http\Middleware\EnforceSubscriptionMiddleware::class);
 
         $middleware->alias([
             'ipCheckMiddleware' => IpCheckMiddleware::class,
