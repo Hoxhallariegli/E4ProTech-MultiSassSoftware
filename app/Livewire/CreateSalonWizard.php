@@ -10,6 +10,8 @@ use App\Models\Service;
 use App\Models\WorkingHour;
 use App\Models\Subscription;
 use App\Models\Plan;
+use App\Models\Role;
+use App\Models\Permission;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 
@@ -78,6 +80,10 @@ class CreateSalonWizard extends Component
     {
         $trialEnd = now()->addDays(30);
 
+        // Ensure clean shop name
+        $finalShopName = !empty(trim($this->salonName)) ? trim($this->salonName) : 'Sallon ' . trim($this->ownerName);
+        $finalShopSlug = !empty(trim($this->salonSlug)) ? Str::slug($this->salonSlug) : Str::slug($finalShopName);
+
         // 1. Create Admin/Owner User (Inactive until email verification)
         $userData = [
             'name' => trim($this->ownerName),
@@ -93,17 +99,12 @@ class CreateSalonWizard extends Component
 
         $user = User::create($userData);
 
-        // Assign 'admin' role if Spatie roles exist
-        if (method_exists($user, 'assignRole')) {
-            try { $user->assignRole('admin'); } catch (\Throwable $e) {}
-        }
-
         // 2. Create BarberShop (Active with 30-day Free Trial)
         $shopData = [
             'owner_id' => (string) $user->id,
-            'name' => trim($this->salonName),
-            'app_name' => trim($this->salonName),
-            'slug' => Str::slug($this->salonSlug),
+            'name' => $finalShopName,
+            'app_name' => $finalShopName,
+            'slug' => $finalShopSlug,
             'business_type' => $this->businessType,
             'primary_color' => '#FF9F0A',
             'secondary_color' => '#1C1C1E',
@@ -136,8 +137,39 @@ class CreateSalonWizard extends Component
             try { $shop->users()->syncWithoutDetaching([$user->id]); } catch (\Throwable $e) {}
         }
 
-        // 3. Create 30-Day Free Trial Subscription
-        $firstPlan = \App\Models\Plan::first();
+        // 3. Create & Assign Spatie Roles ("pronar_i_biznesit_/_sallonit" & "admin")
+        try {
+            setPermissionsTeamId($shop->id);
+
+            $ownerRole = Role::firstOrCreate([
+                'name' => 'pronar_i_biznesit_/_sallonit',
+                'label' => 'Pronar i Biznesit / Sallonit',
+            ]);
+
+            $adminRole = Role::firstOrCreate([
+                'name' => 'admin',
+                'label' => 'Admin',
+            ]);
+
+            $allPermissions = Permission::all();
+            if ($allPermissions->isNotEmpty()) {
+                try { $ownerRole->syncPermissions($allPermissions); } catch (\Throwable $e) {}
+                try { $adminRole->syncPermissions($allPermissions); } catch (\Throwable $e) {}
+            }
+
+            $user->assignRole('pronar_i_biznesit_/_sallonit');
+            $user->assignRole('admin');
+
+            // Failsafe global team
+            setPermissionsTeamId(0);
+            try { $user->assignRole('pronar_i_biznesit_/_sallonit'); } catch (\Throwable $e) {}
+            try { $user->assignRole('admin'); } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Role assignment warning: " . $e->getMessage());
+        }
+
+        // 4. Create 30-Day Free Trial Subscription
+        $firstPlan = Plan::first();
         if ($firstPlan) {
             try {
                 Subscription::create([
@@ -150,7 +182,7 @@ class CreateSalonWizard extends Component
             } catch (\Throwable $e) {}
         }
 
-        // 4. Create Default Staff (Owner)
+        // 5. Create Default Staff (Owner)
         $barber = Barber::create([
             'barber_shop_id' => $shop->id,
             'user_id' => $user->id,
@@ -159,7 +191,7 @@ class CreateSalonWizard extends Component
             'active' => true,
         ]);
 
-        // 5. Create Default Working Hours for Owner
+        // 6. Create Default Working Hours for Owner
         $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         foreach ($days as $day) {
             WorkingHour::create([
@@ -173,7 +205,7 @@ class CreateSalonWizard extends Component
             ]);
         }
 
-        // 6. Create Default Sample Service
+        // 7. Create Default Sample Service
         Service::create([
             'barber_shop_id' => $shop->id,
             'name' => 'Shërbim Kryesor',
