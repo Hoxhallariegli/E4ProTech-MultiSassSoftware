@@ -237,24 +237,50 @@
     @php
         $globalExpired = false;
         $globalShopName = '';
-        if (auth()->check() && !auth()->user()->hasRole('admin')) {
-            $globalShop = auth()->user()->barberShop;
-            if ($globalShop && $globalShop->expires_at && $globalShop->expires_at->isPast()) {
-                $globalExpired = true;
-                $globalShopName = $globalShop->name;
+        if (auth()->check()) {
+            $user = auth()->user();
+            if (!$user->is_global_admin) {
+                $globalShop = $user->barberShop;
+                if ($globalShop && $globalShop->is_expired) {
+                    $globalExpired = true;
+                    $globalShopName = $globalShop->name;
+                }
             }
         }
     @endphp
 
     @if($globalExpired)
-        <div class="bg-red-600 text-white py-3 px-4 flex items-center justify-center gap-3 animate-pulse shadow-lg sticky top-16 z-40">
-            <x-heroicon-o-exclamation-triangle class="size-6" />
-            <span class="font-bold tracking-wide">
-                {{ __('KUJDES! Abonimi për dyqanin') }} "{{ $globalShopName }}" {{ __('ka skaduar. Ju lutem renovojeni abonimin menjëherë!') }}
-            </span>
-            <a href="{{ route('admin.subscriptions.index') }}" class="bg-white text-red-600 px-4 py-1 rounded-full text-xs font-black uppercase hover:bg-gray-100 transition-colors">
-                {{ __('RENOVONI TANI') }}
-            </a>
+        <!-- Full-Screen Unclosable Modal Lock Overlay -->
+        <div class="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 sm:p-6 antialiased selection:bg-red-500 selection:text-white">
+            <div class="w-full max-w-lg bg-white dark:bg-gray-900 border border-red-500/40 rounded-[2.5rem] shadow-2xl p-8 sm:p-10 text-center relative overflow-hidden">
+
+                <!-- Top Warning Icon Badge -->
+                <div class="w-20 h-20 rounded-3xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto mb-6 text-4xl shadow-xl">
+                    ⚠️
+                </div>
+
+                <!-- Modal Title -->
+                <h2 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight mb-3">
+                    Abonimi Juaj Ka Skaduar!
+                </h2>
+
+                <!-- Modal Description -->
+                <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-medium leading-relaxed max-w-md mx-auto mb-8">
+                    Periudha e provës 30 ditore ose abonimi aktiv për sallonin tuaj <strong class="text-red-600 dark:text-red-400 font-bold">"{{ $globalShopName }}"</strong> ka përfunduar (0 Ditë Mbetura).<br><br>
+                    Për të vazhduar përdorimin e panelit, qasjen në modulet tuaja dhe pranimin e rezervimeve online, ju lutemi renovoni abonimin tuaj.
+                </p>
+
+                <!-- Renewal CTA Button -->
+                <a href="{{ route('admin.subscriptions.index') }}"
+                   class="w-full py-4 rounded-2xl font-black text-sm text-white bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 shadow-xl shadow-red-500/25 transition transform active:scale-95 flex items-center justify-center gap-2">
+                    <span>Renovo Abonimin Tani ↗</span>
+                </a>
+
+                <!-- Notice -->
+                <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-4 font-semibold">
+                    Keni pyetje? Kontaktoni mbështetjen e E4ProTech Engine.
+                </p>
+            </div>
         </div>
     @endif
 
