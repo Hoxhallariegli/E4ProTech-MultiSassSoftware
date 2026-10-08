@@ -1,18 +1,4 @@
-<!DOCTYPE html>
-<html lang="sq" class="h-full bg-[#FAF8F2] text-[#1A1D20]">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Krijo Sallonin Tënd | E4ProTech Engine</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    </style>
-</head>
-<body class="min-h-full flex flex-col justify-between antialiased bg-[#FAF8F2] text-[#1A1D20] selection:bg-[#7C5CFC] selection:text-white">
+<div class="min-h-screen flex flex-col justify-between bg-[#FAF8F2] text-[#1A1D20] antialiased selection:bg-[#7C5CFC] selection:text-white">
 
     <!-- Top Navigation Bar (E4ProTech Style) -->
     <header class="sticky top-0 z-50 backdrop-blur-md bg-[#FAF8F2]/90 border-b border-stone-200/60">
@@ -212,5 +198,4 @@
         </div>
     </footer>
 
-</body>
-</html>
+</div>
