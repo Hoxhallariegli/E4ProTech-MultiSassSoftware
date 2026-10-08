@@ -39,6 +39,7 @@ class SalonRegisteredNotification extends Notification
         $shopLandingUrl = url("s/{$this->shop->slug}");
 
         return (new MailMessage)
+            ->from('evtech@e4protech.com', 'E4ProTech Engine')
             ->subject("Aktivizoni Sallonin Tuaj {$this->shop->name} 🚀 — E4ProTech Engine")
             ->greeting("Përshëndetje {$notifiable->name}!")
             ->line("Urimë për regjistrimin e sallonit tuaj **{$this->shop->name}** në platformën E4ProTech Engine.")
