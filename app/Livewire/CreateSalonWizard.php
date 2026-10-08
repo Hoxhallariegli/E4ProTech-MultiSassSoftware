@@ -149,33 +149,16 @@ class CreateSalonWizard extends Component
             try { $shop->users()->syncWithoutDetaching([$user->id]); } catch (\Throwable $e) {}
         }
 
-        // 3. Create & Assign Spatie Roles ("pronar_i_biznesit_/_sallonit" & "admin")
+        // 3. Assign Spatie Role "pronar_i_biznesit_/_sallonit" to User for this shop
         try {
             setPermissionsTeamId($shop->id);
 
-            $ownerRole = Role::firstOrCreate([
+            Role::firstOrCreate([
                 'name' => 'pronar_i_biznesit_/_sallonit',
                 'label' => 'Pronar i Biznesit / Sallonit',
             ]);
 
-            $adminRole = Role::firstOrCreate([
-                'name' => 'admin',
-                'label' => 'Admin',
-            ]);
-
-            $allPermissions = Permission::all();
-            if ($allPermissions->isNotEmpty()) {
-                try { $ownerRole->syncPermissions($allPermissions); } catch (\Throwable $e) {}
-                try { $adminRole->syncPermissions($allPermissions); } catch (\Throwable $e) {}
-            }
-
             $user->assignRole('pronar_i_biznesit_/_sallonit');
-            $user->assignRole('admin');
-
-            // Failsafe global team
-            setPermissionsTeamId(0);
-            try { $user->assignRole('pronar_i_biznesit_/_sallonit'); } catch (\Throwable $e) {}
-            try { $user->assignRole('admin'); } catch (\Throwable $e) {}
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning("Role assignment warning: " . $e->getMessage());
         }
