@@ -75,6 +75,18 @@
   - Live validation, service/staff selection, date/time picker with overlap check (`Booking::checkOverlap`).
   - Automatically creates customer, creates booking record, and triggers the full notification pipeline.
 
+### 🎨 E. Official E4ProTech Brand Design System & 3-Step Salon Onboarding Wizard (`/krijo-sallonin`)
+- **Resolved `MissingLayoutException`**: Created `resources/views/components/layouts/blank.blade.php` to serve standalone full-screen Livewire pages.
+- **E4ProTech Brand Design System (`welcome.blade.php`)**:
+  - Soft Cream `#FAF8F2` background, Dark Teal `#0A4D44` jagged wave banners, Electric Purple `#7C5CFC` and Amber `#FF9F0A` pill buttons with arrow indicators (`↗`).
+  - Hero section: "Platforma Më e Sigurt & e Shpejtë për Sallonin Tuaj."
+  - 4-Step Process Section ("How We Work"): Discovery & Faqja Online, Rezervime 24/7, SMS & Rikujtesa, Aplikacion & Live Sync.
+  - Active Salons Directory Grid & FAQ Accordion.
+- **3-Step Interactive Salon Onboarding Wizard (`/krijo-sallonin` -> `CreateSalonWizard`):**
+  - **Step 1:** Salon Name, custom URL slug (`/s/{slug}`), and Business Type selector (*Barber, Beauty, Nails, Spa*).
+  - **Step 2:** Owner Name, Phone, Email & Password.
+  - **Step 3:** Automatic creation of `BarberShop`, `User` (Admin role), default `Barber` staff member, 6-day default `WorkingHour` schedule, and initial sample `Service`. Redirects directly to Admin Dashboard upon login.
+
 ---
 
 ## 3. Key Project Directory Structure
@@ -88,6 +100,7 @@ LaraFluterAuto/
 │   ├── Http/Controllers/ShopLandingController.php # Public landing page controller (/s/{slug})
 │   ├── Jobs/SendSmsToGatewayJob.php      # SMS Gateway Dispatch Job with Fallback
 │   ├── Listeners/SendFirebaseNotificationListener.php # FCM Push & Silent Data SMS Queue Event Listener
+│   ├── Livewire/CreateSalonWizard.php    # Livewire 3-Step Salon Onboarding Wizard (/krijo-sallonin)
 │   ├── Livewire/PublicShopBooking.php    # Livewire Public Online Booking Component
 │   ├── Models/                           # Eloquent Models with Spatie Tenancy scope
 │   ├── Observers/                        # Auto-sync observers (BookingObserver, BarberShopObserver, etc.)
@@ -115,4 +128,4 @@ LaraFluterAuto/
 
 ## 4. Instructions for Starting a New Chat
 When you start a new chat session, you can simply paste or refer to this summary:
-> *"The project documentation and architecture are saved in `C:\laragon\www\LaraFluterAuto\PROJECT_PROGRESS_AND_ARCHITECTURE.md`. The system uses Laravel 12 + Livewire + Flutter built with Java 17 JDK (`C:\Program Files\Eclipse Adoptium\jdk-17.0.14.7-hotspot`), project-internal Android & Gradle build homes (`mobile-gateway/android/.android_home` & `.gradle_home`), 100% Firebase FCM Push Notifications (isolated per shop/user), Android SIM SMS Gateway using `FlutterBackgroundService` and `telephony`, and In-App APK Updates via `release-apk.ps1` (published to `D:\Share\Apk` and `public/downloads`)."*
+> *"The project documentation and architecture are saved in `C:\laragon\www\LaraFluterAuto\PROJECT_PROGRESS_AND_ARCHITECTURE.md`. The system uses Laravel 12 + Livewire + Flutter built with Java 17 JDK (`C:\Program Files\Eclipse Adoptium\jdk-17.0.14.7-hotspot`), project-internal Android & Gradle build homes (`mobile-gateway/android/.android_home` & `.gradle_home`), 100% Firebase FCM Push Notifications (isolated per shop/user), Android SIM SMS Gateway using `FlutterBackgroundService` and `telephony`, official E4ProTech Brand Design System, 3-Step Salon Registration Wizard (`/krijo-sallonin`), and In-App APK Updates via `release-apk.ps1` (published to `D:\Share\Apk` and `public/downloads`)."*
