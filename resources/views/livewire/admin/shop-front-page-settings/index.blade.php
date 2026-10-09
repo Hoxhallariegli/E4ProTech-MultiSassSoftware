@@ -42,14 +42,61 @@
                             <option value="spa">💆‍♀️ Qendër Estetike &amp; Spa (Aesthetic Center)</option>
                         </select>
                     </div>
+                </div>
+
+                <!-- 10 Color Presets Card & Color Picker -->
+                <div class="bg-gray-50 dark:bg-gray-900/60 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 space-y-4">
                     <div>
-                        <x-form.input name="primary_color" type="text" wire:model.live="primary_color" label="Ngjyra Kryesore (Primary Hex)" placeholder="#FF9F0A" class="dark:bg-gray-900 font-mono" />
+                        <h4 class="font-bold text-gray-900 dark:text-gray-100 text-sm">Zgjidhni Ngjyrën e Temës (Color Picker &amp; 10 Presets)</h4>
+                        <p class="text-xs text-gray-500">Zgjidhni një nga ngjyrat automatike ose përdorni color picker-in për ngjyrën tuaj unike.</p>
                     </div>
-                    <div>
-                        <x-form.input name="secondary_color" type="text" wire:model.live="secondary_color" label="Ngjyra Dytësore (Secondary Hex)" placeholder="#1C1C1E" class="dark:bg-gray-900 font-mono" />
+
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2">
+                        @php
+                            $colorPresets = [
+                                ['name' => 'Luxury Gold', 'hex' => '#FF9F0A'],
+                                ['name' => 'Indigo Blue', 'hex' => '#2563EB'],
+                                ['name' => 'Royal Purple', 'hex' => '#7C3AED'],
+                                ['name' => 'Rose Pink', 'hex' => '#EC4899'],
+                                ['name' => 'Emerald Green', 'hex' => '#059669'],
+                                ['name' => 'Crimson Red', 'hex' => '#DC2626'],
+                                ['name' => 'Coral Peach', 'hex' => '#F43F5E'],
+                                ['name' => 'Teal Cyan', 'hex' => '#0D9488'],
+                                ['name' => 'Slate Dark', 'hex' => '#334155'],
+                                ['name' => 'Bronze Brown', 'hex' => '#B45309'],
+                            ];
+                        @endphp
+
+                        @foreach($colorPresets as $preset)
+                            <button type="button"
+                                    wire:click="$set('primary_color', '{{ $preset['hex'] }}')"
+                                    class="p-2.5 rounded-xl border text-left flex items-center gap-2.5 transition-all {{ $primary_color === $preset['hex'] ? 'border-blue-600 ring-2 ring-blue-500/20 bg-blue-50/50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300' }}">
+                                <span class="w-5 h-5 rounded-full shrink-0 shadow-sm" style="background-color: {{ $preset['hex'] }};"></span>
+                                <span class="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">{{ $preset['name'] }}</span>
+                            </button>
+                        @endforeach
                     </div>
-                    <div>
-                        <x-form.input name="contact_phone" type="text" wire:model="contact_phone" label="Numri i Telefonit" placeholder="+355691234567" class="dark:bg-gray-900" />
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Ngjyra Kryesore (Primary Hex)</label>
+                            <div class="flex items-center gap-3">
+                                <input type="color" wire:model.live="primary_color" class="w-12 h-12 rounded-2xl cursor-pointer border-0 bg-transparent shrink-0">
+                                <x-form.input name="primary_color" type="text" wire:model.live="primary_color" label="none" placeholder="#FF9F0A" class="dark:bg-gray-900 font-mono w-full" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Ngjyra Dytësore (Secondary Hex)</label>
+                            <div class="flex items-center gap-3">
+                                <input type="color" wire:model.live="secondary_color" class="w-12 h-12 rounded-2xl cursor-pointer border-0 bg-transparent shrink-0">
+                                <x-form.input name="secondary_color" type="text" wire:model.live="secondary_color" label="none" placeholder="#1C1C1E" class="dark:bg-gray-900 font-mono w-full" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <x-form.input name="contact_phone" type="text" wire:model="contact_phone" label="Numri i Telefonit" placeholder="+355691234567" class="dark:bg-gray-900" />
+                        </div>
                     </div>
                 </div>
 
