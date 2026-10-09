@@ -1,216 +1,186 @@
-<div class="space-y-8 p-4 sm:p-6">
+<div class="space-y-10">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] border border-stone-200 dark:border-gray-700 shadow-sm">
+    <div class="flex items-center justify-between gap-4 px-1">
         <div>
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black bg-amber-500/10 text-[#FF9F0A] mb-2">
-                <span>🎨</span> Menaxhimi i Plotë i Faqes Publike
-            </div>
-            <h1 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
-                Faqja Ime • {{ $shop->name }}
-            </h1>
-            <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
-                Personalizoni të gjitha tekstet, titujt, ngjyrat dhe përkthimet e faqes tuaj te <strong class="text-blue-600 font-mono">app.e4protech.com/s/{{ $shop->slug }}</strong>
-            </p>
+            <x-h1>Faqja Ime • {{ $shop->name }}</x-h1>
+            <x-short-description class="dark:text-gray-400">Personalizoni të gjitha tekstet, titujt, ngjyrat dhe përkthimet e faqes tuaj publike te app.e4protech.com/s/{{ $shop->slug }}</x-short-description>
         </div>
-
-        <div class="flex items-center gap-3">
-            <a href="{{ route('shop.landing', $shop->slug) }}" target="_blank"
-               class="px-6 py-3.5 rounded-2xl bg-[#FF9F0A] hover:bg-amber-400 text-black font-black text-xs shadow-lg transition transform active:scale-95 flex items-center gap-2">
-                <span>Shiko Faqen Publike</span>
-                <span>↗</span>
-            </a>
-        </div>
+        <x-btn :href="route('shop.landing', $shop->slug)" target="_blank" variant="blue" class="!px-6 !py-3 !rounded-2xl">
+            Shiko Faqen Publike ↗
+        </x-btn>
     </div>
 
-    <!-- Success Message -->
+    @include('errors.errors')
     @include('errors.messages')
 
     <!-- Form Section -->
-    <form wire:submit.prevent="saveSettings" class="space-y-8">
+    <div class="bg-white dark:bg-gray-800 p-8 sm:p-12 rounded-[2.5rem] shadow-sm border border-gray-50 dark:border-gray-700">
+        <form wire:submit.prevent="saveSettings" class="space-y-10">
 
-        <!-- 1. Branding & Theme Colors -->
-        <div class="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] border border-stone-200 dark:border-gray-700 shadow-sm space-y-6">
-            <h3 class="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
-                <span>🎨</span> Identiteti &amp; Ngjyrat e Temës
-            </h3>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- 1. Branding & Theme Colors -->
+            <div class="space-y-6">
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Emri i Dyqanit *</label>
-                    <input type="text" wire:model="name" class="w-full px-4 py-3 rounded-2xl bg-stone-50 dark:bg-gray-900 border border-stone-200 dark:border-gray-700 font-bold text-sm">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Titulli i Logos (Navbar)</label>
-                    <input type="text" wire:model="app_name" class="w-full px-4 py-3 rounded-2xl bg-stone-50 dark:bg-gray-900 border border-stone-200 dark:border-gray-700 font-bold text-sm">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Lloji i Biznesit</label>
-                    <select wire:model="business_type" class="w-full px-4 py-3 rounded-2xl bg-stone-50 dark:bg-gray-900 border border-stone-200 dark:border-gray-700 font-bold text-sm">
-                        <option value="barber">💈 Barber Shop / Sallon Qethje</option>
-                        <option value="beauty">💇‍♀️ Beauty Salon / Parukeri</option>
-                        <option value="nails">💅 Nail Studio / Qendër Thonjsh</option>
-                        <option value="spa">🌸 Spa &amp; Massage</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Ngjyra Kryesore (Primary Hex)</label>
-                    <div class="flex items-center gap-3">
-                        <input type="color" wire:model.live="primary_color" class="w-12 h-12 rounded-2xl cursor-pointer border-0">
-                        <input type="text" wire:model.live="primary_color" class="w-full px-4 py-3 rounded-2xl bg-stone-50 dark:bg-gray-900 border border-stone-200 dark:border-gray-700 font-mono font-bold text-sm">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Ngjyra Dytësore (Secondary Hex)</label>
-                    <div class="flex items-center gap-3">
-                        <input type="color" wire:model.live="secondary_color" class="w-12 h-12 rounded-2xl cursor-pointer border-0">
-                        <input type="text" wire:model.live="secondary_color" class="w-full px-4 py-3 rounded-2xl bg-stone-50 dark:bg-gray-900 border border-stone-200 dark:border-gray-700 font-mono font-bold text-sm">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider mb-2">Numri i Telefonit</label>
-                    <input type="text" wire:model="contact_phone" placeholder="p.sh: +355691234567" class="w-full px-4 py-3 rounded-2xl bg-stone-50 dark:bg-gray-900 border border-stone-200 dark:border-gray-700 font-bold text-sm">
-                </div>
-            </div>
-        </div>
-
-        <!-- 2. Dynamic Language Selector & Complete Front Page Content Editor -->
-        <div class="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] border border-stone-200 dark:border-gray-700 shadow-sm space-y-6">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                    <h3 class="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
-                        <span>🌍</span> Menaxhimi i Plotë i Teksteve te Faqja Publike
+                    <h3 class="font-bold text-gray-900 dark:text-gray-100 text-lg flex items-center gap-2">
+                        <span>🎨</span> Identiteti &amp; Ngjyrat e Temës
                     </h3>
-                    <p class="text-xs text-gray-500 font-medium mt-1">Zgjidhni gjuhën dhe menaxhoni të GJITHA tekstet e faqeve publike.</p>
+                    <p class="text-xs text-gray-500 mt-1">Vendosni logon, emrin dhe ngjyrat e faqes tuaj publike.</p>
                 </div>
 
-                <!-- Dynamic Registered Language Tabs -->
-                <div class="flex items-center gap-2 overflow-x-auto py-1">
-                    @foreach($this->supportedLocales as $langKey)
-                        @php
-                            $flag = match($langKey) {
-                                'sq' => '🇦🇱 SQ',
-                                'en' => '🇬🇧 EN',
-                                'it' => '🇮🇹 IT',
-                                'de' => '🇩🇪 DE',
-                                'fr' => '🇫🇷 FR',
-                                default => strtoupper($langKey),
-                            };
-                        @endphp
-                        <button type="button" wire:click="setLocale('{{ $langKey }}')"
-                                class="px-5 py-2.5 rounded-2xl text-xs font-black transition {{ $activeLocale === $langKey ? 'bg-blue-600 text-white shadow-md' : 'bg-stone-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-stone-200' }}">
-                            {{ $flag }}
-                        </button>
-                    @endforeach
-                </div>
-            </div>
-
-            <div class="p-6 sm:p-8 rounded-[2rem] bg-stone-50 dark:bg-gray-900 border border-stone-200 dark:border-gray-700 space-y-6">
-                <div class="flex items-center justify-between border-b border-stone-200 dark:border-gray-800 pb-4">
-                    <span class="text-xs font-black uppercase tracking-wider text-blue-600">Gjuha Aktive e Zgjedhur: {{ strtoupper($activeLocale) }}</span>
-                    <span class="text-xs text-stone-400 font-semibold">Gjuhët e sistemit: {{ implode(', ', array_map('strtoupper', $this->supportedLocales)) }}</span>
-                </div>
-
-                <!-- A. Header & Working Status -->
-                <div class="space-y-4">
-                    <h4 class="text-xs font-black uppercase tracking-wider text-amber-500">1. Koka e Faqes (Header &amp; Nav)</h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Banderola e Orarit të Punës</label>
-                            <input type="text" wire:model="translations.{{ $activeLocale }}.working_hours_notice" placeholder="Hapur tani • 09:00 - 19:00" class="w-full px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-stone-200 dark:border-gray-700 font-bold text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Butoni i Kontaktit (Header)</label>
-                            <input type="text" wire:model="translations.{{ $activeLocale }}.contact_button_text" placeholder="📞 Kontakt" class="w-full px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-stone-200 dark:border-gray-700 font-bold text-sm">
-                        </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <x-form.input name="name" type="text" wire:model="name" label="Emri i Dyqanit *" class="dark:bg-gray-900" />
+                    </div>
+                    <div>
+                        <x-form.input name="app_name" type="text" wire:model="app_name" label="Titulli i Logos (Navbar)" class="dark:bg-gray-900" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Lloji i Biznesit (Business Type)</label>
+                        <select wire:model="business_type" class="w-full px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm font-medium">
+                            <option value="barbershop">💈 Berberanë (Barbershop)</option>
+                            <option value="beauty_salon">💇‍♀️ Sallon Bukurie / Parukeri (Beauty Salon)</option>
+                            <option value="nail_studio">💅 Studio Thonjsh (Nail Studio)</option>
+                            <option value="spa">💆‍♀️ Qendër Estetike &amp; Spa (Aesthetic Center)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <x-form.input name="primary_color" type="text" wire:model.live="primary_color" label="Ngjyra Kryesore (Primary Hex)" placeholder="#FF9F0A" class="dark:bg-gray-900 font-mono" />
+                    </div>
+                    <div>
+                        <x-form.input name="secondary_color" type="text" wire:model.live="secondary_color" label="Ngjyra Dytësore (Secondary Hex)" placeholder="#1C1C1E" class="dark:bg-gray-900 font-mono" />
+                    </div>
+                    <div>
+                        <x-form.input name="contact_phone" type="text" wire:model="contact_phone" label="Numri i Telefonit" placeholder="+355691234567" class="dark:bg-gray-900" />
                     </div>
                 </div>
 
-                <!-- B. Hero Section -->
-                <div class="space-y-4 pt-4 border-t border-stone-200 dark:border-gray-800">
-                    <h4 class="text-xs font-black uppercase tracking-wider text-amber-500">2. Seksioni Hero (Ballina)</h4>
-                    <div class="grid grid-cols-1 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Badge i Sipërm (Hero Badge)</label>
-                            <input type="text" wire:model="translations.{{ $activeLocale }}.hero_badge_text" placeholder="✨ Sallon Bukurie Zyrtare" class="w-full px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-stone-200 dark:border-gray-700 font-bold text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Titulli Kryesor (Hero Title) *</label>
-                            <input type="text" wire:model="translations.{{ $activeLocale }}.hero_title" placeholder="Eksperiencë Premium për Shërbime & Stilim" class="w-full px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-stone-200 dark:border-gray-700 font-extrabold text-base">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Përshkrimi i Ballinës (Hero Subtitle)</label>
-                            <textarea wire:model="translations.{{ $activeLocale }}.hero_subtitle" rows="2" class="w-full px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-stone-200 dark:border-gray-700 font-medium text-sm"></textarea>
-                        </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                    <div>
+                        <x-file-upload name="logo" wire:model="logo" label="Logoja e Dyqanit" id="logo" :isEditing="true" />
+                    </div>
+                    <div>
+                        <x-file-upload name="banner" wire:model="banner" label="Imazhi i Ballinës (Banner)" id="banner" :isEditing="true" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Dynamic Language Selector & Complete Front Page Content Editor -->
+            <div class="space-y-6 pt-8 border-t border-gray-100 dark:border-gray-700">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="font-bold text-gray-900 dark:text-gray-100 text-lg flex items-center gap-2">
+                            <span>🌍</span> Përkthimet Shumë-Gjuhësh për Faqen Publike
+                        </h3>
+                        <p class="text-xs text-gray-500 mt-1">Zgjidhni gjuhën dhe menaxhoni të gjitha tekstet e faqeve publike.</p>
+                    </div>
+
+                    <!-- Dynamic Registered Language Tabs -->
+                    <div class="flex items-center gap-2">
+                        @foreach($this->supportedLocales as $langKey)
+                            @php
+                                $flag = match($langKey) {
+                                    'sq' => '🇦🇱 SQ',
+                                    'en' => '🇬🇧 EN',
+                                    'it' => '🇮🇹 IT',
+                                    'de' => '🇩🇪 DE',
+                                    'fr' => '🇫🇷 FR',
+                                    default => strtoupper($langKey),
+                                };
+                            @endphp
+                            <button type="button" wire:click="setLocale('{{ $langKey }}')"
+                                    class="px-5 py-2.5 rounded-2xl text-xs font-bold transition {{ $activeLocale === $langKey ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200' }}">
+                                {{ $flag }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="p-6 sm:p-8 rounded-[2rem] bg-gray-50 dark:bg-gray-900/60 border border-gray-100 dark:border-gray-700 space-y-6">
+                    <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
+                        <span class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Gjuha Aktive e Zgjedhur: {{ strtoupper($activeLocale) }}</span>
+                        <span class="text-xs text-gray-400">Gjuhët e sistemit: {{ implode(', ', array_map('strtoupper', $this->supportedLocales)) }}</span>
+                    </div>
+
+                    <!-- A. Header & Working Status -->
+                    <div class="space-y-4">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200">1. Koka e Faqes (Header &amp; Nav)</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Butoni i Rezervimit (Kryesor)</label>
-                                <input type="text" wire:model="translations.{{ $activeLocale }}.hero_button_text" placeholder="Rezervo Takim Online ↗" class="w-full px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-stone-200 dark:border-gray-700 font-bold text-sm">
+                                <x-form.input name="working_hours_notice" type="text" wire:model="translations.{{ $activeLocale }}.working_hours_notice" label="Banderola e Orarit të Punës" placeholder="Hapur tani • 09:00 - 19:00" class="dark:bg-gray-900" />
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Butoni Dytësor</label>
-                                <input type="text" wire:model="translations.{{ $activeLocale }}.secondary_button_text" placeholder="Shiko Shërbimet & Çmimet" class="w-full px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-stone-200 dark:border-gray-700 font-bold text-sm">
+                                <x-form.input name="contact_button_text" type="text" wire:model="translations.{{ $activeLocale }}.contact_button_text" label="Butoni i Kontaktit (Header)" placeholder="📞 Kontakt" class="dark:bg-gray-900" />
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- C. Staff & Services Section -->
-                <div class="space-y-4 pt-4 border-t border-stone-200 dark:border-gray-800">
-                    <h4 class="text-xs font-black uppercase tracking-wider text-amber-500">3. Seksioni i Stafit &amp; Shërbimeve</h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Badge i Stafit</label>
-                            <input type="text" wire:model="translations.{{ $activeLocale }}.staff_badge_text" placeholder="Ekipi Ynë" class="w-full px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-stone-200 dark:border-gray-700 font-bold text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Titulli i Stafit</label>
-                            <input type="text" wire:model="translations.{{ $activeLocale }}.staff_title" placeholder="Parukierët Tanë" class="w-full px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-stone-200 dark:border-gray-700 font-bold text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Badge i Shërbimeve</label>
-                            <input type="text" wire:model="translations.{{ $activeLocale }}.services_badge_text" placeholder="Çmimet & Kohëzgjatja" class="w-full px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-stone-200 dark:border-gray-700 font-bold text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Titulli i Shërbimeve</label>
-                            <input type="text" wire:model="translations.{{ $activeLocale }}.services_title" placeholder="Shërbimet e Ofruara" class="w-full px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-stone-200 dark:border-gray-700 font-bold text-sm">
+                    <!-- B. Hero Section -->
+                    <div class="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200">2. Seksioni Hero (Ballina)</h4>
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <x-form.input name="hero_badge_text" type="text" wire:model="translations.{{ $activeLocale }}.hero_badge_text" label="Badge i Sipërm (Hero Badge)" placeholder="✨ Sallon Bukurie Zyrtare" class="dark:bg-gray-900" />
+                            </div>
+                            <div>
+                                <x-form.input name="hero_title" type="text" wire:model="translations.{{ $activeLocale }}.hero_title" label="Titulli Kryesor (Hero Title) *" placeholder="Eksperiencë Premium për Shërbime & Stilim" class="dark:bg-gray-900" />
+                            </div>
+                            <div>
+                                <x-form.textarea name="hero_subtitle" wire:model="translations.{{ $activeLocale }}.hero_subtitle" label="Përshkrimi i Ballinës (Hero Subtitle)" class="dark:bg-gray-900" />
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <x-form.input name="hero_button_text" type="text" wire:model="translations.{{ $activeLocale }}.hero_button_text" label="Butoni i Rezervimit (Kryesor)" placeholder="Rezervo Takim Online ↗" class="dark:bg-gray-900" />
+                                </div>
+                                <div>
+                                    <x-form.input name="secondary_button_text" type="text" wire:model="translations.{{ $activeLocale }}.secondary_button_text" label="Butoni Dytësor" placeholder="Shiko Shërbimet & Çmimet" class="dark:bg-gray-900" />
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- D. Contact & Footer -->
-                <div class="space-y-4 pt-4 border-t border-stone-200 dark:border-gray-800">
-                    <h4 class="text-xs font-black uppercase tracking-wider text-amber-500">4. Kontaktet &amp; Footer</h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">E-mail i Kontaktit</label>
-                            <input type="email" wire:model="translations.{{ $activeLocale }}.contact_email" placeholder="info@salloni.al" class="w-full px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-stone-200 dark:border-gray-700 font-bold text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Adresa e Sallonit</label>
-                            <input type="text" wire:model="translations.{{ $activeLocale }}.contact_address" placeholder="Tiranë, Shqipëri" class="w-full px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-stone-200 dark:border-gray-700 font-bold text-sm">
-                        </div>
-                        <div class="sm:col-span-2">
-                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Teksti i Footer-it</label>
-                            <input type="text" wire:model="translations.{{ $activeLocale }}.footer_text" placeholder="© 2026 Salloni Juaj — Mundësuar nga E4ProTech Engine" class="w-full px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-stone-200 dark:border-gray-700 font-bold text-sm">
+                    <!-- C. Staff & Services Section -->
+                    <div class="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200">3. Seksioni i Stafit &amp; Shërbimeve</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <x-form.input name="staff_badge_text" type="text" wire:model="translations.{{ $activeLocale }}.staff_badge_text" label="Badge i Stafit" placeholder="Ekipi Ynë" class="dark:bg-gray-900" />
+                            </div>
+                            <div>
+                                <x-form.input name="staff_title" type="text" wire:model="translations.{{ $activeLocale }}.staff_title" label="Titulli i Stafit" placeholder="Parukierët Tanë" class="dark:bg-gray-900" />
+                            </div>
+                            <div>
+                                <x-form.input name="services_badge_text" type="text" wire:model="translations.{{ $activeLocale }}.services_badge_text" label="Badge i Shërbimeve" placeholder="Çmimet & Kohëzgjatja" class="dark:bg-gray-900" />
+                            </div>
+                            <div>
+                                <x-form.input name="services_title" type="text" wire:model="translations.{{ $activeLocale }}.services_title" label="Titulli i Shërbimeve" placeholder="Shërbimet e Ofruara" class="dark:bg-gray-900" />
+                            </div>
                         </div>
                     </div>
-                </div>
 
+                    <!-- D. Contact & Footer -->
+                    <div class="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200">4. Kontaktet &amp; Footer</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <x-form.input name="contact_email" type="email" wire:model="translations.{{ $activeLocale }}.contact_email" label="E-mail i Kontaktit" placeholder="info@salloni.al" class="dark:bg-gray-900" />
+                            </div>
+                            <div>
+                                <x-form.input name="contact_address" type="text" wire:model="translations.{{ $activeLocale }}.contact_address" label="Adresa e Sallonit" placeholder="Tiranë, Shqipëri" class="dark:bg-gray-900" />
+                            </div>
+                            <div class="sm:col-span-2">
+                                <x-form.input name="footer_text" type="text" wire:model="translations.{{ $activeLocale }}.footer_text" label="Teksti i Footer-it" placeholder="© 2026 Salloni Juaj — Mundësuar nga E4ProTech Engine" class="dark:bg-gray-900" />
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
             </div>
-        </div>
 
-        <!-- Submit Button -->
-        <div class="flex justify-end">
-            <button type="submit" wire:loading.attr="disabled"
-                    class="px-10 py-4 rounded-2xl font-black text-sm text-black bg-[#FF9F0A] hover:bg-amber-400 shadow-xl transition transform active:scale-95 flex items-center gap-2">
-                <span wire:loading.remove>Ruaj Konfigurimin e Plotë të Faqes 🚀</span>
-                <span wire:loading>Duke ruajtur...</span>
-            </button>
-        </div>
-    </form>
+            <!-- Submit Button -->
+            <div class="mt-10 flex justify-end">
+                <x-button type="submit" variant="blue" class="w-full sm:w-auto !px-12 !py-4 !rounded-2xl">
+                    Ruaj Konfigurimin e Plotë të Faqes 🚀
+                </x-button>
+            </div>
+        </form>
+    </div>
 </div>
