@@ -10,7 +10,6 @@ import '../../../../services/api_service.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../core/realtime/realtime_service.dart';
 import 'dart:convert';
-import 'package:pusher_reverb_flutter/pusher_reverb_flutter.dart';
 
 import '../widgets/shop_switcher_widget.dart';
 import 'module_registry.dart';

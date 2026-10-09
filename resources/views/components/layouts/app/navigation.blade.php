@@ -110,5 +110,5 @@
 
 
 @can('view_shop_front_page_settings')
-    <x-nav.link route="admin.shop-front-page-settings.index" icon="computer-desktop">{{ __('shop-front-page-settings.ShopFrontPageSettings') }}</x-nav.link>
+    <x-nav.link route="admin.shop-front-page-settings.index" icon="computer-desktop">{{ __('Faqja Ime (Front Page)') }}</x-nav.link>
 @endcan
