@@ -9,21 +9,10 @@ class ShopLandingController extends Controller
 {
     public function show(string $slug)
     {
-        $shop = BarberShop::where('slug', $slug)
-            ->where(function($q) {
-                $q->where('active', true)
-                  ->orWhere('active', 1)
-                  ->orWhere('status', 'active');
-            })
-            ->first();
+        $shop = BarberShop::where('slug', $slug)->first();
 
         if (!$shop) {
-            $shop = BarberShop::where('slug', $slug)->first();
-            if ($shop) {
-                $shop->update(['active' => true]);
-            } else {
-                abort(404, 'Salloni nuk u gjet ose nuk është aktiv.');
-            }
+            abort(404, 'Salloni nuk u gjet.');
         }
 
         $staff = \App\Models\Barber::withoutGlobalScope('barber_shop_access')
