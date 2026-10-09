@@ -60,13 +60,19 @@ class SendFirebaseNotificationListener
                     $body = "Ka një përditësim te rezervimi i {$customerName}.";
                 }
 
-                // Queue SMS confirmation AND scheduled reminder when booking is newly created and send_sms is true
+                // Queue SMS confirmation AND scheduled reminder
+                $source = $booking->source ?? 'online';
                 $sendSmsParam = request()->input('send_sms');
-                $sendSmsRequested = ($sendSmsParam !== null && $sendSmsParam !== '')
-                    ? filter_var($sendSmsParam, FILTER_VALIDATE_BOOLEAN)
-                    : true;
 
-                Log::info("📌 [SMS QUEUE CHECK] Booking #{$booking->id} Action: {$action}, SendSMS Requested: " . ($sendSmsRequested ? 'YES' : 'NO') . ", Has Customer: " . ($booking->customer ? 'YES' : 'NO') . ", Customer Phone: " . ($booking->customer?->phone ?? 'NONE'));
+                if ($sendSmsParam !== null && $sendSmsParam !== '') {
+                    $sendSmsRequested = filter_var($sendSmsParam, FILTER_VALIDATE_BOOLEAN);
+                } else {
+                    // For online public bookings, default send_sms is true.
+                    // For manual staff walk-in bookings created in APK/Admin, send_sms defaults to false unless send_sms = true is passed!
+                    $sendSmsRequested = ($source === 'online');
+                }
+
+                Log::info("📌 [SMS QUEUE CHECK] Booking #{$booking->id} (Source: {$source}) Action: {$action}, SendSMS Requested: " . ($sendSmsRequested ? 'YES' : 'NO') . ", Customer Phone: " . ($booking->customer?->phone ?? 'NONE'));
 
                 // Check if shop has SMS enabled
                 $shop = $booking->barberShop;
