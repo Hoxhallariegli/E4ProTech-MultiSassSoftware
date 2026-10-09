@@ -68,6 +68,15 @@ class SendFirebaseNotificationListener
 
                 Log::info("📌 [SMS QUEUE CHECK] Booking #{$booking->id} Action: {$action}, SendSMS Requested: " . ($sendSmsRequested ? 'YES' : 'NO') . ", Has Customer: " . ($booking->customer ? 'YES' : 'NO') . ", Customer Phone: " . ($booking->customer?->phone ?? 'NONE'));
 
+                // Check if shop has SMS enabled
+                $shop = $booking->barberShop;
+                $shopSmsEnabled = $shop ? (bool)$shop->sms_enabled : true;
+
+                if (!$shopSmsEnabled) {
+                    Log::info("⏸️ [STEP 4] SMS is disabled for Shop #{$shopId} (sms_enabled = false). Skipping SMS queue and trigger.");
+                    return;
+                }
+
                 if ($action === 'created' && $booking->customer && $booking->customer->phone && $sendSmsRequested) {
                     $parsedConfirmation = MessageTemplate::parseForBooking($booking, 'confirmation');
                     $formattedPhone = $this->formatPhone($booking->customer->phone);
