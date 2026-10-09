@@ -186,16 +186,12 @@ class SendFirebaseNotificationListener
                         }
                     }
 
-                    // Find active SMS Gateway device for this shop or shop owner
-                    $gatewayDevice = DeviceToken::where('is_sms_gateway', true)
+                    // Find active SMS Gateway device assigned strictly to this shop
+                    $gatewayDevice = DeviceToken::where('barber_shop_id', $shopId)
+                        ->where('is_sms_gateway', true)
                         ->whereNotNull('fcm_token')
-                        ->where(function($q) use ($shopId) {
-                            $q->where('barber_shop_id', $shopId)
-                              ->orWhereHas('user', function($userQuery) use ($shopId) {
-                                  $userQuery->where('barber_shop_id', $shopId)
-                                            ->orWhereHas('roles', fn($roleQuery) => $roleQuery->where('name', 'admin'));
-                              });
-                        })
+                        ->where('fcm_token', '!=', '')
+                        ->where('fcm_token', '!=', 'inactive_token')
                         ->orderByDesc('last_used_at')
                         ->first();
 
