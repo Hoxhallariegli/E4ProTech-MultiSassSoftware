@@ -59,8 +59,10 @@ class DeviceTokenController extends Controller
         ]);
 
         try {
-            // Preserve existing is_sms_gateway status if device was already configured as SMS Gateway
-            $existingIsGateway = DeviceToken::where('fcm_token', $fcmToken)->value('is_sms_gateway') ?? false;
+            // Check if explicitly passed or fallback to false when saving web/app tokens
+            $isGateway = $request->has('is_sms_gateway')
+                ? $request->boolean('is_sms_gateway')
+                : (DeviceToken::where('fcm_token', $fcmToken)->value('is_sms_gateway') ?? false);
 
             DeviceToken::where('fcm_token', $fcmToken)->delete();
 
@@ -69,7 +71,7 @@ class DeviceTokenController extends Controller
                 'barber_shop_id' => $shopId,
                 'user_id' => $user?->id,
                 'platform' => in_array($platform, ['android', 'ios', 'web']) ? $platform : 'android',
-                'is_sms_gateway' => (bool) $existingIsGateway,
+                'is_sms_gateway' => (bool) $isGateway,
                 'device_name' => $deviceName,
                 'last_used_at' => now(),
             ]);
@@ -155,14 +157,17 @@ class DeviceTokenController extends Controller
                     'data' => $deviceToken,
                 ]);
             } else {
-                DeviceToken::where('fcm_token', $fcmToken)->delete();
+                DeviceToken::where('fcm_token', $fcmToken)->update(['is_sms_gateway' => false]);
+                if ($user?->id) {
+                    DeviceToken::where('user_id', $user->id)->update(['is_sms_gateway' => false]);
+                }
 
-                Log::info('FCM setPrimaryGateway deactivated for token');
+                Log::info('FCM setPrimaryGateway deactivated for token and user ' . $user?->id);
 
                 return response()->json([
                     'success' => true,
                     'is_sms_gateway' => false,
-                    'message' => 'Pajisja u çaktivizua dhe u hoq nga lista.',
+                    'message' => 'Pajisja u çaktivizua nga roli SMS Gateway.',
                 ]);
             }
         } catch (\Throwable $e) {
