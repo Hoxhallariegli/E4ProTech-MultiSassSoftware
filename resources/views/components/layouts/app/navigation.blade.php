@@ -107,6 +107,8 @@
 
 
 
-@can('view_test_modules')
-    <x-nav.link route="admin.test-modules.index" icon="archive-box">{{ __('test-modules.TestModules') }}</x-nav.link>
+
+
+@can('view_shop_front_page_settings')
+    <x-nav.link route="admin.shop-front-page-settings.index" icon="computer-desktop">{{ __('shop-front-page-settings.ShopFrontPageSettings') }}</x-nav.link>
 @endcan

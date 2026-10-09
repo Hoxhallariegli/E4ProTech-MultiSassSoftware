@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="sq" class="h-full bg-[#0F1117] text-slate-100">
+<html lang="{{ app()->getLocale() }}" class="h-full bg-[#0F1117] text-slate-100">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,6 +14,20 @@
     @livewireStyles
 </head>
 <body class="min-h-full flex flex-col justify-between selection:bg-[#FF9F0A] selection:text-black antialiased bg-[#0F1117]">
+
+    @php
+        use App\Services\ShopTranslationService;
+        $heroBadge = ShopTranslationService::getShopText($shop, 'hero_badge', "✨ {$shop->resolved_shop_label} Zyrtare • {$shop->name}");
+        $heroTitle = ShopTranslationService::getShopText($shop, 'hero_title', "Eksperiencë Premium për {$shop->resolved_service_label} & Stilim");
+        $heroSubtitle = ShopTranslationService::getShopText($shop, 'hero_subtitle', "Rezervoni takimin tuaj online me ekipin tonë profesional në pak sekonda. Zgjidhni shërbimin, orarin dhe stafin tuaj të preferuar 24/7.");
+        $heroButton = ShopTranslationService::getShopText($shop, 'hero_button', "Rezervo Takim Online ↗");
+        $servicesBadge = ShopTranslationService::getShopText($shop, 'services_badge', "Çmimet & Kohëzgjatja");
+        $servicesTitle = ShopTranslationService::getShopText($shop, 'services_title', "Shërbimet e Ofruara");
+        $staffBadge = ShopTranslationService::getShopText($shop, 'staff_badge', "Ekipi Ynë");
+        $staffTitle = ShopTranslationService::getShopText($shop, 'staff_title', "{$shop->resolved_staff_label_plural} Tanë");
+        $contactPhone = ShopTranslationService::getShopText($shop, 'contact_phone', $shop->phone ?? '');
+        $footerText = ShopTranslationService::getShopText($shop, 'footer_text', "© " . date('Y') . " {$shop->name} — Mundësuar nga E4ProTech Engine");
+    @endphp
 
     <!-- Top Navigation Bar -->
     <header class="sticky top-0 z-50 backdrop-blur-md bg-[#0F1117]/85 border-b border-stone-800/80">
@@ -38,13 +52,13 @@
             </a>
 
             <div class="flex items-center gap-3">
-                @if(!empty($shop->phone))
-                    <a href="tel:{{ $shop->phone }}" class="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold bg-[#1A1D24] border border-stone-800 text-slate-200 hover:bg-stone-800 transition">
+                @if(!empty($contactPhone))
+                    <a href="tel:{{ $contactPhone }}" class="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold bg-[#1A1D24] border border-stone-800 text-slate-200 hover:bg-stone-800 transition">
                         <span>📞 Kontakt</span>
                     </a>
                 @endif
                 <a href="#booking-section" class="px-6 py-2.5 rounded-full text-xs font-black text-black bg-[#FF9F0A] hover:bg-amber-400 shadow-lg shadow-[#FF9F0A]/20 transition transform active:scale-95">
-                    Rezervo Tani ↗
+                    {{ $heroButton }}
                 </a>
             </div>
         </div>
@@ -59,25 +73,24 @@
 
             <!-- Badge -->
             <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-extrabold bg-[#1A1D24] border border-amber-500/30 text-[#FF9F0A] mb-6 shadow-lg">
-                <span>✨</span> {{ $shop->resolved_shop_label }} Zyrtare • {{ $shop->name }}
+                {{ $heroBadge }}
             </div>
 
             <!-- Hero Main Title -->
             <h1 class="text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.08] max-w-4xl mx-auto mb-6">
-                Eksperiencë Premium për <span class="text-[#FF9F0A]">{{ $shop->resolved_service_label }}</span> &amp; Stilim.
+                {{ $heroTitle }}
             </h1>
 
             <!-- Paragraph -->
             <p class="text-base sm:text-lg text-slate-400 max-w-2xl mx-auto mb-10 font-medium leading-relaxed">
-                Rezervoni takimin tuaj online me ekipin tonë profesional në pak sekonda. Zgjidhni shërbimin, orarin dhe {{ mb_strtolower($shop->resolved_staff_label) }}un tuaj të preferuar 24/7.
+                {{ $heroSubtitle }}
             </p>
 
             <!-- Hero Actions -->
             <div class="flex flex-wrap justify-center gap-4">
                 <a href="#booking-section"
                    class="px-8 py-4 rounded-full font-black text-sm text-black bg-[#FF9F0A] hover:bg-amber-400 shadow-xl shadow-[#FF9F0A]/25 transition transform active:scale-95 flex items-center justify-center gap-2">
-                    <span>Rezervo Takim Online</span>
-                    <span>↗</span>
+                    <span>{{ $heroButton }}</span>
                 </a>
 
                 <a href="#services"
@@ -92,8 +105,8 @@
     <section id="staff" class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div class="flex items-center justify-between mb-10">
             <div>
-                <span class="text-xs font-extrabold uppercase tracking-widest text-[#FF9F0A]">Ekipi Ynë</span>
-                <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight mt-1">{{ $shop->resolved_staff_label_plural }} Tanë</h2>
+                <span class="text-xs font-extrabold uppercase tracking-widest text-[#FF9F0A]">{{ $staffBadge }}</span>
+                <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight mt-1">{{ $staffTitle }}</h2>
             </div>
             <span class="text-xs px-3.5 py-1.5 rounded-full bg-[#1A1D24] border border-stone-800 text-slate-300 font-extrabold">
                 {{ $staff->count() }} {{ $shop->resolved_staff_label_plural }}
@@ -130,8 +143,8 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between mb-10">
                 <div>
-                    <span class="text-xs font-extrabold uppercase tracking-widest text-[#FF9F0A]">Çmimet &amp; Kohëzgjatja</span>
-                    <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight mt-1">Shërbimet e Ofruara</h2>
+                    <span class="text-xs font-extrabold uppercase tracking-widest text-[#FF9F0A]">{{ $servicesBadge }}</span>
+                    <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight mt-1">{{ $servicesTitle }}</h2>
                 </div>
             </div>
 
@@ -176,7 +189,7 @@
     <footer class="py-10 border-t border-stone-800/80 bg-[#0B0C10] mt-auto">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p class="text-xs text-slate-500 font-medium">
-                © {{ date('Y') }} {{ $shop->name }} — Mundësuar nga E4ProTech Engine
+                {{ $footerText }}
             </p>
             <div class="flex gap-4 text-xs text-slate-400 font-bold">
                 <a href="#booking-section" class="hover:text-[#FF9F0A] transition">Rezervo Online</a>

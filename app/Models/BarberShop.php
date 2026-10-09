@@ -93,6 +93,11 @@ class BarberShop extends Model
         return $this->hasMany(\App\Models\Subscription::class, 'barber_shop_id');
     }
 
+    public function frontPageSetting(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\ShopFrontPageSetting::class, 'barber_shop_id');
+    }
+
     public function getActivePlanNameAttribute(): string
     {
         $sub = $this->subscriptions()->with('plan')->latest('ends_at')->first();

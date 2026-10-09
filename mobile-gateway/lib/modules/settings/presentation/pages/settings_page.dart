@@ -450,13 +450,13 @@ class _AppVersionCardState extends State<_AppVersionCard> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.12),
+                color: theme.colorScheme.primary.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.green.withOpacity(0.3)),
+                border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.verified_rounded, color: Colors.green, size: 20),
+                  Icon(Icons.verified_rounded, color: theme.colorScheme.primary, size: 20),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -464,7 +464,7 @@ class _AppVersionCardState extends State<_AppVersionCard> {
                       children: [
                         Text(
                           '⚡ Version i Ri Gati për Shkarkim (v$serverVersionName)',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: Colors.green),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: theme.colorScheme.primary),
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -500,13 +500,13 @@ class _AppVersionCardState extends State<_AppVersionCard> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.12),
+                color: theme.colorScheme.primary.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.green.withOpacity(0.3)),
+                border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.check_circle_rounded, color: Colors.green, size: 20),
+                  Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary, size: 20),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -514,7 +514,7 @@ class _AppVersionCardState extends State<_AppVersionCard> {
                       children: [
                         Text(
                           '✓ Aplikacioni është i Përditësuar (v${_installedVersion.isEmpty ? serverVersionName : _installedVersion})',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: Colors.green),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: theme.colorScheme.primary),
                         ),
                         const SizedBox(height: 2),
                         const Text(
@@ -1153,6 +1153,21 @@ class _CustomColorPickerCardState extends State<_CustomColorPickerCard> {
     }
   }
 
+  void _openVisualColorPicker() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _VisualColorPickerSheet(
+        initialHex: _hexController.text,
+        onColorSelected: (hex) {
+          _hexController.text = hex;
+          _applyColor(hex);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -1243,21 +1258,45 @@ class _CustomColorPickerCardState extends State<_CustomColorPickerCard> {
             children: [
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF1E212B) : theme.colorScheme.surfaceContainerHighest,
                     border: Border.all(color: isDark ? const Color(0xFF3B4052) : theme.colorScheme.outlineVariant),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: TextField(
-                    controller: _hexController,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, fontFamily: 'monospace'),
-                    decoration: const InputDecoration(
-                      hintText: '#2563EB',
-                      border: InputBorder.none,
-                      isDense: true,
-                      prefixIcon: Icon(Icons.colorize_rounded, size: 18),
-                    ),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        tooltip: 'Hap Visual Color Picker',
+                        icon: Icon(Icons.colorize_rounded, size: 20, color: widget.branding.primaryColor),
+                        onPressed: _openVisualColorPicker,
+                      ),
+                      Expanded(
+                        child: TextField(
+                          controller: _hexController,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, fontFamily: 'monospace'),
+                          decoration: const InputDecoration(
+                            hintText: '#2563EB',
+                            border: InputBorder.none,
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                      InkWell(
+                        onTap: _openVisualColorPicker,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          width: 24,
+                          height: 24,
+                          margin: const EdgeInsets.only(right: 6),
+                          decoration: BoxDecoration(
+                            color: widget.branding.primaryColor,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 1.5),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -1283,6 +1322,350 @@ class _CustomColorPickerCardState extends State<_CustomColorPickerCard> {
   @override
   void dispose() {
     _hexController.dispose();
+    super.dispose();
+  }
+}
+
+class _VisualColorPickerSheet extends StatefulWidget {
+  final String initialHex;
+  final ValueChanged<String> onColorSelected;
+
+  const _VisualColorPickerSheet({
+    required this.initialHex,
+    required this.onColorSelected,
+  });
+
+  @override
+  State<_VisualColorPickerSheet> createState() => _VisualColorPickerSheetState();
+}
+
+class _VisualColorPickerSheetState extends State<_VisualColorPickerSheet> {
+  late double _hue;
+  late double _saturation;
+  late double _value;
+  late TextEditingController _hexInputController;
+
+  final List<String> _quickPalette = [
+    '#2563EB', '#3B82F6', '#60A5FA', '#1D4ED8',
+    '#FF9F0A', '#D97706', '#F59E0B', '#B45309',
+    '#059669', '#10B981', '#34D399', '#047857',
+    '#7C3AED', '#8B5CF6', '#A78BFA', '#6D28D9',
+    '#DC2626', '#EF4444', '#F87171', '#B91C1C',
+    '#DB2777', '#EC4899', '#F472B6', '#BE185D',
+    '#0891B2', '#06B6D4', '#334155', '#1E293B',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    final color = _parseColor(widget.initialHex);
+    final hsv = HSVColor.fromColor(color);
+    _hue = hsv.hue;
+    _saturation = hsv.saturation == 0 ? 1.0 : hsv.saturation;
+    _value = hsv.value == 0 ? 1.0 : hsv.value;
+    _hexInputController = TextEditingController(text: _formatHex(color));
+  }
+
+  Color _parseColor(String hex) {
+    try {
+      final clean = hex.trim().toUpperCase().replaceAll('0XFF', '').replaceAll('0X', '').replaceAll('#', '');
+      if (clean.length == 6) {
+        return Color(int.parse('FF$clean', radix: 16));
+      }
+    } catch (_) {}
+    return const Color(0xFF2563EB);
+  }
+
+  String _formatHex(Color color) {
+    final valueStr = color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase();
+    return '#$valueStr';
+  }
+
+  Color get _currentColor => HSVColor.fromAHSV(1.0, _hue, _saturation, _value).toColor();
+
+  void _updateFromColor(Color color) {
+    final hsv = HSVColor.fromColor(color);
+    setState(() {
+      _hue = hsv.hue;
+      _saturation = hsv.saturation == 0 ? 1.0 : hsv.saturation;
+      _value = hsv.value == 0 ? 1.0 : hsv.value;
+      _hexInputController.text = _formatHex(color);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final activeColor = _currentColor;
+    final activeHex = _formatHex(activeColor);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF181A20) : theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      padding: EdgeInsets.fromLTRB(22, 16, 22, MediaQuery.of(context).viewInsets.bottom + 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 44,
+              height: 4.5,
+              decoration: BoxDecoration(
+                color: theme.dividerColor,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: activeColor.withOpacity(0.18),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.colorize_rounded, color: activeColor, size: 22),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Zgjidh Ngjyrën Tamam (Visual Picker)',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+
+          // 1. Large Live Color Preview Banner
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: activeColor,
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: activeColor.withOpacity(0.4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: const BoxDecoration(
+                    color: Colors.white24,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check_rounded, color: Colors.white, size: 26),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Ekrani i Ngjyrës së Zgjedhur',
+                        style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        activeHex,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'monospace',
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // 2. Interactive Hue Spectrum Bar Slider
+          const Text(
+            'Harku i Ngjyrave (Hue Spectrum)',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return GestureDetector(
+                onPanUpdate: (details) {
+                  final dx = details.localPosition.dx.clamp(0.0, constraints.maxWidth);
+                  setState(() {
+                    _hue = (dx / constraints.maxWidth) * 360.0;
+                    _hexInputController.text = _formatHex(_currentColor);
+                  });
+                },
+                onTapDown: (details) {
+                  final dx = details.localPosition.dx.clamp(0.0, constraints.maxWidth);
+                  setState(() {
+                    _hue = (dx / constraints.maxWidth) * 360.0;
+                    _hexInputController.text = _formatHex(_currentColor);
+                  });
+                },
+                child: Container(
+                  height: 28,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFFFF0000),
+                        Color(0xFFFFFF00),
+                        Color(0xFF00FF00),
+                        Color(0xFF00FFFF),
+                        Color(0xFF0000FF),
+                        Color(0xFFFF00FF),
+                        Color(0xFFFF0000),
+                      ],
+                    ),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+                    ],
+                  ),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        left: ((_hue / 360.0) * (constraints.maxWidth - 24)).clamp(0.0, constraints.maxWidth - 24),
+                        top: 2,
+                        child: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.black87, width: 2.5),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 18),
+
+          // 3. Dynamic Hue Shade Variations (Saturation & Lightness)
+          const Text(
+            'Nivelimi i Nuancës së Zgjedhur (Shades)',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(10, (index) {
+                final sat = 0.3 + (index * 0.07);
+                final val = 1.0 - (index * 0.06);
+                final shadeColor = HSVColor.fromAHSV(1.0, _hue, sat.clamp(0.1, 1.0), val.clamp(0.2, 1.0)).toColor();
+                final isSelected = _formatHex(shadeColor) == activeHex;
+
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: InkWell(
+                    onTap: () => _updateFromColor(shadeColor),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: shadeColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected ? Colors.white : Colors.transparent,
+                          width: isSelected ? 3 : 0,
+                        ),
+                        boxShadow: isSelected ? [BoxShadow(color: shadeColor.withOpacity(0.6), blurRadius: 8)] : null,
+                      ),
+                      child: isSelected ? const Icon(Icons.check_rounded, color: Colors.white, size: 18) : null,
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+          const SizedBox(height: 18),
+
+          // 4. Quick Palette Grid
+          const Text(
+            'Paleta e ngjyrave profesionale',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _quickPalette.map((hex) {
+              final color = _parseColor(hex);
+              final isSelected = hex.toUpperCase() == activeHex.toUpperCase();
+
+              return InkWell(
+                onTap: () => _updateFromColor(color),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? Colors.white : Colors.black12,
+                      width: isSelected ? 2.5 : 1,
+                    ),
+                    boxShadow: isSelected ? [BoxShadow(color: color.withOpacity(0.6), blurRadius: 6)] : null,
+                  ),
+                  child: isSelected ? const Icon(Icons.check, size: 16, color: Colors.white) : null,
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 20),
+
+          // 5. Apply Button
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: activeColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                widget.onColorSelected(activeHex);
+              },
+              icon: const Icon(Icons.check_circle_rounded, size: 20),
+              label: Text(
+                'Zbato Këtë Ngjyrë ($activeHex)',
+                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _hexInputController.dispose();
     super.dispose();
   }
 }
@@ -1523,13 +1906,13 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: widget.branding.smsEnabled
-                      ? Colors.green.withOpacity(0.15)
+                      ? widget.branding.primaryColor.withOpacity(0.15)
                       : theme.colorScheme.primary.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
                   widget.branding.smsEnabled ? Icons.sms_rounded : Icons.sms_outlined,
-                  color: widget.branding.smsEnabled ? Colors.green : theme.colorScheme.primary,
+                  color: widget.branding.smsEnabled ? widget.branding.primaryColor : theme.colorScheme.primary,
                   size: 22,
                 ),
               ),
@@ -1545,7 +1928,7 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
                     const SizedBox(height: 2),
                     Text(
                       widget.branding.smsEnabled ? coreTr(context, 'settings.sms_active') : coreTr(context, 'settings.sms_inactive'),
-                      style: TextStyle(fontSize: 11, color: widget.branding.smsEnabled ? Colors.green : Colors.grey),
+                      style: TextStyle(fontSize: 11, color: widget.branding.smsEnabled ? widget.branding.primaryColor : Colors.grey),
                     ),
                   ],
                 ),
@@ -1664,12 +2047,12 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: _isGatewayDevice
-                    ? Colors.green.withOpacity(0.12)
+                    ? widget.branding.primaryColor.withOpacity(0.12)
                     : (isDark ? const Color(0xFF1E212B) : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4)),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: _isGatewayDevice
-                      ? Colors.green.withOpacity(0.4)
+                      ? widget.branding.primaryColor.withOpacity(0.4)
                       : (isDark ? const Color(0xFF3B4052) : theme.colorScheme.outlineVariant),
                 ),
               ),
@@ -1678,7 +2061,7 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
                   Icon(
                     _isGatewayDevice ? Icons.phonelink_ring_rounded : Icons.phonelink_setup_rounded,
                     size: 20,
-                    color: _isGatewayDevice ? Colors.green : Colors.grey,
+                    color: _isGatewayDevice ? widget.branding.primaryColor : Colors.grey,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -1690,7 +2073,7 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 13,
-                            color: _isGatewayDevice ? Colors.green : (isDark ? Colors.white : Colors.black87),
+                            color: _isGatewayDevice ? widget.branding.primaryColor : (isDark ? Colors.white : Colors.black87),
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -1698,7 +2081,7 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
                           _isGatewayDevice
                               ? coreTr(context, 'settings.sms_device_active_desc')
                               : coreTr(context, 'settings.sms_device_inactive_desc'),
-                          style: TextStyle(fontSize: 10.5, color: _isGatewayDevice ? Colors.green : Colors.grey),
+                          style: TextStyle(fontSize: 10.5, color: _isGatewayDevice ? widget.branding.primaryColor : Colors.grey),
                         ),
                       ],
                     ),
@@ -1709,7 +2092,7 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
                       : Switch.adaptive(
                           value: _isGatewayDevice,
                           onChanged: _toggleGatewayDevice,
-                          activeColor: Colors.green,
+                          activeColor: widget.branding.primaryColor,
                         ),
                 ],
               ),
@@ -1747,7 +2130,7 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.amber.shade800,
+                    backgroundColor: widget.branding.primaryColor,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     padding: const EdgeInsets.symmetric(vertical: 12),

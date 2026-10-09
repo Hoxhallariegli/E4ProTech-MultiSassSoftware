@@ -150,5 +150,6 @@ Route::prefix('mobile')->group(function () {
 });
 
 Route::middleware('auth:sanctum')->prefix('mobile')->group(function () {
-    Route::apiResource('test-modules', \App\Http\Controllers\Api\Mobile\TestModuleController::class);
+    Route::apiResource('shop-front-page-settings', \App\Http\Controllers\Api\Mobile\ShopFrontPageSettingController::class);
+    
 });

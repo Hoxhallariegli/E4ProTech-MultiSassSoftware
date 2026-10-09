@@ -210,6 +210,13 @@ class CreateSalonWizard extends Component
             'active' => true,
         ]);
 
+        // 8. Generate Front Page Translation Files (lang/sq/shop-{slug}.php & lang/en/shop-{slug}.php)
+        try {
+            \App\Services\ShopTranslationService::createShopTranslationFiles($shop);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Shop translation creation warning: " . $e->getMessage());
+        }
+
         // Send Custom E4ProTech Branded Registration Email Notification
         try {
             $user->notify(new \App\Notifications\SalonRegisteredNotification($shop));
