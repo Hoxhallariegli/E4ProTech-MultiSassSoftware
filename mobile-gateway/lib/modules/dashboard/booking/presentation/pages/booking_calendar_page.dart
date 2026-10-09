@@ -42,8 +42,12 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
     super.dispose();
   }
 
+  int? _lastShopId;
+
   void _onAuthChanged() {
-    if (mounted) {
+    final currentShopId = AuthService.instance.currentBarberShopId;
+    if (mounted && currentShopId != _lastShopId) {
+      _lastShopId = currentShopId;
       refreshAll(reloadBarbers: true);
     }
   }

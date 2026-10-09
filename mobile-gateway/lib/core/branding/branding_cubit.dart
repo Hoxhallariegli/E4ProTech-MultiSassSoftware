@@ -34,6 +34,8 @@ class BrandingState {
     this.serviceLabel = 'Shërbimi',
   });
 
+  bool get isExpired => subscriptionStatus == 'expired' || trialDaysLeft <= 0;
+
   factory BrandingState.defaultBranding() {
     return const BrandingState(
       appName: 'LaraFlutter Gateway',

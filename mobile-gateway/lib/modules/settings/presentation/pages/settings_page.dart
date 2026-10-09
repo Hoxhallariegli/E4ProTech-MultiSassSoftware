@@ -130,6 +130,10 @@ class _SettingsPageState extends State<SettingsPage> {
             children: [
               // 1. Subscription & Business Profile
               _BusinessBanner(branding: branding, onAuthChange: _handleAuthChange),
+              if (branding.isExpired && !isAdmin) ...[
+                const SizedBox(height: 12),
+                const _ExpiredSubscriptionCard(),
+              ],
               const SizedBox(height: 20),
 
               // 2. Theme Mode Switcher (Dark / Light / System)
@@ -788,6 +792,19 @@ class _BusinessBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final canEdit = AuthService.instance.hasPermission('edit_barber_shops') || AuthService.instance.user?['is_admin'] == true;
+    final isExpired = branding.isExpired;
+
+    final bgGradient = isExpired
+        ? const LinearGradient(
+            colors: [Color(0xFF881337), Color(0xFFBE123C)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          )
+        : LinearGradient(
+            colors: [branding.primaryColor, branding.primaryColor.withOpacity(0.7)],
+          );
+
+    final shadowColor = isExpired ? const Color(0xFFBE123C) : branding.primaryColor;
 
     return InkWell(
       onTap: canEdit ? () => _openEditModal(context) : null,
@@ -795,12 +812,10 @@ class _BusinessBanner extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [branding.primaryColor, branding.primaryColor.withOpacity(0.7)],
-          ),
+          gradient: bgGradient,
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
-            BoxShadow(color: branding.primaryColor.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8)),
+            BoxShadow(color: shadowColor.withOpacity(0.35), blurRadius: 15, offset: const Offset(0, 8)),
           ],
         ),
         child: Row(
@@ -830,8 +845,14 @@ class _BusinessBanner extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${branding.planName} • ${branding.trialDaysLeft > 0 ? coreTr(context, 'settings.days_remaining', {'days': branding.trialDaysLeft.toString()}) : coreTr(context, 'settings.plan_expired')}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
+                    isExpired
+                        ? '⚠️ ${branding.planName} • ${coreTr(context, 'settings.plan_expired')} (0 Ditë)'
+                        : '${branding.planName} • ${coreTr(context, 'settings.days_remaining', {'days': branding.trialDaysLeft.toString()})}',
+                    style: TextStyle(
+                      color: isExpired ? const Color(0xFFFECDD3) : Colors.white70,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ],
               ),
@@ -846,6 +867,51 @@ class _BusinessBanner extends StatelessWidget {
               const Icon(Icons.verified_rounded, color: Colors.white, size: 20),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ExpiredSubscriptionCard extends StatelessWidget {
+  const _ExpiredSubscriptionCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF1F2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFECDD3), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.warning_amber_rounded, color: Color(0xFFBE123C), size: 22),
+              SizedBox(width: 8),
+              Text(
+                'Abonimi juaj ka skaduar',
+                style: TextStyle(
+                  color: Color(0xFF881337),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Llogaria juaj është pezulluar përkohësisht për veprimet e shkrimit dhe ndryshimit. Ju lutemi kontaktoni administratorin ose renovoni planin tuaj për të vazhduar përdorimin pa ndërprerje.',
+            style: TextStyle(
+              color: Color(0xFF9F1239),
+              fontSize: 12,
+              height: 1.4,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }

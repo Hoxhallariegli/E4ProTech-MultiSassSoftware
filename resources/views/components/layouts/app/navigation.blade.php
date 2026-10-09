@@ -106,3 +106,7 @@
 @endcan
 
 
+
+@can('view_test_modules')
+    <x-nav.link route="admin.test-modules.index" icon="archive-box">{{ __('test-modules.TestModules') }}</x-nav.link>
+@endcan

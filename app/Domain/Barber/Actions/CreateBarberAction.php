@@ -8,7 +8,7 @@ use App\Models\AuditTrail;
 
 class CreateBarberAction
 {
-    public function execute(BarberDTO $dto): Barber 
+    public function execute(BarberDTO $dto): Barber
     {
         $item = Barber::create($dto->toArray());
         AuditTrail::log($item, 'create', 'Barbers');

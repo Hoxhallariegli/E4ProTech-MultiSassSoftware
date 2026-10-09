@@ -148,3 +148,7 @@ Route::prefix('mobile')->group(function () {
         Route::apiResource('working-hours', \App\Http\Controllers\Api\Mobile\WorkingHourController::class);
     });
 });
+
+Route::middleware('auth:sanctum')->prefix('mobile')->group(function () {
+    Route::apiResource('test-modules', \App\Http\Controllers\Api\Mobile\TestModuleController::class);
+});

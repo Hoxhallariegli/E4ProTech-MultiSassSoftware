@@ -10,6 +10,7 @@ import '../../../../services/auth_service.dart';
 import '../../../../core/branding/branding_cubit.dart';
 import '../../../../core/widgets/premium_header.dart';
 import '../../../../core/widgets/sidebar.dart';
+import '../../../../core/widgets/expired_subscription_banner.dart';
 import '../../../../core/notifications/push_service.dart';
 import '../../booking/presentation/pages/booking_calendar_page.dart';
 
@@ -115,9 +116,16 @@ class _AppShellState extends State<AppShell> {
           if (mounted) setState(() {});
         },
       ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
+      body: Column(
+        children: [
+          const ExpiredSubscriptionBanner(),
+          Expanded(
+            child: IndexedStack(
+              index: _currentIndex,
+              children: _pages,
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,

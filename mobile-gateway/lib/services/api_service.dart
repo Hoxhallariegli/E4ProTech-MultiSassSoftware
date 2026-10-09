@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart';
+import '../core/branding/branding_cubit.dart';
 import '../modules/auth/presentation/pages/login_page.dart';
 
 class ApiService {
@@ -253,9 +255,44 @@ class ApiService {
       if (res.statusCode == 401) {
         _handleUnauthorized();
       }
+      if (res.statusCode == 402) {
+        _handleSubscriptionExpired();
+      }
       if (res.statusCode < 200 || res.statusCode >= 300) {
+        try {
+          final decoded = jsonDecode(res.body);
+          if (decoded is Map && (decoded['is_expired'] == true || decoded['subscription_status'] == 'expired')) {
+            _handleSubscriptionExpired();
+          }
+        } catch (_) {}
         throw Exception(extractErrorMessage(res));
       }
+    }
+  }
+
+  static void _handleSubscriptionExpired() {
+    final context = navigatorKey.currentContext;
+    if (context != null) {
+      try {
+        final current = context.read<BrandingCubit>().state;
+        if (!current.isExpired) {
+          context.read<BrandingCubit>().updateBranding({
+            'app_name': current.appName,
+            'logo': current.logoUrl,
+            'color': '#${current.primaryColor.value.toRadixString(16).substring(2)}',
+            'sms_active': current.smsEnabled,
+            'reminder_hours_before': current.reminderHours,
+            'trial_days_left': 0,
+            'plan_name': current.planName,
+            'subscription_status': 'expired',
+            'business_type': current.businessType,
+            'staff_label': current.staffLabel,
+            'staff_label_plural': current.staffLabelPlural,
+            'shop_label': current.shopLabel,
+            'service_label': current.serviceLabel,
+          });
+        }
+      } catch (_) {}
     }
   }
 

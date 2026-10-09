@@ -3,6 +3,7 @@ import '../../services/api_service.dart';
 import '../../l10n/core_localization.dart';
 import 'sidebar.dart';
 import 'premium_header.dart';
+import 'expired_subscription_banner.dart';
 
 class AppScaffold extends StatelessWidget {
   final Widget body;
@@ -70,6 +71,9 @@ class AppScaffold extends StatelessWidget {
       appBar: appBarWidget,
       body: Column(
         children: [
+          // 0. Expired Subscription Global Banner
+          const ExpiredSubscriptionBanner(),
+
           // 1. Red Offline Banner
           ValueListenableBuilder<bool>(
             valueListenable: ApiService.isOffline,

@@ -46,3 +46,5 @@ Broadcast::channel('mobile.{shopId}.message-logs', function (\App\Models\User $u
 Broadcast::channel('mobile.{shopId}.device-tokens', function (\App\Models\User $user, $shopId) { if ($user->hasRole('admin')) return true; return (int) $user->barber_shop_id === (int) $shopId && $user->can('view_device_tokens'); });
 
 Broadcast::channel('mobile.{shopId}.reviews', function (\App\Models\User $user, $shopId) { if ($user->hasRole('admin')) return true; return (int) $user->barber_shop_id === (int) $shopId && $user->can('view_reviews'); });
+
+Broadcast::channel('mobile.{shopId}.test-modules', function (\App\Models\User $user, $shopId) { if ($user->hasRole('admin')) return true; return (int) $user->barber_shop_id === (int) $shopId; });

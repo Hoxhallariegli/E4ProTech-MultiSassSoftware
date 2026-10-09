@@ -46,17 +46,38 @@ class AuthService extends ChangeNotifier {
 
   int? get currentBarberShopId => _userData?['barber_shop_id'];
 
-  Future<void> sync() async {
+  Future<void>? _syncFuture;
+
+  Future<void> sync() {
+    if (_syncFuture != null) return _syncFuture!;
+
+    _syncFuture = _performSync().whenComplete(() {
+      _syncFuture = null;
+    });
+
+    return _syncFuture!;
+  }
+
+  Future<void> _performSync() async {
     try {
       final response = await ApiService.get('/me');
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        _userData = data['user'];
-        _permissions = List<String>.from(_userData?['permissions'] ?? []);
+        final newUserData = data['user'];
+        final newPermissions = List<String>.from(newUserData?['permissions'] ?? []);
+
+        final encodedNew = jsonEncode(newUserData);
+        final encodedOld = jsonEncode(_userData);
+
+        _userData = newUserData;
+        _permissions = newPermissions;
 
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_data', jsonEncode(_userData));
-        notifyListeners();
+        await prefs.setString('user_data', encodedNew);
+
+        if (encodedNew != encodedOld) {
+          notifyListeners();
+        }
       }
     } catch (e) {
       // Silent fail or handle error
