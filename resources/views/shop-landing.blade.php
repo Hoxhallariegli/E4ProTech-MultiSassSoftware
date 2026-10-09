@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="sq" class="h-full bg-slate-950 text-slate-100">
+<html lang="sq" class="h-full bg-[#0F1117] text-slate-100">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,110 +7,118 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
     </style>
     @livewireStyles
 </head>
-<body class="min-h-full flex flex-col justify-between selection:bg-rose-500 selection:text-white antialiased bg-slate-950">
+<body class="min-h-full flex flex-col justify-between selection:bg-[#FF9F0A] selection:text-black antialiased bg-[#0F1117]">
 
     <!-- Top Navigation Bar -->
-    <header class="sticky top-0 z-50 backdrop-blur-md bg-slate-950/80 border-b border-slate-800/60">
+    <header class="sticky top-0 z-50 backdrop-blur-md bg-[#0F1117]/85 border-b border-stone-800/80">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-2xl flex items-center justify-center font-extrabold text-xl shadow-lg"
-                     style="background: linear-gradient(135deg, {{ $shop->primary_color }}, {{ $shop->secondary_color }}); text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+            <a href="#" class="flex items-center gap-3 group">
+                <div class="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl text-white shadow-xl transition transform group-hover:scale-105"
+                     style="background: linear-gradient(135deg, {{ $shop->primary_color ?: '#FF9F0A' }}, {{ $shop->secondary_color ?: '#1C1C1E' }}); text-shadow: 0 2px 4px rgba(0,0,0,0.4);">
                     {{ mb_substr($shop->name, 0, 1) }}
                 </div>
                 <div>
-                    <h1 class="text-xl font-black tracking-tight text-white flex items-center gap-2">
+                    <h1 class="text-lg font-black tracking-tight text-white flex items-center gap-2">
                         {{ $shop->name }}
-                        <span class="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider text-white/90 border border-white/20"
-                              style="background-color: {{ $shop->primary_color }};">
+                        <span class="text-[10px] px-2.5 py-0.5 rounded-full font-extrabold uppercase tracking-wider text-black bg-[#FF9F0A]">
                             {{ $shop->resolved_shop_label }}
                         </span>
                     </h1>
-                    <p class="text-xs text-slate-400 font-medium">Orari: 09:00 - 19:00 | Europe/Tirane</p>
+                    <p class="text-[11px] text-emerald-400 font-bold flex items-center gap-1.5 mt-0.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        Hapur tani • 09:00 - 19:00
+                    </p>
                 </div>
-            </div>
+            </a>
 
             <div class="flex items-center gap-3">
-                <a href="tel:+355691111111" class="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-900 border border-slate-800 text-slate-200 hover:bg-slate-800 transition">
-                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-                    Kontakt
-                </a>
-                <a href="#services" class="px-5 py-2.5 rounded-xl text-xs font-black text-white shadow-lg transition transform active:scale-95"
-                   style="background: linear-gradient(135deg, {{ $shop->primary_color }}, {{ $shop->secondary_color }});">
-                    Rezervo Tani
+                @if($shop->phone)
+                    <a href="tel:{{ $shop->phone }}" class="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold bg-[#1A1D24] border border-stone-800 text-slate-200 hover:bg-stone-800 transition">
+                        <span>📞 Kontakt</span>
+                    </a>
+                @endif
+                <a href="#booking-section" class="px-6 py-2.5 rounded-full text-xs font-black text-black bg-[#FF9F0A] hover:bg-amber-400 shadow-lg shadow-[#FF9F0A]/20 transition transform active:scale-95">
+                    Rezervo Tani ↗
                 </a>
             </div>
         </div>
     </header>
 
-    <!-- Hero Section -->
-    <section class="relative overflow-hidden py-16 lg:py-24 border-b border-slate-800/40">
-        <div class="absolute inset-0 bg-gradient-to-tr from-slate-950 via-slate-900 to-slate-950 opacity-90"></div>
-        <div class="absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl opacity-20" style="background-color: {{ $shop->primary_color }};"></div>
-        <div class="absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl opacity-20" style="background-color: {{ $shop->secondary_color }};"></div>
+    <!-- Luxury Barber & Beauty Hero Section -->
+    <section class="relative overflow-hidden py-16 lg:py-24 border-b border-stone-800/60 bg-gradient-to-b from-[#141722] via-[#0F1117] to-[#0F1117]">
+        <!-- Background Ambient Glow -->
+        <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full blur-[120px] opacity-25" style="background-color: {{ $shop->primary_color ?: '#FF9F0A' }};"></div>
 
         <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold bg-slate-900/80 border border-slate-800 text-slate-300 mb-6">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Mirësevisni te {{ $shop->name }}
+
+            <!-- Badge -->
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-extrabold bg-[#1A1D24] border border-amber-500/30 text-[#FF9F0A] mb-6 shadow-lg">
+                <span>✨</span> {{ $shop->resolved_shop_label }} Zyrtare • {{ $shop->name }}
             </div>
-            <h2 class="text-4xl sm:text-6xl font-black text-white tracking-tight max-w-4xl mx-auto leading-none mb-6">
-                Eksperiencë Unike për {{ $shop->resolved_service_label }}
-            </h2>
-            <p class="text-base sm:text-lg text-slate-400 max-w-2xl mx-auto mb-10 font-medium">
-                Rezervoni takimin tuaj online me ekipin tonë profesional. Zgjidhni shërbimin, orarin dhe {{ mb_strtolower($shop->resolved_staff_label) }}un tuaj të preferuar në pak sekonda.
+
+            <!-- Hero Main Title -->
+            <h1 class="text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.08] max-w-4xl mx-auto mb-6">
+                Eksperiencë Premium për <span class="text-[#FF9F0A]">{{ $shop->resolved_service_label }}</span> &amp; Stilim.
+            </h1>
+
+            <!-- Paragraph -->
+            <p class="text-base sm:text-lg text-slate-400 max-w-2xl mx-auto mb-10 font-medium leading-relaxed">
+                Rezervoni takimin tuaj online me ekipin tonë profesional në pak sekonda. Zgjidhni shërbimin, orarin dhe {{ mb_strtolower($shop->resolved_staff_label) }}un tuaj të preferuar 24/7.
             </p>
 
+            <!-- Hero Actions -->
             <div class="flex flex-wrap justify-center gap-4">
-                <a href="#services" class="px-8 py-4 rounded-2xl font-extrabold text-sm text-white shadow-xl hover:opacity-95 transition transform hover:-translate-y-0.5"
-                   style="background: linear-gradient(135deg, {{ $shop->primary_color }}, {{ $shop->secondary_color }});">
-                    Shiko Shërbimet & Çmimet
+                <a href="#booking-section"
+                   class="px-8 py-4 rounded-full font-black text-sm text-black bg-[#FF9F0A] hover:bg-amber-400 shadow-xl shadow-[#FF9F0A]/25 transition transform active:scale-95 flex items-center justify-center gap-2">
+                    <span>Rezervo Takim Online</span>
+                    <span>↗</span>
                 </a>
-                <a href="#staff" class="px-8 py-4 rounded-2xl font-extrabold text-sm bg-slate-900 border border-slate-800 text-slate-200 hover:bg-slate-800 transition">
-                    Shiko {{ $shop->resolved_staff_label_plural }}
+
+                <a href="#services"
+                   class="px-8 py-4 rounded-full font-extrabold text-sm text-white bg-[#1A1D24] border border-stone-800 hover:bg-stone-800 transition flex items-center justify-center">
+                    Shiko Shërbimet &amp; Çmimet
                 </a>
             </div>
         </div>
     </section>
 
     <!-- Staff Members Section -->
-    <section id="staff" class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="staff" class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div class="flex items-center justify-between mb-10">
             <div>
-                <h3 class="text-2xl font-black text-white tracking-tight">{{ $shop->resolved_staff_label_plural }} Tanë</h3>
-                <p class="text-xs text-slate-400 mt-1 font-medium">Profesionalistët tanë të kualifikuar gati për t'ju shërbyer</p>
+                <span class="text-xs font-extrabold uppercase tracking-widest text-[#FF9F0A]">Ekipi Ynë</span>
+                <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight mt-1">{{ $shop->resolved_staff_label_plural }} Tanë</h2>
             </div>
-            <span class="text-xs px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 font-bold">
+            <span class="text-xs px-3.5 py-1.5 rounded-full bg-[#1A1D24] border border-stone-800 text-slate-300 font-extrabold">
                 {{ $staff->count() }} {{ $shop->resolved_staff_label_plural }}
             </span>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             @foreach($staff as $member)
-                <div class="p-6 rounded-3xl bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 transition group">
+                <div class="p-6 rounded-[2rem] bg-[#161822] border border-stone-800/80 hover:border-[#FF9F0A]/50 transition duration-300 group shadow-lg">
                     <div class="flex items-center gap-4">
-                        <div class="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center font-black text-2xl text-white shadow-inner"
-                             style="color: {{ $shop->primary_color }};">
+                        <div class="w-16 h-16 rounded-2xl bg-[#1A1D24] border border-stone-700 flex items-center justify-center font-black text-2xl text-[#FF9F0A] shadow-inner">
                             {{ mb_substr($member->name, 0, 1) }}
                         </div>
                         <div>
-                            <h4 class="font-extrabold text-base text-white group-hover:text-amber-400 transition">{{ $member->name }}</h4>
-                            <p class="text-xs font-bold text-slate-400 mt-0.5">{{ $shop->resolved_staff_label }}</p>
+                            <h4 class="font-black text-lg text-white group-hover:text-[#FF9F0A] transition">{{ $member->name }}</h4>
+                            <p class="text-xs font-extrabold text-slate-400 mt-0.5">{{ $shop->resolved_staff_label }}</p>
                             @if($member->phone)
-                                <p class="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                                    <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-                                    {{ $member->phone }}
+                                <p class="text-xs text-slate-500 mt-1 font-bold">
+                                    📞 {{ $member->phone }}
                                 </p>
                             @endif
                         </div>
                     </div>
                     @if($member->bio)
-                        <p class="text-xs text-slate-400 mt-4 leading-relaxed line-clamp-2">{{ $member->bio }}</p>
+                        <p class="text-xs text-slate-400 mt-4 leading-relaxed line-clamp-2 font-medium">{{ $member->bio }}</p>
                     @endif
                 </div>
             @endforeach
@@ -118,41 +126,40 @@
     </section>
 
     <!-- Services & Pricing Section -->
-    <section id="services" class="py-16 bg-slate-900/40 border-y border-slate-800/50">
+    <section id="services" class="py-16 bg-[#12141C] border-y border-stone-800/80">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between mb-10">
                 <div>
-                    <h3 class="text-2xl font-black text-white tracking-tight">Shërbimet & Çmimet</h3>
-                    <p class="text-xs text-slate-400 mt-1 font-medium">Lista e plotë e shërbimeve të ofruara nga {{ $shop->name }}</p>
+                    <span class="text-xs font-extrabold uppercase tracking-widest text-[#FF9F0A]">Çmimet &amp; Kohëzgjatja</span>
+                    <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight mt-1">Shërbimet e Ofruara</h2>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 @foreach($services as $service)
-                    <div class="p-6 rounded-3xl bg-slate-900 border border-slate-800/80 flex justify-between items-center hover:border-slate-700 transition">
+                    <div class="p-6 rounded-[2rem] bg-[#161822] border border-stone-800/80 flex justify-between items-center hover:border-[#FF9F0A]/50 transition duration-300 shadow-md">
                         <div class="pr-4">
                             <div class="flex items-center gap-2">
-                                <span class="text-xs px-2.5 py-0.5 rounded-md bg-slate-800 text-slate-300 font-bold uppercase tracking-wider">
-                                    {{ $service->category ?: 'Shërbim' }}
+                                <span class="text-[10px] px-2.5 py-0.5 rounded-full bg-[#1A1D24] text-[#FF9F0A] font-extrabold uppercase tracking-wider border border-amber-500/20">
+                                    {{ $service->category ?: $shop->resolved_service_label }}
                                 </span>
-                                <span class="text-xs text-slate-500 font-bold flex items-center gap-1">
-                                    <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                    {{ $service->duration_minutes }} min
+                                <span class="text-xs text-slate-400 font-bold">
+                                    ⏱️ {{ $service->duration_minutes }} min
                                 </span>
                             </div>
-                            <h4 class="font-extrabold text-base text-white mt-2">{{ $service->name }}</h4>
+                            <h4 class="font-black text-lg text-white mt-2">{{ $service->name }}</h4>
                             @if($service->description)
-                                <p class="text-xs text-slate-400 mt-1 leading-relaxed">{{ $service->description }}</p>
+                                <p class="text-xs text-slate-400 mt-1 leading-relaxed font-medium">{{ $service->description }}</p>
                             @endif
                         </div>
                         <div class="text-right whitespace-nowrap">
-                            <span class="text-xl font-black text-emerald-400 block">
+                            <span class="text-xl font-black text-emerald-400 block mb-2">
                                 {{ number_format($service->price, 0) }} Lekë
                             </span>
-                            <button class="mt-2 px-4 py-1.5 rounded-xl text-xs font-bold text-white shadow transition hover:opacity-90"
-                                    style="background-color: {{ $shop->primary_color }};">
-                                Zgjidh
-                            </button>
+                            <a href="#booking-section"
+                               class="px-4 py-2 rounded-full text-xs font-black text-black bg-[#FF9F0A] hover:bg-amber-400 shadow transition inline-block">
+                                Zgjidh ↗
+                            </a>
                         </div>
                     </div>
                 @endforeach
@@ -160,20 +167,20 @@
         </div>
     </section>
 
-    <!-- Public Booking Component -->
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
+    <!-- Interactive Livewire Online Booking Component -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
         <livewire:public-shop-booking :shop="$shop" />
     </section>
 
     <!-- Footer -->
-    <footer class="py-10 border-t border-slate-800/60 bg-slate-950">
+    <footer class="py-10 border-t border-stone-800/80 bg-[#0B0C10] mt-auto">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p class="text-xs text-slate-500 font-medium">
                 © {{ date('Y') }} {{ $shop->name }} — Mundësuar nga E4ProTech Engine
             </p>
-            <div class="flex gap-4 text-xs text-slate-400 font-semibold">
-                <a href="#" class="hover:text-white transition">Kushtet e Shërbimit</a>
-                <a href="#" class="hover:text-white transition">Privatësia</a>
+            <div class="flex gap-4 text-xs text-slate-400 font-bold">
+                <a href="#booking-section" class="hover:text-[#FF9F0A] transition">Rezervo Online</a>
+                <a href="{{ route('admin.settings') }}" class="hover:text-[#FF9F0A] transition">Paneli Admin</a>
             </div>
         </div>
     </footer>

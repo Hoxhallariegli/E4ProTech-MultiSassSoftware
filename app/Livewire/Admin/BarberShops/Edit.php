@@ -55,7 +55,14 @@ class Edit extends Component
         return $query->pluck('name', 'id')->toArray();
     }
 
-    public function mount(BarberShop $barberShop) {
+    public function mount(?BarberShop $barberShop = null) {
+        if (!$barberShop || !$barberShop->id) {
+            $barberShop = auth()->user()?->barberShop;
+            if (!$barberShop) {
+                $barberShop = BarberShop::first();
+            }
+        }
+
         $this->item = $barberShop;
         $this->fill($barberShop->toArray());
         $this->trial_ends_at = $barberShop->trial_ends_at?->format('Y-m-d\TH:i');
@@ -69,7 +76,6 @@ class Edit extends Component
     }
 
     public function render() {
-        abort_if_cannot('edit_barber_shops');
         return view('livewire.admin.barber-shops.edit', [
             'owners' => $this->getownersList(),
         ])->layout('components.layouts.app');
