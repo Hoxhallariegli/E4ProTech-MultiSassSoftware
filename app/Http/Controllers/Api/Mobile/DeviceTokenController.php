@@ -143,9 +143,13 @@ class DeviceTokenController extends Controller
                     'last_used_at' => now(),
                 ]);
 
-                // Auto-enable SMS on the salon record if activating gateway
+                // Auto-enable SMS on the salon record and auto-cancel stale past messages when activating gateway
                 if ($shopId) {
                     BarberShop::where('id', $shopId)->update(['sms_enabled' => true]);
+                    \App\Models\MessageQueue::where('barber_shop_id', $shopId)
+                        ->where('status', 'pending')
+                        ->where('scheduled_at', '<', now()->subMinutes(15))
+                        ->update(['status' => 'failed']);
                 }
 
                 Log::info('FCM setPrimaryGateway successfully activated for shop ' . $shopId);
