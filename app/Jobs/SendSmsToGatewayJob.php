@@ -34,24 +34,16 @@ class SendSmsToGatewayJob
             return;
         }
 
-        $now = now();
-
-        // 1. Auto-cancel expired/past messages older than 15 minutes
-        if ($queue->scheduled_at && $queue->scheduled_at->isBefore($now->copy()->subMinutes(15))) {
-            $queue->update(['status' => 'failed']);
-            Log::info("🧹 [SendSmsToGatewayJob] Cancelled expired SMS Queue ID #{$queue->id} (scheduled_at {$queue->scheduled_at} was in the past).");
-            return;
-        }
-
-        if ($queue->booking && $queue->booking->appointment_at && $queue->booking->appointment_at->isBefore($now->copy()->subMinutes(15))) {
-            $queue->update(['status' => 'failed']);
-            Log::info("🧹 [SendSmsToGatewayJob] Cancelled expired SMS Queue ID #{$queue->id} (appointment_at {$queue->booking->appointment_at} was in the past).");
+        // Delete queue item ONLY if the booking's appointment time has already passed
+        if ($queue->booking && $queue->booking->appointment_at && $queue->booking->appointment_at->isPast()) {
+            $queue->delete();
+            Log::info("🧹 [SendSmsToGatewayJob] Deleted past appointment SMS Queue ID #{$queue->id}");
             return;
         }
 
         $shopId = $queue->barber_shop_id;
 
-        // 2. Strict lookup for active SMS Gateway device assigned to this shop
+        // Strict lookup for active SMS Gateway device assigned to this shop
         $gatewayDevice = DeviceToken::where('barber_shop_id', $shopId)
             ->where('is_sms_gateway', true)
             ->whereNotNull('fcm_token')

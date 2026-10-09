@@ -11,31 +11,26 @@ use Carbon\Carbon;
 class SendQueuedSmsMessages extends Command
 {
     protected $signature = 'sms:send-queued';
-    protected $description = 'Dispatch pending SMS from queue to Gateway devices with anti-spam rate limiting and stale message auto-purge';
+    protected $description = 'Dispatch pending SMS from queue to Gateway devices based on reminder_hours_before schedule';
 
     public function handle()
     {
         $now = Carbon::now();
 
-        // 1. Purge stale/expired messages older than 2 hours OR for shops with sms_enabled == false
-        $staleMessages = MessageQueue::where('status', 'pending')
+        // 1. Delete past appointment SMS queue items whose appointment time has already passed
+        $pastAppointmentQueues = MessageQueue::where('status', 'pending')
             ->where('channel', 'sms')
-            ->where(function($q) use ($now) {
-                $q->where('scheduled_at', '<', $now->copy()->subHours(2))
-                  ->orWhereHas('barberShop', function($shopQuery) {
-                      $shopQuery->where('sms_enabled', false)->orWhere('active', false);
-                  });
+            ->whereHas('booking', function($bQuery) use ($now) {
+                $bQuery->where('appointment_at', '<', $now);
             })
             ->get();
 
-        foreach ($staleMessages as $stale) {
-            $stale->update([
-                'status' => 'cancelled',
-            ]);
-            Log::info("🧹 [SendQueuedSmsMessages] Auto-cancelled stale/disabled SMS Queue ID #{$stale->id}");
+        foreach ($pastAppointmentQueues as $past) {
+            $past->delete();
+            Log::info("🧹 [SendQueuedSmsMessages] Deleted past appointment SMS Queue ID #{$past->id}");
         }
 
-        // 2. Retrieve valid pending messages scheduled for now or earlier
+        // 2. Retrieve valid pending messages scheduled for NOW or EARLIER whose appointment is in the FUTURE
         $pendingMessages = MessageQueue::where('status', 'pending')
             ->where('channel', 'sms')
             ->where('scheduled_at', '<=', $now)
@@ -57,7 +52,7 @@ class SendQueuedSmsMessages extends Command
                 SendSmsToGatewayJob::dispatch($msg->id);
                 $this->line("Dispatched Job for SMS Queue ID: {$msg->id}");
 
-                // Pacing delay (3 seconds between consecutive dispatches) to prevent Android anti-spam SMS rate-limit blocks
+                // Pacing delay (3 seconds between consecutive dispatches)
                 if ($index < $pendingMessages->count() - 1) {
                     sleep(3);
                 }
