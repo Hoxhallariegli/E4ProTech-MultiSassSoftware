@@ -9,21 +9,11 @@ use App\Models\BarberShop;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use App\Domain\DeviceToken\DTOs\DeviceTokenDTO;
-use App\Domain\DeviceToken\Actions\CreateDeviceTokenAction;
-use App\Domain\DeviceToken\Actions\UpdateDeviceTokenAction;
 
 class DeviceTokenController extends Controller
 {
     public function saveWebToken(Request $request): JsonResponse
     {
-        Log::info('🔥 RAW REQUEST HIT to saveWebToken', [
-            'raw_all' => $request->all(),
-            'headers' => $request->headers->all(),
-            'ip' => $request->ip(),
-            'user' => $request->user()?->only(['id', 'name', 'email', 'barber_shop_id']),
-        ]);
-
         $request->validate([
             'fcm_token' => 'required|string',
             'platform' => 'nullable|string',
@@ -49,15 +39,6 @@ class DeviceTokenController extends Controller
             ?: ($user?->activeShop?->id ?? null)
             ?: BarberShop::value('id');
 
-        Log::info('FCM saveWebToken endpoint hit', [
-            'fcm_token' => $fcmToken,
-            'user_id' => $user?->id,
-            'user_name' => $user?->name,
-            'barber_shop_id' => $shopId,
-            'platform' => $platform,
-            'device_name' => $deviceName,
-        ]);
-
         try {
             // Check if explicitly passed or fallback to false when saving web/app tokens
             $isGateway = $request->has('is_sms_gateway')
@@ -76,15 +57,13 @@ class DeviceTokenController extends Controller
                 'last_used_at' => now(),
             ]);
 
-            Log::info('FCM Token successfully saved to DB', ['device_token_id' => $deviceToken->id]);
-
             return response()->json([
                 'success' => true,
                 'message' => 'Token-i i pajisjes u regjistrua me sukses te baza e të dhënave!',
                 'data' => $deviceToken,
             ]);
         } catch (\Throwable $e) {
-            Log::error('FCM saveWebToken DB Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('FCM saveWebToken DB Error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Dështoi ruajtja e token-it te baza e të dhënave: ' . $e->getMessage(),
@@ -94,13 +73,6 @@ class DeviceTokenController extends Controller
 
     public function setPrimaryGateway(Request $request): JsonResponse
     {
-        Log::info('🔥 RAW REQUEST HIT to setPrimaryGateway', [
-            'raw_all' => $request->all(),
-            'headers' => $request->headers->all(),
-            'ip' => $request->ip(),
-            'user' => $request->user()?->only(['id', 'name', 'email', 'barber_shop_id']),
-        ]);
-
         $request->validate([
             'fcm_token' => 'required|string',
             'is_sms_gateway' => 'required|boolean',
@@ -116,13 +88,6 @@ class DeviceTokenController extends Controller
             ?: $user?->barber_shop_id
             ?: ($user?->activeShop?->id ?? null)
             ?: BarberShop::value('id');
-
-        Log::info('FCM setPrimaryGateway endpoint hit', [
-            'fcm_token' => $fcmToken,
-            'is_sms_gateway' => $isSmsGateway,
-            'user_id' => $user?->id,
-            'barber_shop_id' => $shopId,
-        ]);
 
         try {
             if ($isSmsGateway) {
@@ -143,7 +108,7 @@ class DeviceTokenController extends Controller
                     'last_used_at' => now(),
                 ]);
 
-                // Auto-enable SMS on the salon record and auto-cancel stale past messages when activating gateway
+                // Auto-enable SMS on the salon record
                 if ($shopId) {
                     BarberShop::where('id', $shopId)->update(['sms_enabled' => true]);
                     \App\Models\MessageQueue::where('barber_shop_id', $shopId)
@@ -165,8 +130,11 @@ class DeviceTokenController extends Controller
                 if ($user?->id) {
                     DeviceToken::where('user_id', $user->id)->update(['is_sms_gateway' => false]);
                 }
+                if ($shopId) {
+                    DeviceToken::where('barber_shop_id', $shopId)->update(['is_sms_gateway' => false]);
+                }
 
-                Log::info('FCM setPrimaryGateway deactivated for token and user ' . $user?->id);
+                Log::info('FCM setPrimaryGateway deactivated for token and shop ' . $shopId);
 
                 return response()->json([
                     'success' => true,
@@ -185,7 +153,7 @@ class DeviceTokenController extends Controller
 
     public function index(Request $request)
     {
-        abort_if_cannot('view_device_tokens');
+        $user = $request->user();
 
         $perPage = min(max((int) $request->integer('per_page', 20), 1), 100);
         $sortField = (string) $request->input('sort', 'id');
@@ -199,6 +167,10 @@ class DeviceTokenController extends Controller
             'user',
         ]);
 
+        if ($user && !$user->is_global_admin && $user->barber_shop_id) {
+            $query->where('barber_shop_id', $user->barber_shop_id);
+        }
+
         $search = trim((string) $request->input('search', ''));
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
@@ -209,25 +181,12 @@ class DeviceTokenController extends Controller
             });
         }
 
-        foreach ($request->all() as $key => $value) {
-            if ($value === null || $value === '' || !str_ends_with($key, '_id')) {
-                continue;
-            }
-            if (in_array($key, [], true)) {
-                continue;
-            }
-            if (in_array($key, array_keys(DeviceToken::rules()), true)) {
-                $query->where($key, $value);
-            }
-        }
-
         $items = $query->orderBy($sortField, $direction)->paginate($perPage)->withQueryString();
         return DeviceTokenResource::collection($items);
     }
 
     public function show($id)
     {
-        abort_if_cannot('view_device_tokens');
         $item = DeviceToken::with([
             'barberShop',
             'user',
@@ -235,36 +194,8 @@ class DeviceTokenController extends Controller
         return new DeviceTokenResource($item);
     }
 
-    public function store(Request $request)
-    {
-        abort_if_cannot('add_device_tokens');
-        $data = $this->prepareData($request);
-
-        $validated = validator($data, DeviceToken::rules())->validate();
-        $item = app(\App\Domain\DeviceToken\Actions\CreateDeviceTokenAction::class)->execute(\App\Domain\DeviceToken\DTOs\DeviceTokenDTO::fromArray($validated));
-        return (new DeviceTokenResource($item->loadMissing([
-            'barberShop',
-            'user',
-        ])))->response()->setStatusCode(201);
-    }
-
-    public function update(Request $request, $id)
-    {
-        abort_if_cannot('edit_device_tokens');
-        $item = DeviceToken::findOrFail($id);
-        $data = $this->prepareData($request);
-        $validated = validator($data, DeviceToken::rules($id))->validate();
-        $item = app(\App\Domain\DeviceToken\Actions\UpdateDeviceTokenAction::class)->execute($item, \App\Domain\DeviceToken\DTOs\DeviceTokenDTO::fromArray($validated));
-        return new DeviceTokenResource($item->loadMissing([
-            'barberShop',
-            'user',
-        ]));
-    }
-
     public function destroy($id): JsonResponse
     {
-        abort_if_cannot('delete_device_tokens');
-
         try {
             $item = DeviceToken::findOrFail($id);
             $item->delete();
@@ -276,29 +207,5 @@ class DeviceTokenController extends Controller
                 'message' => config('app.debug') ? $e->getMessage() : 'Record is referenced by other data and cannot be deleted.',
             ], 409);
         }
-    }
-
-    private function prepareData(Request $request): array
-    {
-        $data = $request->all();
-
-        foreach ([
-        ] as $field) {
-            if (isset($data[$field]) && is_string($data[$field])) {
-                $decoded = json_decode($data[$field], true);
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    $data[$field] = $decoded;
-                }
-            }
-        }
-
-        foreach ([
-        ] as $field) {
-            if ($request->hasFile($field)) {
-                $data[$field] = app(\App\Services\ImageUploadService::class)->upload($request->file($field), 'uploads/device-tokens');
-            }
-        }
-
-        return $data;
     }
 }

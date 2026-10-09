@@ -22,7 +22,7 @@ class MessageQueues extends Component
     #[Url(history: true)] public $booking_id = '';
     public bool $openFilter = false;
     public string $sortField = 'id';
-    public bool $sortAsc = true;
+    public bool $sortAsc = false;
 
     public function resetFilters() { $this->reset(['search', 'openFilter', 'barber_shop_id', 'booking_id', ]); $this->resetPage(); }
 
@@ -50,12 +50,12 @@ class MessageQueues extends Component
 
     public function sortBy($field) { if (!in_array($field, MessageQueue::sortable(), true)) return; if ($this->sortField === $field) { $this->sortAsc = ! $this->sortAsc; } $this->sortField = $field; }
 
-    public function deleteMessageQueue($id, DeleteMessageQueueAction $action) 
+    public function deleteMessageQueue($id, DeleteMessageQueueAction $action)
     {
         abort_if_cannot('delete_message_queues');
         $item = MessageQueue::find($id);
         if (!$item) { $this->dispatch('toast', message: __('message-queues.not_found'), type: 'error'); return; }
-        try { $action->execute($item); $this->dispatch('toast', message: __('message-queues.deleted'), type: 'success'); $this->resetPage(); } 
+        try { $action->execute($item); $this->dispatch('toast', message: __('message-queues.deleted'), type: 'success'); $this->resetPage(); }
         catch (\Illuminate\Database\QueryException $e) { $this->dispatch('toast', message: __('message-queues.delete_error_referenced'), type: 'error'); }
         catch (\Exception $e) { $this->dispatch('toast', message: __('message-queues.delete_error'), type: 'error'); }
     }
