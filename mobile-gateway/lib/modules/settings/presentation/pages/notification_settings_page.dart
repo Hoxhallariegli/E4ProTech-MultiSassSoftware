@@ -74,6 +74,75 @@ class NotificationSettingsView extends StatelessWidget {
     }
   }
 
+  String _getEventPermissionKey(String rawEvent) {
+    final prefix = (rawEvent.contains('.') ? rawEvent.split('.').first : rawEvent)
+        .toLowerCase()
+        .replaceAll('-', '_');
+
+    switch (prefix) {
+      case 'barbers':
+      case 'barber':
+        return 'view_barbers';
+      case 'barber_shops':
+      case 'barber_shop':
+      case 'salons':
+        return 'view_barber_shops';
+      case 'bookings':
+      case 'booking':
+        return 'view_bookings';
+      case 'customers':
+      case 'customer':
+        return 'view_customers';
+      case 'services':
+      case 'service':
+        return 'view_services';
+      case 'payments':
+      case 'payment':
+        return 'view_payments';
+      case 'working_hours':
+      case 'working_hour':
+        return 'view_working_hours';
+      case 'reviews':
+      case 'review':
+        return 'view_reviews';
+      case 'plans':
+      case 'plan':
+        return 'view_plans';
+      case 'subscriptions':
+      case 'subscription':
+        return 'view_subscriptions';
+      case 'message_logs':
+      case 'message_log':
+        return 'view_message_logs';
+      case 'message_queues':
+      case 'message_queue':
+        return 'view_message_queues';
+      case 'message_templates':
+      case 'message_template':
+        return 'view_message_templates';
+      case 'event_settings':
+      case 'event_setting':
+        return 'view_event_settings';
+      case 'notification_channels':
+      case 'notification_channel':
+        return 'view_notification_channels';
+      case 'device_tokens':
+      case 'device_token':
+        return 'view_device_tokens';
+      case 'shop_front_page_settings':
+      case 'shop_front_page_setting':
+        return 'view_shop_front_page_settings';
+      default:
+        return 'view_dashboard';
+    }
+  }
+
+  bool _hasEventPermission(String rawEvent) {
+    if (AuthService.instance.user?['is_admin'] == true) return true;
+    final perm = _getEventPermissionKey(rawEvent);
+    return AuthService.instance.hasPermission(perm);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -107,15 +176,9 @@ class NotificationSettingsView extends StatelessWidget {
                 .where((m) => _hasModulePermission((m['name'] ?? '').toString()))
                 .toList();
 
-            final allowedModuleNames = allowedModules
-                .map((m) => (m['name'] ?? '').toString().toUpperCase().replaceAll('_', '').replaceAll(' ', ''))
-                .toSet();
-
             final allowedEvents = state.events.where((e) {
               final rawEvent = (e['event'] ?? '').toString();
-              final prefix = rawEvent.contains('.') ? rawEvent.split('.').first : rawEvent;
-              final moduleKey = prefix.toUpperCase().replaceAll('_', '').replaceAll('-', '').replaceAll('s', '');
-              return _hasModulePermission(moduleKey);
+              return _hasEventPermission(rawEvent);
             }).toList();
 
             return ListView(

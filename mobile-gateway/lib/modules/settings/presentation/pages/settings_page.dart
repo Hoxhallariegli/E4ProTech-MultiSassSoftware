@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -2249,14 +2250,34 @@ class _PushDiagnosticsModalState extends State<_PushDiagnosticsModal> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = context.branding.primaryColor;
+
     return AlertDialog(
-      backgroundColor: const Color(0xFF1E212B),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: const Row(
+      backgroundColor: isDark ? const Color(0xFF181A20) : theme.colorScheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      title: Row(
         children: [
-          Icon(Icons.bug_report_rounded, color: Colors.amber),
-          SizedBox(width: 10),
-          Text('Diagnostikimi i Push & Gateway', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: primaryColor.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.bug_report_rounded, color: primaryColor, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Diagnostikimi i Push & Gateway',
+              style: TextStyle(
+                color: isDark ? Colors.white : Colors.black87,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
         ],
       ),
       content: SizedBox(
@@ -2265,9 +2286,9 @@ class _PushDiagnosticsModalState extends State<_PushDiagnosticsModal> {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.black,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade800),
+            color: isDark ? const Color(0xFF0F1117) : const Color(0xFF1E293B),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: primaryColor.withOpacity(0.3), width: 1.5),
           ),
           child: ListView.builder(
             itemCount: _logs.length,
@@ -2278,7 +2299,9 @@ class _PushDiagnosticsModalState extends State<_PushDiagnosticsModal> {
                 style: TextStyle(
                   fontFamily: 'monospace',
                   fontSize: 11,
-                  color: _logs[idx].contains('❌') || _logs[idx].contains('💥') ? Colors.redAccent : (_logs[idx].contains('✅') ? Colors.greenAccent : Colors.white70),
+                  color: _logs[idx].contains('❌') || _logs[idx].contains('💥')
+                      ? const Color(0xFFF87171)
+                      : (_logs[idx].contains('✅') ? const Color(0xFF34D399) : Colors.white70),
                 ),
               ),
             ),
@@ -2287,14 +2310,28 @@ class _PushDiagnosticsModalState extends State<_PushDiagnosticsModal> {
       ),
       actions: [
         if (_testing)
-          const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator.adaptive(strokeWidth: 2)),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator.adaptive(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+              ),
+            ),
           )
         else
-          TextButton(
+          FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: primaryColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Mbyll Testin', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+            icon: const Icon(Icons.check_rounded, size: 18),
+            label: const Text('Mbyll Testin', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
       ],
     );
