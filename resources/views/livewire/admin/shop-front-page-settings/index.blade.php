@@ -1,54 +1,159 @@
-<div x-data="{ openFilter: @entangle('openFilter') }">
-    <div class="card !p-0 overflow-hidden shadow-none border-gray-200 dark:border-gray-700 dark:bg-gray-800">
-        <div class="p-6">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div><x-h1>{{ __('shop-front-page-settings.ShopFrontPageSettings') }}</x-h1><x-short-description class="dark:text-gray-400">{{ __('shop-front-page-settings.List of') }} shopfrontpagesettings</x-short-description></div>
-                <div class="flex items-center gap-3">
-                    @if($search || $openFilter)
-                        <button wire:click="resetFilters" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl transition-none shadow-none"><span>{{ __('shop-front-page-settings.Reset') }}</span></button>
-                    @endif
-                    <button @click="openFilter = !openFilter" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-600 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm transition-none"><span>{{ __('shop-front-page-settings.Filters') }}</span></button>
-                    @can('add_shop_front_page_settings')
-                        <x-btn :href="route('admin.shop-front-page-settings.create')" icon="plus">{{ __('shop-front-page-settings.Add ShopFrontPageSetting') }}</x-btn>
-                    @endcan
-                </div>
+<div class="space-y-8 p-4 sm:p-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] border border-stone-200 dark:border-gray-700 shadow-sm">
+        <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black bg-amber-500/10 text-[#FF9F0A] mb-2">
+                <span>🎨</span> Menaxhimi i Faqes Publike
             </div>
-
-            <div x-show="openFilter" x-cloak class="mt-6 p-6 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-2xl">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div>
-                        <label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100">{{ __('shop-front-page-settings.Search') }}</label>
-                        <input name="search" wire:model.live.debounce.300ms="search" type="text" placeholder="Search by ID, Hero_Title, Hero_Subtitle, Hero_Button_Text, Services_Badge_Text, Services_Title, Staff_Badge_Text, Staff_Title, Contact_Phone, Contact_Email, Contact_Address, Google_Maps_Url, Footer_Text" class="w-full p-3 text-sm font-bold bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500/20 dark:text-white">
-                    </div>
-                    @if(auth()->user()->is_global_admin)
-<div><label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100">Barber Shop Id</label><x-form.dropdown-search name="barber_shop_id" wire:model.live="barber_shop_id" label="none" :data="$barberShops" placeholder="Filter Barber Shop Id" /></div>
-@endif
-                </div>
-            </div>
+            <h1 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+                Faqja Ime • {{ $shop->name }}
+            </h1>
+            <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
+                Personalizoni të gjitha tekstet, titujt, ngjyrat dhe të dhënat e faqes tuaj publike te <strong class="text-blue-600 font-mono">app.e4protech.com/s/{{ $shop->slug }}</strong>
+            </p>
         </div>
 
-        @include('errors.messages')
-
-        <div class="overflow-x-auto border-t border-gray-100 dark:border-gray-700">
-            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                <thead class="bg-gray-100/50 dark:bg-gray-700/50"><tr><x-table.th name="id" :label="__('shop-front-page-settings.ID')" :$sortField :$sortAsc :sortable="true" /><x-table.th name="hero_title" :label="__('shop-front-page-settings.Hero Title')" :$sortField :$sortAsc :sortable="in_array('hero_title', $sortableFields)" />
-<x-table.th name="hero_subtitle" :label="__('shop-front-page-settings.Hero Subtitle')" :$sortField :$sortAsc :sortable="in_array('hero_subtitle', $sortableFields)" />
-<x-table.th name="hero_button_text" :label="__('shop-front-page-settings.Hero Button Text')" :$sortField :$sortAsc :sortable="in_array('hero_button_text', $sortableFields)" />
-<x-table.th name="services_badge_text" :label="__('shop-front-page-settings.Services Badge Text')" :$sortField :$sortAsc :sortable="in_array('services_badge_text', $sortableFields)" />
-<x-table.th name="services_title" :label="__('shop-front-page-settings.Services Title')" :$sortField :$sortAsc :sortable="in_array('services_title', $sortableFields)" />
-<x-table.th name="staff_badge_text" :label="__('shop-front-page-settings.Staff Badge Text')" :$sortField :$sortAsc :sortable="in_array('staff_badge_text', $sortableFields)" />
-<x-table.th name="staff_title" :label="__('shop-front-page-settings.Staff Title')" :$sortField :$sortAsc :sortable="in_array('staff_title', $sortableFields)" />
-<x-table.th name="contact_phone" :label="__('shop-front-page-settings.Contact Phone')" :$sortField :$sortAsc :sortable="in_array('contact_phone', $sortableFields)" />
-<x-table.th name="contact_email" :label="__('shop-front-page-settings.Contact Email')" :$sortField :$sortAsc :sortable="in_array('contact_email', $sortableFields)" />
-<x-table.th name="contact_address" :label="__('shop-front-page-settings.Contact Address')" :$sortField :$sortAsc :sortable="in_array('contact_address', $sortableFields)" />
-<x-table.th name="google_maps_url" :label="__('shop-front-page-settings.Google Maps Url')" :$sortField :$sortAsc :sortable="in_array('google_maps_url', $sortableFields)" />
-<x-table.th name="footer_text" :label="__('shop-front-page-settings.Footer Text')" :$sortField :$sortAsc :sortable="in_array('footer_text', $sortableFields)" />
-@if(auth()->user()->is_global_admin)
-<x-table.th name="barber_shop_id" :label="__('shop-front-page-settings.Barber Shop Id')" :$sortField :$sortAsc :sortable="in_array('barber_shop_id', $sortableFields)" />
-@endif<th class="px-6 py-4 text-right text-[10px] font-black uppercase text-gray-400 tracking-widest">{{ __('shop-front-page-settings.Action') }}</th></tr></thead>
-                <tbody class="divide-y divide-gray-50 dark:divide-gray-700/50">@forelse($items as $item) <livewire:admin.shop-front-page-settings.row :$item :key="$item->id" /> @empty <tr><td colspan="100" class="px-6 py-10 text-center text-sm text-gray-400">{{ __('shop-front-page-settings.No records found.') }}</td></tr> @endforelse</tbody>
-            </table>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('shop.landing', $shop->slug) }}" target="_blank"
+               class="px-6 py-3.5 rounded-2xl bg-[#FF9F0A] hover:bg-amber-400 text-black font-black text-xs shadow-lg transition transform active:scale-95 flex items-center gap-2">
+                <span>Shiko Faqen Publike</span>
+                <span>↗</span>
+            </a>
         </div>
-        <div class="p-4 border-t border-gray-50 dark:border-gray-700/50">{{ $items->links() }}</div>
     </div>
+
+    <!-- Success Message -->
+    @include('errors.messages')
+
+    <!-- Form Section -->
+    <form wire:submit.prevent="saveSettings" class="space-y-8">
+
+        <!-- 1. Branding & Theme Colors -->
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] border border-stone-200 dark:border-gray-700 shadow-sm space-y-6">
+            <h3 class="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+                <span>🎨</span> Identiteti &amp; Ngjyrat e Temës
+            </h3>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Emri i Dyqanit *</label>
+                    <input type="text" wire:model="name" class="w-full px-4 py-3 rounded-2xl bg-stone-50 dark:bg-gray-900 border border-stone-200 dark:border-gray-700 font-bold text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Titulli i Logos (Navbar)</label>
+                    <input type="text" wire:model="app_name" class="w-full px-4 py-3 rounded-2xl bg-stone-50 dark:bg-gray-900 border border-stone-200 dark:border-gray-700 font-bold text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Lloji i Biznesit</label>
+                    <select wire:model="business_type" class="w-full px-4 py-3 rounded-2xl bg-stone-50 dark:bg-gray-900 border border-stone-200 dark:border-gray-700 font-bold text-sm">
+                        <option value="barber">💈 Barber Shop / Sallon Qethje</option>
+                        <option value="beauty">💇‍♀️ Beauty Salon / Parukeri</option>
+                        <option value="nails">💅 Nail Studio / Qendër Thonjsh</option>
+                        <option value="spa">🌸 Spa &amp; Massage</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Ngjyra Kryesore (Primary Hex)</label>
+                    <div class="flex items-center gap-3">
+                        <input type="color" wire:model.live="primary_color" class="w-12 h-12 rounded-2xl cursor-pointer border-0">
+                        <input type="text" wire:model.live="primary_color" class="w-full px-4 py-3 rounded-2xl bg-stone-50 dark:bg-gray-900 border border-stone-200 dark:border-gray-700 font-mono font-bold text-sm">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Ngjyra Dytësore (Secondary Hex)</label>
+                    <div class="flex items-center gap-3">
+                        <input type="color" wire:model.live="secondary_color" class="w-12 h-12 rounded-2xl cursor-pointer border-0">
+                        <input type="text" wire:model.live="secondary_color" class="w-full px-4 py-3 rounded-2xl bg-stone-50 dark:bg-gray-900 border border-stone-200 dark:border-gray-700 font-mono font-bold text-sm">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider mb-2">Numri i Telefonit</label>
+                    <input type="text" wire:model="phone" placeholder="p.sh: +355691234567" class="w-full px-4 py-3 rounded-2xl bg-stone-50 dark:bg-gray-900 border border-stone-200 dark:border-gray-700 font-bold text-sm">
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Hero Section Content -->
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] border border-stone-200 dark:border-gray-700 shadow-sm space-y-6">
+            <h3 class="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+                <span>🚀</span> Përmbajtja e Seksionit Hero (Ballina)
+            </h3>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Teksti i Badge-it të Sipërm</label>
+                    <input type="text" wire:model="hero_badge_text" placeholder="✨ Sallon Bukurie Zyrtare" class="w-full px-4 py-3 rounded-2xl bg-stone-50 dark:bg-gray-900 border border-stone-200 dark:border-gray-700 font-bold text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Titulli Kryesor i Ballinës (Hero Title) *</label>
+                    <input type="text" wire:model="hero_title" placeholder="Eksperiencë Premium për Shërbime & Stilim" class="w-full px-4 py-3 rounded-2xl bg-stone-50 dark:bg-gray-900 border border-stone-200 dark:border-gray-700 font-extrabold text-base">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Përshkrimi i Ballinës (Hero Subtitle)</label>
+                    <textarea wire:model="hero_subtitle" rows="3" class="w-full px-4 py-3 rounded-2xl bg-stone-50 dark:bg-gray-900 border border-stone-200 dark:border-gray-700 font-medium text-sm"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Teksti i Butonit të Rezervimit</label>
+                    <input type="text" wire:model="hero_button_text" placeholder="Rezervo Takim Online ↗" class="w-full px-4 py-3 rounded-2xl bg-stone-50 dark:bg-gray-900 border border-stone-200 dark:border-gray-700 font-bold text-sm">
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Multi-Language Translations Editor -->
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] border border-stone-200 dark:border-gray-700 shadow-sm space-y-6">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+                        <span>🌍</span> Përkthimet Shumë-Gjuhësh për Faqen Publike
+                    </h3>
+                    <p class="text-xs text-gray-500 font-medium mt-1">Menaxhoni tekstet e faqeve në çdo gjuhë për klientët tuaj ndërkombëtarë.</p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    @foreach(['sq' => '🇦🇱 SQ', 'en' => '🇬🇧 EN', 'it' => '🇮🇹 IT', 'de' => '🇩🇪 DE', 'fr' => '🇫🇷 FR'] as $langKey => $langLabel)
+                        <button type="button" wire:click="setLocale('{{ $langKey }}')"
+                                class="px-4 py-2 rounded-xl text-xs font-black transition {{ $activeLocale === $langKey ? 'bg-blue-600 text-white shadow-md' : 'bg-stone-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-stone-200' }}">
+                            {{ $langLabel }}
+                        </button>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="p-6 rounded-2xl bg-stone-50 dark:bg-gray-900 border border-stone-200 dark:border-gray-700 space-y-4">
+                <span class="text-xs font-black uppercase text-blue-600">Gjuha Aktive: {{ strtoupper($activeLocale) }}</span>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Titulli i Ballinës ({{ strtoupper($activeLocale) }})</label>
+                    <input type="text" wire:model="translations.{{ $activeLocale }}.hero_title" class="w-full px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-stone-200 dark:border-gray-700 font-bold text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Përshkrimi i Ballinës ({{ strtoupper($activeLocale) }})</label>
+                    <textarea wire:model="translations.{{ $activeLocale }}.hero_subtitle" rows="2" class="w-full px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-stone-200 dark:border-gray-700 font-medium text-sm"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Butoni ({{ strtoupper($activeLocale) }})</label>
+                    <input type="text" wire:model="translations.{{ $activeLocale }}.hero_button_text" class="w-full px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-stone-200 dark:border-gray-700 font-bold text-sm">
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="flex justify-end">
+            <button type="submit" wire:loading.attr="disabled"
+                    class="px-10 py-4 rounded-2xl font-black text-sm text-black bg-[#FF9F0A] hover:bg-amber-400 shadow-xl transition transform active:scale-95 flex items-center gap-2">
+                <span wire:loading.remove>Ruaj Konfigurimin e Faqes 🚀</span>
+                <span wire:loading>Duke ruajtur...</span>
+            </button>
+        </div>
+    </form>
 </div>
