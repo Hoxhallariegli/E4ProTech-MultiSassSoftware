@@ -117,18 +117,23 @@ class BarberShop extends Model
     {
         $sub = $this->subscriptions()->latest('ends_at')->first();
         if ($sub) {
-            if ($sub->ends_at < now()) {
+            if ($sub->ends_at->isPast()) {
                 return 0; // Expired!
             }
             return (int) max(0, (int) ceil(now()->diffInDays($sub->ends_at, false)));
         }
 
+        if ($this->expires_at && $this->expires_at->isPast()) {
+            return 0;
+        }
+        if ($this->trial_ends_at && $this->trial_ends_at->isPast()) {
+            return 0;
+        }
+
         if ($this->expires_at) {
-            if ($this->expires_at->isPast()) return 0;
             return (int) max(0, (int) ceil(now()->diffInDays($this->expires_at, false)));
         }
         if ($this->trial_ends_at) {
-            if ($this->trial_ends_at->isPast()) return 0;
             return (int) max(0, (int) ceil(now()->diffInDays($this->trial_ends_at, false)));
         }
 
@@ -138,6 +143,16 @@ class BarberShop extends Model
     public function getIsExpiredAttribute(): bool
     {
         return $this->getDaysLeftAttribute() <= 0;
+    }
+
+    public function getPhoneAttribute(): ?string
+    {
+        return $this->attributes['phone'] ?? null;
+    }
+
+    public function getEmailAttribute(): ?string
+    {
+        return $this->attributes['email'] ?? null;
     }
 
     public function getLogoUrlAttribute() {

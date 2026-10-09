@@ -38,7 +38,7 @@
             </a>
 
             <div class="flex items-center gap-3">
-                @if($shop->phone)
+                @if(!empty($shop->phone))
                     <a href="tel:{{ $shop->phone }}" class="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold bg-[#1A1D24] border border-stone-800 text-slate-200 hover:bg-stone-800 transition">
                         <span>📞 Kontakt</span>
                     </a>
