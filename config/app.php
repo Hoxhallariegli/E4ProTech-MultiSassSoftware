@@ -10,6 +10,7 @@ if (file_exists($versionJsonPath)) {
 
 return [
 
+    'timezone' => env('APP_TIMEZONE', 'Europe/Tirane'),
     'user_agent' => env('USER_AGENT', ''),
 
     // Priority 1: version.json (automatically updated on git pull)
