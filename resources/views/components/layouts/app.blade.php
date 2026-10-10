@@ -190,7 +190,7 @@
 
     @if(auth()->check() && $sidebarShop)
         <div class="p-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
-            <a href="{{ route('admin.subscriptions.index') }}"
+            <a href="{{ route('admin.subscription-renewals.index') }}"
                class="block p-3.5 rounded-2xl border transition group {{ $sidebarIsExpired ? 'bg-red-500/10 border-red-500/30 hover:border-red-500' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-blue-500' }}">
                 <div class="flex items-center justify-between mb-1">
                     <span class="text-[10px] font-black uppercase tracking-wider {{ $sidebarIsExpired ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400' }}">
@@ -301,7 +301,7 @@
                 </p>
 
                 <!-- Renewal CTA Button -->
-                <a href="{{ route('admin.subscriptions.index') }}"
+                <a href="{{ route('admin.subscription-renewals.index') }}"
                    class="w-full py-4 rounded-2xl font-black text-sm text-white bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 shadow-xl shadow-red-500/25 transition transform active:scale-95 flex items-center justify-center gap-2">
                     <span>Renovo Abonimin Tani ↗</span>
                 </a>

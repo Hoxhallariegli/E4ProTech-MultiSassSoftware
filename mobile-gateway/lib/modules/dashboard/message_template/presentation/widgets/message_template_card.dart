@@ -47,6 +47,12 @@ class MessageTemplateCard extends StatelessWidget {
     } else if (type == 'welcome') {
       typeColor = Colors.green.shade600;
       typeLabel = 'Mirëseardhje';
+    } else if (type == 'reschedule' || type == 'update') {
+      typeColor = Colors.blue.shade600;
+      typeLabel = 'Ndryshim Takimi';
+    } else if (type == 'cancellation' || type == 'cancelled') {
+      typeColor = Colors.red.shade600;
+      typeLabel = 'Anulim Takimi';
     }
 
     return PremiumCard(

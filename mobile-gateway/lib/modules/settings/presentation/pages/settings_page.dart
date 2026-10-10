@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,6 +22,7 @@ import 'package:mobile_gateway/services/auth_service.dart';
 import 'package:mobile_gateway/modules/auth/presentation/pages/login_page.dart';
 import 'package:mobile_gateway/modules/settings/presentation/pages/notification_settings_page.dart';
 import 'package:mobile_gateway/modules/dashboard/message_log/presentation/pages/message_log_list_page.dart';
+import 'package:mobile_gateway/modules/dashboard/subscription_renewal/presentation/pages/subscription_renewal_list_page.dart';
 import 'package:mobile_gateway/core/notifications/push_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -404,12 +404,12 @@ class _AppVersionCardState extends State<_AppVersionCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Përditësimi i Aplikacionit (APK)',
+                      coreTr(context, 'settings.app_update_title'),
                       style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: isDark ? Colors.white : null),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Versioni i Serverit: v$serverVersionName ($sizeMb MB)',
+                      coreTr(context, 'settings.server_version', {'version': serverVersionName, 'size': sizeMb.toString()}),
                       style: const TextStyle(fontSize: 11, color: Colors.grey),
                     ),
                   ],
@@ -419,7 +419,7 @@ class _AppVersionCardState extends State<_AppVersionCard> {
                 const SizedBox(width: 20, height: 20, child: CircularProgressIndicator.adaptive(strokeWidth: 2))
               else
                 IconButton(
-                  tooltip: 'Rifresko Versionin',
+                  tooltip: coreTr(context, 'settings.refresh_version'),
                   icon: const Icon(Icons.refresh_rounded, size: 20),
                   onPressed: _checkVersion,
                 ),
@@ -464,12 +464,12 @@ class _AppVersionCardState extends State<_AppVersionCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '⚡ Version i Ri Gati për Shkarkim (v$serverVersionName)',
+                          coreTr(context, 'settings.new_version_title', {'version': serverVersionName}),
                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: theme.colorScheme.primary),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _versionInfo?['release_notes'] ?? 'Shkarkoni dhe instaloni skedarin e ri APK direkt në aplikacion.',
+                          _versionInfo?['release_notes'] ?? coreTr(context, 'settings.new_version_desc'),
                           style: TextStyle(fontSize: 10.5, color: isDark ? Colors.white70 : Colors.black87),
                         ),
                       ],
@@ -490,9 +490,9 @@ class _AppVersionCardState extends State<_AppVersionCard> {
                 ),
                 onPressed: _downloadAndInstallInApp,
                 icon: const Icon(Icons.download_rounded, size: 20),
-                label: const Text(
-                  'Shkarko & Instalo APK-në Në Aplikacion 🚀',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                label: Text(
+                  coreTr(context, 'settings.download_install_apk'),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
               ),
             ),
@@ -514,13 +514,13 @@ class _AppVersionCardState extends State<_AppVersionCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '✓ Aplikacioni është i Përditësuar (v${_installedVersion.isEmpty ? serverVersionName : _installedVersion})',
+                          coreTr(context, 'settings.app_up_to_date', {'version': _installedVersion.isEmpty ? serverVersionName : _installedVersion}),
                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: theme.colorScheme.primary),
                         ),
                         const SizedBox(height: 2),
-                        const Text(
-                          'Po përdorni versionin më të fundit të aplikacionit. Nuk ka asnjë përditësim të ri.',
-                          style: TextStyle(fontSize: 10.5, color: Colors.grey),
+                        Text(
+                          coreTr(context, 'settings.app_up_to_date_desc'),
+                          style: const TextStyle(fontSize: 10.5, color: Colors.grey),
                         ),
                       ],
                     ),
@@ -904,12 +904,32 @@ class _ExpiredSubscriptionCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Llogaria juaj është pezulluar përkohësisht për veprimet e shkrimit dhe ndryshimit. Ju lutemi kontaktoni administratorin ose renovoni planin tuaj për të vazhduar përdorimin pa ndërprerje.',
+            'Llogaria juaj është pezulluar përkohësisht për veprimet e shkrimit dhe ndryshimit. Ju lutemi renovoni planin tuaj për të vazhduar përdorimin pa ndërprerje.',
             style: TextStyle(
               color: Color(0xFF9F1239),
               fontSize: 12,
               height: 1.4,
               fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFBE123C),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SubscriptionRenewalListPage()),
+                );
+              },
+              icon: const Icon(Icons.stars_rounded, size: 18),
+              label: const Text('Renovo Abonimin Tani 🚀', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -928,7 +948,7 @@ class _CompactHealthRow extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _HealthChip(label: 'Reverb', status: reverb, icon: Icons.bolt),
+          _HealthChip(label: 'Realtime (FCM)', status: reverb, icon: Icons.bolt),
           _HealthChip(label: 'API', status: api, icon: Icons.cloud_queue),
           _HealthChip(label: 'DB', status: db, icon: Icons.storage),
           _HealthChip(label: 'Cache', status: cache, icon: Icons.memory),
@@ -1093,16 +1113,6 @@ class _CustomColorPickerCardState extends State<_CustomColorPickerCard> {
   late TextEditingController _hexController;
   bool _saving = false;
 
-  final List<({String name, String hex})> _colorPresets = [
-    (name: 'Electric Blue', hex: '#2563EB'),
-    (name: 'Luxury Gold', hex: '#D97706'),
-    (name: 'Emerald Green', hex: '#059669'),
-    (name: 'Royal Purple', hex: '#7C3AED'),
-    (name: 'Crimson Red', hex: '#DC2626'),
-    (name: 'Rose Pink', hex: '#DB2777'),
-    (name: 'Midnight Slate', hex: '#334155'),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -1202,57 +1212,6 @@ class _CustomColorPickerCardState extends State<_CustomColorPickerCard> {
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 16),
-          Text(coreTr(context, 'settings.select_preset_color'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? const Color(0xFFCBD5E1) : Colors.black87)),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: _colorPresets.map((preset) {
-              final colorValue = Color(int.parse(preset.hex.replaceFirst('#', '0xFF')));
-              final isSelected = currentHex.toUpperCase() == preset.hex.toUpperCase();
-
-              return InkWell(
-                onTap: () => _applyColor(preset.hex),
-                borderRadius: BorderRadius.circular(24),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: colorValue.withOpacity(0.18),
-                    border: Border.all(
-                      color: isSelected ? colorValue : colorValue.withOpacity(0.4),
-                      width: isSelected ? 2.5 : 1,
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 18,
-                        height: 18,
-                        decoration: BoxDecoration(
-                          color: colorValue,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 1.5),
-                        ),
-                        child: isSelected ? const Icon(Icons.check, size: 12, color: Colors.white) : null,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        preset.name,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
           ),
           const SizedBox(height: 16),
           Row(
@@ -1434,10 +1393,10 @@ class _VisualColorPickerSheetState extends State<_VisualColorPickerSheet> {
                 child: Icon(Icons.colorize_rounded, color: activeColor, size: 22),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Zgjidh Ngjyrën Tamam (Visual Picker)',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                  coreTr(context, 'settings.visual_picker_title'),
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
                 ),
               ),
             ],
@@ -1474,9 +1433,9 @@ class _VisualColorPickerSheetState extends State<_VisualColorPickerSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Ekrani i Ngjyrës së Zgjedhur',
-                        style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600),
+                      Text(
+                        coreTr(context, 'settings.color_preview_title'),
+                        style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -1498,9 +1457,9 @@ class _VisualColorPickerSheetState extends State<_VisualColorPickerSheet> {
           const SizedBox(height: 20),
 
           // 2. Interactive Hue Spectrum Bar Slider
-          const Text(
-            'Harku i Ngjyrave (Hue Spectrum)',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          Text(
+            coreTr(context, 'settings.hue_spectrum'),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           LayoutBuilder(
@@ -1563,9 +1522,9 @@ class _VisualColorPickerSheetState extends State<_VisualColorPickerSheet> {
           const SizedBox(height: 18),
 
           // 3. Dynamic Hue Shade Variations (Saturation & Lightness)
-          const Text(
-            'Nivelimi i Nuancës së Zgjedhur (Shades)',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          Text(
+            coreTr(context, 'settings.hue_shades'),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           SingleChildScrollView(
@@ -1604,9 +1563,9 @@ class _VisualColorPickerSheetState extends State<_VisualColorPickerSheet> {
           const SizedBox(height: 18),
 
           // 4. Quick Palette Grid
-          const Text(
-            'Paleta e ngjyrave profesionale',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          Text(
+            coreTr(context, 'settings.pro_palette'),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -1654,7 +1613,7 @@ class _VisualColorPickerSheetState extends State<_VisualColorPickerSheet> {
               },
               icon: const Icon(Icons.check_circle_rounded, size: 20),
               label: Text(
-                'Zbato Këtë Ngjyrë ($activeHex)',
+                coreTr(context, 'settings.apply_color', {'hex': activeHex}),
                 style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
               ),
             ),
@@ -1804,15 +1763,21 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
         if (fcmToken == null || fcmToken.isEmpty) {
           if (mounted) {
             setState(() => _deviceLoading = false);
+            ScaffoldMessenger.of(context).clearSnackBars();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: const Text('Nuk u mor dot Token-i nga Firebase. Ju lutemi verifikoni lejet te cilësimet e telefonit.'),
                 behavior: SnackBarBehavior.floating,
-                backgroundColor: Colors.orange,
+                backgroundColor: widget.branding.primaryColor,
+                duration: const Duration(seconds: 4),
+                dismissDirection: DismissDirection.horizontal,
                 action: SnackBarAction(
                   label: 'CILËSIMET',
                   textColor: Colors.white,
-                  onPressed: () => openAppSettings(),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    openAppSettings();
+                  },
                 ),
               ),
             );
@@ -1853,14 +1818,16 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
             _deviceLoading = false;
           });
           final tokenPreview = (fcmToken != null && fcmToken.length > 10) ? fcmToken.substring(0, 10) : fcmToken;
+          ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(value
                   ? 'Aktivizuar me sukses ✅ [Server: $currentServer | Token: $tokenPreview...]'
                   : 'SMS Gateway u çaktivizua.'),
               behavior: SnackBarBehavior.floating,
-              backgroundColor: Colors.green,
+              backgroundColor: widget.branding.primaryColor,
               duration: const Duration(seconds: 4),
+              dismissDirection: DismissDirection.horizontal,
             ),
           );
         }
@@ -2111,9 +2078,9 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
                     );
                   },
                   icon: const Icon(Icons.mark_email_read_rounded, size: 16),
-                  label: const Text(
-                    '📜 Logjet SMS',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  label: Text(
+                    '📜 ${coreTr(context, 'settings.sms_logs')}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                   style: OutlinedButton.styleFrom(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -2126,9 +2093,9 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
                 child: ElevatedButton.icon(
                   onPressed: () => _runPushDiagnostics(context),
                   icon: const Icon(Icons.bug_report_rounded, size: 16),
-                  label: const Text(
-                    '🧪 Diagnostiko',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  label: Text(
+                    '🧪 ${coreTr(context, 'settings.diagnose')}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: widget.branding.primaryColor,
@@ -2270,7 +2237,7 @@ class _PushDiagnosticsModalState extends State<_PushDiagnosticsModal> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Diagnostikimi i Push & Gateway',
+              coreTr(context, 'settings.diagnostics_title'),
               style: TextStyle(
                 color: isDark ? Colors.white : Colors.black87,
                 fontSize: 16,
@@ -2331,7 +2298,7 @@ class _PushDiagnosticsModalState extends State<_PushDiagnosticsModal> {
             ),
             onPressed: () => Navigator.of(context).pop(),
             icon: const Icon(Icons.check_rounded, size: 18),
-            label: const Text('Mbyll Testin', style: TextStyle(fontWeight: FontWeight.bold)),
+            label: Text(coreTr(context, 'settings.close_test'), style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
       ],
     );

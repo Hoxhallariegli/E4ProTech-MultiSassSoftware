@@ -112,6 +112,12 @@ abstract final class AppTheme {
           borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
         ),
       ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: scheme.primary,
+        foregroundColor: Colors.white,
+        elevation: 3,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
     );
   }
 }

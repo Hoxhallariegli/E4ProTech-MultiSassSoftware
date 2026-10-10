@@ -28,4 +28,6 @@ return [
   'Delete' => 'Delete',
   'Cancel' => 'Cancel',
   'View Current File' => 'View Current File',
+  'Click to replace current file' => 'Click to replace current file',
+  'Click or Drag to Upload' => 'Click or drag to upload',
 ];

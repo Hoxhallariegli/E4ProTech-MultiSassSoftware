@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../branding/branding_cubit.dart';
 import '../../services/auth_service.dart';
+import '../../modules/dashboard/subscription_renewal/presentation/pages/subscription_renewal_list_page.dart';
 
 class ExpiredSubscriptionBanner extends StatelessWidget {
   const ExpiredSubscriptionBanner({super.key});
@@ -64,7 +65,7 @@ class ExpiredSubscriptionBanner extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Ju nuk mund të kryeni asnjë veprim pasi abonimi ka skaduar.',
+                      'Rinnovoni abonimin tuaj për të hapur modulet.',
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.92),
                         fontSize: 11,
@@ -80,17 +81,16 @@ class ExpiredSubscriptionBanner extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 child: InkWell(
                   onTap: () {
-                    Navigator.of(context).pushNamedAndRemoveUntil(
-                      '/dashboard',
-                      (route) => false,
-                      arguments: 2, // Settings tab
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SubscriptionRenewalListPage()),
                     );
                   },
                   borderRadius: BorderRadius.circular(8),
                   child: const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     child: Text(
-                      'Renovo',
+                      'Renovo Tani 🚀',
                       style: TextStyle(
                         color: Color(0xFF881337),
                         fontWeight: FontWeight.w900,

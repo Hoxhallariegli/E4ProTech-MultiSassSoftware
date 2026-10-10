@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/widgets/premium_widgets.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../core/branding/branding_cubit.dart';
+import '../../../../l10n/core_localization.dart';
 import '../../data/notification_repository.dart';
 import '../cubit/notification_cubit.dart';
 import '../cubit/notification_state.dart';
@@ -52,26 +53,15 @@ class NotificationSettingsView extends StatelessWidget {
   }
 
   String _getModuleDisplayTitle(BuildContext context, String moduleName) {
-    final key = moduleName.toUpperCase().replaceAll('_', '').replaceAll(' ', '');
-    switch (key) {
-      case 'BARBER': return context.staffLabelPlural.toUpperCase();
-      case 'BARBERSHOP': return context.shopLabel.toUpperCase();
-      case 'BOOKING': return 'REZERVIMET & TAKIMET';
-      case 'CUSTOMER': return 'KLIENTËT';
-      case 'SERVICE': return 'SHËRBIMET';
-      case 'PAYMENT': return 'PAGESAT';
-      case 'WORKINGHOUR': return 'ORARI JAVOR';
-      case 'REVIEW': return 'VLERËSIMET';
-      case 'PLAN': return 'PLANET';
-      case 'SUBSCRIPTION': return 'ABONIMET';
-      case 'NOTIFICATIONCHANNEL': return 'KANALET E NJOFTIMEVE';
-      case 'EVENTSETTING': return 'CILËSIMET E NGJARJEVE';
-      case 'MESSAGETEMPLATE': return 'SHABLLONET E MESAZHEVE';
-      case 'MESSAGEQUEUE': return 'RADHA E MESAZHEVE';
-      case 'MESSAGELOG': return 'LOGJET E MESAZHEVE';
-      case 'DEVICETOKEN': return 'TOKENAT E PAJISJEVE';
-      default: return moduleName.toUpperCase();
+    if (moduleName.toLowerCase() == 'barber') return context.staffLabelPlural.toUpperCase();
+    if (moduleName.toLowerCase() == 'barbershop') return context.shopLabel.toUpperCase();
+
+    final snakeKey = moduleName.replaceAll(RegExp(r'(?<!^)(?=[A-Z])'), '_').toLowerCase();
+    final translated = coreTr(context, 'module.$snakeKey');
+    if (!translated.startsWith('module.')) {
+      return translated.toUpperCase();
     }
+    return moduleName.toUpperCase();
   }
 
   String _getEventPermissionKey(String rawEvent) {
@@ -150,11 +140,11 @@ class NotificationSettingsView extends StatelessWidget {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Njoftimet e Moduleve', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-            Text('Konfiguro njoftimet Push Firebase për çdo modul', style: TextStyle(fontSize: 11, color: Colors.grey)),
+            Text(coreTr(context, 'notif.page_title'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            Text(coreTr(context, 'notif.page_subtitle'), style: const TextStyle(fontSize: 11, color: Colors.grey)),
           ],
         ),
       ),
@@ -184,24 +174,24 @@ class NotificationSettingsView extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                _buildSectionHeader(theme, 'Modulet (Njoftimet Qendrore)', Icons.apps_rounded),
+                _buildSectionHeader(theme, coreTr(context, 'notif.central_modules'), Icons.apps_rounded),
                 const SizedBox(height: 12),
                 if (allowedModules.isEmpty)
-                  _buildEmptyState('Nuk keni leje për modulet e njoftimeve')
+                  _buildEmptyState(coreTr(context, 'notif.no_perm_modules'))
                 else
                   ...allowedModules.map((m) => _buildModuleTile(context, m)),
 
                 const SizedBox(height: 30),
-                _buildSectionHeader(theme, 'Ngjarjet e Detajuara', Icons.bolt_rounded),
+                _buildSectionHeader(theme, coreTr(context, 'notif.detailed_events'), Icons.bolt_rounded),
                 const SizedBox(height: 12),
                 if (allowedEvents.isEmpty)
-                  _buildEmptyState('Nuk ka ngjarje të lejuara')
+                  _buildEmptyState(coreTr(context, 'notif.no_allowed_events'))
                 else
                   ...allowedEvents.map((e) => _buildEventTile(context, e)),
 
                 const SizedBox(height: 40),
                 Text(
-                  'Sqarim: Përditësimet në kohë reale në ekran mbeten aktive. Këta switch-e kordinojnë vetëm njoftimet Push Firebase.',
+                  coreTr(context, 'notif.footer_note'),
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
                   textAlign: TextAlign.center,
                 ),
@@ -248,7 +238,7 @@ class NotificationSettingsView extends StatelessWidget {
       ),
       child: SwitchListTile.adaptive(
         title: Text(displayTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-        subtitle: Text('Rregullo njoftimet Push për $displayTitle', style: const TextStyle(fontSize: 11)),
+        subtitle: Text(coreTr(context, 'notif.adjust_push', {'module': displayTitle}), style: const TextStyle(fontSize: 11)),
         value: isEnabled,
         onChanged: (val) => context.read<NotificationCubit>().toggleModule(rawName),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),

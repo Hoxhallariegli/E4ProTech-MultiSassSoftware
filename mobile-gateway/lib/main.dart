@@ -63,18 +63,34 @@ class MyApp extends StatelessWidget {
                   title: branding.appName,
                   navigatorKey: navigatorKey,
                   debugShowCheckedModeBanner: false,
-                  theme: AppTheme.light().copyWith(
+                  theme: AppTheme.light(seed: branding.primaryColor).copyWith(
                     primaryColor: branding.primaryColor,
-                    colorScheme: AppTheme.light().colorScheme.copyWith(
+                    colorScheme: AppTheme.light(seed: branding.primaryColor).colorScheme.copyWith(
                       primary: branding.primaryColor,
                       secondary: branding.primaryColor,
+                      primaryContainer: branding.primaryColor,
+                      onPrimaryContainer: Colors.white,
+                    ),
+                    floatingActionButtonTheme: FloatingActionButtonThemeData(
+                      backgroundColor: branding.primaryColor,
+                      foregroundColor: Colors.white,
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
                   ),
-                  darkTheme: AppTheme.dark().copyWith(
+                  darkTheme: AppTheme.dark(seed: branding.primaryColor).copyWith(
                     primaryColor: branding.primaryColor,
-                    colorScheme: AppTheme.dark().colorScheme.copyWith(
+                    colorScheme: AppTheme.dark(seed: branding.primaryColor).colorScheme.copyWith(
                       primary: branding.primaryColor,
                       secondary: branding.primaryColor,
+                      primaryContainer: branding.primaryColor,
+                      onPrimaryContainer: Colors.white,
+                    ),
+                    floatingActionButtonTheme: FloatingActionButtonThemeData(
+                      backgroundColor: branding.primaryColor,
+                      foregroundColor: Colors.white,
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
                   ),
                   themeMode: themeMode,

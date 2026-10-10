@@ -80,6 +80,7 @@
 
 @can('view_subscriptions')
     <x-nav.link route="admin.subscriptions.index" icon="clipboard-document">{{ __('subscriptions.Subscriptions') }}</x-nav.link>
+    <x-nav.link route="admin.subscription-renewals.index" icon="arrow-path">Renovimi i Abonimit</x-nav.link>
 @endcan
 
 @can('view_plans')

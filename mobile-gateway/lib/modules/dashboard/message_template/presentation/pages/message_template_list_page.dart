@@ -76,7 +76,7 @@ class _MessageTemplateListViewState extends State<_MessageTemplateListView> {
           Align(alignment: Alignment.centerLeft, child: Text(message_templateTr(context, 'list.filters'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800))),
           const SizedBox(height: 18),
           _FilterDropdown(label: message_templateTr(context, 'field.channel'), value: _filters['channel']?.toString(), options: ['sms', 'whatsapp'], onChanged: (v) => setState(() => _filters['channel'] = v)),
-_FilterDropdown(label: message_templateTr(context, 'field.type'), value: _filters['type']?.toString(), options: ['reminder', 'confirmation', 'welcome'], onChanged: (v) => setState(() => _filters['type'] = v)),
+_FilterDropdown(label: message_templateTr(context, 'field.type'), value: _filters['type']?.toString(), options: const ['confirmation', 'reminder', 'reschedule', 'cancellation', 'welcome'], onChanged: (v) => setState(() => _filters['type'] = v)),
           if (3 > 0) const SizedBox(height: 8),
           Row(children: [
             Expanded(child: OutlinedButton(onPressed: () { _filters.clear(); setState(() {}); Navigator.pop(context); context.read<MessageTemplateCubit>().load(refresh: true, filters: {}); }, child: Text(message_templateTr(context, 'list.clear')))),

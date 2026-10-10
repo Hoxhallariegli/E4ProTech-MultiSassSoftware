@@ -21,7 +21,7 @@ class MessageTemplate extends Model
         return [
             'barber_shop_id' => ['required', 'integer'],
             'channel' => ['required', \Illuminate\Validation\Rule::in(['sms', 'whatsapp'])],
-            'type' => ['required', \Illuminate\Validation\Rule::in(['reminder', 'confirmation', 'welcome'])],
+            'type' => ['required', \Illuminate\Validation\Rule::in(['reminder', 'confirmation', 'welcome', 'reschedule', 'cancellation'])],
             'content' => ['required'],
         ];
     }
@@ -92,12 +92,20 @@ class MessageTemplate extends Model
             if ($locale === 'en') {
                 if ($type === 'reminder') {
                     $templateText = "Reminder: Hello {customer_name}! Your appointment is today at {time}. Thank you!";
+                } elseif ($type === 'reschedule' || $type === 'update') {
+                    $templateText = "Hello {customer_name}! Your appointment at {shop_name} with {staff_name} is updated to {time} {date}. Thank you!";
+                } elseif ($type === 'cancellation' || $type === 'cancelled') {
+                    $templateText = "Hello {customer_name}! Your appointment at {shop_name} for {time} {date} was cancelled. Thank you!";
                 } else {
                     $templateText = "Hello {customer_name}! Your booking for {service_name} at {shop_name} is confirmed for {time} {date}. Thank you!";
                 }
             } else {
                 if ($type === 'reminder') {
                     $templateText = "Rikujtese: Pershendetje {customer_name}! Takimi juaj sot ne oren {time}. Faleminderit!";
+                } elseif ($type === 'reschedule' || $type === 'update') {
+                    $templateText = "Pershendetje {customer_name}! Takimi juaj ne {shop_name} me {staff_name} u ndryshua per ne oren {time} {date}. Faleminderit!";
+                } elseif ($type === 'cancellation' || $type === 'cancelled') {
+                    $templateText = "Pershendetje {customer_name}! Takimi juaj ne {shop_name} per ne oren {time} {date} u anulua. Faleminderit!";
                 } else {
                     $templateText = "Pershendetje {customer_name}! Rezervimi {service_name} ne {shop_name} u konfirmua {time} {date}. Faleminderit!";
                 }

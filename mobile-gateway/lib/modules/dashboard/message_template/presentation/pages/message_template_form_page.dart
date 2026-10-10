@@ -93,6 +93,24 @@ class _MessageTemplateFormPageState extends State<MessageTemplateFormPage> {
     return (item['name'] ?? item['title'] ?? 'ID: ' + item['id'].toString()).toString();
   }
 
+  String _getTemplateTypeDisplayLabel(BuildContext context, String type) {
+    final isEn = Localizations.localeOf(context).languageCode == 'en';
+    switch (type.toLowerCase()) {
+      case 'reminder':
+        return isEn ? '⏰ Reminder (SMS)' : '⏰ Rikujtesë (SMS)';
+      case 'confirmation':
+        return isEn ? '✅ Booking Confirmation' : '✅ Konfirmim Takimi';
+      case 'welcome':
+        return isEn ? '👋 Welcome Message' : '👋 Mesazh Mirëseardhjeje';
+      case 'reschedule':
+        return isEn ? '🔄 Reschedule / Update' : '🔄 Ndryshim Orari / Berberi';
+      case 'cancellation':
+        return isEn ? '❌ Cancellation' : '❌ Anulim Takimi';
+      default:
+        return type;
+    }
+  }
+
   Future<void> _save(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
     final payload = <String, dynamic>{};
@@ -141,7 +159,7 @@ class _MessageTemplateFormPageState extends State<MessageTemplateFormPage> {
               ? _FieldShell(label: message_templateTr(context, 'field.barber_shop_id'), child: InkWell(onTap: _pickbarberShopId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_barberShopOptions.firstWhere((e) => e['id'].toString() == _barberShopId?.toString(), orElse: () => {'id': '', 'name': message_templateTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)]))))
               : _FieldShell(label: message_templateTr(context, 'field.barber_shop_id'), child: Container(padding: const EdgeInsets.all(16), width: double.infinity, decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5), border: Border.all(color: theme.colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Text(AuthService.instance.user?['business']?['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)))),
             _FieldShell(label: message_templateTr(context, 'field.channel'), child: DropdownButtonFormField<String>(value: ['sms', 'whatsapp'].contains(_channel) ? _channel : null, items: ['sms', 'whatsapp'].map((v) => DropdownMenuItem<String>(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => _channel = v), validator: (v) { if (v == null || v.isEmpty) return message_templateTr(context, 'form.select'); return null; }, decoration: const InputDecoration(border: InputBorder.none, isDense: true))),
-            _FieldShell(label: message_templateTr(context, 'field.type'), child: DropdownButtonFormField<String>(value: ['reminder', 'confirmation', 'welcome'].contains(_type) ? _type : null, items: ['reminder', 'confirmation', 'welcome'].map((v) => DropdownMenuItem<String>(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => _type = v), validator: (v) { if (v == null || v.isEmpty) return message_templateTr(context, 'form.select'); return null; }, decoration: const InputDecoration(border: InputBorder.none, isDense: true))),
+            _FieldShell(label: message_templateTr(context, 'field.type'), child: DropdownButtonFormField<String>(value: ['reminder', 'confirmation', 'welcome', 'reschedule', 'cancellation'].contains(_type) ? _type : null, items: ['confirmation', 'reminder', 'reschedule', 'cancellation', 'welcome'].map((v) => DropdownMenuItem<String>(value: v, child: Text(_getTemplateTypeDisplayLabel(context, v)))).toList(), onChanged: (v) => setState(() => _type = v), validator: (v) { if (v == null || v.isEmpty) return message_templateTr(context, 'form.select'); return null; }, decoration: const InputDecoration(border: InputBorder.none, isDense: true))),
 
             // Multi-language Input 1: Shqip (SQ)
             _FieldShell(

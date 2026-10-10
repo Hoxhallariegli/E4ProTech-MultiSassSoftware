@@ -490,7 +490,13 @@ class BookingController extends Controller
                                 ->get()
                                 ->map(function ($queue) {
                                     $type = $queue->resolved_template_type;
-                                    $typeLabel = $type === 'reminder' ? 'Rikujtesë SMS' : ($type === 'welcome' ? 'Mirëseardhje SMS' : 'Konfirmim SMS');
+                                    $typeLabel = match($type) {
+                                        'reminder' => 'Rikujtesë SMS',
+                                        'reschedule', 'update' => 'Ndryshim SMS',
+                                        'cancellation', 'cancelled' => 'Anulim SMS',
+                                        'welcome' => 'Mirëseardhje SMS',
+                                        default => 'Konfirmim SMS',
+                                    };
                                     return [
                                         'id' => $queue->id,
                                         'type' => $type,

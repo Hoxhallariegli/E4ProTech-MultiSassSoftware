@@ -145,7 +145,8 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'barber_shop_id' => $user->barber_shop_id,
                 'image' => $user->image ? asset(ltrim($user->image, '/')) : null,
-                'is_admin' => $user->is_global_admin,
+                'is_admin' => (bool) $user->is_global_admin,
+                'is_global_admin' => (bool) $user->is_global_admin,
                 'permissions' => $user->getPermissionsFlattened(),
                 'accessible_shops' => (function() use ($user) {
                     if ($user->is_global_admin) {

@@ -17,10 +17,10 @@
 
     @php
         use App\Services\ShopTranslationService;
-        $heroBadge = ShopTranslationService::getShopText($shop, 'hero_badge', "✨ {$shop->resolved_shop_label} Zyrtare • {$shop->name}");
+        $heroBadge = ShopTranslationService::getShopText($shop, 'hero_badge', "{$shop->resolved_shop_label} Zyrtare • {$shop->name}");
         $heroTitle = ShopTranslationService::getShopText($shop, 'hero_title', "Eksperiencë Premium për {$shop->resolved_service_label} & Stilim");
         $heroSubtitle = ShopTranslationService::getShopText($shop, 'hero_subtitle', "Rezervoni takimin tuaj online me ekipin tonë profesional në pak sekonda. Zgjidhni shërbimin, orarin dhe stafin tuaj të preferuar 24/7.");
-        $heroButton = ShopTranslationService::getShopText($shop, 'hero_button', "Rezervo Takim Online ↗");
+        $heroButton = ShopTranslationService::getShopText($shop, 'hero_button', "Rezervo Takim Online &rarr;");
         $servicesBadge = ShopTranslationService::getShopText($shop, 'services_badge', "Çmimet & Kohëzgjatja");
         $servicesTitle = ShopTranslationService::getShopText($shop, 'services_title', "Shërbimet e Ofruara");
         $staffBadge = ShopTranslationService::getShopText($shop, 'staff_badge', "Ekipi Ynë");
@@ -54,11 +54,11 @@
             <div class="flex items-center gap-3">
                 @if(!empty($contactPhone))
                     <a href="tel:{{ $contactPhone }}" class="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold bg-[#1A1D24] border border-stone-800 text-slate-200 hover:bg-stone-800 transition">
-                        <span>📞 Kontakt</span>
+                        <span>Kontakt</span>
                     </a>
                 @endif
                 <a href="#booking-section" class="px-6 py-2.5 rounded-full text-xs font-black text-black bg-[#FF9F0A] hover:bg-amber-400 shadow-lg shadow-[#FF9F0A]/20 transition transform active:scale-95">
-                    {{ $heroButton }}
+                    {!! $heroButton !!}
                 </a>
             </div>
         </div>
@@ -90,7 +90,7 @@
             <div class="flex flex-wrap justify-center gap-4">
                 <a href="#booking-section"
                    class="px-8 py-4 rounded-full font-black text-sm text-black bg-[#FF9F0A] hover:bg-amber-400 shadow-xl shadow-[#FF9F0A]/25 transition transform active:scale-95 flex items-center justify-center gap-2">
-                    <span>{{ $heroButton }}</span>
+                    <span>{!! $heroButton !!}</span>
                 </a>
 
                 <a href="#services"
@@ -125,7 +125,7 @@
                             <p class="text-xs font-extrabold text-slate-400 mt-0.5">{{ $shop->resolved_staff_label }}</p>
                             @if($member->phone)
                                 <p class="text-xs text-slate-500 mt-1 font-bold">
-                                    📞 {{ $member->phone }}
+                                    {{ $member->phone }}
                                 </p>
                             @endif
                         </div>
@@ -157,7 +157,7 @@
                                     {{ $service->category ?: $shop->resolved_service_label }}
                                 </span>
                                 <span class="text-xs text-slate-400 font-bold">
-                                    ⏱️ {{ $service->duration_minutes }} min
+                                    {{ $service->duration_minutes }} min
                                 </span>
                             </div>
                             <h4 class="font-black text-lg text-white mt-2">{{ $service->name }}</h4>
@@ -171,7 +171,7 @@
                             </span>
                             <a href="#booking-section"
                                class="px-4 py-2 rounded-full text-xs font-black text-black bg-[#FF9F0A] hover:bg-amber-400 shadow transition inline-block">
-                                Zgjidh ↗
+                                Zgjidh &rarr;
                             </a>
                         </div>
                     </div>

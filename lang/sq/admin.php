@@ -27,5 +27,7 @@ return [
   'Cancel' => 'Anulo',
   'Categories' => 'Kategoritë',
   'BlogPosts' => 'Artikujt',
-  'View Current File' => 'View Current File',
+  'View Current File' => 'Shiko skedarin aktual',
+  'Click to replace current file' => 'Kliko për të zgjedhur skedar të ri',
+  'Click or Drag to Upload' => 'Kliko ose tërhq skedarin për ta ngarkuar',
 ];

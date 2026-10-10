@@ -150,6 +150,7 @@ Route::prefix('mobile')->group(function () {
 });
 
 Route::middleware('auth:sanctum')->prefix('mobile')->group(function () {
+    Route::apiResource('subscription-renewals', \App\Http\Controllers\Api\Mobile\SubscriptionRenewalController::class);
     Route::apiResource('shop-front-page-settings', \App\Http\Controllers\Api\Mobile\ShopFrontPageSettingController::class);
     
 });

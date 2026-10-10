@@ -83,137 +83,230 @@ class SendFirebaseNotificationListener
                     return;
                 }
 
-                if ($action === 'created' && $booking->customer && $booking->customer->phone && $sendSmsRequested) {
-                    $parsedConfirmation = MessageTemplate::parseForBooking($booking, 'confirmation');
+                if ($booking->customer && $booking->customer->phone && $sendSmsRequested) {
                     $formattedPhone = $this->formatPhone($booking->customer->phone);
 
-                    // Fetch existing SMS queue items for this booking
-                    $existingSmsQueues = MessageQueue::where('booking_id', $booking->id)
-                        ->where('channel', 'sms')
-                        ->get();
+                    // -------------------------------------------------------------
+                    // ACTION A: CREATED -> Send Confirmation + Schedule Reminder
+                    // -------------------------------------------------------------
+                    if ($action === 'created') {
+                        $parsedConfirmation = MessageTemplate::parseForBooking($booking, 'confirmation');
 
-                    // 1. Direct Confirmation SMS (Immediate)
-                    $existingConfirmation = $existingSmsQueues->first(fn($q) => ($q->template_type ?? $q->resolved_template_type) === 'confirmation');
+                        // Fetch existing SMS queue items for this booking
+                        $existingSmsQueues = MessageQueue::where('booking_id', $booking->id)
+                            ->where('channel', 'sms')
+                            ->get();
 
-                    $queue = $existingConfirmation;
+                        // 1. Direct Confirmation SMS (Immediate)
+                        $existingConfirmation = $existingSmsQueues->first(fn($q) => ($q->template_type ?? $q->resolved_template_type) === 'confirmation');
+                        $queue = $existingConfirmation;
 
-                    if (!$queue) {
-                        $queueData = [
+                        if (!$queue) {
+                            $queueData = [
+                                'barber_shop_id' => $booking->barber_shop_id,
+                                'booking_id' => $booking->id,
+                                'channel' => 'sms',
+                                'phone_number' => $formattedPhone,
+                                'message_content' => $parsedConfirmation,
+                                'scheduled_at' => now(),
+                                'status' => 'pending',
+                                'retry_count' => 0,
+                            ];
+                            if (Schema::hasColumn('message_queues', 'template_type')) {
+                                $queueData['template_type'] = 'confirmation';
+                            }
+                            $queue = MessageQueue::create($queueData);
+                            \App\Models\AuditTrail::log($queue, 'create', 'MessageQueues');
+
+                            $logData = [
+                                'barber_shop_id' => $booking->barber_shop_id,
+                                'customer_id' => $booking->customer_id,
+                                'channel' => 'sms',
+                                'message' => $parsedConfirmation,
+                                'status' => 'pending',
+                                'sent_at' => null,
+                            ];
+                            if (Schema::hasColumn('message_logs', 'template_type')) {
+                                $logData['template_type'] = 'confirmation';
+                            }
+                            $msgLog = MessageLog::create($logData);
+                            \App\Models\AuditTrail::log($msgLog, 'create', 'MessageLogs');
+
+                            Log::info("📝 [STEP 4a] SMS Confirmation Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
+                        }
+
+                        // 2. Scheduled Reminder SMS (Pending until reminder hours before appointment)
+                        $shop = $booking->barberShop;
+                        if ($booking->appointment_at) {
+                            $rawVal = $shop?->reminder_hours_before;
+                            $reminderMins = 30;
+
+                            if ($rawVal !== null && is_numeric($rawVal) && (float)$rawVal > 0) {
+                                $num = (float) $rawVal;
+                                $reminderMins = ($num <= 12) ? (int) round($num * 60) : (int) round($num);
+                            }
+                            $reminderMins = max(10, $reminderMins);
+
+                            $scheduledReminderTime = $booking->appointment_at->copy()->subMinutes($reminderMins);
+                            if ($scheduledReminderTime->isPast()) {
+                                $scheduledReminderTime = now();
+                            }
+
+                            $parsedReminder = MessageTemplate::parseForBooking($booking, 'reminder');
+                            $existingReminder = $existingSmsQueues->first(fn($q) => ($q->template_type ?? $q->resolved_template_type) === 'reminder');
+
+                            if (!$existingReminder) {
+                                $reminderQueueData = [
+                                    'barber_shop_id' => $booking->barber_shop_id,
+                                    'booking_id' => $booking->id,
+                                    'channel' => 'sms',
+                                    'phone_number' => $formattedPhone,
+                                    'message_content' => $parsedReminder,
+                                    'scheduled_at' => $scheduledReminderTime,
+                                    'status' => 'pending',
+                                    'retry_count' => 0,
+                                ];
+                                if (Schema::hasColumn('message_queues', 'template_type')) {
+                                    $reminderQueueData['template_type'] = 'reminder';
+                                }
+                                $reminderQueue = MessageQueue::create($reminderQueueData);
+                                \App\Models\AuditTrail::log($reminderQueue, 'create', 'MessageQueues');
+
+                                $reminderLogData = [
+                                    'barber_shop_id' => $booking->barber_shop_id,
+                                    'customer_id' => $booking->customer_id,
+                                    'channel' => 'sms',
+                                    'message' => $parsedReminder,
+                                    'status' => 'pending',
+                                    'sent_at' => null,
+                                ];
+                                if (Schema::hasColumn('message_logs', 'template_type')) {
+                                    $reminderLogData['template_type'] = 'reminder';
+                                }
+                                $reminderLog = MessageLog::create($reminderLogData);
+                                \App\Models\AuditTrail::log($reminderLog, 'create', 'MessageLogs');
+
+                                Log::info("⏰ [STEP 4a] SMS Reminder Message scheduled for Booking #{$booking->id} at {$scheduledReminderTime} (Shop #{$booking->barber_shop_id})");
+                            }
+                        }
+
+                        // Trigger SMS Gateway Device
+                        $this->triggerGatewayDevice($shopId, $queue?->id ?? 0, $booking->customer->phone, $parsedConfirmation);
+                    }
+
+                    // -------------------------------------------------------------
+                    // ACTION B: UPDATED -> Reschedule Pending Reminder + Send Update SMS
+                    // -------------------------------------------------------------
+                    elseif ($action === 'updated') {
+                        $shop = $booking->barberShop;
+
+                        // 1. Reschedule and update pending reminder SMS
+                        if ($booking->appointment_at) {
+                            $rawVal = $shop?->reminder_hours_before;
+                            $reminderMins = 30;
+                            if ($rawVal !== null && is_numeric($rawVal) && (float)$rawVal > 0) {
+                                $num = (float) $rawVal;
+                                $reminderMins = ($num <= 12) ? (int) round($num * 60) : (int) round($num);
+                            }
+                            $reminderMins = max(10, $reminderMins);
+
+                            $scheduledReminderTime = $booking->appointment_at->copy()->subMinutes($reminderMins);
+                            if ($scheduledReminderTime->isPast()) {
+                                $scheduledReminderTime = now();
+                            }
+
+                            $parsedReminder = MessageTemplate::parseForBooking($booking, 'reminder');
+
+                            // Find and update existing pending reminder in MessageQueue
+                            $pendingReminder = MessageQueue::where('booking_id', $booking->id)
+                                ->where('channel', 'sms')
+                                ->where('status', 'pending')
+                                ->where(function($q) {
+                                    $q->where('template_type', 'reminder')
+                                      ->orWhere('message_content', 'like', '%Rikujtese%')
+                                      ->orWhere('message_content', 'like', '%Reminder%');
+                                })
+                                ->first();
+
+                            if ($pendingReminder) {
+                                $pendingReminder->update([
+                                    'scheduled_at' => $scheduledReminderTime,
+                                    'message_content' => $parsedReminder,
+                                    'phone_number' => $formattedPhone,
+                                ]);
+                                Log::info("⏰ [RESCHEDULE] Pending SMS Reminder for Booking #{$booking->id} updated to {$scheduledReminderTime} with new content.");
+                            }
+                        }
+
+                        // 2. Queue and Send Immediate Update / Reschedule SMS
+                        $parsedUpdate = MessageTemplate::parseForBooking($booking, 'reschedule');
+
+                        $updateQueueData = [
                             'barber_shop_id' => $booking->barber_shop_id,
                             'booking_id' => $booking->id,
                             'channel' => 'sms',
                             'phone_number' => $formattedPhone,
-                            'message_content' => $parsedConfirmation,
+                            'message_content' => $parsedUpdate,
                             'scheduled_at' => now(),
                             'status' => 'pending',
                             'retry_count' => 0,
                         ];
                         if (Schema::hasColumn('message_queues', 'template_type')) {
-                            $queueData['template_type'] = 'confirmation';
+                            $updateQueueData['template_type'] = 'reschedule';
                         }
-                        $queue = MessageQueue::create($queueData);
-                        \App\Models\AuditTrail::log($queue, 'create', 'MessageQueues');
+                        $updateQueue = MessageQueue::create($updateQueueData);
+                        \App\Models\AuditTrail::log($updateQueue, 'create', 'MessageQueues');
 
-                        $logData = [
+                        $updateLogData = [
                             'barber_shop_id' => $booking->barber_shop_id,
                             'customer_id' => $booking->customer_id,
                             'channel' => 'sms',
-                            'message' => $parsedConfirmation,
+                            'message' => $parsedUpdate,
                             'status' => 'pending',
                             'sent_at' => null,
                         ];
                         if (Schema::hasColumn('message_logs', 'template_type')) {
-                            $logData['template_type'] = 'confirmation';
+                            $updateLogData['template_type'] = 'reschedule';
                         }
-                        $msgLog = MessageLog::create($logData);
-                        \App\Models\AuditTrail::log($msgLog, 'create', 'MessageLogs');
+                        $updateLog = MessageLog::create($updateLogData);
+                        \App\Models\AuditTrail::log($updateLog, 'create', 'MessageLogs');
 
-                        Log::info("📝 [STEP 4a] SMS Confirmation Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
+                        Log::info("🔄 [STEP 4a-UPDATE] SMS Update Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
+
+                        // Trigger Gateway Device
+                        $this->triggerGatewayDevice($shopId, $updateQueue->id, $booking->customer->phone, $parsedUpdate);
                     }
 
-                    // 2. Scheduled Reminder SMS (Pending until reminder hours before appointment)
-                    $shop = $booking->barberShop;
-                    if ($booking->appointment_at) {
-                        $rawVal = $shop?->reminder_hours_before;
-                        $reminderMins = 30; // Default minimum 30 minutes before appointment if unconfigured
+                    // -------------------------------------------------------------
+                    // ACTION C: DELETED -> Cancel Pending Reminder + Send Cancellation SMS
+                    // -------------------------------------------------------------
+                    elseif ($action === 'deleted') {
+                        // Cancel pending reminders for this booking
+                        MessageQueue::where('booking_id', $booking->id)
+                            ->where('status', 'pending')
+                            ->delete();
 
-                        if ($rawVal !== null && is_numeric($rawVal) && (float)$rawVal > 0) {
-                            $num = (float) $rawVal;
-                            if ($num <= 12) {
-                                $reminderMins = (int) round($num * 60);
-                            } else {
-                                $reminderMins = (int) round($num);
-                            }
+                        $parsedCancel = MessageTemplate::parseForBooking($booking, 'cancellation');
+
+                        $cancelQueueData = [
+                            'barber_shop_id' => $booking->barber_shop_id,
+                            'booking_id' => $booking->id,
+                            'channel' => 'sms',
+                            'phone_number' => $formattedPhone,
+                            'message_content' => $parsedCancel,
+                            'scheduled_at' => now(),
+                            'status' => 'pending',
+                            'retry_count' => 0,
+                        ];
+                        if (Schema::hasColumn('message_queues', 'template_type')) {
+                            $cancelQueueData['template_type'] = 'cancellation';
                         }
+                        $cancelQueue = MessageQueue::create($cancelQueueData);
 
-                        $reminderMins = max(10, $reminderMins);
+                        Log::info("❌ [STEP 4a-CANCEL] SMS Cancellation Message queued for Booking #{$booking->id}");
 
-                        $scheduledReminderTime = $booking->appointment_at->copy()->subMinutes($reminderMins);
-                        if ($scheduledReminderTime->isPast()) {
-                            $scheduledReminderTime = now();
-                        }
-
-                        $parsedReminder = MessageTemplate::parseForBooking($booking, 'reminder');
-
-                        $existingReminder = $existingSmsQueues->first(fn($q) => ($q->template_type ?? $q->resolved_template_type) === 'reminder');
-
-                        if (!$existingReminder) {
-                            $reminderQueueData = [
-                                'barber_shop_id' => $booking->barber_shop_id,
-                                'booking_id' => $booking->id,
-                                'channel' => 'sms',
-                                'phone_number' => $formattedPhone,
-                                'message_content' => $parsedReminder,
-                                'scheduled_at' => $scheduledReminderTime,
-                                'status' => 'pending',
-                                'retry_count' => 0,
-                            ];
-                            if (Schema::hasColumn('message_queues', 'template_type')) {
-                                $reminderQueueData['template_type'] = 'reminder';
-                            }
-                            $reminderQueue = MessageQueue::create($reminderQueueData);
-                            \App\Models\AuditTrail::log($reminderQueue, 'create', 'MessageQueues');
-
-                            $reminderLogData = [
-                                'barber_shop_id' => $booking->barber_shop_id,
-                                'customer_id' => $booking->customer_id,
-                                'channel' => 'sms',
-                                'message' => $parsedReminder,
-                                'status' => 'pending',
-                                'sent_at' => null,
-                            ];
-                            if (Schema::hasColumn('message_logs', 'template_type')) {
-                                $reminderLogData['template_type'] = 'reminder';
-                            }
-                            $reminderLog = MessageLog::create($reminderLogData);
-                            \App\Models\AuditTrail::log($reminderLog, 'create', 'MessageLogs');
-
-                            Log::info("⏰ [STEP 4a] SMS Reminder Message scheduled for Booking #{$booking->id} at {$scheduledReminderTime} (Shop #{$booking->barber_shop_id})");
-                        }
-                    }
-
-                    // Find active SMS Gateway device assigned strictly to this shop
-                    $gatewayDevice = DeviceToken::where('barber_shop_id', $shopId)
-                        ->where('is_sms_gateway', true)
-                        ->whereNotNull('fcm_token')
-                        ->where('fcm_token', '!=', '')
-                        ->where('fcm_token', '!=', 'inactive_token')
-                        ->orderByDesc('last_used_at')
-                        ->first();
-
-                    if ($gatewayDevice && $gatewayDevice->fcm_token) {
-                        $fcmSent = $this->firebaseService->sendDataMessage(
-                            $gatewayDevice->fcm_token,
-                            [
-                                'action' => 'SEND_SMS',
-                                'sms_id' => (string) ($queue?->id ?? 0),
-                                'phone' => (string) $booking->customer->phone,
-                                'body' => (string) $parsedConfirmation,
-                            ]
-                        );
-                        Log::info("📱 [STEP 4b] Triggered silent SEND_SMS FCM data message directly to gateway device #{$gatewayDevice->id} [{$gatewayDevice->device_name}] for Shop #{$shopId}. FCM Status: " . ($fcmSent ? 'SUCCESS' : 'FAILED'));
-                    } else {
-                        Log::warning("⚠️ [STEP 4b] No active SMS Gateway device found in DB for Shop #{$shopId}. SMS queued as pending for Shop #{$shopId}.");
+                        // Trigger Gateway Device
+                        $this->triggerGatewayDevice($shopId, $cancelQueue->id, $booking->customer->phone, $parsedCancel);
                     }
                 }
 
@@ -232,6 +325,32 @@ class SendFirebaseNotificationListener
             }
         } catch (\Throwable $e) {
             Log::error("❌ [STEP ERROR] FCM Push Notification Listener Error: " . $e->getMessage());
+        }
+    }
+
+    private function triggerGatewayDevice(int $shopId, int $smsId, string $phone, string $body): void
+    {
+        $gatewayDevice = DeviceToken::where('barber_shop_id', $shopId)
+            ->where('is_sms_gateway', true)
+            ->whereNotNull('fcm_token')
+            ->where('fcm_token', '!=', '')
+            ->where('fcm_token', '!=', 'inactive_token')
+            ->orderByDesc('last_used_at')
+            ->first();
+
+        if ($gatewayDevice && $gatewayDevice->fcm_token) {
+            $fcmSent = $this->firebaseService->sendDataMessage(
+                $gatewayDevice->fcm_token,
+                [
+                    'action' => 'SEND_SMS',
+                    'sms_id' => (string) $smsId,
+                    'phone' => (string) $phone,
+                    'body' => (string) $body,
+                ]
+            );
+            Log::info("📱 [TRIGGER GATEWAY] SEND_SMS FCM data message sent to gateway device #{$gatewayDevice->id} [{$gatewayDevice->device_name}] for Shop #{$shopId}. FCM Status: " . ($fcmSent ? 'SUCCESS' : 'FAILED'));
+        } else {
+            Log::warning("⚠️ [TRIGGER GATEWAY] No active SMS Gateway device found in DB for Shop #{$shopId}. SMS queued as pending.");
         }
     }
 

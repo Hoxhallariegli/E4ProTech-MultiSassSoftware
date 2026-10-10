@@ -186,7 +186,7 @@ class ShopFrontPageSettings extends Component
         }
 
         // Update BarberShop branding
-        $this->shop->update([
+        $updateData = [
             'name' => trim($this->name),
             'app_name' => trim($this->app_name),
             'logo' => $logoPath,
@@ -194,9 +194,16 @@ class ShopFrontPageSettings extends Component
             'primary_color' => $this->primary_color,
             'secondary_color' => $this->secondary_color,
             'business_type' => $this->business_type,
-            'phone' => trim($this->contact_phone),
-            'email' => trim($this->contact_email),
-        ]);
+        ];
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('barber_shops', 'phone')) {
+            $updateData['phone'] = trim($this->contact_phone);
+        }
+        if (\Illuminate\Support\Facades\Schema::hasColumn('barber_shops', 'email')) {
+            $updateData['email'] = trim($this->contact_email);
+        }
+
+        $this->shop->update($updateData);
 
         // Update FrontPageSetting
         ShopFrontPageSetting::updateOrCreate(

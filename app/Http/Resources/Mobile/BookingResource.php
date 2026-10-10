@@ -31,11 +31,18 @@ class BookingResource extends JsonResource
         $smsMessages = \App\Models\MessageQueue::where('booking_id', $this->id)
             ->get()
             ->map(function ($queue) {
-                $isReminder = str_contains($queue->message_content, 'Rikujtes') || str_contains($queue->message_content, 'Reminder');
+                $type = $queue->resolved_template_type;
+                $typeLabel = match($type) {
+                    'reminder' => 'Rikujtesë SMS',
+                    'reschedule', 'update' => 'Ndryshim SMS',
+                    'cancellation', 'cancelled' => 'Anulim SMS',
+                    'welcome' => 'Mirëseardhje SMS',
+                    default => 'Konfirmim SMS',
+                };
                 return [
                     'id' => $queue->id,
-                    'type' => $isReminder ? 'reminder' : 'confirmation',
-                    'type_label' => $isReminder ? 'Rikujtesë SMS' : 'Konfirmim SMS',
+                    'type' => $type,
+                    'type_label' => $typeLabel,
                     'message_content' => $queue->message_content,
                     'phone_number' => $queue->phone_number,
                     'status' => $queue->status,

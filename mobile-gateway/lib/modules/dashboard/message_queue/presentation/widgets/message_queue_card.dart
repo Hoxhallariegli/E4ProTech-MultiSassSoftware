@@ -118,46 +118,49 @@ class MessageQueueCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Row 1: Recipient + Badges + Popup Menu
+          // Row 1: Recipient Name & Phone + Popup Menu
           Row(
             children: [
-              Icon(channelIcon, size: 16, color: channelColor),
+              Icon(channelIcon, size: 18, color: channelColor),
               const SizedBox(width: 8),
               Expanded(
-                child: Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        customerName,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w900,
-                          color: isDark ? Colors.white : theme.colorScheme.onSurface,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (phone.isNotEmpty && phone != customerName) ...[
-                      const SizedBox(width: 6),
-                      Text(
-                        '($phone)',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ],
+                child: Text(
+                  phone.isNotEmpty && phone != customerName
+                      ? '$customerName ($phone)'
+                      : customerName,
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : theme.colorScheme.onSurface,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              if (onDelete != null)
+                PopupMenuButton<String>(
+                  padding: EdgeInsets.zero,
+                  icon: Icon(Icons.more_vert_rounded, size: 18, color: isDark ? Colors.white70 : Colors.black54),
+                  onSelected: (value) {
+                    if (value == 'delete' && onDelete != null) onDelete!();
+                  },
+                  itemBuilder: (_) => [
+                    if (onDelete != null) const PopupMenuItem(value: 'delete', child: Text('🗑️ Fshi nga Radha')),
+                  ],
+                ),
+            ],
+          ),
 
-              const SizedBox(width: 6),
+          const SizedBox(height: 6),
 
+          // Row 2: Badges (Wrap to prevent horizontal overflow)
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
               // Channel Badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
                   color: channelColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(6),
@@ -173,11 +176,9 @@ class MessageQueueCard extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(width: 4),
-
               // Template Type Badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
                   color: typeColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(6),
@@ -193,11 +194,9 @@ class MessageQueueCard extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(width: 4),
-
               // Status Badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
                   color: statusColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(6),
@@ -212,18 +211,6 @@ class MessageQueueCard extends StatelessWidget {
                   ),
                 ),
               ),
-
-              if (onDelete != null)
-                PopupMenuButton<String>(
-                  padding: EdgeInsets.zero,
-                  icon: Icon(Icons.more_vert_rounded, size: 18, color: isDark ? Colors.white70 : Colors.black54),
-                  onSelected: (value) {
-                    if (value == 'delete' && onDelete != null) onDelete!();
-                  },
-                  itemBuilder: (_) => [
-                    if (onDelete != null) const PopupMenuItem(value: 'delete', child: Text('🗑️ Fshi nga Radha')),
-                  ],
-                ),
             ],
           ),
 

@@ -3,7 +3,7 @@ import 'package:mobile_gateway/l10n/core_localization.dart';
 import 'package:mobile_gateway/core/branding/branding_cubit.dart';
 import '../../barber_shop/presentation/pages/barber_shop_list_page.dart';
 import '../../plan/presentation/pages/plan_list_page.dart';
-import '../../subscription/presentation/pages/subscription_list_page.dart';
+import '../../subscription_renewal/presentation/pages/subscription_renewal_list_page.dart';
 import '../../barber/presentation/pages/barber_list_page.dart';
 import '../../service/presentation/pages/service_list_page.dart';
 import '../../customer/presentation/pages/customer_list_page.dart';
@@ -18,7 +18,6 @@ import '../../device_token/presentation/pages/device_token_list_page.dart';
 import '../../review/presentation/pages/review_list_page.dart';
 import '../../working_hour/presentation/pages/working_hour_list_page.dart';
 import '../../shop_front_page_setting/presentation/pages/shop_front_page_setting_list_page.dart';
-// [REGISTRY_IMPORTS]
 
 class ModuleEntry {
   final String key;
@@ -47,7 +46,7 @@ class ModuleRegistry {
   static final List<ModuleEntry> modules = [
     ModuleEntry(key: 'barber_shop', name: 'Dyqanet', icon: Icons.storefront_rounded, page: const BarberShopListPage(), permission: 'view_barber_shops'),
     ModuleEntry(key: 'plan', name: 'Planet', icon: Icons.stars_rounded, page: const PlanListPage(), permission: 'view_plans'),
-    ModuleEntry(key: 'subscription', name: 'Abonimet', icon: Icons.card_membership_rounded, page: const SubscriptionListPage(), permission: 'view_subscriptions'),
+    ModuleEntry(key: 'subscription_renewal', name: 'Renovimi i Abonimit', icon: Icons.published_with_changes_rounded, page: const SubscriptionRenewalListPage(), permission: 'view_subscription_renewals'),
     ModuleEntry(key: 'barber', name: 'Punonjësit', icon: Icons.person_pin_rounded, page: const BarberListPage(), permission: 'view_barbers'),
     ModuleEntry(key: 'service', name: 'Shërbimet', icon: Icons.content_cut_rounded, page: const ServiceListPage(), permission: 'view_services'),
     ModuleEntry(key: 'customer', name: 'Klientët', icon: Icons.people_alt_rounded, page: const CustomerListPage(), permission: 'view_customers'),
@@ -62,6 +61,5 @@ class ModuleRegistry {
     ModuleEntry(key: 'review', name: 'Vlerësimet', icon: Icons.star_rounded, page: const ReviewListPage(), permission: 'view_reviews'),
     ModuleEntry(key: 'working_hour', name: 'Orari Javor', icon: Icons.schedule_rounded, page: const WorkingHourListPage(), permission: 'view_working_hours'),
     ModuleEntry(key: 'shop_front_page_setting', name: 'ShopFrontPageSetting', icon: Icons.desktop_windows_outlined, page: const ShopFrontPageSettingListPage(), permission: 'view_shop_front_page_settings'),
-    // [REGISTRY_ENTRIES]
   ];
 }

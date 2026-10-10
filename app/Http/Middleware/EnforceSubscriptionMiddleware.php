@@ -24,7 +24,7 @@ class EnforceSubscriptionMiddleware
                     // Block write actions (POST, PUT, PATCH, DELETE) for expired subscriptions
                     if (in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
                         // Allow renewal and logout routes
-                        $allowedRoutes = ['admin.subscriptions', 'logout', 'verification', 'language'];
+                        $allowedRoutes = ['admin.subscriptions', 'admin.subscription-renewals', 'logout', 'verification', 'language'];
                         $currentRoute = $request->route()?->getName() ?? '';
 
                         $isAllowed = false;
