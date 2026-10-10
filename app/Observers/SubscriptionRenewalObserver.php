@@ -52,23 +52,36 @@ class SubscriptionRenewalObserver
         $shop = $item->barberShop;
         if (!$shop) return;
 
-        $plan = $item->plan;
-        $daysToAdd = ($plan && strtolower((string) ($plan->billing_cycle ?? '')) === 'yearly') ? 365 : 30;
+        // Parse duration months from notes or calculate from plan
+        $months = 1;
+        if (!empty($item->notes) && preg_match('/(\d+)\s*(months|muaj)/i', (string) $item->notes, $matches)) {
+            $months = max(1, (int) $matches[1]);
+        } elseif ($item->plan) {
+            $cycle = strtolower((string) ($item->plan->billing_cycle ?? ''));
+            if ($cycle === 'yearly' || str_contains($cycle, 'year') || str_contains($cycle, '12')) {
+                $months = 12;
+            }
+        }
 
-        $baseDate = ($shop->expires_at && $shop->expires_at->isFuture()) ? $shop->expires_at : now();
-        $newExpiresAt = $baseDate->copy()->addDays($daysToAdd);
+        $baseDate = ($shop->expires_at && $shop->expires_at->isFuture()) ? $shop->expires_at->copy() : now();
+        $newExpiresAt = $baseDate->copy()->addMonths($months);
 
-        $shop->update(['expires_at' => $newExpiresAt]);
-
-        Subscription::create([
-            'barber_shop_id' => $shop->id,
-            'plan_id' => $item->plan_id,
-            'starts_at' => now(),
-            'ends_at' => $newExpiresAt,
-            'status' => 'active',
-            'amount' => $item->amount,
+        $shop->updateQuietly([
+            'expires_at' => $newExpiresAt,
+            'active' => true,
         ]);
 
-        \Illuminate\Support\Facades\Log::info("✅ [SubscriptionRenewal] Shop #{$shop->id} ('{$shop->name}') subscription extended to {$newExpiresAt->format('Y-m-d H:i')}");
+        Subscription::updateOrCreate(
+            ['barber_shop_id' => $shop->id, 'status' => 'active'],
+            [
+                'plan_id' => $item->plan_id,
+                'starts_at' => now(),
+                'ends_at' => $newExpiresAt,
+                'status' => 'active',
+                'auto_renew' => true,
+            ]
+        );
+
+        \Illuminate\Support\Facades\Log::info("✅ [SubscriptionRenewal] Shop #{$shop->id} ('{$shop->name}') extended by {$months} months to {$newExpiresAt->format('Y-m-d H:i')}");
     }
 }
