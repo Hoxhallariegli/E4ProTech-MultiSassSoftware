@@ -172,13 +172,43 @@
       </div>
     </div>
 
-    <div class="overflow-y-auto">
+    <div class="overflow-y-auto flex-1">
       <div class="w-full p-4">
         <nav class="space-y-1">
             @include('components.layouts.app.navigation')
         </nav>
       </div>
     </div>
+
+    <!-- Bottom Sidebar Subscription Status Card -->
+    @php
+        $sidebarShop = auth()->user()?->barberShop;
+        $sidebarPlanName = $sidebarShop?->active_plan_name ?? 'Trial (30 Ditë Falas)';
+        $sidebarDaysLeft = $sidebarShop?->days_left ?? 30;
+        $sidebarIsExpired = $sidebarShop?->is_expired ?? false;
+    @endphp
+
+    @if(auth()->check() && $sidebarShop)
+        <div class="p-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
+            <a href="{{ route('admin.subscriptions.index') }}"
+               class="block p-3.5 rounded-2xl border transition group {{ $sidebarIsExpired ? 'bg-red-500/10 border-red-500/30 hover:border-red-500' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-blue-500' }}">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-[10px] font-black uppercase tracking-wider {{ $sidebarIsExpired ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400' }}">
+                        {{ $sidebarIsExpired ? 'Abonimi Ka Skaduar' : 'Plani Aktiv' }}
+                    </span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full {{ $sidebarIsExpired ? 'bg-red-500/20 text-red-600 dark:text-red-400' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' }}">
+                        {{ $sidebarDaysLeft }} Ditë
+                    </span>
+                </div>
+                <h5 class="text-xs font-black text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
+                    {{ $sidebarPlanName }}
+                </h5>
+                <p class="text-[10px] text-gray-500 dark:text-gray-400 font-medium mt-0.5 truncate">
+                    {{ $sidebarShop->name }}
+                </p>
+            </a>
+        </div>
+    @endif
   </nav>
 
   <header x-bind:class="{ 'lg:pl-64': true }" id="page-header" class="fixed top-0 right-0 left-0 z-30 flex h-16 flex-none items-center bg-white shadow-xs lg:pl-64 dark:bg-gray-800">
