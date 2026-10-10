@@ -64,7 +64,7 @@ class _SubscriptionRenewalFormPageState extends State<SubscriptionRenewalFormPag
         Container(width: 42, height: 4, decoration: BoxDecoration(color: Theme.of(context).dividerColor, borderRadius: BorderRadius.circular(10))),
         const SizedBox(height: 18), Align(alignment: Alignment.centerLeft, child: Text(subscription_renewalTr(sheetContext, 'field.plan_id'), style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800))),
         const SizedBox(height: 14), TextField(decoration: InputDecoration(prefixIcon: const Icon(Icons.search_rounded), hintText: subscription_renewalTr(sheetContext, 'form.search'), border: const OutlineInputBorder()), onChanged: (q) => setSheet(() => filtered = _planOptions.where((e) => _displayName(e).toLowerCase().contains(q.toLowerCase())).toList())),
-        const SizedBox(height: 12), Expanded(child: ListView.separated(itemCount: filtered.length, separatorBuilder: (_, __) => const Divider(height: 1), itemBuilder: (_, i) { final option = filtered[i]; return ListTile(title: Text(_displayName(option), style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(option['price'] != null ? '${option['price']} Lekë' : ''), trailing: option['id'].toString() == _planId?.toString() ? const Icon(Icons.check_circle_rounded) : null, onTap: () => Navigator.pop(sheetContext, option)); })),
+        const SizedBox(height: 12), Expanded(child: ListView.separated(itemCount: filtered.length, separatorBuilder: (_, __) => const Divider(height: 1), itemBuilder: (_, i) { final option = filtered[i]; return ListTile(title: Text(_displayName(option), style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(option['price'] != null ? '${option['price']} €' : ''), trailing: option['id'].toString() == _planId?.toString() ? const Icon(Icons.check_circle_rounded) : null, onTap: () => Navigator.pop(sheetContext, option)); })),
       ])))),
     );
     if (selected != null) {
@@ -132,6 +132,38 @@ class _SubscriptionRenewalFormPageState extends State<SubscriptionRenewalFormPag
           body: _loading ? const Center(child: CircularProgressIndicator.adaptive()) : Form(key: _formKey, child: Builder(builder: (formContext) => ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 120), children: [
             _FormHeader(isEdit: widget.item != null),
             const SizedBox(height: 22),
+
+            // Bank Account Details Card
+            if (_paymentMethod == 'bank_transfer') ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                  border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3)),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.account_balance_rounded, size: 18, color: theme.colorScheme.primary),
+                        const SizedBox(width: 8),
+                        const Text('Të Dhënat e Llogarisë Bankare', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    const Text('Banka: BKT (Banka Kombëtare Tregtare)', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 3),
+                    const Text('IBAN: AL89205111000000000012345678', style: TextStyle(fontSize: 11.5, fontFamily: 'monospace', fontWeight: FontWeight.bold, color: Colors.blue)),
+                    const SizedBox(height: 3),
+                    const Text('Marrësi: E4ProTech Engine SH.P.K', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ],
+
             _FieldShell(
               label: 'Zgjidh Planin e Abonimit',
               child: InkWell(
@@ -168,7 +200,7 @@ class _SubscriptionRenewalFormPageState extends State<SubscriptionRenewalFormPag
               onPicked: (p) => setState(() => _transferDocumentPath = p),
             ),
             _FieldShell(
-              label: 'Shuma e Pagesës (Lekë)',
+              label: 'Shuma e Pagesës (€)',
               child: TextFormField(
                 controller: _amountController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -179,7 +211,7 @@ class _SubscriptionRenewalFormPageState extends State<SubscriptionRenewalFormPag
                     return oldValue;
                   })
                 ],
-                decoration: const InputDecoration(hintText: 'Vendosni shumën në Lekë...', border: InputBorder.none, isDense: true),
+                decoration: const InputDecoration(hintText: 'Vendosni shumën në Euro (€)...', border: InputBorder.none, isDense: true),
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) return 'Shuma është e detyrueshme';
                   if (double.tryParse(v) == null) return 'Vendosni një numër të vlefshëm';
@@ -201,7 +233,7 @@ class _SubscriptionRenewalFormPageState extends State<SubscriptionRenewalFormPag
                 child: DropdownButtonFormField<String>(
                   value: ['pending', 'approved', 'rejected'].contains(_status) ? _status : 'pending',
                   items: const [
-                    DropdownMenuItem(value: 'pending', child: Text('⏳ În Pritje (Pending)')),
+                    DropdownMenuItem(value: 'pending', child: Text('⏳ Në Pritje (Pending)')),
                     DropdownMenuItem(value: 'approved', child: Text('✅ I Miratuar (Approved)')),
                     DropdownMenuItem(value: 'rejected', child: Text('❌ I Refuzuar (Rejected)')),
                   ],
