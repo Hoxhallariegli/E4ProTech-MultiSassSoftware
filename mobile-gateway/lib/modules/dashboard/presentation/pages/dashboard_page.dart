@@ -88,17 +88,25 @@ class UserHeaderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
     final name = userData?['name'] ?? 'Administrator';
     final email = userData?['email'] ?? 'admin@laraflutter.auto';
     final image = userData?['image'];
-    final shopName = userData?['business']?['name'] ?? 'No Shop Selected';
+    final shopName = userData?['business']?['name'] ?? 'Digital Group';
+    final trialDaysLeft = userData?['business']?['trial_days_left'] ?? 30;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 60, 20, 24),
+      padding: const EdgeInsets.fromLTRB(20, 56, 20, 24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [theme.colorScheme.primary, theme.colorScheme.secondary],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            primaryColor,
+            primaryColor.withOpacity(0.85),
+            const Color(0xFF1E1B4B),
+          ],
         ),
       ),
       child: Column(
@@ -108,51 +116,92 @@ class UserHeaderCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              CircleAvatar(
-                radius: 32,
-                backgroundColor: Colors.white24,
-                backgroundImage: (image != null && image.toString().isNotEmpty)
-                    ? NetworkImage(image.toString().startsWith('http') ? image.toString() : '$baseUrl/$image')
-                    : null,
-                child: (image == null || image.toString().isEmpty)
-                    ? const Icon(Icons.admin_panel_settings, color: Colors.white, size: 30)
-                    : null,
+              Container(
+                padding: const EdgeInsets.all(2.5),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: CircleAvatar(
+                  radius: 28,
+                  backgroundColor: Colors.white24,
+                  backgroundImage: (image != null && image.toString().isNotEmpty)
+                      ? NetworkImage(image.toString().startsWith('http') ? image.toString() : '$baseUrl/$image')
+                      : null,
+                  child: (image == null || image.toString().isEmpty)
+                      ? Text(name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'A', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold))
+                      : null,
+                ),
               ),
               if (onSwitchShop != null)
-                IconButton(
-                  onPressed: onSwitchShop,
-                  icon: const Icon(Icons.swap_horiz_rounded, color: Colors.white),
-                  tooltip: 'Switch Shop',
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: IconButton(
+                    onPressed: onSwitchShop,
+                    icon: const Icon(Icons.swap_horiz_rounded, color: Colors.white, size: 22),
+                    tooltip: 'Ndrysho Sallonin',
+                  ),
                 ),
             ],
           ),
           const SizedBox(height: 14),
           Text(
             name,
-            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
+            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: -0.3),
           ),
           Text(
             email,
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
+            style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
           ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.storefront_rounded, color: Colors.white, size: 14),
-                const SizedBox(width: 6),
-                Text(
-                  shopName,
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white30, width: 1),
                 ),
-              ],
-            ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.storefront_rounded, color: Colors.white, size: 13),
+                    const SizedBox(width: 5),
+                    Text(
+                      shopName,
+                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.verified_rounded, color: Colors.white, size: 13),
+                    const SizedBox(width: 5),
+                    Text(
+                      '$trialDaysLeft Ditë Mbetura',
+                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
