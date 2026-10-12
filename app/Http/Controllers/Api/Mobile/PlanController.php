@@ -4,10 +4,9 @@ namespace App\Http\Controllers\Api\Mobile;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Mobile\PlanResource;
-use \App\Models\Plan;
+use App\Models\Plan;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Storage;
 use App\Domain\Plan\DTOs\PlanDTO;
 use App\Domain\Plan\Actions\CreatePlanAction;
 use App\Domain\Plan\Actions\UpdatePlanAction;
@@ -16,25 +15,21 @@ class PlanController extends Controller
 {
     public function index(Request $request)
     {
-        abort_if_cannot('view_plans');
-
-        $perPage = min(max((int) $request->integer('per_page', 20), 1), 100);
+        // Plans are readable by all authenticated users to select/view subscription options
+        $perPage = min(max((int) $request->integer('per_page', 50), 1), 100);
         $sortField = (string) $request->input('sort', 'id');
-        $direction = strtolower((string) $request->input('direction', 'desc'));
+        $direction = strtolower((string) $request->input('direction', 'asc'));
         $allowedSorts = Plan::sortable();
         $sortField = in_array($sortField, $allowedSorts, true) ? $sortField : 'id';
-        $direction = in_array($direction, ['asc', 'desc'], true) ? $direction : 'desc';
+        $direction = in_array($direction, ['asc', 'desc'], true) ? $direction : 'asc';
 
-        $query = Plan::query()->with(array (
-));
+        $query = Plan::query();
 
         $search = trim((string) $request->input('search', ''));
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('id', 'like', "%{$search}%");
-                foreach (array (
-  0 => 'name',
-) as $field) {
+                foreach (['name'] as $field) {
                     $q->orWhere($field, 'like', "%{$search}%");
                 }
             });
@@ -42,10 +37,6 @@ class PlanController extends Controller
 
         foreach ($request->all() as $key => $value) {
             if ($value === null || $value === '' || !str_ends_with($key, '_id')) {
-                continue;
-            }
-            if (in_array($key, array (
-), true)) {
                 continue;
             }
             if (in_array($key, array_keys(Plan::rules()), true)) {
@@ -59,32 +50,29 @@ class PlanController extends Controller
 
     public function show($id)
     {
-        abort_if_cannot('view_plans');
-        $item = Plan::with(array (
-))->findOrFail($id);
+        // Plans are readable by all authenticated users
+        $item = Plan::findOrFail($id);
         return new PlanResource($item);
     }
 
     public function store(Request $request)
     {
         abort_if_cannot('add_plans');
-                $data = $this->prepareData($request);
-        
+        $data = $this->prepareData($request);
+
         $validated = validator($data, Plan::rules())->validate();
-        $item = app(\App\Domain\Plan\Actions\CreatePlanAction::class)->execute(\App\Domain\Plan\DTOs\PlanDTO::fromArray($validated));
-        return (new PlanResource($item->loadMissing(array (
-))))->response()->setStatusCode(201);
+        $item = app(CreatePlanAction::class)->execute(PlanDTO::fromArray($validated));
+        return (new PlanResource($item))->response()->setStatusCode(201);
     }
 
     public function update(Request $request, $id)
     {
         abort_if_cannot('edit_plans');
-                $item = Plan::findOrFail($id);
+        $item = Plan::findOrFail($id);
         $data = $this->prepareData($request);
         $validated = validator($data, Plan::rules($id))->validate();
-        $item = app(\App\Domain\Plan\Actions\UpdatePlanAction::class)->execute($item, \App\Domain\Plan\DTOs\PlanDTO::fromArray($validated));
-        return new PlanResource($item->loadMissing(array (
-)));
+        $item = app(UpdatePlanAction::class)->execute($item, PlanDTO::fromArray($validated));
+        return new PlanResource($item);
     }
 
     public function destroy($id): JsonResponse
@@ -108,8 +96,8 @@ class PlanController extends Controller
     {
         $data = $request->all();
 
-        foreach (array (
-) as $field) {
+        foreach ([
+        ] as $field) {
             if (isset($data[$field]) && is_string($data[$field])) {
                 $decoded = json_decode($data[$field], true);
                 if (json_last_error() === JSON_ERROR_NONE) {
@@ -118,8 +106,8 @@ class PlanController extends Controller
             }
         }
 
-        foreach (array (
-) as $field) {
+        foreach ([
+        ] as $field) {
             if ($request->hasFile($field)) {
                 $data[$field] = app(\App\Services\ImageUploadService::class)->upload($request->file($field), 'uploads/plans');
             }
