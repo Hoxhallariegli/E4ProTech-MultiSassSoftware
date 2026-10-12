@@ -99,65 +99,61 @@ class _ModulesPageState extends State<ModulesPage> {
       body: RefreshIndicator(
         onRefresh: _handleRefresh,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 120),
           children: [
-            // 1. Modern Search Bar
+            // 1. Compact Search Bar
             PremiumSearchBar(
               controller: _searchController,
-              hintText: 'Kërko modulin e dëshiruar...',
+              hintText: 'Kërko modulin...',
               onChanged: (val) => setState(() => _searchQuery = val.trim()),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 14),
 
             // 2. Salon Operations Category
             if (salonModules.isNotEmpty) ...[
               _CategoryHeader(
                 title: 'MENAXHIMI I SALLONIT',
-                subtitle: 'Operacionet e përditshme, takimet & stafi',
                 icon: Icons.storefront_rounded,
                 color: primaryColor,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 6),
               _ModuleGrid(modules: salonModules, primaryColor: primaryColor, isDark: isDark),
-              const SizedBox(height: 22),
+              const SizedBox(height: 14),
             ],
 
             // 3. SMS Gateway Category
             if (smsModules.isNotEmpty) ...[
               _CategoryHeader(
                 title: 'SMS GATEWAY & NJOFTIMET',
-                subtitle: 'Radha e mesazheve, logjet & shabllonet',
                 icon: Icons.sms_rounded,
                 color: const Color(0xFF10B981),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 6),
               _ModuleGrid(modules: smsModules, primaryColor: const Color(0xFF10B981), isDark: isDark),
-              const SizedBox(height: 22),
+              const SizedBox(height: 14),
             ],
 
             // 4. SaaS Administration Category
             if (saasModules.isNotEmpty) ...[
               _CategoryHeader(
                 title: 'ADMINISTRIMI SAAS',
-                subtitle: 'Abonimet, planet, faqja publike & përdoruesit',
                 icon: Icons.auto_awesome_mosaic_rounded,
                 color: const Color(0xFF8B5CF6),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 6),
               _ModuleGrid(modules: saasModules, primaryColor: const Color(0xFF8B5CF6), isDark: isDark),
-              const SizedBox(height: 22),
+              const SizedBox(height: 14),
             ],
 
             // 5. Other Modules
             if (otherModules.isNotEmpty) ...[
               _CategoryHeader(
                 title: 'TË TJERA',
-                subtitle: 'Modulet shtesë të sistemit',
                 icon: Icons.grid_view_rounded,
                 color: Colors.amber.shade800,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 6),
               _ModuleGrid(modules: otherModules, primaryColor: Colors.amber.shade800, isDark: isDark),
             ],
           ],
@@ -169,51 +165,41 @@ class _ModulesPageState extends State<ModulesPage> {
 
 class _CategoryHeader extends StatelessWidget {
   final String title;
-  final String subtitle;
   final IconData icon;
   final Color color;
 
   const _CategoryHeader({
     required this.title,
-    required this.subtitle,
     required this.icon,
     required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(7),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.14),
-            borderRadius: BorderRadius.circular(10),
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 2),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 14),
           ),
-          child: Icon(icon, color: color, size: 18),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  color: color,
-                  letterSpacing: 0.8,
-                ),
-              ),
-              Text(
-                subtitle,
-                style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.w500),
-              ),
-            ],
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w900,
+              color: color,
+              letterSpacing: 0.8,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -232,16 +218,17 @@ class _ModuleGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    int crossAxisCount = screenWidth >= 900 ? 4 : (screenWidth >= 600 ? 3 : 2);
+    int crossAxisCount = screenWidth >= 900 ? 5 : (screenWidth >= 600 ? 4 : 3);
+    double aspectRatio = screenWidth >= 600 ? 1.15 : 1.05;
 
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-        childAspectRatio: 1.35,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        childAspectRatio: aspectRatio,
       ),
       itemCount: modules.length,
       itemBuilder: (context, index) {
@@ -250,53 +237,53 @@ class _ModuleGrid extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => module.page)),
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(16),
             child: Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1E212B) : Colors.white,
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isDark ? const Color(0xFF3B4052) : Colors.grey.shade200,
                   width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    color: Colors.black.withOpacity(0.02),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
-              child: Row(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          primaryColor.withOpacity(0.18),
-                          primaryColor.withOpacity(0.06),
+                          primaryColor.withOpacity(0.16),
+                          primaryColor.withOpacity(0.05),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(15),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(module.icon, size: 22, color: primaryColor),
+                    child: Icon(module.icon, size: 18, color: primaryColor),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      module.getTitle(context),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 12.5,
-                        height: 1.2,
-                      ),
+                  const SizedBox(height: 6),
+                  Text(
+                    module.getTitle(context),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11,
+                      height: 1.12,
                     ),
                   ),
                 ],
