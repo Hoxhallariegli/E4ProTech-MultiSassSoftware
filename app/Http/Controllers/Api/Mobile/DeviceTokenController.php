@@ -188,8 +188,13 @@ class DeviceTokenController extends Controller
 
     public function index(Request $request)
     {
-        abort_if_cannot('view_device_tokens');
         $user = $request->user();
+
+        if ($user && !$user->is_global_admin && !user_can('view_device_tokens')) {
+            if (!$user->barber_shop_id) {
+                abort_if_cannot('view_device_tokens');
+            }
+        }
 
         $perPage = min(max((int) $request->integer('per_page', 20), 1), 100);
         $sortField = (string) $request->input('sort', 'id');

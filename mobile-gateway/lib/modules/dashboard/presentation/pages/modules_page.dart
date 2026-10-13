@@ -104,52 +104,52 @@ class _ModulesPageState extends State<ModulesPage> {
             // 1. Compact Search Bar
             PremiumSearchBar(
               controller: _searchController,
-              hintText: 'Kërko modulin...',
+              hintText: coreTr(context, 'modules.search_hint'),
               onChanged: (val) => setState(() => _searchQuery = val.trim()),
             ),
 
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
 
             // 2. Salon Operations Category
             if (salonModules.isNotEmpty) ...[
               _CategoryHeader(
-                title: 'MENAXHIMI I SALLONIT',
+                title: coreTr(context, 'sidebar.salon_management'),
                 icon: Icons.storefront_rounded,
                 color: primaryColor,
               ),
               const SizedBox(height: 6),
               _ModuleGrid(modules: salonModules, primaryColor: primaryColor, isDark: isDark),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
             ],
 
             // 3. SMS Gateway Category
             if (smsModules.isNotEmpty) ...[
               _CategoryHeader(
-                title: 'SMS GATEWAY & NJOFTIMET',
+                title: coreTr(context, 'sidebar.sms_notifications'),
                 icon: Icons.sms_rounded,
                 color: const Color(0xFF10B981),
               ),
               const SizedBox(height: 6),
               _ModuleGrid(modules: smsModules, primaryColor: const Color(0xFF10B981), isDark: isDark),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
             ],
 
             // 4. SaaS Administration Category
             if (saasModules.isNotEmpty) ...[
               _CategoryHeader(
-                title: 'ADMINISTRIMI SAAS',
+                title: coreTr(context, 'sidebar.saas_administration'),
                 icon: Icons.auto_awesome_mosaic_rounded,
                 color: const Color(0xFF8B5CF6),
               ),
               const SizedBox(height: 6),
               _ModuleGrid(modules: saasModules, primaryColor: const Color(0xFF8B5CF6), isDark: isDark),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
             ],
 
             // 5. Other Modules
             if (otherModules.isNotEmpty) ...[
               _CategoryHeader(
-                title: 'TË TJERA',
+                title: coreTr(context, 'sidebar.other'),
                 icon: Icons.grid_view_rounded,
                 color: Colors.amber.shade800,
               ),
@@ -181,18 +181,18 @@ class _CategoryHeader extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(5),
+            padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(6),
             ),
-            child: Icon(icon, color: color, size: 14),
+            child: Icon(icon, color: color, size: 13),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           Text(
             title,
             style: TextStyle(
-              fontSize: 10.5,
+              fontSize: 10,
               fontWeight: FontWeight.w900,
               color: color,
               letterSpacing: 0.8,
@@ -218,8 +218,8 @@ class _ModuleGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    int crossAxisCount = screenWidth >= 900 ? 5 : (screenWidth >= 600 ? 4 : 3);
-    double aspectRatio = screenWidth >= 600 ? 1.15 : 1.05;
+    int crossAxisCount = screenWidth >= 900 ? 4 : (screenWidth >= 600 ? 3 : 2);
+    double aspectRatio = screenWidth >= 600 ? 3.0 : 2.6;
 
     return GridView.builder(
       shrinkWrap: true,
@@ -239,7 +239,7 @@ class _ModuleGrid extends StatelessWidget {
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => module.page)),
             borderRadius: BorderRadius.circular(16),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1E212B) : Colors.white,
                 borderRadius: BorderRadius.circular(16),
@@ -255,35 +255,28 @@ class _ModuleGrid extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Row(
                 children: [
                   Container(
-                    width: 36,
-                    height: 36,
+                    width: 32,
+                    height: 32,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          primaryColor.withOpacity(0.16),
-                          primaryColor.withOpacity(0.05),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
+                      color: primaryColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(module.icon, size: 18, color: primaryColor),
+                    child: Icon(module.icon, size: 16, color: primaryColor),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    module.getTitle(context),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 11,
-                      height: 1.12,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      module.getTitle(context),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 11.5,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
                     ),
                   ),
                 ],

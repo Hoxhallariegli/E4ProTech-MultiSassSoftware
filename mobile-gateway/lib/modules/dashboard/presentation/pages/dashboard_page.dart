@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_gateway/modules/dashboard/booking/presentation/cubit/booking_cubit.dart';
 import 'package:mobile_gateway/modules/dashboard/booking/data/booking_repository.dart';
 import 'package:mobile_gateway/modules/dashboard/booking/presentation/pages/booking_calendar_page.dart';
+import 'package:mobile_gateway/modules/dashboard/subscription_renewal/presentation/pages/subscription_renewal_list_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/widgets/premium_widgets.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -183,22 +184,34 @@ class UserHeaderCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.verified_rounded, color: Colors.white, size: 13),
-                    const SizedBox(width: 5),
-                    Text(
-                      '$trialDaysLeft Ditë Mbetura',
-                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                    ),
-                  ],
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => SubscriptionRenewalListPage()),
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(color: const Color(0xFF10B981).withOpacity(0.3), blurRadius: 6, offset: const Offset(0, 2)),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.verified_rounded, color: Colors.white, size: 13),
+                      const SizedBox(width: 5),
+                      Text(
+                        '$trialDaysLeft Ditë Mbetura ↗',
+                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

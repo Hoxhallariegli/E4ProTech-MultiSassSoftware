@@ -694,11 +694,11 @@ class _BookingFormPageState extends State<BookingFormPage> {
                             color: primaryColor,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Row(
+                          child: Row(
                             children: [
-                              Icon(Icons.edit_calendar_rounded, size: 12, color: Colors.white),
-                              SizedBox(width: 4),
-                              Text('Ndrysho', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                              const Icon(Icons.edit_calendar_rounded, size: 12, color: Colors.white),
+                              const SizedBox(width: 4),
+                              Text(bookingTr(context, 'form.change'), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ),
@@ -751,7 +751,7 @@ class _BookingFormPageState extends State<BookingFormPage> {
 
             // 2. VISUAL SERVICE CHIPS SELECTOR (1-Tap Selection!)
             _FieldShell(
-              label: '✂️ ZGJIDH SHËRBIMET (Kliko mbi shërbimin)',
+              label: bookingTr(context, 'form.select_services'),
               child: _serviceOptions.isEmpty
                   ? InkWell(
                       onTap: _pickserviceId,
@@ -770,7 +770,7 @@ class _BookingFormPageState extends State<BookingFormPage> {
                           if (id == null) return const SizedBox.shrink();
                           final isSelected = _selectedServiceIds.contains(id);
                           final name = service['name']?.toString() ?? 'Shërbim';
-                          final price = service['price'] != null ? '${service['price']}L' : '';
+                          final price = service['price'] != null ? '${service['price']} €' : '';
                           final duration = service['duration_minutes'] != null ? '${service['duration_minutes']}m' : '';
 
                           return InkWell(
@@ -933,14 +933,14 @@ class _BookingFormPageState extends State<BookingFormPage> {
                   children: [
                     Icon(Icons.sms_rounded, size: 18, color: theme.colorScheme.primary),
                     const SizedBox(width: 8),
-                    const Text(
-                      'Dërgo SMS Njoftimi',
-                      style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
+                    Text(
+                      bookingTr(context, 'form.send_sms'),
+                      style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
                 subtitle: Text(
-                  _sendSms ? 'Automatike: Dërgohet SMS konfirmimi & rikujtesa' : 'Mos dërgo SMS njoftimi për këtë rezervim',
+                  _sendSms ? bookingTr(context, 'form.auto_sms_desc') : bookingTr(context, 'form.no_sms_desc'),
                   style: TextStyle(fontSize: 11, color: _sendSms ? Colors.green.shade700 : Colors.grey),
                 ),
                 value: _sendSms,
@@ -1010,7 +1010,7 @@ class _BookingFormPageState extends State<BookingFormPage> {
             BlocBuilder<BookingCubit, BookingState>(
               builder: (context, state) => PremiumButton(
                 onPressed: () => _save(context),
-                label: state is BookingSaving ? bookingTr(context, 'form.saving') : 'Krijo Rezervimin ($displayPriceStr)',
+                label: state is BookingSaving ? bookingTr(context, 'form.saving') : '${bookingTr(context, "form.save")} ($displayPriceStr)',
                 icon: Icons.check_circle_rounded,
                 loading: state is BookingSaving,
                 expand: true,

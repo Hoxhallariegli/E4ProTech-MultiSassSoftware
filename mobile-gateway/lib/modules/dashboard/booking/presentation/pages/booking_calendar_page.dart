@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_gateway/services/api_service.dart';
 import 'package:mobile_gateway/services/auth_service.dart';
+import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
 import 'package:mobile_gateway/modules/dashboard/presentation/widgets/shop_switcher_widget.dart';
 import 'package:mobile_gateway/modules/dashboard/payment/presentation/pages/payment_form_page.dart';
 import 'package:mobile_gateway/core/branding/branding_cubit.dart';
@@ -21,6 +22,7 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
   int? _selectedBarberId;
+  bool _showFullMonth = false;
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -31,6 +33,7 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
 
     RealtimeService.instance.subscribe('bookings', (action, data) {
       if (!mounted) return;
+      BookingRepository.clearCache();
       refreshAll(reloadBarbers: false);
     }, tenantId: AuthService.instance.user?['barber_shop_id']);
   }
@@ -274,33 +277,66 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
     if (barbers.isEmpty) return const SizedBox.shrink();
 
     return SizedBox(
-      height: 60,
-      child: ListView(
+      height: 44,
+      child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        children: barbers.map((b) => _barberChip((b['name'] ?? context.staffLabel).toString(), int.tryParse(b['id']?.toString() ?? ''))).toList(),
-      ),
-    );
-  }
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: barbers.length,
+        itemBuilder: (context, index) {
+          final b = barbers[index];
+          final name = (b['name'] ?? context.staffLabel).toString();
+          final id = int.tryParse(b['id']?.toString() ?? '');
+          final isSelected = _selectedBarberId == id;
+          final primaryColor = Theme.of(context).colorScheme.primary;
 
-  Widget _barberChip(String label, int? id) {
-    final theme = Theme.of(context);
-    final isSelected = _selectedBarberId == id;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: isSelected,
-        selectedColor: theme.colorScheme.primary,
-        backgroundColor: theme.colorScheme.surfaceContainerHighest,
-        labelStyle: TextStyle(
-          color: isSelected ? Colors.white : theme.colorScheme.onSurface,
-          fontSize: 12,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        ),
-        onSelected: (_) {
-          setState(() => _selectedBarberId = id);
-          _refresh();
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: InkWell(
+              onTap: () {
+                setState(() => _selectedBarberId = id);
+                _refresh();
+              },
+              borderRadius: BorderRadius.circular(20),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isSelected ? primaryColor : Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected ? primaryColor : Theme.of(context).colorScheme.outlineVariant,
+                    width: 1.2,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      radius: 10,
+                      backgroundColor: isSelected ? Colors.white24 : primaryColor.withOpacity(0.2),
+                      child: Text(
+                        name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'S',
+                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: isSelected ? Colors.white : primaryColor),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      name,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+                        color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    if (isSelected) ...[
+                      const SizedBox(width: 4),
+                      const Icon(Icons.check_circle_rounded, size: 12, color: Colors.white),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          );
         },
       ),
     );
@@ -308,80 +344,229 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
 
   Widget _buildCustomWeekCalendar(Map<String, int> stats) {
     final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
+    final isEn = Localizations.localeOf(context).languageCode == 'en';
+
+    final monthNamesSq = ['Janar', 'Shkurt', 'Mars', 'Prill', 'Maj', 'Qershor', 'Korrik', 'Gusht', 'Shtator', 'Tetor', 'Nëntor', 'Dhjetor'];
+    final monthNamesEn = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    final currentMonthName = isEn ? monthNamesEn[_selectedDay.month - 1] : monthNamesSq[_selectedDay.month - 1];
+
     final startDay = DateTime.now().subtract(const Duration(days: 4));
 
-    return Container(
-      height: 84,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border(bottom: BorderSide(color: theme.dividerColor, width: 0.5)),
-      ),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: 14,
-        itemBuilder: (context, index) {
-          final day = startDay.add(Duration(days: index));
-          final isSelected = day.year == _selectedDay.year && day.month == _selectedDay.month && day.day == _selectedDay.day;
-          final dateStr = "${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}";
-          final hasBookings = (stats[dateStr] ?? 0) > 0;
-
-          final isEn = Localizations.localeOf(context).languageCode == 'en';
-          final weekDays = isEn
-              ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-              : ['Dje', 'Hën', 'Mar', 'Mër', 'Enj', 'Pre', 'Sht'];
-          final dayName = weekDays[day.weekday % 7];
-
-          return GestureDetector(
-            onTap: () => _loadSelectedDay(day),
-            child: Container(
-              width: 54,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                color: isSelected ? theme.colorScheme.primary : theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isSelected ? theme.colorScheme.primary : theme.colorScheme.outlineVariant,
-                  width: 1,
+    return Column(
+      children: [
+        // Month Header Row with Toggle Button
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '$currentMonthName ${_selectedDay.year}',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface),
+              ),
+              InkWell(
+                onTap: () => setState(() => _showFullMonth = !_showFullMonth),
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _showFullMonth ? Icons.calendar_view_week_rounded : Icons.calendar_month_rounded,
+                        size: 14,
+                        color: primaryColor,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _showFullMonth
+                            ? (isEn ? 'Compact View' : 'Pamje Kompakte')
+                            : (isEn ? 'Full Month' : 'Muaji i Plotë'),
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: primaryColor),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    dayName,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: isSelected ? Colors.white : Colors.grey,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    day.day.toString(),
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: isSelected ? Colors.white : theme.colorScheme.onSurface,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (hasBookings) ...[
-                    const SizedBox(height: 4),
-                    Container(
-                      width: 5,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: isSelected ? Colors.white : theme.colorScheme.primary,
-                        shape: BoxShape.circle,
+            ],
+          ),
+        ),
+
+        if (!_showFullMonth) ...[
+          // Compact 14-Day Strip (Height 66px)
+          SizedBox(
+            height: 66,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: 14,
+              itemBuilder: (context, index) {
+                final day = startDay.add(Duration(days: index));
+                final isSelected = day.year == _selectedDay.year && day.month == _selectedDay.month && day.day == _selectedDay.day;
+                final dateStr = "${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}";
+                final hasBookings = (stats[dateStr] ?? 0) > 0;
+
+                final weekDays = isEn
+                    ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+                    : ['Dje', 'Hën', 'Mar', 'Mër', 'Enj', 'Pre', 'Sht'];
+                final dayName = weekDays[day.weekday % 7];
+
+                return GestureDetector(
+                  onTap: () => _loadSelectedDay(day),
+                  child: Container(
+                    width: 48,
+                    margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isSelected ? primaryColor : theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isSelected ? primaryColor : theme.colorScheme.outlineVariant,
+                        width: 1,
                       ),
                     ),
-                  ],
-                ],
-              ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          dayName,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: isSelected ? Colors.white : Colors.grey,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          day.day.toString(),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: isSelected ? Colors.white : theme.colorScheme.onSurface,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        if (hasBookings) ...[
+                          const SizedBox(height: 2),
+                          Container(
+                            width: 4,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: isSelected ? Colors.white : primaryColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
-          );
-        },
+          ),
+        ] else ...[
+          // Full Monthly Grid View
+          _buildFullMonthlyGrid(stats),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildFullMonthlyGrid(Map<String, int> stats) {
+    final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
+    final isEn = Localizations.localeOf(context).languageCode == 'en';
+
+    final daysInMonth = DateTime(_selectedDay.year, _selectedDay.month + 1, 0).day;
+    final firstDayOfMonth = DateTime(_selectedDay.year, _selectedDay.month, 1);
+    final leadingEmptyDays = (firstDayOfMonth.weekday - 1) % 7;
+
+    final weekHeaders = isEn
+        ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        : ['Hën', 'Mar', 'Mër', 'Enj', 'Pre', 'Sht', 'Dje'];
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: weekHeaders.map((h) => Expanded(
+              child: Text(
+                h,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey),
+              ),
+            )).toList(),
+          ),
+          const SizedBox(height: 8),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 7,
+              childAspectRatio: 1.1,
+              crossAxisSpacing: 4,
+              mainAxisSpacing: 4,
+            ),
+            itemCount: leadingEmptyDays + daysInMonth,
+            itemBuilder: (context, index) {
+              if (index < leadingEmptyDays) {
+                return const SizedBox.shrink();
+              }
+
+              final dayNumber = index - leadingEmptyDays + 1;
+              final day = DateTime(_selectedDay.year, _selectedDay.month, dayNumber);
+              final isSelected = day.year == _selectedDay.year && day.month == _selectedDay.month && day.day == _selectedDay.day;
+              final dateStr = "${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}";
+              final hasBookings = (stats[dateStr] ?? 0) > 0;
+
+              return InkWell(
+                onTap: () {
+                  _loadSelectedDay(day);
+                  setState(() => _showFullMonth = false);
+                },
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isSelected ? primaryColor : Colors.transparent,
+                    borderRadius: BorderRadius.circular(10),
+                    border: isSelected ? null : Border.all(color: Colors.transparent),
+                  ),
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        dayNumber.toString(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: isSelected ? Colors.white : theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      if (hasBookings) ...[
+                        const SizedBox(height: 2),
+                        Container(
+                          width: 4,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: isSelected ? Colors.white : primaryColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -668,6 +853,150 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
     );
   }
 
+  void _showBookingActionsSheet(Map<String, dynamic> booking) {
+    final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
+
+    final id = booking['id'];
+    final customer = (booking['customer_name'] ?? booking['customer']?['name'] ?? 'Klient').toString();
+    final service = (booking['service_name'] ?? booking['service']?['name'] ?? 'Shërbim').toString();
+    final totalPrice = (booking['total_price'] ?? '0').toString();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: theme.colorScheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.all(22),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(child: Container(width: 42, height: 4, decoration: BoxDecoration(color: theme.dividerColor, borderRadius: BorderRadius.circular(10)))),
+            const SizedBox(height: 18),
+
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: primaryColor.withOpacity(0.12), borderRadius: BorderRadius.circular(14)),
+                  child: Icon(Icons.event_available_rounded, color: primaryColor, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('${bookingTr(context, "list.title") == "Agenda & Bookings" ? "Booking" : "Takimi"} #$id • $customer', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                      const SizedBox(height: 2),
+                      Text('$service • $totalPrice €', style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+
+            // Action Buttons List
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                // 1. Kryer / Completed
+                _ActionTile(
+                  icon: Icons.check_circle_rounded,
+                  label: bookingTr(context, 'action.completed'),
+                  color: const Color(0xFF10B981),
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+                    await ApiService.put('/bookings/$id', {'status': 'completed'});
+                    _refresh();
+                  },
+                ),
+
+                // 2. Mark Paid / Paguaj
+                _ActionTile(
+                  icon: Icons.payments_rounded,
+                  label: bookingTr(context, 'action.pay').replaceAll('{price}', '$totalPrice €'),
+                  color: Colors.blue,
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+                    final shopId = booking['barber_shop_id'] ?? AuthService.instance.user?['barber_shop_id'] ?? AuthService.instance.user?['business']?['id'];
+
+                    final res = await ApiService.post('/payments', {
+                      'barber_shop_id': shopId,
+                      'booking_id': id,
+                      'customer_id': booking['customer_id'],
+                      'amount': double.tryParse(totalPrice) ?? 0.0,
+                      'method': 'cash',
+                      'status': 'paid',
+                    });
+
+                    if (res.statusCode == 200 || res.statusCode == 201) {
+                      _refresh();
+                    } else {
+                      final err = ApiService.extractErrorMessage(res);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Gabim gjatë pagesës: $err'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
+                        );
+                      }
+                    }
+                  },
+                ),
+
+                // 3. Edit Booking
+                _ActionTile(
+                  icon: Icons.edit_rounded,
+                  label: bookingTr(context, 'list.edit'),
+                  color: Colors.indigo,
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+                    final res = await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (c) => BookingFormPage(item: booking)),
+                    );
+                    if (res == true) _refresh();
+                  },
+                ),
+
+                // 4. Cancel Booking (With Confirmation Safeguard for Completed/Paid bookings)
+                _ActionTile(
+                  icon: Icons.cancel_rounded,
+                  label: bookingTr(context, 'action.cancel'),
+                  color: Colors.red,
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+
+                    final status = (booking['status'] ?? '').toString();
+                    final paymentStatus = (booking['payment_status'] ?? '').toString();
+                    final isPaidOrCompleted = status == 'completed' || paymentStatus == 'paid';
+
+                    if (isPaidOrCompleted) {
+                      final confirmCancel = await PremiumDialog.confirm(
+                        context,
+                        title: bookingTr(context, 'action.confirm_cancel_title'),
+                        message: bookingTr(context, 'action.confirm_cancel_msg').replaceAll('{id}', id.toString()).replaceAll('{price}', '$totalPrice €'),
+                        confirmLabel: bookingTr(context, 'action.confirm_cancel_btn'),
+                        destructive: true,
+                      );
+                      if (confirmCancel != true) return;
+                    }
+
+                    await ApiService.put('/bookings/$id', {'status': 'cancelled'});
+                    _refresh();
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildBookingCard(Map<String, dynamic> booking) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -706,13 +1035,7 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
     if (status == 'cancelled') statusColor = Colors.red;
 
     return InkWell(
-      onTap: () async {
-        final res = await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (c) => BookingFormPage(item: booking)),
-        );
-        if (res == true) _refresh();
-      },
+      onTap: () => _showBookingActionsSheet(booking),
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -930,6 +1253,44 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
                 ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionTile({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.3), width: 1),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: 8),
+            Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: color)),
           ],
         ),
       ),

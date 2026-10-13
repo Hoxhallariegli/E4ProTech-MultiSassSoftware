@@ -139,19 +139,21 @@ extension BrandingContextExtension on BuildContext {
   String get staffLabel {
     final isEn = Localizations.localeOf(this).languageCode == 'en';
     final state = watch<BrandingCubit>().state;
-    if (state.staffLabel.isNotEmpty && state.staffLabel != 'Punonjësi' && state.staffLabel != 'Berber') {
+    if (isEn) return 'Staff Member';
+    if (state.staffLabel.isNotEmpty) {
       return state.staffLabel;
     }
-    return isEn ? 'Staff Member' : 'Punonjësi';
+    return 'Punonjësi';
   }
 
   String get staffLabelPlural {
     final isEn = Localizations.localeOf(this).languageCode == 'en';
     final state = watch<BrandingCubit>().state;
-    if (state.staffLabelPlural.isNotEmpty && state.staffLabelPlural != 'Punonjësit' && state.staffLabelPlural != 'Berberët') {
+    if (isEn) return 'Staff Members';
+    if (state.staffLabelPlural.isNotEmpty) {
       return state.staffLabelPlural;
     }
-    return isEn ? 'Staff Members' : 'Punonjësit';
+    return 'Punonjësit';
   }
 
   String get shopLabel {
@@ -198,6 +200,12 @@ String applyDynamicBranding(BuildContext context, String text) {
         .replaceAll('barber', staffLabel.toLowerCase())
         .replaceAll('Berberët', staffLabelPlural)
         .replaceAll('berberët', staffLabelPlural.toLowerCase())
+        .replaceAll('Parukierët', staffLabelPlural)
+        .replaceAll('parukierët', staffLabelPlural.toLowerCase())
+        .replaceAll('Parukierë', staffLabelPlural)
+        .replaceAll('parukierë', staffLabelPlural.toLowerCase())
+        .replaceAll('Parukier', staffLabel)
+        .replaceAll('parukier', staffLabel.toLowerCase())
         .replaceAll('BERBERËT', staffLabelPlural.toUpperCase())
         .replaceAll('BERBERI', staffLabel.toUpperCase())
         .replaceAll('BERBER', staffLabel.toUpperCase())

@@ -3,6 +3,9 @@ import '../../../../services/api_service.dart';
 
 class BarberShopRepository {
   static const _perPage = 25;
+  static final Map<String, ({List<Map<String, dynamic>> data, DateTime timestamp})> _lookupCache = {};
+
+  static void clearCache() => _lookupCache.clear();
 
   Future<({BarberShopPage page, Map<String, dynamic> meta})> index({
     int page = 1,
@@ -51,21 +54,33 @@ class BarberShopRepository {
             ? await ApiService.post('/barber-shops', payload)
             : await ApiService.put('/barber-shops/$id', payload);
     _ensureSuccess(res);
+    clearCache();
     return Map<String, dynamic>.from(jsonDecode(res.body)['data'] ?? {});
   }
 
   Future<void> delete(dynamic id) async {
     final res = await ApiService.delete('/barber-shops/$id');
     _ensureSuccess(res);
+    clearCache();
   }
 
-  Future<List<Map<String, dynamic>>> lookup(String endpoint, {String search = ''}) async {
+  Future<List<Map<String, dynamic>>> lookup(String endpoint, {String search = '', bool forceRefresh = false}) async {
+    final cacheKey = '$endpoint:$search';
+    final cached = _lookupCache[cacheKey];
+
+    if (!forceRefresh && cached != null && DateTime.now().difference(cached.timestamp).inMinutes < 5) {
+      return cached.data;
+    }
+
     final query = search.trim().isEmpty ? '' : '?search=${Uri.encodeQueryComponent(search.trim())}&per_page=50';
     final res = await ApiService.get('/$endpoint$query');
     _ensureSuccess(res);
     final decoded = jsonDecode(res.body);
     final data = decoded is Map ? decoded['data'] : decoded;
-    return (data as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    final result = (data as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+
+    _lookupCache[cacheKey] = (data: result, timestamp: DateTime.now());
+    return result;
   }
 
   void _ensureSuccess(dynamic res) {

@@ -238,43 +238,58 @@ class SendFirebaseNotificationListener
                             }
                         }
 
-                        // 2. Queue and Send Immediate Update / Reschedule SMS
-                        $parsedUpdate = MessageTemplate::parseForBooking($booking, 'reschedule');
+                        // 2. Queue and Send Immediate Update / Reschedule SMS (ONLY IF APPOINTMENT DETAILS CHANGED AND NO RECENT DUPLICATE)
+                        $timeOrDetailsChanged = $booking->wasChanged('appointment_at') || $booking->wasChanged('service_id') || $booking->wasChanged('barber_id');
+                        $recentUpdateSmsExists = MessageQueue::where('booking_id', $booking->id)
+                            ->where('channel', 'sms')
+                            ->where(function($q) {
+                                $q->where('template_type', 'reschedule')
+                                  ->orWhere('message_content', 'like', '%updated%')
+                                  ->orWhere('message_content', 'like', '%ndryshua%');
+                            })
+                            ->where('created_at', '>=', now()->subMinutes(5))
+                            ->exists();
 
-                        $updateQueueData = [
-                            'barber_shop_id' => $booking->barber_shop_id,
-                            'booking_id' => $booking->id,
-                            'channel' => 'sms',
-                            'phone_number' => $formattedPhone,
-                            'message_content' => $parsedUpdate,
-                            'scheduled_at' => now(),
-                            'status' => 'pending',
-                            'retry_count' => 0,
-                        ];
-                        if (Schema::hasColumn('message_queues', 'template_type')) {
-                            $updateQueueData['template_type'] = 'reschedule';
+                        if ($timeOrDetailsChanged && !$recentUpdateSmsExists) {
+                            $parsedUpdate = MessageTemplate::parseForBooking($booking, 'reschedule');
+
+                            $updateQueueData = [
+                                'barber_shop_id' => $booking->barber_shop_id,
+                                'booking_id' => $booking->id,
+                                'channel' => 'sms',
+                                'phone_number' => $formattedPhone,
+                                'message_content' => $parsedUpdate,
+                                'scheduled_at' => now(),
+                                'status' => 'pending',
+                                'retry_count' => 0,
+                            ];
+                            if (Schema::hasColumn('message_queues', 'template_type')) {
+                                $updateQueueData['template_type'] = 'reschedule';
+                            }
+                            $updateQueue = MessageQueue::create($updateQueueData);
+                            \App\Models\AuditTrail::log($updateQueue, 'create', 'MessageQueues');
+
+                            $updateLogData = [
+                                'barber_shop_id' => $booking->barber_shop_id,
+                                'customer_id' => $booking->customer_id,
+                                'channel' => 'sms',
+                                'message' => $parsedUpdate,
+                                'status' => 'pending',
+                                'sent_at' => null,
+                            ];
+                            if (Schema::hasColumn('message_logs', 'template_type')) {
+                                $updateLogData['template_type'] = 'reschedule';
+                            }
+                            $msgLog = MessageLog::create($updateLogData);
+                            \App\Models\AuditTrail::log($msgLog, 'create', 'MessageLogs');
+
+                            Log::info("🔄 [STEP 4a-UPDATE] SMS Update Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
+
+                            // Trigger Gateway Device
+                            $this->triggerGatewayDevice($shopId, $updateQueue->id, $booking->customer->phone, $parsedUpdate);
+                        } else {
+                            Log::info("⏭️ [STEP 4a-UPDATE] Skipped duplicate/unnecessary SMS Update for Booking #{$booking->id}. Details changed: " . ($timeOrDetailsChanged ? 'YES' : 'NO') . ", Recent update SMS exists: " . ($recentUpdateSmsExists ? 'YES' : 'NO'));
                         }
-                        $updateQueue = MessageQueue::create($updateQueueData);
-                        \App\Models\AuditTrail::log($updateQueue, 'create', 'MessageQueues');
-
-                        $updateLogData = [
-                            'barber_shop_id' => $booking->barber_shop_id,
-                            'customer_id' => $booking->customer_id,
-                            'channel' => 'sms',
-                            'message' => $parsedUpdate,
-                            'status' => 'pending',
-                            'sent_at' => null,
-                        ];
-                        if (Schema::hasColumn('message_logs', 'template_type')) {
-                            $updateLogData['template_type'] = 'reschedule';
-                        }
-                        $updateLog = MessageLog::create($updateLogData);
-                        \App\Models\AuditTrail::log($updateLog, 'create', 'MessageLogs');
-
-                        Log::info("🔄 [STEP 4a-UPDATE] SMS Update Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
-
-                        // Trigger Gateway Device
-                        $this->triggerGatewayDevice($shopId, $updateQueue->id, $booking->customer->phone, $parsedUpdate);
                     }
 
                     // -------------------------------------------------------------

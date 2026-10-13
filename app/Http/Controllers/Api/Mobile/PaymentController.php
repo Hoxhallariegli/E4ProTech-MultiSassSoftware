@@ -132,6 +132,18 @@ class PaymentController extends Controller
     {
         $data = $request->all();
 
+        if (empty($data['barber_shop_id'])) {
+            if (!empty($data['booking_id'])) {
+                $booking = \App\Models\Booking::find($data['booking_id']);
+                if ($booking) {
+                    $data['barber_shop_id'] = $booking->barber_shop_id;
+                }
+            }
+            if (empty($data['barber_shop_id']) && $request->user()?->barber_shop_id) {
+                $data['barber_shop_id'] = $request->user()->barber_shop_id;
+            }
+        }
+
         foreach (array (
 ) as $field) {
             if (isset($data[$field]) && is_string($data[$field])) {

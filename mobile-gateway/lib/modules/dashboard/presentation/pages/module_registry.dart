@@ -18,6 +18,7 @@ import '../../device_token/presentation/pages/device_token_list_page.dart';
 import '../../review/presentation/pages/review_list_page.dart';
 import '../../working_hour/presentation/pages/working_hour_list_page.dart';
 import '../../shop_front_page_setting/presentation/pages/shop_front_page_setting_list_page.dart';
+import '../../report/presentation/pages/report_list_page.dart';
 
 class ModuleEntry {
   final String key;
@@ -50,16 +51,17 @@ class ModuleRegistry {
     ModuleEntry(key: 'barber', name: 'Punonjësit', icon: Icons.person_pin_rounded, page: const BarberListPage(), permission: 'view_barbers'),
     ModuleEntry(key: 'service', name: 'Shërbimet', icon: Icons.content_cut_rounded, page: const ServiceListPage(), permission: 'view_services'),
     ModuleEntry(key: 'customer', name: 'Klientët', icon: Icons.people_alt_rounded, page: const CustomerListPage(), permission: 'view_customers'),
+    ModuleEntry(key: 'booking', name: 'Rezervimet', icon: Icons.event_note_rounded, page: const BookingListPage(), permission: 'view_bookings'),
+    ModuleEntry(key: 'payment', name: 'Pagesat', icon: Icons.payments_rounded, page: const PaymentListPage(), permission: 'view_payments'),
+    ModuleEntry(key: 'report', name: 'Raportet & Statistikat', icon: Icons.analytics_rounded, page: const ReportListPage(), permission: 'view_reports'),
+    ModuleEntry(key: 'review', name: 'Vlerësimet', icon: Icons.star_rounded, page: const ReviewListPage(), permission: 'view_reviews'),
+    ModuleEntry(key: 'working_hour', name: 'Orari Javor', icon: Icons.schedule_rounded, page: const WorkingHourListPage(), permission: 'view_working_hours'),
     ModuleEntry(key: 'notification_channel', name: 'Kanalet e Njoftimeve', icon: Icons.notifications_active_rounded, page: const NotificationChannelListPage(), permission: 'view_notification_channels'),
     ModuleEntry(key: 'event_setting', name: 'Cilësimet e Ngjarjeve', icon: Icons.bolt_rounded, page: const EventSettingListPage(), permission: 'view_event_settings'),
     ModuleEntry(key: 'message_template', name: 'Shabllonet e Mesazheve', icon: Icons.description_rounded, page: const MessageTemplateListPage(), permission: 'view_message_templates'),
-    ModuleEntry(key: 'booking', name: 'Rezervimet', icon: Icons.event_note_rounded, page: const BookingListPage(), permission: 'view_bookings'),
-    ModuleEntry(key: 'payment', name: 'Pagesat', icon: Icons.payments_rounded, page: const PaymentListPage(), permission: 'view_payments'),
     ModuleEntry(key: 'message_queue', name: 'Radha e Mesazheve', icon: Icons.forward_to_inbox_rounded, page: const MessageQueueListPage(), permission: 'view_message_queues'),
     ModuleEntry(key: 'message_log', name: 'Logjet e Mesazheve', icon: Icons.mark_email_read_rounded, page: const MessageLogListPage(), permission: 'view_message_logs'),
     ModuleEntry(key: 'device_token', name: 'Tokenat e Pajisjeve', icon: Icons.phonelink_ring_rounded, page: const DeviceTokenListPage(), permission: 'view_device_tokens'),
-    ModuleEntry(key: 'review', name: 'Vlerësimet', icon: Icons.star_rounded, page: const ReviewListPage(), permission: 'view_reviews'),
-    ModuleEntry(key: 'working_hour', name: 'Orari Javor', icon: Icons.schedule_rounded, page: const WorkingHourListPage(), permission: 'view_working_hours'),
-    ModuleEntry(key: 'shop_front_page_setting', name: 'ShopFrontPageSetting', icon: Icons.desktop_windows_outlined, page: const ShopFrontPageSettingListPage(), permission: 'view_shop_front_page_settings'),
+    ModuleEntry(key: 'shop_front_page_setting', name: 'Faqja Ime (Front Page)', icon: Icons.desktop_windows_outlined, page: const ShopFrontPageSettingListPage(), permission: 'view_shop_front_page_settings'),
   ];
 }

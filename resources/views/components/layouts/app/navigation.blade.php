@@ -36,6 +36,10 @@
     <x-nav.link route="admin.payments.index" icon="archive-box">{{ __('payments.Payments') }}</x-nav.link>
 @endcan
 
+@can('view_reports')
+    <x-nav.link route="admin.reports.index" icon="chart-bar">Raportet &amp; Statistikat</x-nav.link>
+@endcan
+
 @can('view_reviews')
     <x-nav.link route="admin.reviews.index" icon="pencil-square">{{ __('reviews.Reviews') }}</x-nav.link>
 @endcan

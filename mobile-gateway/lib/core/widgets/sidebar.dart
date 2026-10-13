@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
-import '../../services/api_service.dart';
 import '../../core/realtime/realtime_service.dart';
 import '../../modules/dashboard/presentation/pages/module_registry.dart';
 import '../../modules/dashboard/presentation/widgets/shop_switcher_widget.dart';
 import '../../modules/dashboard/presentation/pages/dashboard_page.dart';
-import 'package:mobile_gateway/core/branding/branding_cubit.dart';
 import 'package:mobile_gateway/l10n/core_localization.dart';
 
 class Sidebar extends StatelessWidget {
@@ -16,6 +14,15 @@ class Sidebar extends StatelessWidget {
     final theme = Theme.of(context);
     final user = AuthService.instance.user;
     final modules = ModuleRegistry.modules.where((m) => m.permission == null || AuthService.instance.hasPermission(m.permission!)).toList();
+
+    final salonKeys = {'booking', 'barber', 'service', 'customer', 'working_hour', 'payment', 'review'};
+    final smsKeys = {'message_queue', 'message_log', 'message_template', 'event_setting', 'device_token', 'notification_channel'};
+    final saasKeys = {'barber_shop', 'subscription_renewal', 'plan', 'user'};
+
+    final salonModules = modules.where((m) => salonKeys.contains(m.key)).toList();
+    final smsModules = modules.where((m) => smsKeys.contains(m.key)).toList();
+    final saasModules = modules.where((m) => saasKeys.contains(m.key)).toList();
+    final otherModules = modules.where((m) => !salonKeys.contains(m.key) && !smsKeys.contains(m.key) && !saasKeys.contains(m.key)).toList();
 
     return Drawer(
       backgroundColor: theme.colorScheme.surface,
@@ -51,17 +58,54 @@ class Sidebar extends StatelessWidget {
                   },
                 ),
 
-                if (modules.isNotEmpty) ...[
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Text(coreTr(context, 'sidebar.dynamic_modules'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
-                  ),
-                  ...modules.map((module) => _DrawerItem(
-                    icon: module.icon,
-                    label: module.getTitle(context),
+                // 1. MENAXHIMI I SALLONIT
+                if (salonModules.isNotEmpty) ...[
+                  _SectionHeader(title: coreTr(context, 'sidebar.salon_management')),
+                  ...salonModules.map((m) => _DrawerItem(
+                    icon: m.icon,
+                    label: m.getTitle(context),
                     onTap: () {
-                      Navigator.pop(context); // Close drawer
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => module.page));
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => m.page));
+                    },
+                  )),
+                ],
+
+                // 2. SMS & NJOFTIMET
+                if (smsModules.isNotEmpty) ...[
+                  _SectionHeader(title: coreTr(context, 'sidebar.sms_notifications')),
+                  ...smsModules.map((m) => _DrawerItem(
+                    icon: m.icon,
+                    label: m.getTitle(context),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => m.page));
+                    },
+                  )),
+                ],
+
+                // 3. ADMINISTRIMI SAAS
+                if (saasModules.isNotEmpty) ...[
+                  _SectionHeader(title: coreTr(context, 'sidebar.saas_administration')),
+                  ...saasModules.map((m) => _DrawerItem(
+                    icon: m.icon,
+                    label: m.getTitle(context),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => m.page));
+                    },
+                  )),
+                ],
+
+                // 4. TJERA / CILËSIMET
+                if (otherModules.isNotEmpty) ...[
+                  _SectionHeader(title: coreTr(context, 'sidebar.other')),
+                  ...otherModules.map((m) => _DrawerItem(
+                    icon: m.icon,
+                    label: m.getTitle(context),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => m.page));
                     },
                   )),
                 ],
@@ -69,6 +113,27 @@ class Sidebar extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 6),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w900,
+          color: Colors.grey,
+          letterSpacing: 1.2,
+        ),
       ),
     );
   }

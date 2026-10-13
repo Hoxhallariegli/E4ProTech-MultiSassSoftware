@@ -291,7 +291,9 @@ class PushService {
 
   static Future<void> subscribeToShop(int shopId) async {
     try {
-      await FirebaseMessaging.instance.subscribeToTopic('shop_$shopId');
+      if (!kIsWeb && Firebase.apps.isNotEmpty) {
+        await FirebaseMessaging.instance.subscribeToTopic('shop_$shopId');
+      }
     } catch (e) {
       debugPrint('FCM topic subscription error: $e');
     }
@@ -305,7 +307,9 @@ class PushService {
 
       String? token;
       try {
-        token = await FirebaseMessaging.instance.getToken();
+        if (!kIsWeb && Firebase.apps.isNotEmpty) {
+          token = await FirebaseMessaging.instance.getToken();
+        }
       } catch (_) {}
 
       if (token != null && token.isNotEmpty) {
