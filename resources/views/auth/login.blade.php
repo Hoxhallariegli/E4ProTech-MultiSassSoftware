@@ -57,14 +57,5 @@
                 </button>
             </div>
         </form>
-
-        <div class="mt-8 pt-6 border-t border-stone-100 dark:border-gray-700 flex items-center justify-between text-xs font-bold text-slate-500 dark:text-gray-400">
-            <span>S'keni ende llogari?</span>
-            @if (Route::has('register'))
-                <a href="{{ route('register') }}" class="text-[#7C5CFC] dark:text-[#7C5CFC] hover:underline font-black">
-                    Krijo Llogari të Re
-                </a>
-            @endif
-        </div>
     </div>
 </x-layouts.guest>
