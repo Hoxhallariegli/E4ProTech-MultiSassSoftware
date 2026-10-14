@@ -33,9 +33,7 @@ class AppVersionController extends Controller
         $code = $versionData['version_code'] ?? config('app.apk_version_code', 6);
         $notes = $versionData['release_notes'] ?? 'Përmirësime në SMS Gateway, sinkronizim i ri i takimeve dhe lokalizim dypalësh Shqip & Anglisht.';
 
-        $downloadUrl = file_exists(public_path('downloads/app-release.apk'))
-            ? asset('downloads/app-release.apk')
-            : url('download/apk');
+        $downloadUrl = url('download/apk');
 
         return response()->json([
             'latest_version' => (string) $version,
@@ -51,21 +49,37 @@ class AppVersionController extends Controller
     public function download()
     {
         $apkPath = public_path('downloads/app-release.apk');
-        if (file_exists($apkPath)) {
-            return redirect()->to(asset('downloads/app-release.apk'));
+        if (!file_exists($apkPath)) {
+            $apkPath = base_path('mobile-gateway/build/app/outputs/flutter-apk/app-release.apk');
         }
 
-        $altPath = base_path('mobile-gateway/build/app/outputs/flutter-apk/app-release.apk');
-        if (file_exists($altPath)) {
-            if (ob_get_level()) {
-                ob_end_clean();
+        if (!file_exists($apkPath)) {
+            abort(404, 'Nuk u gjet asnjë skedar APK në server.');
+        }
+
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        $fileName = 'E4ProTech-Engine.apk';
+        $fileSize = filesize($apkPath);
+
+        return response()->streamDownload(function () use ($apkPath) {
+            $stream = fopen($apkPath, 'rb');
+            if ($stream) {
+                while (!feof($stream)) {
+                    echo fread($stream, 1024 * 64);
+                    flush();
+                }
+                fclose($stream);
             }
-            return response()->download($altPath, 'E4ProTech-Engine.apk', [
-                'Content-Type' => 'application/vnd.android.package-archive',
-                'Content-Length' => (string) filesize($altPath),
-            ]);
-        }
-
-        abort(404, 'Nuk u gjet asnjë skedar APK në server.');
+        }, $fileName, [
+            'Content-Type' => 'application/vnd.android.package-archive',
+            'Content-Length' => (string) $fileSize,
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            'Accept-Ranges' => 'bytes',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Pragma' => 'public',
+        ]);
     }
 }
