@@ -47,8 +47,8 @@
                             </span>
 
                                 <span class="ml-2 inline-flex rounded-md shadow">
-                                <a href="{{ route('register') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-base leading-6 font-medium rounded-md bg-blue-600 dark:bg-blue-500 dark:hover:bg-blue-600 text-white hover:bg-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-50 active:text-blue-700 transition duration-150 ease-in-out">
-                                    {{ __('Register') }}
+                                <a href="{{ route('krijo-sallonin') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-base leading-6 font-medium rounded-md bg-blue-600 dark:bg-blue-500 dark:hover:bg-blue-600 text-white hover:bg-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-gray-50 active:text-blue-700 transition duration-150 ease-in-out">
+                                    {{ __('Krijo Salonin') }}
                                 </a>
                             </span>
                         </ul>

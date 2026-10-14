@@ -42,11 +42,9 @@
                         EN
                     </a>
                 </div>
-                @if (Route::has('register'))
-                    <a href="{{ route('register') }}" class="px-6 py-2.5 rounded-full text-xs font-black text-white bg-[#7C5CFC] hover:bg-[#6366F1] shadow-lg shadow-[#7C5CFC]/25 transition transform active:scale-95 flex items-center gap-2">
-                        {{ __('Krijo Salonin') }} ↗
-                    </a>
-                @endif
+                <a href="{{ route('krijo-sallonin') }}" class="px-6 py-2.5 rounded-full text-xs font-black text-white bg-[#7C5CFC] hover:bg-[#6366F1] shadow-lg shadow-[#7C5CFC]/25 transition transform active:scale-95 flex items-center gap-2">
+                    {{ __('Krijo Salonin') }} ↗
+                </a>
             </div>
         </div>
     </header>
