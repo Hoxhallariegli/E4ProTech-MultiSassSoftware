@@ -53,7 +53,7 @@ const Map<String, String> bookingSq = {
   'field.customer_id': 'Klienti',
   'field.appointment_at': 'Takimi në',
   'field.status': 'Statusi',
-  'field.total_price': 'Çmimi total (€)',
+  'field.total_price': 'Çmimi Total',
   'field.notes': 'Shënime',
   'field.source': 'Burimi',
   'calendar.book_at': 'Rezervo në {time}',

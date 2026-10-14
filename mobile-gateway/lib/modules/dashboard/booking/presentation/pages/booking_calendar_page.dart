@@ -767,19 +767,13 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
 
     String timeRangeText = '';
     if (appointmentAtStr != null && appointmentAtStr.isNotEmpty) {
-      final clean = appointmentAtStr.replaceAll('T', ' ');
-      final parts = clean.split(' ');
-      if (parts.length >= 2) {
-        final timeParts = parts[1].split(':');
-        if (timeParts.length >= 2) {
-          final startHour = int.tryParse(timeParts[0]) ?? 0;
-          final startMinute = int.tryParse(timeParts[1]) ?? 0;
-          final startDt = DateTime(_selectedDay.year, _selectedDay.month, _selectedDay.day, startHour, startMinute);
-          final endDt = startDt.add(Duration(minutes: durationMinutes));
-          final startFormatted = "${startDt.hour.toString().padLeft(2, '0')}:${startDt.minute.toString().padLeft(2, '0')}";
-          final endFormatted = "${endDt.hour.toString().padLeft(2, '0')}:${endDt.minute.toString().padLeft(2, '0')}";
-          timeRangeText = "$startFormatted - $endFormatted";
-        }
+      final parsedDt = DateTime.tryParse(appointmentAtStr)?.toLocal();
+      if (parsedDt != null) {
+        final startDt = parsedDt;
+        final endDt = startDt.add(Duration(minutes: durationMinutes));
+        final startFormatted = "${startDt.hour.toString().padLeft(2, '0')}:${startDt.minute.toString().padLeft(2, '0')}";
+        final endFormatted = "${endDt.hour.toString().padLeft(2, '0')}:${endDt.minute.toString().padLeft(2, '0')}";
+        timeRangeText = "$startFormatted - $endFormatted";
       }
     }
 
@@ -890,7 +884,7 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
                     children: [
                       Text('${bookingTr(context, "list.title") == "Agenda & Bookings" ? "Booking" : "Takimi"} #$id • $customer', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
                       const SizedBox(height: 2),
-                      Text('$service • $totalPrice €', style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
+                      Text('$service • $totalPrice Lekë', style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -919,7 +913,7 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
                 // 2. Mark Paid / Paguaj
                 _ActionTile(
                   icon: Icons.payments_rounded,
-                  label: bookingTr(context, 'action.pay').replaceAll('{price}', '$totalPrice €'),
+                  label: bookingTr(context, 'action.pay').replaceAll('{price}', '$totalPrice Lekë'),
                   color: Colors.blue,
                   onTap: () async {
                     Navigator.pop(sheetContext);
@@ -978,7 +972,7 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
                       final confirmCancel = await PremiumDialog.confirm(
                         context,
                         title: bookingTr(context, 'action.confirm_cancel_title'),
-                        message: bookingTr(context, 'action.confirm_cancel_msg').replaceAll('{id}', id.toString()).replaceAll('{price}', '$totalPrice €'),
+                        message: bookingTr(context, 'action.confirm_cancel_msg').replaceAll('{id}', id.toString()).replaceAll('{price}', '$totalPrice Lekë'),
                         confirmLabel: bookingTr(context, 'action.confirm_cancel_btn'),
                         destructive: true,
                       );
@@ -1013,19 +1007,13 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
 
     String timeRangeText = '';
     if (appointmentAtStr != null && appointmentAtStr.isNotEmpty) {
-      final clean = appointmentAtStr.replaceAll('T', ' ');
-      final parts = clean.split(' ');
-      if (parts.length >= 2) {
-        final timeParts = parts[1].split(':');
-        if (timeParts.length >= 2) {
-          final startHour = int.tryParse(timeParts[0]) ?? 0;
-          final startMinute = int.tryParse(timeParts[1]) ?? 0;
-          final startDt = DateTime(_selectedDay.year, _selectedDay.month, _selectedDay.day, startHour, startMinute);
-          final endDt = startDt.add(Duration(minutes: durationMinutes));
-          final startFormatted = "${startDt.hour.toString().padLeft(2, '0')}:${startDt.minute.toString().padLeft(2, '0')}";
-          final endFormatted = "${endDt.hour.toString().padLeft(2, '0')}:${endDt.minute.toString().padLeft(2, '0')}";
-          timeRangeText = "$startFormatted - $endFormatted";
-        }
+      final parsedDt = DateTime.tryParse(appointmentAtStr)?.toLocal();
+      if (parsedDt != null) {
+        final startDt = parsedDt;
+        final endDt = startDt.add(Duration(minutes: durationMinutes));
+        final startFormatted = "${startDt.hour.toString().padLeft(2, '0')}:${startDt.minute.toString().padLeft(2, '0')}";
+        final endFormatted = "${endDt.hour.toString().padLeft(2, '0')}:${endDt.minute.toString().padLeft(2, '0')}";
+        timeRangeText = "$startFormatted - $endFormatted";
       }
     }
 

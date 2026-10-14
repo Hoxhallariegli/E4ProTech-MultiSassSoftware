@@ -115,7 +115,13 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
       create: (_) => ServiceCubit(repository),
       child: BlocListener<ServiceCubit, ServiceState>(
         listener: (context, state) {
-          if (state is ServiceSaved) Navigator.pop(context, true);
+          if (state is ServiceSaved) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (context.mounted && Navigator.of(context).canPop()) {
+                Navigator.of(context).pop(true);
+              }
+            });
+          }
           if (state is ServiceFailure) {
             final message = state.message.trim().isEmpty ? serviceTr(context, 'form.save_error') : state.message;
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 4)));

@@ -1,4 +1,4 @@
-@section('title', __('Identifikohu në Panel'))
+@section('title', __('Paneli i Kontrollit'))
 
 <x-layouts.guest>
     <div class="w-full max-w-lg mx-auto bg-white dark:bg-gray-800 p-8 sm:p-12 rounded-[2.5rem] border border-stone-200/80 dark:border-gray-700 shadow-sm">
@@ -8,10 +8,10 @@
                 <span>E4ProTech Engine • Managed IT Solutions</span>
             </div>
             <h2 class="text-3xl font-black text-[#1A1D20] dark:text-white tracking-tight">
-                Paneli i Kontrollit
+                {{ __('Paneli i Kontrollit') }}
             </h2>
             <p class="text-xs font-bold text-slate-500 dark:text-gray-400 mt-2">
-                Identifikohuni me llogarinë tuaj për të menaxhuar takimet, stafin dhe xhiron e sallonit tuaj.
+                {{ __('Identifikohuni me llogarinë tuaj për të menaxhuar takimet, stafin dhe xhiron e sallonit tuaj.') }}
             </p>
         </div>
 
@@ -41,7 +41,7 @@
             <div class="flex items-center justify-between text-xs font-bold">
                 <label class="flex items-center gap-2 text-slate-600 dark:text-gray-400">
                     <input type="checkbox" name="remember" class="rounded border-stone-300 text-[#7C5CFC] focus:ring-[#7C5CFC]">
-                    <span>Lëmë të kyçur</span>
+                    <span>{{ __('Lëmë të kyçur') }}</span>
                 </label>
                 @if (Route::has('password.request'))
                     <a href="{{ route('password.request') }}" class="text-[#7C5CFC] dark:text-[#7C5CFC] hover:underline font-extrabold">
@@ -52,7 +52,7 @@
 
             <div>
                 <button type="submit" class="w-full py-4 px-6 rounded-full font-black text-sm text-white bg-[#7C5CFC] hover:bg-[#6366F1] shadow-lg shadow-[#7C5CFC]/25 transition transform active:scale-95 flex items-center justify-center gap-2">
-                    <span>Identifikohu në Panel</span>
+                    <span>{{ __('Identifikohu në Panel') }}</span>
                     <span>&rarr;</span>
                 </button>
             </div>

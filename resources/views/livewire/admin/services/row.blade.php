@@ -6,7 +6,7 @@
 @endif
 <td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->name }}</td>
 <td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->description }}</td>
-<td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->price }}</td>
+<td class="px-6 py-5 font-extrabold text-gray-900 dark:text-white">{{ format_currency($item->price, $item->barberShop) }}</td>
 <td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->duration_minutes }}</td>
 <td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->category }}</td>
 <td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->active }}</td>

@@ -21,13 +21,14 @@ class ShopFrontPageManager extends Component
     public $app_name = '';
     public $logo = null;
     public $banner = null;
-    public $primary_color = '#FF9F0A';
-    public $secondary_color = '#1C1C1E';
+    public $primary_color = '#7C5CFC';
+    public $secondary_color = '#0A4D44';
     public $business_type = 'barber';
     public $phone = '';
     public $email = '';
+    public $currency = 'Lekë';
 
-    // Front Page Text Settings
+    // Front Page Text Settings (Default / SQ Base)
     public $hero_badge_text = '';
     public $hero_title = '';
     public $hero_subtitle = '';
@@ -40,7 +41,7 @@ class ShopFrontPageManager extends Component
     public $google_maps_url = '';
     public $footer_text = '';
 
-    // Translations
+    // Multi-Language Translations Array
     public $activeLocale = 'sq';
     public $translations = [
         'sq' => [],
@@ -66,11 +67,12 @@ class ShopFrontPageManager extends Component
         $this->shop = $shop;
         $this->name = $shop->name;
         $this->app_name = $shop->app_name ?: $shop->name;
-        $this->primary_color = $shop->primary_color ?: '#FF9F0A';
-        $this->secondary_color = $shop->secondary_color ?: '#1C1C1E';
+        $this->primary_color = $shop->primary_color ?: '#7C5CFC';
+        $this->secondary_color = $shop->secondary_color ?: '#0A4D44';
         $this->business_type = $shop->business_type ?: 'barber';
         $this->phone = $shop->phone ?? '';
         $this->email = $shop->email ?? '';
+        $this->currency = $shop->currency ?: 'Lekë';
 
         $frontSetting = ShopFrontPageSetting::firstOrCreate([
             'barber_shop_id' => $shop->id,
@@ -101,17 +103,34 @@ class ShopFrontPageManager extends Component
         $this->google_maps_url = $frontSetting->google_maps_url;
         $this->footer_text = $frontSetting->footer_text;
 
+        // Default initial translations structure
+        $defaultSq = [
+            'hero_badge' => $this->hero_badge_text ?: '✨ ' . $shop->resolved_shop_label . ' Zyrtare',
+            'hero_title' => $this->hero_title ?: 'Eksperiencë Premium për ' . $shop->resolved_service_label . ' & Stilim',
+            'hero_subtitle' => $this->hero_subtitle ?: 'Rezervoni takimin tuaj online me ekipin tonë profesional në pak sekonda. Zgjidhni shërbimin, orarin dhe stafin tuaj të preferuar 24/7.',
+            'hero_button' => $this->hero_button_text ?: 'Rezervo Takim Online ↗',
+            'staff_badge' => $this->staff_badge_text ?: 'Ekipi Ynë',
+            'staff_title' => $this->staff_title ?: $shop->resolved_staff_label_plural . ' Tanë',
+            'services_badge' => $this->services_badge_text ?: 'Çmimet & Kohëzgjatja',
+            'services_title' => $this->services_title ?: 'Shërbimet e Ofruara',
+            'footer_text' => $this->footer_text ?: '© ' . date('Y') . ' ' . $shop->name . ' — Mundësuar nga E4ProTech Engine',
+        ];
+
+        $defaultEn = [
+            'hero_badge' => '✨ Official ' . $shop->resolved_shop_label,
+            'hero_title' => 'Premium Experience for Services & Styling',
+            'hero_subtitle' => 'Book your appointment online with our professional team in seconds. Choose your preferred service, schedule, and staff 24/7.',
+            'hero_button' => 'Book Online Now ↗',
+            'staff_badge' => 'Our Team',
+            'staff_title' => 'Our ' . $shop->resolved_staff_label_plural,
+            'services_badge' => 'Pricing & Duration',
+            'services_title' => 'Our Services',
+            'footer_text' => '© ' . date('Y') . ' ' . $shop->name . ' — Powered by E4ProTech Engine',
+        ];
+
         $this->translations = array_merge([
-            'sq' => [
-                'hero_title' => $this->hero_title,
-                'hero_subtitle' => $this->hero_subtitle,
-                'hero_button_text' => $this->hero_button_text,
-            ],
-            'en' => [
-                'hero_title' => 'Premium Experience for Services & Styling',
-                'hero_subtitle' => 'Book your appointment online with our professional team in seconds.',
-                'hero_button_text' => 'Book Online Now ↗',
-            ],
+            'sq' => $defaultSq,
+            'en' => $defaultEn,
             'it' => [],
             'de' => [],
             'fr' => [],
@@ -153,6 +172,7 @@ class ShopFrontPageManager extends Component
             'business_type' => $this->business_type,
             'phone' => trim($this->phone),
             'email' => trim($this->email),
+            'currency' => trim($this->currency),
         ]);
 
         // Update FrontPageSetting

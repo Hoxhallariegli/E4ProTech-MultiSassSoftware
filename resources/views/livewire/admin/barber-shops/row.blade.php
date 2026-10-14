@@ -8,6 +8,7 @@
 <td class="px-6 py-3">@if($item->banner) <a href="{{ asset(ltrim($item->banner, '/')) }}" target="_blank" rel="noopener" class="inline-block group" title="View image"><img src="{{ asset(ltrim($item->banner, '/')) }}" alt="{{ e(ucwords(str_replace('_', ' ', 'banner'))) }}" class="w-12 h-12 rounded-xl object-cover border border-gray-200 dark:border-gray-700 shadow-sm group-hover:scale-105 transition-transform duration-150" loading="lazy" /></a> @else <span class="text-gray-400">-</span> @endif</td>
 <td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->primary_color }}</td>
 <td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->secondary_color }}</td>
+<td class="px-6 py-5 font-extrabold text-slate-800 dark:text-slate-200">{{ $item->resolved_currency }}</td>
 <td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->trial_ends_at?->format('d/m/Y H:i') ?? '-' }}</td>
 <td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->expires_at?->format('d/m/Y H:i') ?? '-' }}</td>
 <td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->active }}</td>

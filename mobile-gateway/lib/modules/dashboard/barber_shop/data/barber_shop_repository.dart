@@ -5,6 +5,10 @@ class BarberShopRepository {
   static const _perPage = 25;
   static final Map<String, ({List<Map<String, dynamic>> data, DateTime timestamp})> _lookupCache = {};
 
+  BarberShopRepository() {
+    ApiService.registerCacheClearCallback(clearCache);
+  }
+
   static void clearCache() => _lookupCache.clear();
 
   Future<({BarberShopPage page, Map<String, dynamic> meta})> index({
@@ -54,14 +58,14 @@ class BarberShopRepository {
             ? await ApiService.post('/barber-shops', payload)
             : await ApiService.put('/barber-shops/$id', payload);
     _ensureSuccess(res);
-    clearCache();
+    ApiService.clearAllCaches();
     return Map<String, dynamic>.from(jsonDecode(res.body)['data'] ?? {});
   }
 
   Future<void> delete(dynamic id) async {
     final res = await ApiService.delete('/barber-shops/$id');
     _ensureSuccess(res);
-    clearCache();
+    ApiService.clearAllCaches();
   }
 
   Future<List<Map<String, dynamic>>> lookup(String endpoint, {String search = '', bool forceRefresh = false}) async {

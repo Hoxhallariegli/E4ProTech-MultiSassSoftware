@@ -34,6 +34,7 @@ class BarberShop extends Model
         'staff_label_plural',
         'shop_label',
         'service_label',
+        'currency',
     ];
 
     protected function casts(): array {
@@ -69,6 +70,7 @@ class BarberShop extends Model
             'staff_label_plural' => ['nullable', 'string', 'max:255'],
             'shop_label' => ['nullable', 'string', 'max:255'],
             'service_label' => ['nullable', 'string', 'max:255'],
+            'currency' => ['nullable', 'string', 'max:50'],
         ];
     }
 
@@ -170,46 +172,55 @@ class BarberShop extends Model
     public function getResolvedStaffLabelAttribute(): string
     {
         if (!empty($this->staff_label)) return $this->staff_label;
+        $isEn = app()->getLocale() === 'en';
         return match($this->business_type ?? 'general') {
-            'beauty_salon' => 'Parukier/e',
-            'nail_studio' => 'Teknik/e',
-            'spa', 'aesthetic' => 'Specialist/e',
-            'barbershop' => 'Berber',
-            default => 'Punonjësi',
+            'beauty_salon' => $isEn ? 'Hair Stylist' : 'Parukier/e',
+            'nail_studio' => $isEn ? 'Nail Technician' : 'Teknik/e',
+            'spa', 'aesthetic' => $isEn ? 'Specialist' : 'Specialist/e',
+            'barbershop', 'barber' => $isEn ? 'Barber' : 'Berber',
+            default => $isEn ? 'Staff Member' : 'Punonjësi',
         };
     }
 
     public function getResolvedStaffLabelPluralAttribute(): string
     {
         if (!empty($this->staff_label_plural)) return $this->staff_label_plural;
+        $isEn = app()->getLocale() === 'en';
         return match($this->business_type ?? 'general') {
-            'beauty_salon' => 'Parukierët',
-            'nail_studio' => 'Teknikët',
-            'spa', 'aesthetic' => 'Specialistët',
-            'barbershop' => 'Berberët',
-            default => 'Punonjësit',
+            'beauty_salon' => $isEn ? 'Hair Stylists' : 'Parukierët',
+            'nail_studio' => $isEn ? 'Technicians' : 'Teknikët',
+            'spa', 'aesthetic' => $isEn ? 'Specialists' : 'Specialistët',
+            'barbershop', 'barber' => $isEn ? 'Barbers' : 'Berberët',
+            default => $isEn ? 'Staff Members' : 'Punonjësit',
         };
     }
 
     public function getResolvedShopLabelAttribute(): string
     {
         if (!empty($this->shop_label)) return $this->shop_label;
+        $isEn = app()->getLocale() === 'en';
         return match($this->business_type ?? 'general') {
-            'beauty_salon' => 'Sallon Bukurie',
-            'nail_studio' => 'Studio Thonjsh',
-            'spa', 'aesthetic' => 'Qendër Estetike',
-            'barbershop' => 'Berberanë',
-            default => 'Dyqani',
+            'beauty_salon' => $isEn ? 'Beauty Salon' : 'Sallon Bukurie',
+            'nail_studio' => $isEn ? 'Nail Studio' : 'Studio Thonjsh',
+            'spa', 'aesthetic' => $isEn ? 'Spa Center' : 'Qendër Estetike',
+            'barbershop', 'barber' => $isEn ? 'Barber Shop' : 'Berberanë',
+            default => $isEn ? 'Official Shop' : 'Dyqani',
         };
     }
 
     public function getResolvedServiceLabelAttribute(): string
     {
         if (!empty($this->service_label)) return $this->service_label;
+        $isEn = app()->getLocale() === 'en';
         return match($this->business_type ?? 'general') {
-            'spa', 'aesthetic' => 'Trajtimi',
-            default => 'Shërbimi',
+            'spa', 'aesthetic' => $isEn ? 'Treatment' : 'Trajtimi',
+            default => $isEn ? 'Service' : 'Shërbimi',
         };
+    }
+
+    public function getResolvedCurrencyAttribute(): string
+    {
+        return !empty($this->currency) ? $this->currency : 'Lekë';
     }
 
     public function getResolvedMinServiceTimeAttribute(): int

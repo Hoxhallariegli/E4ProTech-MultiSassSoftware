@@ -14,8 +14,22 @@ class UpdateBarberShopAction
         if ($model->logo && isset($data['logo']) && $data['logo'] !== $model->logo) { app(\App\Services\ImageUploadService::class)->delete($model->logo); }
         if ($model->banner && isset($data['banner']) && $data['banner'] !== $model->banner) { app(\App\Services\ImageUploadService::class)->delete($model->banner); }
         $model->fill($data);
-        AuditTrail::log($model, 'update', 'BarberShops');
+        $dirty = $model->getDirty();
+        $original = $model->getOriginal();
         $model->save();
+
+        if (!empty($dirty)) {
+            AuditTrail::create([
+                'user_id' => auth()->id(),
+                'title' => "Update BarberShop",
+                'reference_id' => (string)$model->id,
+                'section' => 'BarberShops',
+                'type' => 'update',
+                'old_values' => array_intersect_key($original, $dirty),
+                'new_values' => $dirty,
+            ]);
+        }
+
         return $model->fresh();
     }
 }

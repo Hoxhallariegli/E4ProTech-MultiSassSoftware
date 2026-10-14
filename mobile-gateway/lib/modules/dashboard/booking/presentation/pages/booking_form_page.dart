@@ -193,10 +193,17 @@ class _BookingFormPageState extends State<BookingFormPage> {
                     const SizedBox(width: 8),
                     TextButton.icon(
                       onPressed: () async {
-                        final newBarber = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => const BarberFormPage()));
-                        if (newBarber == true) {
-                          _barberOptions = await repository.lookup('barbers');
-                          if (mounted) setSheet(() => filtered = List<Map<String, dynamic>>.from(_barberOptions));
+                        final newBarber = await Navigator.push<dynamic>(context, MaterialPageRoute(builder: (_) => const BarberFormPage()));
+                        if (newBarber != null) {
+                          _barberOptions = await repository.lookup('barbers', forceRefresh: true);
+                          final Map<String, dynamic>? newMap = newBarber is Map<String, dynamic> ? newBarber : (newBarber is Map ? Map<String, dynamic>.from(newBarber) : null);
+                          final match = newMap != null
+                              ? _barberOptions.firstWhere((e) => e['id']?.toString() == newMap['id']?.toString(), orElse: () => newMap)
+                              : (_barberOptions.isNotEmpty ? _barberOptions.first : null);
+                          if (mounted) {
+                            setSheet(() => filtered = List<Map<String, dynamic>>.from(_barberOptions));
+                            if (match != null) Navigator.pop(sheetContext, match);
+                          }
                         }
                       },
                       icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
@@ -221,14 +228,15 @@ class _BookingFormPageState extends State<BookingFormPage> {
   }
 
   Future<void> _pickserviceId() async {
-    final newService = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => const ServiceFormPage()));
-    if (newService == true) {
-      _serviceOptions = await repository.lookup('services');
+    final newService = await Navigator.push<dynamic>(context, MaterialPageRoute(builder: (_) => const ServiceFormPage()));
+    if (newService != null) {
+      _serviceOptions = await repository.lookup('services', forceRefresh: true);
       if (mounted) setState(() {});
     }
   }
 
   Future<void> _pickcustomerId() async {
+    _customerOptions = await repository.lookup('customers', forceRefresh: true);
     var filtered = List<Map<String, dynamic>>.from(_customerOptions);
     final selected = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -252,13 +260,20 @@ class _BookingFormPageState extends State<BookingFormPage> {
                     const SizedBox(width: 8),
                     TextButton.icon(
                       onPressed: () async {
-                        final newCust = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => const CustomerFormPage()));
-                        if (newCust == true) {
-                          _customerOptions = await repository.lookup('customers');
+                        final newCust = await Navigator.push<dynamic>(context, MaterialPageRoute(builder: (_) => const CustomerFormPage()));
+                        if (newCust != null) {
+                          _customerOptions = await repository.lookup('customers', forceRefresh: true);
+                          final Map<String, dynamic>? newMap = newCust is Map<String, dynamic> ? newCust : (newCust is Map ? Map<String, dynamic>.from(newCust) : null);
+                          final match = newMap != null
+                              ? _customerOptions.firstWhere((e) => e['id']?.toString() == newMap['id']?.toString(), orElse: () => newMap)
+                              : (_customerOptions.isNotEmpty ? _customerOptions.first : null);
                           if (mounted) {
                             setSheet(() {
                               filtered = List<Map<String, dynamic>>.from(_customerOptions);
                             });
+                            if (match != null) {
+                              Navigator.pop(sheetContext, match);
+                            }
                           }
                         }
                       },
@@ -616,13 +631,21 @@ class _BookingFormPageState extends State<BookingFormPage> {
     }
   }
 
+  String get _currencySymbol {
+    if (_barberShopOptions.isNotEmpty) {
+      final curr = _barberShopOptions.first['currency']?.toString();
+      if (curr != null && curr.isNotEmpty) return curr;
+    }
+    return 'Lekë';
+  }
+
   @override Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final primaryColor = theme.colorScheme.primary;
 
     final displayTimeStr = _appointmentAtController.text.isEmpty ? 'Sot, Në Pritje' : _appointmentAtController.text;
-    final displayPriceStr = _totalPriceController.text.isEmpty ? '0.00 Lekë' : '${_totalPriceController.text} Lekë';
+    final displayPriceStr = _totalPriceController.text.isEmpty ? '0.00 $_currencySymbol' : '${_totalPriceController.text} $_currencySymbol';
     final displayDurationStr = '${_totalSelectedDuration()} min';
 
     return BlocProvider(
@@ -770,7 +793,7 @@ class _BookingFormPageState extends State<BookingFormPage> {
                           if (id == null) return const SizedBox.shrink();
                           final isSelected = _selectedServiceIds.contains(id);
                           final name = service['name']?.toString() ?? 'Shërbim';
-                          final price = service['price'] != null ? '${service['price']} €' : '';
+                          final price = service['price'] != null ? '${service['price']} $_currencySymbol' : '';
                           final duration = service['duration_minutes'] != null ? '${service['duration_minutes']}m' : '';
 
                           return InkWell(

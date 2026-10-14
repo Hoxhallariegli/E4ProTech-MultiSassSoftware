@@ -110,6 +110,7 @@ class AuditTrails extends Component
 
     public function resetFilters(): void
     {
-        $this->reset();
+        $this->reset(['title', 'user_id', 'section', 'type', 'created_at', 'openFilter']);
+        $this->resetPage();
     }
 }

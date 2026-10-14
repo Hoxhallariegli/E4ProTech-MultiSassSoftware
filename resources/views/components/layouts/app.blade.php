@@ -227,33 +227,16 @@
               <x-heroicon-o-moon id="theme-toggle-dark" class="size-5 -mt-1 text-gray-900 dark:text-white" />
           </button>
 
-          <!-- Language Switcher -->
-          <div x-data="{ open: false }" class="relative">
-              <button @click="open = !open" class="flex items-center gap-1 text-sm font-bold uppercase focus:outline-none">
-                  <span>{{ app()->getLocale() }}</span>
-                  <x-heroicon-o-chevron-down class="size-3" />
-              </button>
-              <div x-show="open" @click.away="open = false" x-cloak class="absolute right-0 mt-2 w-24 bg-white dark:bg-gray-700 rounded-lg shadow-xl border border-gray-100 dark:border-gray-600 z-50">
-                  @php
-                      $languages = ['en'];
-                      if (File::exists(lang_path())) {
-                          foreach (File::directories(lang_path()) as $dir) {
-                              $lang = basename($dir);
-                              if (strlen($lang) <= 5 && !in_array($lang, $languages)) $languages[] = $lang;
-                          }
-                          foreach (File::files(lang_path()) as $file) {
-                              if ($file->getExtension() === 'json') {
-                                  $lang = str_replace('.json', '', $file->getFilename());
-                                  if (strlen($lang) <= 5 && !in_array($lang, $languages)) $languages[] = $lang;
-                              }
-                          }
-                      }
-                      sort($languages);
-                  @endphp
-                  @foreach($languages as $lang)
-                    <a href="{{ route('language.switch', $lang) }}" class="block px-4 py-2 text-xs font-bold uppercase hover:bg-gray-100 dark:hover:bg-gray-600 {{ $loop->first ? 'rounded-t-lg' : '' }} {{ $loop->last ? 'rounded-b-lg' : '' }}">{{ $lang }}</a>
-                  @endforeach
-              </div>
+          <!-- Header Language Switcher Button Group -->
+          <div class="flex items-center bg-gray-100 dark:bg-gray-700/60 p-1 rounded-xl border border-gray-200/60 dark:border-gray-600 text-xs font-bold">
+              <a href="{{ route('language.switch', 'sq') }}"
+                 class="px-2.5 py-1 rounded-lg uppercase transition {{ app()->getLocale() == 'sq' ? 'bg-indigo-600 text-white shadow-xs font-black' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white' }}">
+                  SQ
+              </a>
+              <a href="{{ route('language.switch', 'en') }}"
+                 class="px-2.5 py-1 rounded-lg uppercase transition {{ app()->getLocale() == 'en' ? 'bg-indigo-600 text-white shadow-xs font-black' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white' }}">
+                  EN
+              </a>
           </div>
 
           <livewire:admin.shop-switcher/>

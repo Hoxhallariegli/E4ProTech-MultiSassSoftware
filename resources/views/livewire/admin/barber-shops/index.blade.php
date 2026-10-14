@@ -43,6 +43,7 @@
                         <x-table.th name="banner" :label="__('barber-shops.Banner')" :$sortField :$sortAsc :sortable="in_array('banner', $sortableFields)" />
                         <x-table.th name="primary_color" :label="__('barber-shops.Primary Color')" :$sortField :$sortAsc :sortable="in_array('primary_color', $sortableFields)" />
                         <x-table.th name="secondary_color" :label="__('barber-shops.Secondary Color')" :$sortField :$sortAsc :sortable="in_array('secondary_color', $sortableFields)" />
+                        <x-table.th name="currency" label="Monedha" :$sortField :$sortAsc :sortable="in_array('currency', $sortableFields)" />
                         <x-table.th name="trial_ends_at" :label="__('barber-shops.Trial Ends At')" :$sortField :$sortAsc :sortable="in_array('trial_ends_at', $sortableFields)" />
                         <x-table.th name="expires_at" :label="__('barber-shops.Expires At')" :$sortField :$sortAsc :sortable="in_array('expires_at', $sortableFields)" />
                         <x-table.th name="active" :label="__('barber-shops.Active')" :$sortField :$sortAsc :sortable="in_array('active', $sortableFields)" />

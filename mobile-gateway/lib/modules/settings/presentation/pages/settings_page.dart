@@ -393,10 +393,10 @@ class _AppVersionCardState extends State<_AppVersionCard> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.15),
+                  color: theme.colorScheme.primary.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(Icons.system_update_rounded, color: Colors.blue, size: 22),
+                child: Icon(Icons.system_update_rounded, color: theme.colorScheme.primary, size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(

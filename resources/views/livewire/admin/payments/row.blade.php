@@ -4,7 +4,7 @@
 <td class="px-6 py-5 font-bold text-gray-900 dark:text-white">{{ $item->barberShop?->name ?? '-' }}</td>
 @endif
 <td class="px-6 py-5 font-bold text-gray-900 dark:text-white">{{ $item->booking?->customer?->name ?? '-' }}</td>
-<td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->amount }}</td>
+<td class="px-6 py-5 font-extrabold text-gray-900 dark:text-white">{{ format_currency($item->amount, $item->barberShop) }}</td>
 <td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->method }}</td>
 <td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->status }}</td>
     <td class="px-6 py-5 text-right !transition-none">

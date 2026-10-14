@@ -53,7 +53,7 @@ const Map<String, String> bookingEn = {
   'field.customer_id': 'Customer',
   'field.appointment_at': 'Appointment At',
   'field.status': 'Status',
-  'field.total_price': 'Total Price (€)',
+  'field.total_price': 'Total Price',
   'field.notes': 'Notes',
   'field.source': 'Source',
   'calendar.book_at': 'Book at {time}',

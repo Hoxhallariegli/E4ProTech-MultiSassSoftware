@@ -36,6 +36,7 @@ class _BarberShopFormPageState extends State<BarberShopFormPage> {
   bool _active = false;
   bool _smsEnabled = false;
   final _timezoneController = TextEditingController();
+  final _currencyController = TextEditingController();
   final _maxNoShowBeforeBlockController = TextEditingController();
 
   List<Map<String, dynamic>> _ownerOptions = [];
@@ -55,6 +56,7 @@ class _BarberShopFormPageState extends State<BarberShopFormPage> {
     _active = widget.item?['active'] == true || widget.item?['active'] == 1 || widget.item?['active'] == '1';
     _smsEnabled = widget.item?['sms_enabled'] == true || widget.item?['sms_enabled'] == 1 || widget.item?['sms_enabled'] == '1';
     _timezoneController.text = widget.item?['timezone']?.toString() ?? '';
+    _currencyController.text = widget.item?['currency']?.toString() ?? 'Lekë';
     _maxNoShowBeforeBlockController.text = widget.item?['max_no_show_before_block']?.toString() ?? '';
 
     try {
@@ -116,6 +118,7 @@ class _BarberShopFormPageState extends State<BarberShopFormPage> {
     payload['active'] = _active;
     payload['sms_enabled'] = _smsEnabled;
     payload['timezone'] = _timezoneController.text;
+    payload['currency'] = _currencyController.text;
     payload['max_no_show_before_block'] = int.tryParse(_maxNoShowBeforeBlockController.text);
 
     final files = <String, String>{};
@@ -155,6 +158,7 @@ class _BarberShopFormPageState extends State<BarberShopFormPage> {
             Container(decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: SwitchListTile.adaptive(contentPadding: const EdgeInsets.symmetric(horizontal: 16), title: Text(barber_shopTr(context, 'field.active'), style: const TextStyle(fontWeight: FontWeight.w700)), value: _active, onChanged: (v) => setState(() => _active = v))),
             Container(decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: SwitchListTile.adaptive(contentPadding: const EdgeInsets.symmetric(horizontal: 16), title: Text(barber_shopTr(context, 'field.sms_enabled'), style: const TextStyle(fontWeight: FontWeight.w700)), value: _smsEnabled, onChanged: (v) => setState(() => _smsEnabled = v))),
             _FieldShell(label: barber_shopTr(context, 'field.timezone'), child: TextFormField(controller: _timezoneController,  decoration: InputDecoration(hintText: barber_shopTr(context, 'field.timezone'), border: InputBorder.none, isDense: true), validator: (v) { if (v == null || v.trim().isEmpty) return barber_shopTr(context, 'form.required');  return null; })),
+            _FieldShell(label: 'Monedha Zyrtare (Currency)', child: TextFormField(controller: _currencyController, decoration: const InputDecoration(hintText: 'p.sh: Lekë, €, \$, CHF, £', border: InputBorder.none, isDense: true))),
             _FieldShell(label: barber_shopTr(context, 'field.max_no_show_before_block'), child: TextFormField(controller: _maxNoShowBeforeBlockController, keyboardType: const TextInputType.numberWithOptions(decimal: false), inputFormatters: [FilteringTextInputFormatter.digitsOnly],  decoration: InputDecoration(hintText: barber_shopTr(context, 'field.max_no_show_before_block'), border: InputBorder.none, isDense: true), validator: (v) { if (v != null && v.isNotEmpty && int.tryParse(v) == null) return barber_shopTr(context, 'form.invalid_integer');  return null; })),
 
             const SizedBox(height: 14),
@@ -174,6 +178,7 @@ class _BarberShopFormPageState extends State<BarberShopFormPage> {
     _trialEndsAtController.dispose();
     _expiresAtController.dispose();
     _timezoneController.dispose();
+    _currencyController.dispose();
     _maxNoShowBeforeBlockController.dispose();
     super.dispose();
   }

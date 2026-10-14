@@ -46,8 +46,15 @@ class AuditTrail extends Model
 
     public static function log($model, string $type, string $section): void
     {
-        $oldValues = $type === 'update' ? array_intersect_key($model->getOriginal(), $model->getDirty()) : null;
-        $newValues = $type === 'update' ? $model->getDirty() : ($type === 'create' ? $model->toArray() : null);
+        $dirty = $model->getDirty();
+        $original = $model->getOriginal();
+
+        if ($type === 'update' && empty($dirty)) {
+            $dirty = $model->getChanges();
+        }
+
+        $oldValues = $type === 'update' ? array_intersect_key($original, $dirty) : ($type === 'delete' ? $model->attributesToArray() : null);
+        $newValues = $type === 'update' ? $dirty : ($type === 'create' ? $model->attributesToArray() : null);
 
         self::create([
             'user_id' => auth()->id(),
@@ -57,6 +64,19 @@ class AuditTrail extends Model
             'type' => $type,
             'old_values' => $oldValues,
             'new_values' => $newValues,
+        ]);
+    }
+
+    public static function logCustom($model, string $type, string $section, string $title, ?array $newValues = null): void
+    {
+        self::create([
+            'user_id' => auth()->id() ?? ($model instanceof User ? $model->id : null),
+            'title' => $title,
+            'reference_id' => (string) ($model ? $model->id : '0'),
+            'section' => $section,
+            'type' => $type,
+            'old_values' => null,
+            'new_values' => $newValues ?? ($model ? $model->attributesToArray() : null),
         ]);
     }
 

@@ -185,7 +185,13 @@ class _BarberFormPageState extends State<BarberFormPage> {
       create: (_) => BarberCubit(repository),
       child: BlocListener<BarberCubit, BarberState>(
         listener: (context, state) {
-          if (state is BarberSaved) Navigator.pop(context, true);
+          if (state is BarberSaved) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (context.mounted && Navigator.of(context).canPop()) {
+                Navigator.of(context).pop(true);
+              }
+            });
+          }
           if (state is BarberFailure) {
             final message = state.message.trim().isEmpty ? barberTr(context, 'form.save_error') : state.message;
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 4)));

@@ -25,7 +25,7 @@
     @endif
 </td>
 <td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->status }}</td>
-<td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->total_price }}</td>
+<td class="px-6 py-5 font-extrabold text-gray-900 dark:text-white">{{ format_currency($item->total_price, $item->barberShop) }}</td>
 <td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->notes }}</td>
 <td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->source }}</td>
     <td class="px-6 py-5 text-right !transition-none">

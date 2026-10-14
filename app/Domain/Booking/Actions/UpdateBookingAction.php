@@ -13,8 +13,21 @@ class UpdateBookingAction
         Booking::checkOverlap($dto->barber_id, $dto->appointment_at, $dto->service_id, $model->id, $allowLunchOverride);
         $data = $dto->toArray();
         $model->fill($data);
-        AuditTrail::log($model, 'update', 'Bookings');
+        $dirty = $model->getDirty();
+        $original = $model->getOriginal();
         $model->save();
+
+        if (!empty($dirty)) {
+            AuditTrail::create([
+                'user_id' => auth()->id(),
+                'title' => "Update Booking",
+                'reference_id' => (string)$model->id,
+                'section' => 'Bookings',
+                'type' => 'update',
+                'old_values' => array_intersect_key($original, $dirty),
+                'new_values' => $dirty,
+            ]);
+        }
 
         if (isset($data['total_price'])) {
             \App\Models\Payment::where('booking_id', $model->id)->update([

@@ -48,13 +48,22 @@ class BarberShops extends Component
 
     public function sortBy($field) { if (!in_array($field, BarberShop::sortable(), true)) return; if ($this->sortField === $field) { $this->sortAsc = ! $this->sortAsc; } $this->sortField = $field; }
 
-    public function deleteBarberShop($id, DeleteBarberShopAction $action) 
+    public function deleteBarberShop($id, DeleteBarberShopAction $action)
     {
         abort_if_cannot('delete_barber_shops');
         $item = BarberShop::find($id);
-        if (!$item) { $this->dispatch('toast', message: __('barber-shops.not_found'), type: 'error'); return; }
-        try { $action->execute($item); $this->dispatch('toast', message: __('barber-shops.deleted'), type: 'success'); $this->resetPage(); } 
-        catch (\Illuminate\Database\QueryException $e) { $this->dispatch('toast', message: __('barber-shops.delete_error_referenced'), type: 'error'); }
-        catch (\Exception $e) { $this->dispatch('toast', message: __('barber-shops.delete_error'), type: 'error'); }
+        if (!$item) {
+            $this->dispatch('toast', message: __('barber-shops.not_found'), type: 'error');
+            return;
+        }
+
+        try {
+            $action->execute($item);
+            $this->dispatch('toast', message: __('barber-shops.deleted'), type: 'success');
+            $this->resetPage();
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("Delete shop error: " . $e->getMessage());
+            $this->dispatch('toast', message: $e->getMessage(), type: 'error');
+        }
     }
 }

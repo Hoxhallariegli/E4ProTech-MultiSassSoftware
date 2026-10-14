@@ -44,6 +44,7 @@
             <tr>
                 <th><a href="#" wire:click="sortBy('name')">{{ __('users.Name') }}</a></th>
                 <th><a href="#" wire:click="sortBy('email')">{{ __('users.Email') }}</a></th>
+                <th><a href="#" wire:click="sortBy('email_verified_at')">{{ __('Verifikimi i Llogarisë') }}</a></th>
                 <th>{{ __('Shops') }}</th>
                 <th>{{ __('users.Joined') }}</th>
                 <th>{{ __('users.Roles') }}</th>
@@ -62,6 +63,27 @@
                         <div class="pl-1 pt-1">{{ $user->name }}</div>
                     </td>
                     <td>{{ $user->email }}</td>
+                    <td>
+                        @if ($user->email_verified_at)
+                            <div class="flex flex-col gap-0.5">
+                                <span class="inline-flex items-center gap-1 text-[10px] font-black uppercase text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/40 px-2.5 py-0.5 rounded-md w-max">
+                                    ✓ Verifikuar
+                                </span>
+                                <span class="text-[11px] font-mono text-gray-500 dark:text-gray-400">
+                                    {{ date('d/m/Y H:i', strtotime((string)$user->email_verified_at)) }}
+                                </span>
+                            </div>
+                        @else
+                            <div class="flex flex-col gap-0.5">
+                                <span class="inline-flex items-center gap-1 text-[10px] font-black uppercase text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 px-2.5 py-0.5 rounded-md w-max">
+                                    ⚠️ Pa Verifikuar
+                                </span>
+                                <span class="text-[10px] text-gray-400 italic">
+                                    Në pritje konfirmimi
+                                </span>
+                            </div>
+                        @endif
+                    </td>
                     <td>
                         <div class="flex flex-wrap gap-1">
                             @foreach($user->barberShops as $shop)

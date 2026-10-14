@@ -153,3 +153,27 @@ if (! function_exists('to_api')) {
         return new \App\Http\Responses\ApiResponse($data, $message, $status, $headers);
     }
 }
+
+if (! function_exists('shop_currency')) {
+    function shop_currency(?\App\Models\BarberShop $shop = null): string
+    {
+        if ($shop && !empty($shop->currency)) {
+            return $shop->currency;
+        }
+
+        if (auth()->check() && auth()->user()?->barberShop && !empty(auth()->user()?->barberShop?->currency)) {
+            return auth()->user()->barberShop->currency;
+        }
+
+        return 'Lekë';
+    }
+}
+
+if (! function_exists('format_currency')) {
+    function format_currency(float|int|string|null $amount, ?\App\Models\BarberShop $shop = null, int $decimals = 0): string
+    {
+        $numeric = (float) ($amount ?? 0);
+        $symbol = shop_currency($shop);
+        return number_format($numeric, $decimals) . ' ' . $symbol;
+    }
+}

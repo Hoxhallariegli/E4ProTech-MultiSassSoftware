@@ -6,6 +6,10 @@ class PaymentRepository {
   static final Map<String, ({List<Map<String, dynamic>> data, DateTime timestamp})> _lookupCache = {};
   static final Map<String, ({PaymentPage page, Map<String, dynamic> meta, DateTime timestamp})> _indexCache = {};
 
+  PaymentRepository() {
+    ApiService.registerCacheClearCallback(clearCache);
+  }
+
   static void clearCache() {
     _lookupCache.clear();
     _indexCache.clear();
@@ -69,14 +73,14 @@ class PaymentRepository {
             ? await ApiService.post('/payments', payload)
             : await ApiService.put('/payments/$id', payload);
     _ensureSuccess(res);
-    clearCache();
+    ApiService.clearAllCaches();
     return Map<String, dynamic>.from(jsonDecode(res.body)['data'] ?? {});
   }
 
   Future<void> delete(dynamic id) async {
     final res = await ApiService.delete('/payments/$id');
     _ensureSuccess(res);
-    clearCache();
+    ApiService.clearAllCaches();
   }
 
   Future<List<Map<String, dynamic>>> lookup(String endpoint, {String search = '', bool forceRefresh = false}) async {

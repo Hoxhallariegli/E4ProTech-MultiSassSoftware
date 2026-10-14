@@ -185,6 +185,20 @@
                                     </select>
                                 </div>
 
+                                <div>
+                                    <label class="block text-xs font-extrabold text-[#1A1D20] uppercase tracking-wider mb-2">
+                                        {{ $isEn ? 'Official Currency' : 'Monedha Zyrtare' }} *
+                                    </label>
+                                    <select wire:model="currency"
+                                            class="w-full px-5 py-4 rounded-2xl bg-[#FAF8F2] border border-slate-200 text-[#1A1D20] text-sm font-bold focus:border-[#7C5CFC] focus:ring-2 focus:ring-[#7C5CFC]/20 focus:outline-none">
+                                        <option value="Lekë">🇦🇱 Lekë (ALL)</option>
+                                        <option value="€">🇪🇺 Euro (€)</option>
+                                        <option value="$">🇺🇸 US Dollar ($)</option>
+                                        <option value="CHF">🇨🇭 Swiss Franc (CHF)</option>
+                                        <option value="£">🇬🇧 British Pound (£)</option>
+                                    </select>
+                                </div>
+
                                 <button type="submit"
                                         class="w-full py-4 rounded-full font-black text-sm text-white bg-[#7C5CFC] hover:bg-[#6366F1] shadow-xl shadow-[#7C5CFC]/25 transition transform active:scale-95 flex items-center justify-center gap-2">
                                     <span>{{ $isEn ? 'Continue' : 'Vazhdo' }}</span>

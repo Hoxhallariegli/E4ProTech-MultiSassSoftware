@@ -346,7 +346,7 @@
                         </div>
                         <div class="text-right whitespace-nowrap">
                             <span class="text-xl font-black block mb-2" style="color: {{ $secondaryColor }};">
-                                {{ number_format($service->price, 0) }} Lekë
+                                {{ number_format($service->price, 0) }} {{ $shop->resolved_currency }}
                             </span>
                             <a href="#booking-section"
                                class="px-5 py-2 rounded-full text-xs font-black text-white shadow transition inline-block"

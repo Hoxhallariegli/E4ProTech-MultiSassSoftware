@@ -26,17 +26,25 @@
 
             <!-- Nav Links -->
             <nav class="hidden md:flex items-center gap-8 text-xs font-bold text-slate-700">
-                <a href="/" class="hover:text-[#7C5CFC] transition">Kreu</a>
-                <a href="/#how-it-works" class="hover:text-[#7C5CFC] transition">Si Funksionon</a>
-                <a href="/#services" class="hover:text-[#7C5CFC] transition">Shërbimet</a>
-                <a href="/#sallonet" class="hover:text-[#7C5CFC] transition">Sallonet</a>
-                <a href="/#faq" class="hover:text-[#7C5CFC] transition">Pyetjet</a>
+                <a href="/" class="hover:text-[#7C5CFC] transition">{{ __('Kreu') }}</a>
+                <a href="/#how-it-works" class="hover:text-[#7C5CFC] transition">{{ __('Si Funksionon') }}</a>
+                <a href="/#services" class="hover:text-[#7C5CFC] transition">{{ __('Shërbimet') }}</a>
+                <a href="/#sallonet" class="hover:text-[#7C5CFC] transition">{{ __('Sallonet') }}</a>
+                <a href="/#faq" class="hover:text-[#7C5CFC] transition">{{ __('Pyetjet') }}</a>
             </nav>
 
             <div class="flex items-center gap-3">
+                <div class="flex items-center gap-1 bg-stone-200/60 p-1 rounded-xl text-xs font-bold">
+                    <a href="{{ route('language.switch', 'sq') }}" class="px-2.5 py-1 rounded-lg transition {{ app()->getLocale() == 'sq' ? 'bg-[#0A4D44] text-white' : 'text-slate-600 hover:text-black' }}">
+                        SQ
+                    </a>
+                    <a href="{{ route('language.switch', 'en') }}" class="px-2.5 py-1 rounded-lg transition {{ app()->getLocale() == 'en' ? 'bg-[#0A4D44] text-white' : 'text-slate-600 hover:text-black' }}">
+                        EN
+                    </a>
+                </div>
                 @if (Route::has('register'))
                     <a href="{{ route('register') }}" class="px-6 py-2.5 rounded-full text-xs font-black text-white bg-[#7C5CFC] hover:bg-[#6366F1] shadow-lg shadow-[#7C5CFC]/25 transition transform active:scale-95 flex items-center gap-2">
-                        Krijo Salonin ↗
+                        {{ __('Krijo Salonin') }} ↗
                     </a>
                 @endif
             </div>
@@ -50,7 +58,7 @@
 
     <!-- Footer -->
     <footer class="bg-[#FAF8F2] border-t border-stone-200/60 py-6 text-center text-xs font-medium text-slate-500">
-        &copy; {{ date('Y') }} E4ProTech Engine Multi-SaaS — Mundësuar nga E4ProTech.
+        &copy; {{ date('Y') }} E4ProTech Engine Multi-SaaS — {{ __('Mundësuar nga E4ProTech.') }}
     </footer>
 
 </body>

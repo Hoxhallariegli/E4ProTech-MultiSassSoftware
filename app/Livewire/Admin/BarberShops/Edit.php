@@ -38,6 +38,7 @@ class Edit extends Component
     public $staff_label_plural = '';
     public $shop_label = '';
     public $service_label = '';
+    public $currency = 'Lekë';
 
     #[On('user-created')]
     public function refreshOwners($id) { $this->owner_id = $id; $this->updatedOwnerId($id); }
@@ -73,6 +74,7 @@ class Edit extends Component
         $this->staff_label_plural = $barberShop->staff_label_plural ?? '';
         $this->shop_label = $barberShop->shop_label ?? '';
         $this->service_label = $barberShop->service_label ?? '';
+        $this->currency = $barberShop->currency ?? 'Lekë';
     }
 
     public function render() {
@@ -106,6 +108,7 @@ class Edit extends Component
             'staff_label_plural' => $this->staff_label_plural,
             'shop_label' => $this->shop_label,
             'service_label' => $this->service_label,
+            'currency' => $this->currency,
         ]);
         $action->execute($this->item, $dto);
         session()->flash('success', __('barber-shops.updated'));

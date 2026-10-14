@@ -127,10 +127,10 @@ class _ModulesPageState extends State<ModulesPage> {
               _CategoryHeader(
                 title: coreTr(context, 'sidebar.sms_notifications'),
                 icon: Icons.sms_rounded,
-                color: const Color(0xFF10B981),
+                color: primaryColor,
               ),
               const SizedBox(height: 6),
-              _ModuleGrid(modules: smsModules, primaryColor: const Color(0xFF10B981), isDark: isDark),
+              _ModuleGrid(modules: smsModules, primaryColor: primaryColor, isDark: isDark),
               const SizedBox(height: 12),
             ],
 
@@ -139,10 +139,10 @@ class _ModulesPageState extends State<ModulesPage> {
               _CategoryHeader(
                 title: coreTr(context, 'sidebar.saas_administration'),
                 icon: Icons.auto_awesome_mosaic_rounded,
-                color: const Color(0xFF8B5CF6),
+                color: primaryColor,
               ),
               const SizedBox(height: 6),
-              _ModuleGrid(modules: saasModules, primaryColor: const Color(0xFF8B5CF6), isDark: isDark),
+              _ModuleGrid(modules: saasModules, primaryColor: primaryColor, isDark: isDark),
               const SizedBox(height: 12),
             ],
 
@@ -151,10 +151,10 @@ class _ModulesPageState extends State<ModulesPage> {
               _CategoryHeader(
                 title: coreTr(context, 'sidebar.other'),
                 icon: Icons.grid_view_rounded,
-                color: Colors.amber.shade800,
+                color: primaryColor,
               ),
               const SizedBox(height: 6),
-              _ModuleGrid(modules: otherModules, primaryColor: Colors.amber.shade800, isDark: isDark),
+              _ModuleGrid(modules: otherModules, primaryColor: primaryColor, isDark: isDark),
             ],
           ],
         ),

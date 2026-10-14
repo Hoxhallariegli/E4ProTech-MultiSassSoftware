@@ -31,6 +31,7 @@ class BarberShopResource extends JsonResource
             'staff_label_plural' => $this->resolved_staff_label_plural,
             'shop_label' => $this->resolved_shop_label,
             'service_label' => $this->resolved_service_label,
+            'currency' => $this->resolved_currency,
             'owner' => $this->whenLoaded('owner'),
         ];
     }

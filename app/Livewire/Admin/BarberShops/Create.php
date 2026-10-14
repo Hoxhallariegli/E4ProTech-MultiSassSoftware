@@ -37,6 +37,7 @@ class Create extends Component
     public $staff_label_plural = '';
     public $shop_label = '';
     public $service_label = '';
+    public $currency = 'Lekë';
 
     #[On('user-created')]
     public function refreshOwners($id) { $this->owner_id = $id; $this->updatedOwnerId($id); }
@@ -86,6 +87,7 @@ class Create extends Component
             'staff_label_plural' => $this->staff_label_plural,
             'shop_label' => $this->shop_label,
             'service_label' => $this->service_label,
+            'currency' => $this->currency,
         ]);
         $action->execute($dto);
         session()->flash('success', __('barber-shops.created'));

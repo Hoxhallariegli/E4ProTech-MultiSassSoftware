@@ -81,6 +81,7 @@
                         <div><x-form.input name="staff_label_plural" type="text" wire:model.live="staff_label_plural" label="Emri i Stafit (Shumës, p.sh: Parukierët, Berberët, Stafi)" class="dark:bg-gray-900" /></div>
                         <div><x-form.input name="shop_label" type="text" wire:model.live="shop_label" label="Emri i Sallonit (p.sh: Salloni, Berberana, Studio)" class="dark:bg-gray-900" /></div>
                         <div><x-form.input name="service_label" type="text" wire:model.live="service_label" label="Emri i Shërbimit (p.sh: Shërbimi, Trajtimi)" class="dark:bg-gray-900" /></div>
+                        <div><x-form.input name="currency" type="text" wire:model.live="currency" label="Monedha Zyrtare (p.sh: Lekë, €, $, CHF, £)" placeholder="Lekë" class="dark:bg-gray-900 font-bold" /></div>
                     </div>
                 </div>
 

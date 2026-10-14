@@ -26,9 +26,9 @@ class AuthController extends Controller
             ]);
         }
 
-        if (!$user->is_active) {
+        if (is_null($user->email_verified_at) || !$user->is_active) {
             throw ValidationException::withMessages([
-                'email' => ['Llogaria juaj është jo-aktive.'],
+                'email' => ['Llogaria juaj nuk është verifikuar ende. Ju lutemi kontrolloni e-mailin tuaj dhe klikoni lidhjen e konfirmimit për të aktivizuar llogarinë.'],
             ]);
         }
 

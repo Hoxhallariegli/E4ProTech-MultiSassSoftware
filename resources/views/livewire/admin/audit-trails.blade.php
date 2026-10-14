@@ -1,4 +1,4 @@
-<div>
+<div x-data="{ isOpen: @entangle('openFilter') }">
     <div class="card">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
@@ -6,16 +6,18 @@
                 <x-short-description class="dark:text-gray-400">Gjurmët e auditimit dhe historiku i të gjitha veprimeve në sistem (Si Ishte ➔ Si U Bë)</x-short-description>
             </div>
             <div class="flex items-center gap-3">
-                <button type="button" wire:click="resetFilters" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl transition">
-                    <span>{{ __('audit.Reset form') }}</span>
-                </button>
+                @if($title || $user_id || $section || $type || $created_at || $openFilter)
+                    <button type="button" wire:click="resetFilters" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl transition">
+                        <span>{{ __('audit.Reset form') }}</span>
+                    </button>
+                @endif
                 <button type="button" @click="isOpen = !isOpen" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-600 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm transition">
                     <span>{{ __('audit.Advanced Search') }}</span>
                 </button>
             </div>
         </div>
 
-        <div class="mb-5" x-data="{ isOpen: @if($openFilter || request('openFilter')) true @else false @endif }">
+        <div class="mb-5">
             <div
                 x-show="isOpen"
                 x-cloak
@@ -77,7 +79,44 @@
                 </thead>
                 <tbody class="divide-y divide-gray-50 dark:divide-gray-700/50">
                     @foreach($this->userlogs() as $log)
-                        <tr wire:key="{{ $log->id }}" class="hover:bg-gray-50/50 dark:hover:bg-gray-900/50 transition">
+                        @php
+                            $displayNewValues = $log->new_values;
+                            if (empty($displayNewValues) && $log->reference_id && $log->section) {
+                                $modelClass = match($log->section) {
+                                    'Bookings' => \App\Models\Booking::class,
+                                    'Payments' => \App\Models\Payment::class,
+                                    'BarberShops' => \App\Models\BarberShop::class,
+                                    'Barbers' => \App\Models\Barber::class,
+                                    'Services' => \App\Models\Service::class,
+                                    'Customers' => \App\Models\Customer::class,
+                                    'MessageQueues' => \App\Models\MessageQueue::class,
+                                    'MessageLogs' => \App\Models\MessageLog::class,
+                                    'Users' => \App\Models\User::class,
+                                    default => null,
+                                };
+
+                                if ($modelClass && class_exists($modelClass)) {
+                                    try {
+                                        $record = $modelClass::find($log->reference_id);
+                                        if ($record) {
+                                            $displayNewValues = $record->attributesToArray();
+                                        }
+                                    } catch (\Throwable $e) {}
+                                }
+                            }
+
+                            if (is_array($displayNewValues)) {
+                                $displayNewValues = array_filter($displayNewValues, fn($val) => !is_array($val));
+                            }
+                            $displayOldValues = is_array($log->old_values) ? array_filter($log->old_values, fn($val) => !is_array($val)) : $log->old_values;
+
+                            $jsonFormatted = json_encode([
+                                'old_values' => $displayOldValues,
+                                'new_values' => $displayNewValues,
+                            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                        @endphp
+
+                        <tr wire:key="{{ $log->id }}" x-data="{ showJson: false }" class="hover:bg-gray-50/50 dark:hover:bg-gray-900/50 transition">
                             <td class="px-6 py-4 font-bold text-gray-900 dark:text-white whitespace-nowrap">
                                 {{ $log->user->name ?? 'Sistemi / Publik' }}
                             </td>
@@ -95,110 +134,53 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div x-data="{ open: false }" class="inline-block">
-                                    <button @click="open = true" class="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-black text-xs hover:bg-indigo-100 transition flex items-center gap-1">
-                                        <span>Shiko Detajet</span>
-                                        <span>↗</span>
-                                    </button>
+                                <button @click="showJson = true"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition text-xs font-bold font-mono">
+                                    <x-heroicon-o-code-bracket class="w-4 h-4 text-indigo-500" />
+                                    <span>JSON Diff</span>
+                                </button>
 
-                                    <x-modal>
-                                        <x-slot name="trigger"></x-slot>
-                                        <x-slot name="modalTitle">
-                                            <div class="dark:text-white font-black text-left flex items-center gap-2">
-                                                <span>📋 {{ $log->title }}</span>
-                                                @if($log->reference_id)
-                                                    <span class="text-xs px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold">#{{ $log->reference_id }}</span>
-                                                @endif
-                                            </div>
-                                        </x-slot>
-                                        <x-slot name="content">
-                                            <div class="text-left space-y-4 max-h-[60vh] overflow-y-auto">
-                                                <div class="p-4 bg-gray-50 dark:bg-gray-800/80 rounded-2xl text-xs space-y-2 border border-gray-100 dark:border-gray-700">
-                                                    <div class="flex justify-between">
-                                                        <span class="text-gray-400 font-bold">Kryer nga:</span>
-                                                        <span class="font-bold text-gray-900 dark:text-white">{{ $log->user->name ?? 'Sistemi / Publik' }}</span>
-                                                    </div>
-                                                    <div class="flex justify-between">
-                                                        <span class="text-gray-400 font-bold">Seksioni / Lloji:</span>
-                                                        <span class="font-bold text-gray-900 dark:text-white">{{ $log->section }} ({{ $log->type }})</span>
-                                                    </div>
-                                                    <div class="flex justify-between">
-                                                        <span class="text-gray-400 font-bold">Koha:</span>
-                                                        <span class="font-bold text-gray-900 dark:text-white">{{ date('d/m/Y H:i:s', strtotime($log->created_at)) }}</span>
-                                                    </div>
+                                <!-- Fixed Centered Modal Overlay -->
+                                <template x-teleport="body">
+                                    <div x-show="showJson" x-cloak
+                                         @keydown.escape.window="showJson = false"
+                                         x-transition:enter="transition ease-out duration-200"
+                                         x-transition:enter-start="opacity-0 scale-95"
+                                         x-transition:enter-end="opacity-100 scale-100"
+                                         x-transition:leave="transition ease-in duration-150"
+                                         x-transition:leave-start="opacity-100 scale-100"
+                                         x-transition:leave-end="opacity-0 scale-95"
+                                         class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+
+                                        <div @click.away="showJson = false"
+                                             class="w-full max-w-2xl bg-gray-900 text-emerald-400 border border-gray-700 rounded-3xl shadow-2xl overflow-hidden font-mono text-xs text-left">
+
+                                            <div class="flex items-center justify-between px-6 py-4 bg-gray-800/80 border-b border-gray-700">
+                                                <div class="flex items-center gap-3">
+                                                    <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
+                                                    <span class="text-white font-extrabold text-sm">JSON Payload (#{{ $log->reference_id ?? 'N/A' }})</span>
+                                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-amber-300 bg-amber-500/20">
+                                                        {{ $log->type }}
+                                                    </span>
                                                 </div>
-
-                                                @php
-                                                    $displayNewValues = $log->new_values;
-                                                    if (empty($displayNewValues) && $log->reference_id && $log->section) {
-                                                        $modelClass = match($log->section) {
-                                                            'Bookings' => \App\Models\Booking::class,
-                                                            'Payments' => \App\Models\Payment::class,
-                                                            'BarberShops' => \App\Models\BarberShop::class,
-                                                            'Barbers' => \App\Models\Barber::class,
-                                                            'Services' => \App\Models\Service::class,
-                                                            'Customers' => \App\Models\Customer::class,
-                                                            'MessageQueues' => \App\Models\MessageQueue::class,
-                                                            'MessageLogs' => \App\Models\MessageLog::class,
-                                                            'Users' => \App\Models\User::class,
-                                                            default => null,
-                                                        };
-
-                                                        if ($modelClass && class_exists($modelClass)) {
-                                                            try {
-                                                                $record = $modelClass::find($log->reference_id);
-                                                                if ($record) {
-                                                                    $displayNewValues = $record->toArray();
-                                                                }
-                                                            } catch (\Throwable $e) {}
-                                                        }
-                                                    }
-                                                @endphp
-
-                                                @if($log->type === 'update' && !empty($log->old_values))
-                                                    <div class="space-y-2">
-                                                        <h4 class="text-xs font-black uppercase text-gray-400 tracking-wider">Ndryshimet te Fushat (Si Ishte ➔ Si U Bë)</h4>
-                                                        <div class="border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-gray-700 text-xs">
-                                                            @foreach($displayNewValues ?? [] as $field => $newVal)
-                                                                @php $oldVal = $log->old_values[$field] ?? '-'; @endphp
-                                                                <div class="p-3 bg-white dark:bg-gray-900 grid grid-cols-3 gap-2 items-center">
-                                                                    <span class="font-bold text-gray-700 dark:text-gray-300 capitalize">{{ str_replace('_', ' ', $field) }}</span>
-                                                                    <span class="px-2.5 py-1 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300 rounded-lg text-[11px] font-mono truncate" title="{{ is_array($oldVal) ? json_encode($oldVal) : $oldVal }}">
-                                                                        {{ is_array($oldVal) ? json_encode($oldVal) : ($oldVal ?: '-') }}
-                                                                    </span>
-                                                                    <span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 rounded-lg text-[11px] font-mono truncate" title="{{ is_array($newVal) ? json_encode($newVal) : $newVal }}">
-                                                                        {{ is_array($newVal) ? json_encode($newVal) : ($newVal ?: '-') }}
-                                                                    </span>
-                                                                </div>
-                                                            @endforeach
-                                                        </div>
-                                                    </div>
-                                                @elseif(!empty($displayNewValues))
-                                                    <div class="space-y-2">
-                                                        <h4 class="text-xs font-black uppercase text-gray-400 tracking-wider">Detajet e Të Dhënave (New Values)</h4>
-                                                        <div class="border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-gray-700 text-xs max-h-60 overflow-y-auto">
-                                                            @foreach($displayNewValues as $fKey => $fVal)
-                                                                <div class="p-3 bg-white dark:bg-gray-900 flex justify-between items-center gap-4">
-                                                                    <span class="font-bold text-gray-500 capitalize">{{ str_replace('_', ' ', $fKey) }}</span>
-                                                                    <span class="font-mono text-gray-900 dark:text-white truncate max-w-[200px]" title="{{ is_array($fVal) ? json_encode($fVal) : $fVal }}">
-                                                                        {{ is_array($fVal) ? json_encode($fVal) : ($fVal ?? '-') }}
-                                                                    </span>
-                                                                </div>
-                                                            @endforeach
-                                                        </div>
-                                                    </div>
-                                                @else
-                                                    <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl text-xs text-gray-400 font-medium">
-                                                        Nuk ka detaje shtesë për këtë veprim. ID e referencës: #{{ $log->reference_id ?? 'N/A' }}
-                                                    </div>
-                                                @endif
+                                                <button @click="showJson = false" class="text-gray-400 hover:text-white font-bold text-lg px-2 py-1 rounded-lg transition">
+                                                    ✕
+                                                </button>
                                             </div>
-                                        </x-slot>
-                                        <x-slot name="footer">
-                                            <x-button variant="gray" @click="on = false">Mbyll</x-button>
-                                        </x-slot>
-                                    </x-modal>
-                                </div>
+
+                                            <div class="p-6 max-h-[65vh] overflow-y-auto leading-relaxed">
+                                                <pre class="whitespace-pre-wrap break-all">{{ $jsonFormatted }}</pre>
+                                            </div>
+
+                                            <div class="flex items-center justify-between px-6 py-3 bg-gray-800/50 border-t border-gray-800">
+                                                <span class="text-[11px] text-gray-400 font-sans">Aksioni: <strong>{{ $log->title }}</strong></span>
+                                                <button @click="showJson = false" class="px-5 py-2 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold text-xs transition">
+                                                    Mbyll (ESC)
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-xs font-mono">
                                 {{ date('d/m/Y H:i:s', strtotime($log->created_at)) }}

@@ -23,6 +23,7 @@ class CreateSalonWizard extends Component
     public $salonName = '';
     public $salonSlug = '';
     public $businessType = 'barber';
+    public $currency = 'Lekë';
 
     // Step 2: Owner Info
     public $ownerName = '';
@@ -55,6 +56,7 @@ class CreateSalonWizard extends Component
                 'wizard_salon_name' => trim($this->salonName),
                 'wizard_salon_slug' => Str::slug($this->salonSlug),
                 'wizard_business_type' => $this->businessType,
+                'wizard_currency' => $this->currency,
             ]);
 
             $this->step = 2;
@@ -91,10 +93,12 @@ class CreateSalonWizard extends Component
         $sessName = session('wizard_salon_name');
         $sessSlug = session('wizard_salon_slug');
         $sessType = session('wizard_business_type');
+        $sessCurrency = session('wizard_currency');
 
         $finalShopName = !empty($sessName) ? $sessName : (!empty(trim($this->salonName)) ? trim($this->salonName) : 'Sallon ' . trim($this->ownerName));
         $finalShopSlug = !empty($sessSlug) ? $sessSlug : (!empty(trim($this->salonSlug)) ? Str::slug($this->salonSlug) : Str::slug($finalShopName));
         $finalType = !empty($sessType) ? $sessType : $this->businessType;
+        $finalCurrency = !empty($sessCurrency) ? $sessCurrency : (!empty(trim($this->currency)) ? trim($this->currency) : 'Lekë');
 
         // 1. Create Admin/Owner User (Inactive until email verification)
         $userData = [
@@ -118,6 +122,7 @@ class CreateSalonWizard extends Component
             'app_name' => $finalShopName,
             'slug' => $finalShopSlug,
             'business_type' => $finalType,
+            'currency' => $finalCurrency,
             'primary_color' => '#7C5CFC',
             'secondary_color' => '#0A4D44',
             'active' => true, // Shop is active for 30-day trial

@@ -4,12 +4,12 @@
 @endcan
 
 @can('view_shop_front_page_settings')
-    <x-nav.link route="admin.shop-front-page-settings.index" icon="computer-desktop">{{ __('Faqja Ime (Front Page)') }}</x-nav.link>
+    <x-nav.link route="admin.shop-front-page-settings.index" icon="computer-desktop">{{ __('admin.Front Page Settings') }}</x-nav.link>
 @endcan
 
 <!-- 2. SALON MANAGEMENT -->
 @if(can('view_bookings') || can('view_barbers') || can('view_services') || can('view_customers') || can('view_working_hours') || can('view_payments') || can('view_reviews'))
-    <x-nav.divider>{{ __('Menaxhimi i Sallonit') }}</x-nav.divider>
+    <x-nav.divider>{{ __('admin.Salon Management') }}</x-nav.divider>
 @endif
 
 @can('view_bookings')
@@ -37,7 +37,7 @@
 @endcan
 
 @can('view_reports')
-    <x-nav.link route="admin.reports.index" icon="chart-bar">Raportet &amp; Statistikat</x-nav.link>
+    <x-nav.link route="admin.reports.index" icon="chart-bar">{{ __('admin.Reports & Analytics') }}</x-nav.link>
 @endcan
 
 @can('view_reviews')
@@ -46,7 +46,7 @@
 
 <!-- 3. SMS GATEWAY & NOTIFICATIONS -->
 @if(can('view_message_queues') || can('view_message_logs') || can('view_message_templates') || can('view_event_settings') || can('view_device_tokens'))
-    <x-nav.divider>{{ __('SMS & Njoftimet') }}</x-nav.divider>
+    <x-nav.divider>{{ __('admin.SMS & Notifications') }}</x-nav.divider>
 @endif
 
 @can('view_message_queues')
@@ -75,7 +75,7 @@
 
 <!-- 4. SAAS ADMINISTRATION -->
 @if(can('view_barber_shops') || can('view_subscriptions') || can('view_plans') || can('view_users'))
-    <x-nav.divider>{{ __('Administrimi SaaS') }}</x-nav.divider>
+    <x-nav.divider>{{ __('admin.SaaS Administration') }}</x-nav.divider>
 @endif
 
 @can('view_barber_shops')
@@ -84,7 +84,7 @@
 
 @can('view_subscriptions')
     <x-nav.link route="admin.subscriptions.index" icon="clipboard-document">{{ __('subscriptions.Subscriptions') }}</x-nav.link>
-    <x-nav.link route="admin.subscription-renewals.index" icon="arrow-path">Renovimi i Abonimit</x-nav.link>
+    <x-nav.link route="admin.subscription-renewals.index" icon="arrow-path">{{ __('admin.Subscription Renewals') }}</x-nav.link>
 @endcan
 
 @can('view_plans')

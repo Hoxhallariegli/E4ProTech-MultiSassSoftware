@@ -13,8 +13,22 @@ class UpdateCustomerAction
         $data = $dto->toArray();
         if ($model->photo && isset($data['photo']) && $data['photo'] !== $model->photo) { app(\App\Services\ImageUploadService::class)->delete($model->photo); }
         $model->fill($data);
-        AuditTrail::log($model, 'update', 'Customers');
+        $dirty = $model->getDirty();
+        $original = $model->getOriginal();
         $model->save();
+
+        if (!empty($dirty)) {
+            AuditTrail::create([
+                'user_id' => auth()->id(),
+                'title' => "Update Customer",
+                'reference_id' => (string)$model->id,
+                'section' => 'Customers',
+                'type' => 'update',
+                'old_values' => array_intersect_key($original, $dirty),
+                'new_values' => $dirty,
+            ]);
+        }
+
         return $model->fresh();
     }
 }

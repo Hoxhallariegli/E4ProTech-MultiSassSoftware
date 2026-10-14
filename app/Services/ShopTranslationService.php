@@ -59,16 +59,20 @@ class ShopTranslationService
 
     public static function getShopText(BarberShop $shop, string $key, string $default = ''): string
     {
-        $fileKey = "shop-{$shop->slug}.{$key}";
-        if (\Illuminate\Support\Facades\Lang::has($fileKey)) {
-            return __($fileKey);
-        }
+        $locale = app()->getLocale();
 
+        // 1. Check if frontPageSetting has a custom translation for the active locale
         if ($shop->frontPageSetting) {
-            $settingVal = $shop->frontPageSetting->getTranslated($key);
+            $settingVal = $shop->frontPageSetting->getTranslated($key, $locale);
             if (!empty($settingVal)) {
                 return $settingVal;
             }
+        }
+
+        // 2. Check translation file for current locale
+        $fileKey = "shop-{$shop->slug}.{$key}";
+        if (\Illuminate\Support\Facades\Lang::has($fileKey)) {
+            return __($fileKey);
         }
 
         return $default;

@@ -25,6 +25,7 @@ class BarberShopDTO
         public readonly ?string $staff_label_plural,
         public readonly ?string $shop_label,
         public readonly ?string $service_label,
+        public readonly ?string $currency,
     ) {}
 
     public static function fromArray(array $data): self {
@@ -49,6 +50,7 @@ class BarberShopDTO
             staff_label_plural: isset($data['staff_label_plural']) ? (string) $data['staff_label_plural'] : null,
             shop_label: isset($data['shop_label']) ? (string) $data['shop_label'] : null,
             service_label: isset($data['service_label']) ? (string) $data['service_label'] : null,
+            currency: isset($data['currency']) && $data['currency'] !== '' ? (string) $data['currency'] : 'Lekë',
         );
     }
 
@@ -74,6 +76,7 @@ class BarberShopDTO
             'staff_label_plural' => $this->staff_label_plural,
             'shop_label' => $this->shop_label,
             'service_label' => $this->service_label,
+            'currency' => $this->currency,
         ];
     }
 }

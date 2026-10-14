@@ -14,6 +14,18 @@ class ApiService {
   static final ValueNotifier<bool> isOnlineRestored = ValueNotifier<bool>(false);
   static Timer? _recoveryTimer;
 
+  static final List<void Function()> _cacheClearCallbacks = [];
+
+  static void registerCacheClearCallback(void Function() cb) {
+    _cacheClearCallbacks.add(cb);
+  }
+
+  static void clearAllCaches() {
+    for (final cb in _cacheClearCallbacks) {
+      try { cb(); } catch (_) {}
+    }
+  }
+
   static void initAutoHealthCheck() {
     isOffline.addListener(() {
       if (isOffline.value) {
@@ -67,7 +79,8 @@ class ApiService {
       _customUrl = savedUrl;
       return savedUrl;
     }
-    return const String.fromEnvironment('API_BASE_URL', defaultValue: 'https://app.e4protech.com');
+    // return const String.fromEnvironment('API_BASE_URL', defaultValue: 'https://app.e4protech.com');
+    return const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.10.12.14:5000');
   }
 
   static Future<void> setCustomBaseUrl(String url) async {

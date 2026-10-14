@@ -12,8 +12,22 @@ class UpdatePaymentAction
     {
         $data = $dto->toArray();
         $model->fill($data);
-        AuditTrail::log($model, 'update', 'Payments');
+        $dirty = $model->getDirty();
+        $original = $model->getOriginal();
         $model->save();
+
+        if (!empty($dirty)) {
+            AuditTrail::create([
+                'user_id' => auth()->id(),
+                'title' => "Update Payment",
+                'reference_id' => (string)$model->id,
+                'section' => 'Payments',
+                'type' => 'update',
+                'old_values' => array_intersect_key($original, $dirty),
+                'new_values' => $dirty,
+            ]);
+        }
+
         if ($model->booking_id) {
             $booking = \App\Models\Booking::find($model->booking_id);
             if ($booking) {
