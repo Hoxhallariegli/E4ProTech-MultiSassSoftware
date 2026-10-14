@@ -27,6 +27,9 @@ class ModulePermissionsSeeder extends Seeder
             'MessageLog' => 'message_logs',
             'DeviceToken' => 'device_tokens',
             'Review' => 'reviews',
+            'AiAssistant' => 'ai_assistant',
+            'SystemSettings' => 'system_settings',
+            'AuditTrail' => 'audit_trails',
         ];
 
         foreach ($modules as $name => $pluralSnake) {

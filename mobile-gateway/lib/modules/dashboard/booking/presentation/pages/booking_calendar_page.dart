@@ -12,6 +12,7 @@ import '../cubit/booking_cubit.dart';
 import '../cubit/booking_state.dart';
 import '../../data/booking_repository.dart';
 import 'booking_form_page.dart';
+import 'package:mobile_gateway/modules/dashboard/ai_assistant/presentation/pages/ai_assistant_page.dart';
 
 class BookingCalendarPage extends StatefulWidget {
   const BookingCalendarPage({super.key});
@@ -242,7 +243,38 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
 
                   return Column(
                     children: [
-                      _buildBarberFilter(barbers),
+                      Row(
+                        children: [
+                          Expanded(child: _buildBarberFilter(barbers)),
+                          Padding(
+                            padding: const EdgeInsets.only(right: 16),
+                            child: InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (c) => const AiAssistantPage()),
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF7C5CFC).withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: const Color(0xFF7C5CFC).withOpacity(0.4)),
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Icon(Icons.psychology_rounded, color: Color(0xFF7C5CFC), size: 18),
+                                    SizedBox(width: 4),
+                                    Text('AI 🚀', style: TextStyle(color: Color(0xFF7C5CFC), fontWeight: FontWeight.w900, fontSize: 11)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 8),
                       _buildCustomWeekCalendar(calendarStats),
                       const SizedBox(height: 4),

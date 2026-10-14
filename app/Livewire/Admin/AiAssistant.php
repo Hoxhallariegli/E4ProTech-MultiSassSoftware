@@ -102,10 +102,11 @@ class AiAssistant extends Component
     {
         $servicesList = $details['services'] ?? [];
         $created = [];
+        $defaultPrice = in_array(strtoupper($shop->resolved_currency), ['€', '$', 'CHF', 'GBP', 'EUR', 'USD']) ? 15 : 1000;
 
         foreach ($servicesList as $item) {
             $name = trim($item['name'] ?? 'Shërbim AI');
-            $price = (float) ($item['price'] ?? 1000);
+            $price = (float) ($item['price'] ?? $defaultPrice);
             $duration = (int) ($item['duration_minutes'] ?? 30);
 
             $service = Service::create([
@@ -152,10 +153,11 @@ class AiAssistant extends Component
 
         $service = Service::where('barber_shop_id', $shop->id)->where('active', true)->first();
         if (!$service) {
+            $defaultPrice = in_array(strtoupper($shop->resolved_currency), ['€', '$', 'CHF', 'GBP', 'EUR', 'USD']) ? 15 : 1000;
             $service = Service::create([
                 'barber_shop_id' => $shop->id,
                 'name' => 'Prerje & Stilim',
-                'price' => 1000,
+                'price' => $defaultPrice,
                 'duration_minutes' => 30,
                 'active' => true,
             ]);

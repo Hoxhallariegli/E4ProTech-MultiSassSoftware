@@ -96,7 +96,7 @@
 @endcan
 
 <!-- 5. SYSTEM SETTINGS -->
-@if(can('view_system_settings') || can('view_roles') || can('view_audit_trails'))
+@if(can('view_system_settings') || can('view_ai_assistant') || can('view_roles') || can('view_audit_trails') || auth()->user()->hasRole('pronar_i_biznesit_/_sallonit') || auth()->user()->is_global_admin)
     <x-nav.divider>{{ __('admin.Settings') }}</x-nav.divider>
 @endif
 
@@ -104,9 +104,9 @@
     <x-nav.link route="admin.settings.roles.index" icon="archive-box">{{ __('admin.Roles') }}</x-nav.link>
 @endcan
 
-@can('view_system_settings')
+@if(can('view_system_settings') || can('view_ai_assistant') || auth()->user()->hasRole('pronar_i_biznesit_/_sallonit') || auth()->user()->is_global_admin)
     <x-nav.link route="admin.settings.ai-assistant" icon="cpu-chip">{{ __('AI Assistant') }}</x-nav.link>
-@endcan
+@endif
 
 @can('view_system_settings')
     <x-nav.link route="admin.settings.languages.index" icon="language">{{ __('admin.Languages') }}</x-nav.link>

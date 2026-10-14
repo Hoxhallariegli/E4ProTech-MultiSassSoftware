@@ -161,8 +161,18 @@ if (! function_exists('shop_currency')) {
             return $shop->currency;
         }
 
-        if (auth()->check() && auth()->user()?->barberShop && !empty(auth()->user()?->barberShop?->currency)) {
-            return auth()->user()->barberShop->currency;
+        if (auth()->check()) {
+            $activeShopId = auth()->user()->barber_shop_id;
+            if ($activeShopId > 0) {
+                $activeShop = \App\Models\BarberShop::find($activeShopId);
+                if ($activeShop && !empty($activeShop->currency)) {
+                    return $activeShop->currency;
+                }
+            }
+
+            if (auth()->user()?->barberShop && !empty(auth()->user()->barberShop->currency)) {
+                return auth()->user()->barberShop->currency;
+            }
         }
 
         return 'Lekë';

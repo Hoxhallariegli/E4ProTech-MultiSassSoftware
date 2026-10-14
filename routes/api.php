@@ -118,6 +118,7 @@ Route::prefix('mobile')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
         Route::get('me', [AuthController::class, 'me']);
         Route::post('switch-shop', [AuthController::class, 'switchShop']);
+        Route::post('ai-assistant', [\App\Http\Controllers\Api\Mobile\AiAssistantController::class, 'process']);
 
         // Business SaaS Settings
         Route::prefix('business')->group(function () {
