@@ -118,8 +118,8 @@ class CreateSalonWizard extends Component
             'app_name' => $finalShopName,
             'slug' => $finalShopSlug,
             'business_type' => $finalType,
-            'primary_color' => '#FF9F0A',
-            'secondary_color' => '#1C1C1E',
+            'primary_color' => '#7C5CFC',
+            'secondary_color' => '#0A4D44',
             'active' => true, // Shop is active for 30-day trial
             'sms_enabled' => true,
             'timezone' => 'Europe/Tirane',
