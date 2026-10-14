@@ -8,11 +8,13 @@ abstract final class AppTheme {
     final scheme = ColorScheme.fromSeed(
       seedColor: seed,
       brightness: Brightness.light,
-      surface: const Color(0xFFF8FAFC),
-      onSurface: const Color(0xFF0F172A),
-      surfaceContainerHighest: const Color(0xFFF1F5F9),
+      primary: seed,
+      secondary: AppColors.secondary,
+      surface: AppColors.backgroundLight,
+      onSurface: const Color(0xFF1A1D20),
+      surfaceContainerHighest: const Color(0xFFF1EEE4),
       onSurfaceVariant: const Color(0xFF475569),
-      outlineVariant: const Color(0xFFE2E8F0),
+      outlineVariant: const Color(0xFFE5E2D8),
     );
     return _build(scheme);
   }
@@ -21,11 +23,13 @@ abstract final class AppTheme {
     final scheme = ColorScheme.fromSeed(
       seedColor: seed,
       brightness: Brightness.dark,
-      surface: const Color(0xFF111318),
+      primary: seed,
+      secondary: AppColors.secondary,
+      surface: AppColors.backgroundDark,
       onSurface: const Color(0xFFF3F4F6),
-      surfaceContainerHighest: const Color(0xFF1E212B),
+      surfaceContainerHighest: const Color(0xFF1B1E29),
       onSurfaceVariant: const Color(0xFF9CA3AF),
-      outlineVariant: const Color(0xFF3B4052),
+      outlineVariant: const Color(0xFF2A2E3D),
     );
     return _build(scheme);
   }
@@ -48,25 +52,25 @@ abstract final class AppTheme {
       cardTheme: CardThemeData(
         elevation: 0,
         margin: EdgeInsets.zero,
-        color: isDark ? const Color(0xFF1C1F2B) : scheme.surface,
+        color: isDark ? const Color(0xFF1B1E29) : Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
           side: BorderSide(
-            color: isDark ? const Color(0xFF3B4052) : scheme.outlineVariant,
+            color: isDark ? const Color(0xFF2A2E3D) : scheme.outlineVariant,
             width: 1,
           ),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark ? const Color(0xFF1E212B) : scheme.surfaceContainerHighest,
+        fillColor: isDark ? const Color(0xFF1B1E29) : scheme.surfaceContainerHighest,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide(color: isDark ? const Color(0xFF3B4052) : scheme.outlineVariant),
+          borderSide: BorderSide(color: isDark ? const Color(0xFF2A2E3D) : scheme.outlineVariant),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide(color: isDark ? const Color(0xFF3B4052) : scheme.outlineVariant),
+          borderSide: BorderSide(color: isDark ? const Color(0xFF2A2E3D) : scheme.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
@@ -86,14 +90,14 @@ abstract final class AppTheme {
         style: ElevatedButton.styleFrom(
           minimumSize: const Size(0, 50),
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.pill)),
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size(0, 50),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.pill)),
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
