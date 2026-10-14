@@ -5,6 +5,14 @@ namespace App\Livewire\Admin;
 use App\Services\GroqService;
 use Livewire\Component;
 use Livewire\Attributes\Title;
+use App\Models\BarberShop;
+use App\Models\Barber;
+use App\Models\Service;
+use App\Models\Booking;
+use App\Models\Customer;
+use App\Models\AuditTrail;
+use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 #[Title('AI Assistant')]
 class AiAssistant extends Component
@@ -15,89 +23,262 @@ class AiAssistant extends Component
 
     public function process()
     {
-        $this->validate(['prompt' => 'required|min:3']);
+        $this->validate(['prompt' => 'required|min:2']);
         $this->isProcessing = true;
 
         try {
+            $user = auth()->user();
+            $shop = $user?->barberShop;
+
+            if (!$shop && $user?->is_global_admin) {
+                $shop = BarberShop::first();
+            }
+
+            if (!$shop) {
+                throw new \Exception('Nuk u gjet asnjë sallon aktiv për të kryer këtë veprim.');
+            }
+
             $ai = new GroqService();
-            $actions = $ai->interpretPrompt($this->prompt);
+            $actions = $ai->interpretOperationalPrompt($this->prompt);
 
-            $results = [];
+            $executedResults = [];
+
             foreach ($actions as $action) {
-                if (!isset($action['model'])) continue;
+                $type = $action['action'] ?? '';
+                $details = $action['details'] ?? [];
 
-                $results[] = [
-                    'model' => $action['model'],
-                    'intent' => $action['intent'] ?? 'create',
-                    'command' => $this->generateCommand($action)
-                ];
+                switch ($type) {
+                    case 'create_services':
+                        $res = $this->executeCreateServices($shop, $details);
+                        $executedResults[] = $res;
+                        break;
+
+                    case 'create_bookings':
+                        $res = $this->executeCreateBookings($shop, $user, $details);
+                        $executedResults[] = $res;
+                        break;
+
+                    case 'create_staff':
+                        $res = $this->executeCreateStaff($shop, $user, $details);
+                        $executedResults[] = $res;
+                        break;
+
+                    case 'create_customers':
+                        $res = $this->executeCreateCustomers($shop, $details);
+                        $executedResults[] = $res;
+                        break;
+
+                    case 'query_stats':
+                    default:
+                        $res = $this->executeQueryStats($shop);
+                        $executedResults[] = $res;
+                        break;
+                }
             }
 
             $this->history[] = [
                 'type' => 'success',
-                'message' => "I have processed your request.",
-                'results' => $results
+                'user_prompt' => $this->prompt,
+                'time' => now()->format('H:i:s'),
+                'results' => $executedResults,
             ];
 
             $this->prompt = '';
+            $this->dispatch('toast', message: 'Kërkesa u ekzekutua me sukses! Të dhënat u regjistruan te Audit Trails. 🚀', type: 'success');
+
         } catch (\Exception $e) {
-            $this->history[] = ['type' => 'error', 'message' => $e->getMessage()];
+            $this->history[] = [
+                'type' => 'error',
+                'user_prompt' => $this->prompt,
+                'time' => now()->format('H:i:s'),
+                'message' => $e->getMessage()
+            ];
         }
 
         $this->isProcessing = false;
     }
 
-    protected function generateCommand(array $data): string
+    protected function executeCreateServices(BarberShop $shop, array $details): array
     {
-        $intent = $data['intent'] ?? 'create';
-        $model = $data['model'];
+        $servicesList = $details['services'] ?? [];
+        $created = [];
 
-        if ($intent === 'delete') {
-            return "php artisan remove:view $model";
+        foreach ($servicesList as $item) {
+            $name = trim($item['name'] ?? 'Shërbim AI');
+            $price = (float) ($item['price'] ?? 1000);
+            $duration = (int) ($item['duration_minutes'] ?? 30);
+
+            $service = Service::create([
+                'barber_shop_id' => $shop->id,
+                'name' => $name,
+                'description' => 'Shërbim i krijuar automatikisht nga AI Assistant',
+                'price' => $price,
+                'duration_minutes' => $duration,
+                'category' => $shop->resolved_service_label,
+                'active' => true,
+            ]);
+
+            AuditTrail::log($service, 'create', 'Services');
+            $created[] = "#{$service->id} - {$service->name} (" . format_currency($service->price, $shop) . ", {$service->duration_minutes}min)";
         }
 
-        // Create logic (piped)
-        $input = "";
-        $fields = $data['fields'] ?? [];
-        $allowedTypes = ['string', 'text', 'integer', 'bigInteger', 'boolean', 'decimal', 'date', 'datetime', 'foreignId', 'enum'];
-
-        foreach ($fields as $field) {
-            $type = strtolower($field['type'] ?? 'string');
-            $type = in_array($type, $allowedTypes) ? $type : 'string';
-
-            $input .= $field['name'] . "`n";
-            $input .= $type . "`n";
-            if ($field['type'] === 'foreignId') {
-                $input .= ($field['constrained'] ?? "users") . "`n";
-            }
-            if ($field['type'] === 'enum') {
-                $input .= implode(',', $field['options'] ?? ['default']) . "`n";
-            }
-            $input .= ($field['nullable'] ? "yes" : "no") . "`n";
-        }
-
-        $input .= "`n"; // Finish loop
-
-        $icon = str_replace(['heroicon-o-', 'heroicon-'], '', $data['icon'] ?? 'chevron-right');
-
-        // Surgical mapping for common Heroicon v1 vs v2 errors
-        $iconMap = [
-            'file' => 'document',
-            'book' => 'book-open',
-            'office-building' => 'building-office',
-            'desktop' => 'computer-desktop',
-            'clipboard' => 'clipboard-document',
-            'mail' => 'envelope',
-            'box' => 'archive-box',
-            'pencil' => 'pencil-square',
+        return [
+            'title' => "Krijimi i " . count($created) . " Shërbimeve të Reja",
+            'badge' => 'Shërbime',
+            'icon' => '✂️',
+            'items' => $created,
+            'audit' => "Të gjitha shërbimet u regjistruan te Audit Trails (Section: Services)."
         ];
+    }
 
-        $icon = $iconMap[$icon] ?? $icon;
+    protected function executeCreateBookings(BarberShop $shop, $user, array $details): array
+    {
+        $count = max(1, (int) ($details['count'] ?? 5));
+        $startHour = (int) ($details['start_hour'] ?? 13);
+        $endHour = (int) ($details['end_hour'] ?? 17);
 
-        $input .= $icon;
+        if ($endHour <= $startHour) $endHour = $startHour + 4;
 
-        $flags = ($data['api'] ?? false) ? " --api" : "";
-        return "\"$input\" | php artisan new:view $model$flags";
+        $barber = Barber::where('barber_shop_id', $shop->id)->where('active', true)->first();
+        if (!$barber) {
+            $barber = Barber::create([
+                'barber_shop_id' => $shop->id,
+                'user_id' => $user->id,
+                'name' => 'Staf Kryesor',
+                'active' => true,
+            ]);
+            AuditTrail::log($barber, 'create', 'Barbers');
+        }
+
+        $service = Service::where('barber_shop_id', $shop->id)->where('active', true)->first();
+        if (!$service) {
+            $service = Service::create([
+                'barber_shop_id' => $shop->id,
+                'name' => 'Prerje & Stilim',
+                'price' => 1000,
+                'duration_minutes' => 30,
+                'active' => true,
+            ]);
+            AuditTrail::log($service, 'create', 'Services');
+        }
+
+        $today = now()->format('Y-m-d');
+        $hourStep = max(1, (int) ceil(($endHour - $startHour) / $count));
+
+        $createdBookings = [];
+        $sampleNames = ['Alban Hoxha', 'Erion Marku', 'Sokol Prifti', 'Gentian Krasniqi', 'Dritan Basha', 'Andi Topalli', 'Klodian Vaso'];
+
+        for ($i = 0; $i < $count; $i++) {
+            $custName = $sampleNames[$i % count($sampleNames)] . " (Walk-In)";
+            $customer = Customer::firstOrCreate(
+                ['barber_shop_id' => $shop->id, 'phone' => '+35569' . rand(1000000, 9999999)],
+                ['name' => $custName]
+            );
+            AuditTrail::log($customer, 'create', 'Customers');
+
+            $hour = min($endHour - 1, $startHour + ($i * $hourStep));
+            $min = [0, 15, 30, 45][rand(0, 3)];
+            $appointmentAt = Carbon::parse("{$today} {$hour}:{$min}:00");
+
+            $booking = Booking::create([
+                'barber_shop_id' => $shop->id,
+                'barber_id' => $barber->id,
+                'service_id' => $service->id,
+                'customer_id' => $customer->id,
+                'appointment_at' => $appointmentAt,
+                'status' => 'confirmed',
+                'payment_status' => 'unpaid',
+                'total_price' => $service->price,
+                'notes' => 'Walk-In • Krijuar automatikisht nga AI Assistant (Pa SMS)',
+                'source' => 'walk-in',
+            ]);
+
+            AuditTrail::log($booking, 'create', 'Bookings');
+            $createdBookings[] = "#{$booking->id} - {$customer->name} ({$barber->name}) në orën {$appointmentAt->format('H:i')} - " . format_currency($booking->total_price, $shop);
+        }
+
+        return [
+            'title' => "Krijimi i {$count} Rezervimeve Walk-In për Sot (Pa SMS)",
+            'badge' => 'Rezervime',
+            'icon' => '📅',
+            'items' => $createdBookings,
+            'audit' => "Krijuar pa dërgim mesazhesh SMS. U regjistruan te Audit Trails (Section: Bookings)."
+        ];
+    }
+
+    protected function executeCreateStaff(BarberShop $shop, $user, array $details): array
+    {
+        $staffList = $details['staff'] ?? [];
+        $created = [];
+
+        foreach ($staffList as $item) {
+            $name = trim($item['name'] ?? 'Staf i Ri');
+            $barber = Barber::create([
+                'barber_shop_id' => $shop->id,
+                'user_id' => $user->id,
+                'name' => $name,
+                'phone' => '+35569' . rand(1000000, 9999999),
+                'active' => true,
+            ]);
+
+            AuditTrail::log($barber, 'create', 'Barbers');
+            $created[] = "#{$barber->id} - {$barber->name}";
+        }
+
+        return [
+            'title' => "Shtimi i " . count($created) . " Pjesëtarëve të Stafit",
+            'badge' => 'Staf',
+            'icon' => '✂️',
+            'items' => $created,
+            'audit' => "Regjistruar te Audit Trails (Section: Barbers)."
+        ];
+    }
+
+    protected function executeCreateCustomers(BarberShop $shop, array $details): array
+    {
+        $customersList = $details['customers'] ?? [];
+        $created = [];
+
+        foreach ($customersList as $item) {
+            $name = trim($item['name'] ?? 'Klient i Ri');
+            $customer = Customer::create([
+                'barber_shop_id' => $shop->id,
+                'name' => $name,
+                'phone' => '+35569' . rand(1000000, 9999999),
+            ]);
+
+            AuditTrail::log($customer, 'create', 'Customers');
+            $created[] = "#{$customer->id} - {$customer->name}";
+        }
+
+        return [
+            'title' => "Shtimi i " . count($created) . " Klientëve të Rinj",
+            'badge' => 'Klientë',
+            'icon' => '👤',
+            'items' => $created,
+            'audit' => "Regjistruar te Audit Trails (Section: Customers)."
+        ];
+    }
+
+    protected function executeQueryStats(BarberShop $shop): array
+    {
+        $todayBookings = Booking::where('barber_shop_id', $shop->id)->whereDate('appointment_at', today())->count();
+        $totalServices = Service::where('barber_shop_id', $shop->id)->count();
+        $totalStaff = Barber::where('barber_shop_id', $shop->id)->count();
+        $totalRevenueToday = Booking::where('barber_shop_id', $shop->id)->whereDate('appointment_at', today())->sum('total_price');
+
+        return [
+            'title' => "Statistikat e Sotme për {$shop->name}",
+            'badge' => 'Analizë',
+            'icon' => '📊',
+            'items' => [
+                "Rezervime Sot: {$todayBookings} Takime",
+                "Xhiro e Parashikuar Sot: " . format_currency($totalRevenueToday, $shop),
+                "Stafi Aktiv: {$totalStaff} " . $shop->resolved_staff_label_plural,
+                "Shërbime të Aktivizuara: {$totalServices} Opsione",
+            ],
+            'audit' => "Query e kryer në kohë reale nga AI Assistant."
+        ];
     }
 
     public function render()

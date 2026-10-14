@@ -92,28 +92,33 @@ class GroqService
             $count = isset($m[1]) ? (int) $m[1] : 3;
 
             $parsedServices = [];
-            // Check if specific names/prices are mentioned
-            if (str_contains($lower, ':')) {
+            // Check if specific names/prices are mentioned e.g. after ":"
+            if (str_contains($prompt, ':')) {
                 $parts = explode(':', $prompt, 2);
                 $listStr = $parts[1] ?? '';
                 $items = explode(',', $listStr);
+
                 foreach ($items as $item) {
                     $itemTrim = trim($item);
                     if (empty($itemTrim)) continue;
 
-                    preg_match('/(\d+)\s*(?:lek|eur|€|\$)?/ui', $itemTrim, $priceMatch);
-                    preg_match('/(\d+)\s*min/ui', $itemTrim, $durMatch);
+                    // Extract price
+                    preg_match('/(\d+)\s*(?:lekë|leke|lek|eur|euro|€|\$)?/ui', $itemTrim, $priceMatch);
+                    $price = isset($priceMatch[1]) ? (float) $priceMatch[1] : 1000;
 
-                    $price = isset($priceMatch[1]) ? (int) $priceMatch[1] : 1000;
+                    // Extract duration
+                    preg_match('/(\d+)\s*(?:min|minuta)/ui', $itemTrim, $durMatch);
                     $dur = isset($durMatch[1]) ? (int) $durMatch[1] : 30;
 
-                    // Clean name
-                    $cleanName = preg_replace('/\d+\s*(?:lek|eur|€|\$|min)?/ui', '', $itemTrim);
-                    $cleanName = trim(str_replace([',', ';', '-'], '', $cleanName));
+                    // Clean service name: remove digits, currencies, min, and extra symbols
+                    $cleanName = preg_replace('/\d+/u', '', $itemTrim);
+                    $cleanName = preg_replace('/(lekë|leke|lek|eur|euro|€|\$|minuta|min)/ui', '', $cleanName);
+                    $cleanName = trim(str_replace([',', ';', '-', ':', 'ë', 'e'], [' ', ' ', ' ', ' ', 'ë', 'e'], $cleanName));
+                    $cleanName = preg_replace('/\s+/', ' ', $cleanName);
 
                     if (!empty($cleanName)) {
                         $parsedServices[] = [
-                            'name' => ucfirst($cleanName),
+                            'name' => mb_convert_case(trim($cleanName), MB_CASE_TITLE, 'UTF-8'),
                             'price' => $price,
                             'duration_minutes' => $dur,
                         ];
@@ -139,17 +144,17 @@ class GroqService
         }
 
         // Check for Bookings creation
-        if (str_contains($lower, 'booking') || str_contains($lower, 'rezervim') || str_contains($lower, 'walkin') || str_contains($lower, 'takim')) {
-            preg_match('/(\d+)\s*(?:booking|rezervim|walkin|takim)/u', $lower, $m);
+        if (str_contains($lower, 'booking') || str_contains($lower, 'rezervim') || str_contains($lower, 'walkin') || str_contains($lower, 'walk-in') || str_contains($lower, 'takim')) {
+            preg_match('/(\d+)\s*(?:booking|rezervim|walkin|walk-in|takim)/u', $lower, $m);
             $count = isset($m[1]) ? (int) $m[1] : 5;
 
-            // Extract hours e.g. "ora 1 ne 5" or "13 deri 17"
-            preg_match('/(?:ora|deri|nga)?\s*(\d{1,2})\s*(?:ne|deri|-)\s*(\d{1,2})/u', $lower, $hMatch);
+            // Extract hours e.g. "ora 13 deri 17" or "nga 1 ne 5"
+            preg_match('/(?:ora|nga)?\s*(\d{1,2})\s*(?:ne|deri|-)\s*(\d{1,2})/u', $lower, $hMatch);
             $startHour = isset($hMatch[1]) ? (int) $hMatch[1] : 13;
             $endHour = isset($hMatch[2]) ? (int) $hMatch[2] : 17;
 
-            if ($startHour < 7 && $startHour > 0) $startHour += 12; // e.g. "ora 1" -> 13
-            if ($endHour < 7 && $endHour > 0) $endHour += 12;     // e.g. "ora 5" -> 17
+            if ($startHour < 7 && $startHour > 0) $startHour += 12; // e.g. "1" -> 13
+            if ($endHour < 7 && $endHour > 0) $endHour += 12;     // e.g. "5" -> 17
 
             $actions[] = [
                 'action' => 'create_bookings',
@@ -169,13 +174,13 @@ class GroqService
             $count = isset($m[1]) ? (int) $m[1] : 3;
 
             $parsedStaff = [];
-            if (str_contains($lower, ':')) {
+            if (str_contains($prompt, ':')) {
                 $parts = explode(':', $prompt, 2);
                 $names = explode(',', $parts[1] ?? '');
                 foreach ($names as $n) {
                     $clean = trim($n);
                     if (!empty($clean)) {
-                        $parsedStaff[] = ['name' => ucfirst($clean)];
+                        $parsedStaff[] = ['name' => mb_convert_case($clean, MB_CASE_TITLE, 'UTF-8')];
                     }
                 }
             }
@@ -199,13 +204,13 @@ class GroqService
             $count = isset($m[1]) ? (int) $m[1] : 3;
 
             $parsedCustomers = [];
-            if (str_contains($lower, ':')) {
+            if (str_contains($prompt, ':')) {
                 $parts = explode(':', $prompt, 2);
                 $names = explode(',', $parts[1] ?? '');
                 foreach ($names as $n) {
                     $clean = trim($n);
                     if (!empty($clean)) {
-                        $parsedCustomers[] = ['name' => ucfirst($clean)];
+                        $parsedCustomers[] = ['name' => mb_convert_case($clean, MB_CASE_TITLE, 'UTF-8')];
                     }
                 }
             }
