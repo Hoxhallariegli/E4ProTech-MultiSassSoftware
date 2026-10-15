@@ -4,16 +4,16 @@
 
     <!-- Top Navigation Bar (E4ProTech Style & Clean Language Switcher) -->
     <header class="sticky top-0 z-50 backdrop-blur-md bg-[#FAF8F2]/90 border-b border-stone-200/60">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
-            <a href="/" class="flex items-center gap-3 group shrink-0">
-                <div class="w-10 h-10 rounded-2xl bg-[#0A4D44] flex items-center justify-center font-black text-lg text-white shadow-md transition transform group-hover:scale-105">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4">
+            <a href="/" class="flex items-center gap-2 sm:gap-3 group shrink">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-[#0A4D44] flex items-center justify-center font-black text-base sm:text-lg text-white shadow-md transition transform group-hover:scale-105 shrink-0">
                     E4
                 </div>
-                <div>
-                    <h1 class="text-xl font-black tracking-tight text-[#1A1D20] leading-none">
+                <div class="truncate">
+                    <h1 class="text-base sm:text-xl font-black tracking-tight text-[#1A1D20] leading-none truncate">
                         E4PROTECH
                     </h1>
-                    <p class="text-[10px] text-[#0A4D44] font-extrabold tracking-wider uppercase">Engine Multi-SaaS</p>
+                    <p class="hidden sm:block text-[10px] text-[#0A4D44] font-extrabold tracking-wider uppercase">Engine Multi-SaaS</p>
                 </div>
             </a>
 
@@ -25,24 +25,25 @@
                 <a href="/#sallonet" class="hover:text-[#7C5CFC] transition">{{ $isEn ? 'Salons' : 'Sallonet' }}</a>
             </nav>
 
-            <div class="flex items-center gap-3 shrink-0">
+            <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
                 <!-- Language Switcher Pill -->
-                <div class="flex items-center gap-1 p-1 rounded-full bg-white border border-slate-300 shadow-sm text-xs font-black">
+                <div class="flex items-center gap-0.5 p-0.5 sm:p-1 rounded-full bg-white border border-slate-300 shadow-sm text-[11px] sm:text-xs font-black">
                     <a href="{{ route('language.switch', 'sq') }}"
-                       class="px-3 py-1.5 rounded-full transition {{ !$isEn ? 'bg-[#7C5CFC] text-white shadow-sm' : 'text-slate-600 hover:text-black' }}">
-                        🇦🇱 SQ
+                       class="px-2 sm:px-3 py-1 sm:py-1.5 rounded-full transition {{ !$isEn ? 'bg-[#7C5CFC] text-white shadow-sm' : 'text-slate-600 hover:text-black' }}">
+                        <span class="hidden sm:inline">🇦🇱 </span>SQ
                     </a>
                     <a href="{{ route('language.switch', 'en') }}"
-                       class="px-3 py-1.5 rounded-full transition {{ $isEn ? 'bg-[#7C5CFC] text-white shadow-sm' : 'text-slate-600 hover:text-black' }}">
-                        🇬🇧 EN
+                       class="px-2 sm:px-3 py-1 sm:py-1.5 rounded-full transition {{ $isEn ? 'bg-[#7C5CFC] text-white shadow-sm' : 'text-slate-600 hover:text-black' }}">
+                        <span class="hidden sm:inline">🇬🇧 </span>EN
                     </a>
                 </div>
 
-                <a href="{{ route('dashboard') }}" class="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-extrabold bg-[#1A1D20] text-white hover:bg-black transition shadow-sm">
+                <a href="{{ route('dashboard') }}" class="hidden md:inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs font-extrabold bg-[#1A1D20] text-white hover:bg-black transition shadow-sm">
                     {{ $isEn ? 'Admin Panel ↗' : 'Paneli Admin ↗' }}
                 </a>
-                <a href="{{ route('login') }}" class="px-6 py-2.5 rounded-full text-xs font-black text-white bg-[#7C5CFC] hover:bg-[#6366F1] shadow-lg shadow-[#7C5CFC]/25 transition transform active:scale-95 flex items-center gap-2">
-                    {{ $isEn ? 'Login to Panel ↗' : 'Hyr te Paneli ↗' }}
+                <a href="{{ route('login') }}" class="px-3.5 sm:px-6 py-2 sm:py-2.5 rounded-full text-[11px] sm:text-xs font-black text-white bg-[#7C5CFC] hover:bg-[#6366F1] shadow-lg shadow-[#7C5CFC]/25 transition transform active:scale-95 flex items-center gap-1 whitespace-nowrap">
+                    <span>{{ $isEn ? 'Login' : 'Hyr' }}</span>
+                    <span>↗</span>
                 </a>
             </div>
         </div>

@@ -11,16 +11,16 @@
 
     <!-- Top Navigation Bar matching Welcome Page exactly -->
     <header class="sticky top-0 z-50 backdrop-blur-md bg-[#FAF8F2]/90 border-b border-stone-200/60">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-            <a href="/" class="flex items-center gap-3 group">
-                <div class="w-10 h-10 rounded-2xl bg-[#0A4D44] flex items-center justify-center font-black text-lg text-white shadow-md transition transform group-hover:scale-105">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4">
+            <a href="/" class="flex items-center gap-2 sm:gap-3 group shrink">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-[#0A4D44] flex items-center justify-center font-black text-base sm:text-lg text-white shadow-md transition transform group-hover:scale-105 shrink-0">
                     E4
                 </div>
-                <div>
-                    <h1 class="text-xl font-black tracking-tight text-[#1A1D20] leading-none">
+                <div class="truncate">
+                    <h1 class="text-base sm:text-xl font-black tracking-tight text-[#1A1D20] leading-none truncate">
                         E4PROTECH
                     </h1>
-                    <p class="text-[10px] text-[#0A4D44] font-extrabold tracking-wider uppercase">Engine Multi-SaaS</p>
+                    <p class="hidden sm:block text-[10px] text-[#0A4D44] font-extrabold tracking-wider uppercase">Engine Multi-SaaS</p>
                 </div>
             </a>
 
@@ -33,7 +33,7 @@
                 <a href="/#faq" class="hover:text-[#7C5CFC] transition">{{ __('Pyetjet') }}</a>
             </nav>
 
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
                 <div class="flex items-center gap-1 bg-stone-200/60 p-1 rounded-xl text-xs font-bold">
                     <a href="{{ route('language.switch', 'sq') }}" class="px-2.5 py-1 rounded-lg transition {{ app()->getLocale() == 'sq' ? 'bg-[#0A4D44] text-white' : 'text-slate-600 hover:text-black' }}">
                         SQ
@@ -42,7 +42,14 @@
                         EN
                     </a>
                 </div>
-                <a href="{{ route('krijo-sallonin') }}" class="px-6 py-2.5 rounded-full text-xs font-black text-white bg-[#7C5CFC] hover:bg-[#6366F1] shadow-lg shadow-[#7C5CFC]/25 transition transform active:scale-95 flex items-center gap-2">
+                <a href="{{ route('krijo-sallonin') }}" class="px-3.5 sm:px-6 py-2 sm:py-2.5 rounded-full text-[11px] sm:text-xs font-black text-white bg-[#7C5CFC] hover:bg-[#6366F1] shadow-lg shadow-[#7C5CFC]/25 transition transform active:scale-95 flex items-center gap-1 whitespace-nowrap">
+                    <span>{{ __('Krijo') }}</span>
+                    <span class="hidden sm:inline">{{ __('Salonin') }}</span>
+                    <span>↗</span>
+                </a>
+            </div>
+        </div>
+    </header>
                     {{ __('Krijo Salonin') }} ↗
                 </a>
             </div>
