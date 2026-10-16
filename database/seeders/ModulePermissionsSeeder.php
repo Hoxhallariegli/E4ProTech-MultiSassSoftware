@@ -32,6 +32,7 @@ class ModulePermissionsSeeder extends Seeder
             'AuditTrail' => 'audit_trails',
             'Report' => 'reports',
             'WebsiteOfferRequest' => 'website_offer_requests',
+            'ShopFrontPageSetting' => 'shop_front_page_settings',
         ];
 
         foreach ($modules as $name => $pluralSnake) {
@@ -45,6 +46,25 @@ class ModulePermissionsSeeder extends Seeder
                 );
             }
         }
+
+        // Also create standard app/dashboard/role permissions
+        Permission::firstOrCreate(['name' => 'view_dashboard', 'label' => 'View Dashboard', 'module' => 'App']);
+        Permission::firstOrCreate(['name' => 'view_notifications', 'label' => 'View Notifications', 'module' => 'App']);
+        Permission::firstOrCreate(['name' => 'view_roles', 'label' => 'View Roles', 'module' => 'Roles']);
+        Permission::firstOrCreate(['name' => 'add_roles', 'label' => 'Add Roles', 'module' => 'Roles']);
+        Permission::firstOrCreate(['name' => 'edit_roles', 'label' => 'Edit Roles', 'module' => 'Roles']);
+        Permission::firstOrCreate(['name' => 'delete_roles', 'label' => 'Delete Roles', 'module' => 'Roles']);
+
+        // Sync all permissions to roles
+        try {
+            $allPermissions = Permission::all();
+            $roles = \App\Models\Role::all();
+            foreach ($roles as $role) {
+                setPermissionsTeamId($role->barber_shop_id ?? 0);
+                $role->syncPermissions($allPermissions);
+            }
+            setPermissionsTeamId(0);
+        } catch (\Throwable $e) {}
 
         $this->command->info('✅ Permissions for all modules have been generated.');
     }

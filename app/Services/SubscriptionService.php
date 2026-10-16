@@ -6,18 +6,37 @@ use App\Models\BarberShop;
 use App\Models\Barber;
 use App\Models\Service;
 use App\Models\Subscription;
+use App\Models\Plan;
 
 class SubscriptionService
 {
+    /**
+     * Get the active plan for a shop.
+     * Checks active/trial subscription row first; if none exists, falls back to the Trial plan for active/trial shops.
+     */
+    public function getActivePlan(BarberShop $shop): ?Plan
+    {
+        $subscription = $this->getActiveSubscription($shop);
+        if ($subscription && $subscription->plan) {
+            return $subscription->plan;
+        }
+
+        // If no explicit subscription row exists, check if shop is active or on trial
+        if ($shop->days_left > 0 || ($shop->trial_ends_at && $shop->trial_ends_at->isFuture()) || ($shop->expires_at && $shop->expires_at->isFuture()) || $shop->active) {
+            return Plan::where('name', 'like', '%Trial%')->first()
+                ?? Plan::where('name', 'like', '%Starter%')->first()
+                ?? Plan::first();
+        }
+
+        return null;
+    }
+
     /**
      * Check if a shop can add more barbers based on its active plan.
      */
     public function canAddBarber(BarberShop $shop): bool
     {
-        $subscription = $this->getActiveSubscription($shop);
-        if (!$subscription) return false;
-
-        $plan = $subscription->plan;
+        $plan = $this->getActivePlan($shop);
         if (!$plan) return false;
 
         $currentCount = Barber::where('barber_shop_id', $shop->id)->count();
@@ -30,10 +49,7 @@ class SubscriptionService
      */
     public function canAddService(BarberShop $shop): bool
     {
-        $subscription = $this->getActiveSubscription($shop);
-        if (!$subscription) return false;
-
-        $plan = $subscription->plan;
+        $plan = $this->getActivePlan($shop);
         if (!$plan) return false;
 
         $currentCount = Service::where('barber_shop_id', $shop->id)->count();

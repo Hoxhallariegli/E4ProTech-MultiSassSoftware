@@ -54,7 +54,8 @@ class MessageTemplate extends Model
             } elseif (in_array($customerLang, ['sq', 'al', 'albanian', 'shqip'], true)) {
                 $locale = 'sq';
             } else {
-                $locale = strtolower((string) config('app.locale', env('DEFAULT_LANGUAGE', 'sq')));
+                // Default SMS language for Albania/Kosovo salons is Albanian ('sq')
+                $locale = 'sq';
             }
         }
         $locale = in_array(strtolower($locale), ['en', 'sq'], true) ? strtolower($locale) : 'sq';
@@ -65,11 +66,15 @@ class MessageTemplate extends Model
             ->where('type', $type)
             ->first();
 
-        // 2. Fallback to global template for this exact type if shop-specific template is missing
+        // 2. Fallback to global template (where barber_shop_id is NULL or 0) or any template for this type
         if (!$templateRecord) {
-            $templateRecord = static::where('channel', 'sms')
+            $templateRecord = static::where(function($q) {
+                    $q->whereNull('barber_shop_id')->orWhere('barber_shop_id', 0);
+                })
+                ->where('channel', 'sms')
                 ->where('type', $type)
-                ->first();
+                ->first()
+                ?? static::where('channel', 'sms')->where('type', $type)->first();
         }
 
         $contentRaw = $templateRecord?->content;

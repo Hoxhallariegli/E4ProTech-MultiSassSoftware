@@ -178,6 +178,7 @@ class CreateSalonWizard extends Component
                     'status' => 'active',
                     'starts_at' => now(),
                     'ends_at' => $trialEnd,
+                    'auto_renew' => false,
                 ]);
             } catch (\Throwable $e) {}
         }

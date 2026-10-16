@@ -109,6 +109,20 @@ class AiAssistant extends Component
                 if ($type === 'create_services') {
                     $requiresConfirmation = true;
                     $services = $details['services'] ?? [];
+
+                    if (!auth()->user()?->is_global_admin) {
+                        $subService = app(\App\Services\SubscriptionService::class);
+                        $sub = $subService->getActiveSubscription($shop);
+                        $plan = $sub?->plan;
+                        $maxServices = $plan?->max_services ?? 999;
+                        $currentCount = Service::where('barber_shop_id', $shop->id)->count();
+
+                        if (($currentCount + count($services)) > $maxServices) {
+                            $planName = $plan?->name ?? 'Aktiv';
+                            throw new \Exception("Nuk mund të shtohen shërbime të reja! Keni arritur limitin prej {$maxServices} shërbimesh për planin tuaj ('{$planName}'). Shërbime ekzistuese: {$currentCount}. Ju lutemi përmirësoni planin tuaj.");
+                        }
+                    }
+
                     $previews[] = [
                         'title' => 'Shtimi i ' . count($services) . ' Shërbimeve të Reja',
                         'icon' => '✂️',
@@ -132,6 +146,20 @@ class AiAssistant extends Component
                 } elseif ($type === 'create_staff') {
                     $requiresConfirmation = true;
                     $staff = $details['staff'] ?? [];
+
+                    if (!auth()->user()?->is_global_admin) {
+                        $subService = app(\App\Services\SubscriptionService::class);
+                        $sub = $subService->getActiveSubscription($shop);
+                        $plan = $sub?->plan;
+                        $maxBarbers = $plan?->max_barbers ?? 999;
+                        $currentCount = Barber::where('barber_shop_id', $shop->id)->count();
+
+                        if (($currentCount + count($staff)) > $maxBarbers) {
+                            $planName = $plan?->name ?? 'Aktiv';
+                            throw new \Exception("Nuk mund të shtohet staf i ri! Keni arritur limitin prej {$maxBarbers} berberësh për planin tuaj ('{$planName}'). Berberë ekzistues: {$currentCount}. Ju lutemi përmirësoni planin tuaj.");
+                        }
+                    }
+
                     $previews[] = [
                         'title' => 'Shtimi i ' . count($staff) . ' Pjesëtarëve të Stafit',
                         'icon' => '👥',
@@ -441,6 +469,20 @@ class AiAssistant extends Component
     protected function executeCreateServices(BarberShop $shop, array $details): array
     {
         $servicesList = $details['services'] ?? [];
+
+        if (!auth()->user()?->is_global_admin) {
+            $subService = app(\App\Services\SubscriptionService::class);
+            $sub = $subService->getActiveSubscription($shop);
+            $plan = $sub?->plan;
+            $maxServices = $plan?->max_services ?? 999;
+            $currentCount = Service::where('barber_shop_id', $shop->id)->count();
+
+            if (($currentCount + count($servicesList)) > $maxServices) {
+                $planName = $plan?->name ?? 'Aktiv';
+                throw new \Exception("Limit i planit të arritur! Keni arritur numrin maksimal prej {$maxServices} shërbimesh për planin '{$planName}'.");
+            }
+        }
+
         $created = [];
         $defaultPrice = in_array(strtoupper($shop->resolved_currency), ['€', '$', 'CHF', 'GBP', 'EUR', 'USD']) ? 15 : 1000;
 
@@ -564,6 +606,20 @@ class AiAssistant extends Component
     protected function executeCreateStaff(BarberShop $shop, $user, array $details): array
     {
         $staffList = $details['staff'] ?? [];
+
+        if (!auth()->user()?->is_global_admin) {
+            $subService = app(\App\Services\SubscriptionService::class);
+            $sub = $subService->getActiveSubscription($shop);
+            $plan = $sub?->plan;
+            $maxBarbers = $plan?->max_barbers ?? 999;
+            $currentCount = Barber::where('barber_shop_id', $shop->id)->count();
+
+            if (($currentCount + count($staffList)) > $maxBarbers) {
+                $planName = $plan?->name ?? 'Aktiv';
+                throw new \Exception("Limit i planit të arritur! Keni arritur numrin maksimal prej {$maxBarbers} berberësh për planin '{$planName}'.");
+            }
+        }
+
         $created = [];
 
         foreach ($staffList as $item) {

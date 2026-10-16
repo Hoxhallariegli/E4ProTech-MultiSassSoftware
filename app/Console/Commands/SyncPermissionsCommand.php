@@ -36,7 +36,9 @@ class SyncPermissionsCommand extends Command
             'AiAssistant' => 'ai_assistant',
             'SystemSettings' => 'system_settings',
             'AuditTrail' => 'audit_trails',
+            'Report' => 'reports',
             'WebsiteOfferRequest' => 'website_offer_requests',
+            'ShopFrontPageSetting' => 'shop_front_page_settings',
         ];
 
         $newCount = 0;
@@ -58,19 +60,40 @@ class SyncPermissionsCommand extends Command
             }
         }
 
+        // Additional permissions
+        $extraPerms = [
+            ['name' => 'view_dashboard', 'label' => 'View Dashboard', 'module' => 'App'],
+            ['name' => 'view_notifications', 'label' => 'View Notifications', 'module' => 'App'],
+            ['name' => 'view_roles', 'label' => 'View Roles', 'module' => 'Roles'],
+            ['name' => 'add_roles', 'label' => 'Add Roles', 'module' => 'Roles'],
+            ['name' => 'edit_roles', 'label' => 'Edit Roles', 'module' => 'Roles'],
+            ['name' => 'delete_roles', 'label' => 'Delete Roles', 'module' => 'Roles'],
+        ];
+
+        foreach ($extraPerms as $p) {
+            if (!Permission::where('name', $p['name'])->exists()) {
+                Permission::create($p);
+                $this->line("  ✓ Created permission: <info>{$p['name']}</info>");
+                $newCount++;
+            }
+        }
+
         if ($newCount === 0) {
             $this->info('✅ All permissions are already synchronized in the database.');
         } else {
             $this->info("✅ Successfully created {$newCount} new permission(s).");
         }
 
-        // Give all permissions to Admin role
+        // Give all permissions to all roles
         try {
-            setPermissionsTeamId(0);
-            $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web'], ['label' => 'Administrator']);
             $allPerms = Permission::all();
-            $adminRole->syncPermissions($allPerms);
-            $this->info("🛡️ Automatically granted all " . $allPerms->count() . " permissions to 'admin' role.");
+            $roles = Role::all();
+            foreach ($roles as $r) {
+                setPermissionsTeamId($r->barber_shop_id ?? 0);
+                $r->syncPermissions($allPerms);
+            }
+            setPermissionsTeamId(0);
+            $this->info("🛡️ Automatically granted all " . $allPerms->count() . " permissions to all roles.");
         } catch (\Throwable $e) {
             $this->warn("Role permission assignment warning: " . $e->getMessage());
         }

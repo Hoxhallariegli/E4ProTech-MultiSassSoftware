@@ -19,12 +19,17 @@ class GroqService
         if ($this->apiKey) {
             try {
                 $systemPrompt = "You are an AI Operational Assistant for a SaaS Salon Management System.
-                Parse the user's natural language command into a JSON array of operational actions.
+                Parse the user's natural language command (in Albanian or English) into a JSON array of operational actions.
+
+                ALBANIAN LANGUAGE RULES:
+                - 'nje berber' / '1 berber' / 'me shto nje berber' means create exactly 1 barber staff member.
+                - 'me emrin X' or 'me ermin X' or 'me emer X' means the staff member's name is X.
+                - Extract the exact name provided by the user. Do not insert extra default staff members unless asked for multiple.
 
                 ACTIONS:
                 1. 'create_services': details: { services: [ { name: 'Prerje', price: 1000, duration_minutes: 30 } ] }
                 2. 'create_bookings': details: { count: 1, start_hour: 13, start_minute: 0, customer_name: 'Ferid', is_walkin: true, send_sms: false }
-                3. 'create_staff': details: { staff: [ { name: 'Ardit' } ] }
+                3. 'create_staff': details: { staff: [ { name: 'Ermin Cimi' } ] }
                 4. 'create_customers': details: { customers: [ { name: 'Klient 1' } ] }
                 5. 'delete_bookings': details: { count: 5, ids: [] }
                 6. 'delete_services': details: { count: 5 }

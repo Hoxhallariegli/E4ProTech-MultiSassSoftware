@@ -27,6 +27,15 @@ return new class extends Migration {
                 $table->json('translations')->nullable();
                 $table->timestamps();
             });
+        } else {
+            Schema::table('shop_front_page_settings', function (Blueprint $table) {
+                if (!Schema::hasColumn('shop_front_page_settings', 'hero_badge_text')) {
+                    $table->string('hero_badge_text')->nullable()->after('barber_shop_id');
+                }
+                if (!Schema::hasColumn('shop_front_page_settings', 'translations')) {
+                    $table->json('translations')->nullable()->after('footer_text');
+                }
+            });
         }
     }
 

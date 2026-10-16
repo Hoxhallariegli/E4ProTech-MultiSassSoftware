@@ -1,4 +1,5 @@
 <?php
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -10,6 +11,8 @@ return new class extends Migration {
                 $table->charset = 'utf8mb4';
                 $table->collation = 'utf8mb4_unicode_ci';
                 $table->id();
+                $table->foreignId('barber_shop_id')->constrained('barber_shops')->cascadeOnDelete();
+                $table->string('hero_badge_text')->nullable();
                 $table->text('hero_title')->nullable();
                 $table->text('hero_subtitle')->nullable();
                 $table->string('hero_button_text')->nullable();
@@ -22,7 +25,7 @@ return new class extends Migration {
                 $table->string('contact_address')->nullable();
                 $table->text('google_maps_url')->nullable();
                 $table->string('footer_text')->nullable();
-                $table->foreignId('barber_shop_id')->constrained('barber_shops');
+                $table->json('translations')->nullable();
                 $table->timestamps();
             });
         }
