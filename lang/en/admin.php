@@ -36,6 +36,7 @@ return [
   'SMS & Notifications' => 'SMS & Notifications',
   'SaaS Administration' => 'SaaS Administration',
   'Subscription Renewals' => 'Subscription Renewals',
+  'Website Offer Requests' => 'Website Offer Requests',
   'Welcome' => 'Welcome',
   'Manage your business in real-time.' => 'Manage your business in real-time.',
   'Active Plan' => 'Active Plan',

@@ -5,16 +5,8 @@
     <!-- Top Navigation Bar (E4ProTech Style & Clean Language Switcher) -->
     <header class="sticky top-0 z-50 backdrop-blur-md bg-[#FAF8F2]/90 dark:bg-[#FAF8F2]/90 border-b border-stone-200/60">
         <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4">
-            <a href="/" class="flex items-center gap-2 sm:gap-3 group shrink">
-                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-[#0A4D44] flex items-center justify-center font-black text-base sm:text-lg text-white shadow-md transition transform group-hover:scale-105 shrink-0">
-                    E4
-                </div>
-                <div class="truncate">
-                    <h1 class="text-base sm:text-xl font-black tracking-tight text-[#1A1D20] dark:text-[#1A1D20] leading-none truncate">
-                        E4PROTECH
-                    </h1>
-                    <p class="hidden sm:block text-[10px] text-[#0A4D44] font-extrabold tracking-wider uppercase">Engine Multi-SaaS</p>
-                </div>
+            <a href="/" class="flex items-center gap-2 group shrink-0">
+                <img src="{{ asset('E4ProTech.webp') }}" alt="E4ProTech Engine" class="h-16 sm:h-20 w-auto max-w-[200px] sm:max-w-[280px] -my-3 sm:-my-4 object-contain transition transform group-hover:scale-105" onerror="this.onerror=null; this.src='{{ asset('E4ProTech-Engine.png') }}';">
             </a>
 
             <!-- Nav Links -->
@@ -316,20 +308,20 @@
     <!-- Footer (E4ProTech Dark Teal `#0A4D44`) -->
     <footer class="py-10 bg-[#0A4D44] text-white mt-auto">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div class="flex items-center gap-3 text-teal-100 font-bold">
-                <div class="w-8 h-8 rounded-xl bg-white text-[#0A4D44] font-black flex items-center justify-center text-sm">
+            <div class="flex items-center gap-3 font-bold">
+                <div class="w-8 h-8 rounded-xl bg-white text-[#0A4D44] font-black flex items-center justify-center text-sm shrink-0">
                     E4
                 </div>
-                <p class="text-xs text-teal-100 font-medium">
-                    © {{ date('Y') }} E4ProTech Engine — Managed IT &amp; SaaS Solutions
-                </p>
+                <span class="text-xs font-medium text-emerald-100 !text-emerald-100">
+                    © {{ date('Y') }} E4ProTech Engine — {{ __('Managed IT & SaaS Solutions') }}
+                </span>
             </div>
 
-            <div class="flex gap-6 text-xs text-teal-100 font-bold">
-                <a href="/" class="hover:text-amber-300 transition">{{ $isEn ? 'Home' : 'Kreu' }}</a>
-                <a href="/#how-it-works" class="hover:text-amber-300 transition">{{ $isEn ? 'How It Works' : 'Si Funksionon' }}</a>
-                <a href="/#services" class="hover:text-amber-300 transition">{{ $isEn ? 'Services' : 'Shërbimet' }}</a>
-                <a href="{{ route('dashboard') }}" class="hover:text-amber-300 transition">{{ $isEn ? 'Admin Panel' : 'Paneli Admin' }}</a>
+            <div class="flex gap-6 text-xs text-emerald-100 font-bold">
+                <a href="/" class="hover:text-amber-300 text-emerald-100 transition">{{ $isEn ? 'Home' : 'Kreu' }}</a>
+                <a href="/#how-it-works" class="hover:text-amber-300 text-emerald-100 transition">{{ $isEn ? 'How It Works' : 'Si Funksionon' }}</a>
+                <a href="/#services" class="hover:text-amber-300 text-emerald-100 transition">{{ $isEn ? 'Services' : 'Shërbimet' }}</a>
+                <a href="{{ route('dashboard') }}" class="hover:text-amber-300 text-emerald-100 transition">{{ $isEn ? 'Admin Panel' : 'Paneli Admin' }}</a>
             </div>
         </div>
     </footer>

@@ -19,16 +19,8 @@
     <!-- Top Navigation Bar (E4ProTech Style & Clean Language Switcher) -->
     <header class="sticky top-0 z-50 backdrop-blur-md bg-[#FAF8F2]/90 border-b border-stone-200/60">
         <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4">
-            <a href="/" class="flex items-center gap-2 sm:gap-3 group shrink">
-                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-[#0A4D44] flex items-center justify-center font-black text-base sm:text-lg text-white shadow-md transition transform group-hover:scale-105 shrink-0">
-                    E4
-                </div>
-                <div class="truncate">
-                    <h1 class="text-base sm:text-xl font-black tracking-tight text-[#1A1D20] leading-none truncate">
-                        E4PROTECH
-                    </h1>
-                    <p class="hidden sm:block text-[10px] text-[#0A4D44] font-extrabold tracking-wider uppercase">Engine Multi-SaaS</p>
-                </div>
+            <a href="/" class="flex items-center gap-2 group shrink-0">
+                <img src="{{ asset('E4ProTech.webp') }}" alt="E4ProTech Engine" class="h-16 sm:h-20 w-auto max-w-[200px] sm:max-w-[280px] -my-3 sm:-my-4 object-contain transition transform group-hover:scale-105" onerror="this.onerror=null; this.src='{{ asset('E4ProTech-Engine.png') }}';">
             </a>
 
             <!-- Nav Links -->
@@ -53,10 +45,12 @@
                     </a>
                 </div>
 
-                <a href="{{ route('dashboard') }}" class="hidden md:inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs font-extrabold bg-[#1A1D20] text-white hover:bg-black transition shadow-sm">
-                    {{ $isEn ? 'Admin Panel ↗' : 'Paneli Admin ↗' }}
+                <a href="{{ route('login') }}" class="inline-flex items-center gap-1 sm:gap-2 px-2.5 sm:px-5 py-1.5 sm:py-2.5 rounded-full text-[10px] sm:text-xs font-extrabold bg-[#1A1D20] text-white hover:bg-black transition shadow-sm whitespace-nowrap">
+                    <span>{{ $isEn ? 'Login' : 'Kyçja' }}</span>
+                    <span class="hidden sm:inline">{{ $isEn ? 'Panel' : 'Admin' }}</span>
+                    <span>↗</span>
                 </a>
-                <a href="{{ route('krijo-sallonin') }}" class="px-3.5 sm:px-6 py-2 sm:py-2.5 rounded-full text-[11px] sm:text-xs font-black text-white bg-[#7C5CFC] hover:bg-[#6366F1] shadow-lg shadow-[#7C5CFC]/25 transition transform active:scale-95 flex items-center gap-1 whitespace-nowrap">
+                <a href="{{ route('krijo-sallonin') }}" class="px-2.5 sm:px-6 py-1.5 sm:py-2.5 rounded-full text-[10px] sm:text-xs font-black text-white bg-[#7C5CFC] hover:bg-[#6366F1] shadow-lg shadow-[#7C5CFC]/25 transition transform active:scale-95 flex items-center gap-1 whitespace-nowrap">
                     <span>{{ $isEn ? 'Create' : 'Krijo' }}</span>
                     <span class="hidden sm:inline">{{ $isEn ? 'Salon' : 'Salonin' }}</span>
                     <span>↗</span>
@@ -78,7 +72,7 @@
                 <div class="lg:col-span-7 text-left">
                     <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black bg-[#0A4D44]/10 text-[#0A4D44] mb-6">
                         <span class="w-2 h-2 rounded-full bg-[#7C5CFC] animate-pulse"></span>
-                        E4ProTech Engine • Managed IT Solutions
+                        E4ProTech Engine • {{ __('Managed IT Solutions') }}
                     </div>
 
                     <h1 class="text-4xl sm:text-6xl lg:text-7xl font-black text-[#1A1D20] tracking-tight leading-[1.08] mb-6">
@@ -484,18 +478,18 @@
     <footer class="py-12 bg-[#0A4D44] text-white mt-auto">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
             <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-xl bg-white text-[#0A4D44] font-black flex items-center justify-center text-sm">
+                <div class="w-8 h-8 rounded-xl bg-white text-[#0A4D44] font-black flex items-center justify-center text-sm shrink-0">
                     E4
                 </div>
-                <p class="text-xs text-teal-100 font-medium">
-                    © {{ date('Y') }} E4ProTech Engine — Managed IT &amp; SaaS Solutions
-                </p>
+                <span class="text-xs font-medium text-emerald-100 !text-emerald-100">
+                    © {{ date('Y') }} E4ProTech Engine — {{ __('Managed IT & SaaS Solutions') }}
+                </span>
             </div>
 
-            <div class="flex gap-6 text-xs text-teal-100 font-bold">
-                <a href="{{ route('krijo-sallonin') }}" class="hover:text-amber-300 transition">{{ $isEn ? 'Create Your Salon' : 'Krijo Salonin Tënd' }}</a>
-                <a href="{{ route('dashboard') }}" class="hover:text-amber-300 transition">{{ $isEn ? 'Admin Panel' : 'Paneli Admin' }}</a>
-                <a href="{{ route('app.download.apk') }}" class="hover:text-amber-300 transition">{{ $isEn ? 'Download APK' : 'Shkarko APK-në' }}</a>
+            <div class="flex gap-6 text-xs text-emerald-100 font-bold">
+                <a href="{{ route('krijo-sallonin') }}" class="hover:text-amber-300 text-emerald-100 transition">{{ $isEn ? 'Create Your Salon' : 'Krijo Salonin Tënd' }}</a>
+                <a href="{{ route('dashboard') }}" class="hover:text-amber-300 text-emerald-100 transition">{{ $isEn ? 'Admin Panel' : 'Paneli Admin' }}</a>
+                <a href="{{ route('app.download.apk') }}" class="hover:text-amber-300 text-emerald-100 transition">{{ $isEn ? 'Download APK' : 'Shkarko APK-në' }}</a>
             </div>
         </div>
     </footer>

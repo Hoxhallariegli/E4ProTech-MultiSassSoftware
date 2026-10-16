@@ -85,7 +85,10 @@
 @can('view_subscriptions')
     <x-nav.link route="admin.subscriptions.index" icon="clipboard-document">{{ __('subscriptions.Subscriptions') }}</x-nav.link>
     <x-nav.link route="admin.subscription-renewals.index" icon="arrow-path">{{ __('admin.Subscription Renewals') }}</x-nav.link>
-    <x-nav.link route="admin.website-offer-requests.index" icon="globe-alt">{{ __('Kërkesat për Uebsajt') }}</x-nav.link>
+@endcan
+
+@can('view_website_offer_requests')
+    <x-nav.link route="admin.website-offer-requests.index" icon="globe-alt">{{ __('admin.Website Offer Requests') }}</x-nav.link>
 @endcan
 
 @can('view_plans')

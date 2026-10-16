@@ -36,6 +36,7 @@ return [
   'SMS & Notifications' => 'SMS & Njoftimet',
   'SaaS Administration' => 'Administrimi SaaS',
   'Subscription Renewals' => 'Renovimi i Abonimit',
+  'Website Offer Requests' => 'Kërkesat për Uebsajt',
   'Welcome' => 'Mirësevini',
   'Manage your business in real-time.' => 'Menaxhoni biznesin tuaj në kohë reale.',
   'Active Plan' => 'Plani Aktiv',

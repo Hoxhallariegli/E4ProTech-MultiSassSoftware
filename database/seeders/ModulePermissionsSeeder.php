@@ -30,6 +30,7 @@ class ModulePermissionsSeeder extends Seeder
             'AiAssistant' => 'ai_assistant',
             'SystemSettings' => 'system_settings',
             'AuditTrail' => 'audit_trails',
+            'Report' => 'reports',
             'WebsiteOfferRequest' => 'website_offer_requests',
         ];
 

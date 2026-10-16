@@ -162,8 +162,8 @@
     aria-label="Main Sidebar Navigation"
   >
     <div class="flex h-16 w-full flex-none items-center justify-between px-4 lg:justify-center dark:bg-gray-600/25">
-      <x-a href="{{ route('dashboard') }}" class="group inline-flex items-center gap-2 text-lg font-bold tracking-wide text-gray-900 hover:text-gray-600 dark:text-gray-100 dark:hover:text-gray-300">
-        <span>{{ config('app.name') }}</span>
+      <x-a href="{{ route('dashboard') }}" class="group inline-flex items-center gap-2">
+        <img src="{{ asset('E4ProTech.png') }}" alt="{{ config('app.name') }}" class="h-32 w-auto max-w-[280px] -my-2 object-contain transition transform group-hover:scale-105" onerror="this.onerror=null; this.src='{{ asset('E4ProTech-Engine.png') }}';">
       </x-a>
       <div class="lg:hidden">
         <button x-on:click="mobileSidebarOpen = false" type="button" class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm leading-5 font-semibold text-gray-800 hover:border-gray-300 hover:text-gray-900 hover:shadow-xs focus:ring-3 focus:ring-gray-300/25 active:border-gray-200 active:shadow-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-gray-600 dark:hover:text-gray-200 dark:focus:ring-gray-600/40 dark:active:border-gray-700">
@@ -309,7 +309,7 @@
       </div>
       <div class="inline-flex items-center justify-center pt-1 pb-4 md:pt-4">
         <span>
-            {{ __('Built by') }} <a href="https://e4protech.com" target="_blank" class="font-medium text-blue-600 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"E4ProTech</a>
+            {{ __('Built by') }} <a href="https://e4protech.com" target="_blank" class="font-medium text-blue-600 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300">E4ProTech</a>
         </span>
       </div>
     </div>

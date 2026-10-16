@@ -368,12 +368,12 @@
     <!-- Footer (Managed Secondary Color) -->
     <footer class="py-10 text-white mt-auto" style="background-color: {{ $secondaryColor }};">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p class="text-xs text-teal-100 font-medium">
+            <span class="text-xs text-white/90 font-medium !text-white">
                 {{ $footerText }}
-            </p>
-            <div class="flex gap-6 text-xs text-teal-100 font-bold">
-                <a href="#booking-section" class="hover:text-amber-300 transition">{{ app()->getLocale() === 'en' ? 'Book Online' : 'Rezervo Online' }}</a>
-                <a href="{{ route('dashboard') }}" class="hover:text-amber-300 transition">{{ app()->getLocale() === 'en' ? 'Admin Panel' : 'Paneli Admin' }}</a>
+            </span>
+            <div class="flex gap-6 text-xs text-white/90 font-bold">
+                <a href="#booking-section" class="hover:text-amber-300 text-white transition">{{ app()->getLocale() === 'en' ? 'Book Online' : 'Rezervo Online' }}</a>
+                <a href="{{ route('dashboard') }}" class="hover:text-amber-300 text-white transition">{{ app()->getLocale() === 'en' ? 'Admin Panel' : 'Paneli Admin' }}</a>
             </div>
         </div>
     </footer>
