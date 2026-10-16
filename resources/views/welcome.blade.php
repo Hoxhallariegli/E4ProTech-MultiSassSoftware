@@ -398,10 +398,14 @@
                     <div class="p-8 rounded-[2.5rem] bg-[#FAF8F2] border border-stone-200/80 hover:border-[#7C5CFC] transition duration-300 flex flex-col justify-between group shadow-md hover:shadow-xl hover:-translate-y-1 transform">
                         <div>
                             <div class="flex items-center justify-between mb-6">
-                                <div class="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-2xl text-white shadow-md"
-                                     style="background: linear-gradient(135deg, {{ $shop->primary_color }}, {{ $shop->secondary_color }});">
-                                    {{ mb_substr($shop->name, 0, 1) }}
-                                </div>
+                                @if(!empty($shop->logo))
+                                    <img src="{{ asset(ltrim($shop->logo, '/')) }}" alt="{{ $shop->name }}" class="w-14 h-14 rounded-2xl object-cover shadow-md border border-stone-200/80 shrink-0">
+                                @else
+                                    <div class="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-2xl text-white shadow-md shrink-0"
+                                         style="background: linear-gradient(135deg, {{ $shop->primary_color }}, {{ $shop->secondary_color }});">
+                                        {{ mb_substr($shop->name, 0, 1) }}
+                                    </div>
+                                @endif
                                 <span class="text-[11px] px-3.5 py-1 rounded-full font-extrabold uppercase tracking-wider text-white bg-[#0A4D44]">
                                     {{ $shop->resolved_shop_label }}
                                 </span>

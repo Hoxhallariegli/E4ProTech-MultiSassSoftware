@@ -39,12 +39,17 @@
                 </div>
             </div>
 
-            {{-- DYNAMIC TIME SLOTS & DATE SECTION --}}
+            {{-- DYNAMIC TIME SLOTS & OVERBOOKING CALCULATOR --}}
             <div class="md:col-span-2 bg-gray-50 dark:bg-gray-900/60 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 space-y-4">
                 <div class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 dark:border-gray-800 pb-3">
-                    <h4 class="text-xs font-black uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-1.5">
-                        <span>📅</span> Data & Oraret e Lira
-                    </h4>
+                    <div>
+                        <h4 class="text-xs font-black uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-1.5">
+                            <span>⚡</span> Data & Kalendari i Orareve
+                        </h4>
+                        <p class="text-[10px] text-gray-500 dark:text-gray-400">
+                            Hapi: <span class="font-bold text-blue-600">{{ $timeSlotData['slot_step'] ?? 15 }} min</span> • Shërbimi: <span class="font-bold text-blue-600">{{ $timeSlotData['req_duration'] ?? 30 }} min</span>
+                        </p>
+                    </div>
 
                     {{-- Quick Date Buttons --}}
                     <div class="flex items-center gap-1.5">
@@ -59,22 +64,36 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <x-form.input name="booking_date" type="date" wire:model.live="booking_date" label="Data" class="dark:bg-gray-900" />
+                        <x-form.input name="booking_date" type="date" wire:model.live="booking_date" label="Data" class="dark:bg-gray-900 font-bold" />
                     </div>
 
                     <div class="md:col-span-2">
                         <label class="block mb-1 text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
-                            Oraret e Lira
+                            Oraret e Ditës
                         </label>
 
-                        @if(!empty($availableTimeSlots))
-                            <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-36 overflow-y-auto p-1">
-                                @foreach($availableTimeSlots as $slot)
-                                    <button type="button"
-                                            wire:click="selectTimeSlot('{{ $slot }}')"
-                                            class="py-2 px-2.5 rounded-xl text-xs font-bold text-center transition-all border {{ $selected_time === $slot ? 'bg-blue-600 text-white border-blue-600 shadow' : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:bg-blue-50' }}">
-                                        {{ $slot }}
-                                    </button>
+                        @if(($timeSlotData['is_closed'] ?? false) === true)
+                            <div class="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-800 dark:text-rose-400 text-xs font-bold">
+                                🛑 Mbyllur sot.
+                            </div>
+                        @elseif(!empty($timeSlotData['slots']))
+                            <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-44 overflow-y-auto p-1">
+                                @foreach($timeSlotData['slots'] as $slot)
+                                    @if($slot['is_available'])
+                                        <button type="button"
+                                                wire:click="selectTimeSlot('{{ $slot['time'] }}')"
+                                                class="py-2 px-2.5 rounded-xl text-xs font-bold text-center transition-all border {{ $selected_time === $slot['time'] ? 'bg-blue-600 text-white border-blue-600 shadow' : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-600 hover:text-white' }}">
+                                            {{ $slot['time'] }}
+                                        </button>
+                                    @elseif($slot['is_overbooked'])
+                                        <div class="py-2 px-2.5 rounded-xl text-[10px] font-black text-center border bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 opacity-90 truncate" title="{{ $slot['reason'] }}">
+                                            🔴 {{ $slot['time'] }} ZËNË
+                                        </div>
+                                    @else
+                                        <div class="py-2 px-2.5 rounded-xl text-[10px] font-bold text-center border bg-gray-100 dark:bg-gray-800 text-gray-400 border-gray-200 dark:border-gray-700 opacity-50">
+                                            {{ $slot['time'] }}
+                                        </div>
+                                    @endif
                                 @endforeach
                             </div>
                         @else

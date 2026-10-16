@@ -116,8 +116,26 @@ class QuickCreate extends Component
     public function getAvailableTimeSlotsProperty()
     {
         if (!$this->booking_date || !$this->barber_shop_id) {
-            return [];
+            return [
+                'is_closed' => false,
+                'slot_step' => 15,
+                'req_duration' => 30,
+                'slots' => [],
+            ];
         }
+
+        $shop = BarberShop::find($this->barber_shop_id);
+        if (!$shop) {
+            return [
+                'is_closed' => false,
+                'slot_step' => 15,
+                'req_duration' => 30,
+                'slots' => [],
+            ];
+        }
+
+        $slotStep = $shop->resolved_min_service_time;
+        if ($slotStep < 5) $slotStep = 15;
 
         $now = Carbon::now();
 
@@ -139,7 +157,12 @@ class QuickCreate extends Component
                 ->first();
 
             if ($workingHour && (bool)$workingHour->is_closed === true) {
-                return [];
+                return [
+                    'is_closed' => true,
+                    'slot_step' => $slotStep,
+                    'req_duration' => 30,
+                    'slots' => [],
+                ];
             }
         }
 
@@ -187,12 +210,14 @@ class QuickCreate extends Component
             $bookingQuery->where('barber_shop_id', $this->barber_shop_id);
         }
 
-        $bookings = $bookingQuery->with('service')->get();
+        $bookings = $bookingQuery->with(['customer', 'service', 'barber'])->get();
 
         $bookingEntries = $bookings->map(function ($b) {
             $start = $b->appointment_at->copy();
             $dur = $b->service?->duration_minutes ?? 30;
             return [
+                'type' => 'booking',
+                'title' => ($b->customer?->name ?? 'Klient') . ' (' . ($b->service?->name ?? 'Shërbim') . ')',
                 'start' => $start,
                 'end' => $start->copy()->addMinutes($dur),
             ];
@@ -205,6 +230,8 @@ class QuickCreate extends Component
             $lunchEndDt = Carbon::parse("{$dateStr} {$lunchEndStr}:00");
             if ($lunchEndDt > $lunchStartDt) {
                 $bookingEntries->push([
+                    'type' => 'break',
+                    'title' => 'Pushimi i Drekës',
                     'start' => $lunchStartDt,
                     'end' => $lunchEndDt,
                 ]);
@@ -218,31 +245,44 @@ class QuickCreate extends Component
             $slotStart = $cursor->copy();
             $slotEnd = $slotStart->copy()->addMinutes($reqDuration);
 
-            if ($slotEnd > $closeDt) {
-                break;
-            }
+            $timeStr = $slotStart->format('H:i');
+            $endTimeStr = $slotEnd->format('H:i');
 
-            if ($date->isToday() && $slotStart->isBefore($now)) {
-                $cursor->addMinutes(30);
-                continue;
-            }
+            $exceedsClose = ($slotEnd > $closeDt);
+            $isPast = ($date->isToday() && $slotStart->isBefore($now));
 
-            $hasOverlap = false;
+            $overlapReason = null;
+            $isOverbooked = false;
+
             foreach ($bookingEntries as $entry) {
                 if ($slotStart < $entry['end'] && $slotEnd > $entry['start']) {
-                    $hasOverlap = true;
+                    $isOverbooked = true;
+                    $overlapReason = $entry['title'] . " (" . $entry['start']->format('H:i') . "-" . $entry['end']->format('H:i') . ")";
                     break;
                 }
             }
 
-            if (!$hasOverlap) {
-                $slots[] = $slotStart->format('H:i');
-            }
+            $isAvailable = !$exceedsClose && !$isPast && !$isOverbooked;
 
-            $cursor->addMinutes(30);
+            $slots[] = [
+                'time' => $timeStr,
+                'end_time' => $endTimeStr,
+                'is_available' => $isAvailable,
+                'is_past' => $isPast,
+                'is_overbooked' => $isOverbooked,
+                'exceeds_close' => $exceedsClose,
+                'reason' => $overlapReason ?? ($isPast ? 'Kaluar' : ($exceedsClose ? 'Kalim orari mbylljeje' : null)),
+            ];
+
+            $cursor->addMinutes($slotStep);
         }
 
-        return $slots;
+        return [
+            'is_closed' => false,
+            'slot_step' => $slotStep,
+            'req_duration' => $reqDuration,
+            'slots' => $slots,
+        ];
     }
 
     protected function getbarberShopsList() {
@@ -288,7 +328,7 @@ class QuickCreate extends Component
             'barbers' => $this->getbarbersList(),
             'services' => $this->getservicesList(),
             'customers' => $this->getcustomersList(),
-            'availableTimeSlots' => $this->availableTimeSlots,
+            'timeSlotData' => $this->availableTimeSlots,
         ]);
     }
 

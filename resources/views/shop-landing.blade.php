@@ -43,10 +43,14 @@
     <header class="sticky top-0 z-50 backdrop-blur-md bg-[#FAF8F2]/90 border-b border-stone-200/60">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
             <a href="#" class="flex items-center gap-3 group">
-                <div class="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl text-white shadow-md transition transform group-hover:scale-105"
-                     style="background: linear-gradient(135deg, {{ $primaryColor }}, {{ $secondaryColor }});">
-                    {{ mb_substr($shop->name, 0, 1) }}
-                </div>
+                @if(!empty($shop->logo))
+                    <img src="{{ asset(ltrim($shop->logo, '/')) }}" alt="{{ $shop->name }}" class="w-12 h-12 rounded-2xl object-cover shadow-md border border-stone-200/60 transition transform group-hover:scale-105 shrink-0">
+                @else
+                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl text-white shadow-md transition transform group-hover:scale-105 shrink-0"
+                         style="background: linear-gradient(135deg, {{ $primaryColor }}, {{ $secondaryColor }});">
+                        {{ mb_substr($shop->name, 0, 1) }}
+                    </div>
+                @endif
                 <div>
                     <h1 class="text-lg font-black tracking-tight text-[#1A1D20] flex items-center gap-2">
                         {{ $shop->name }}
