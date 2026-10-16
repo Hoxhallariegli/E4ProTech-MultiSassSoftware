@@ -67,7 +67,25 @@ class Invite extends Component
 
     public function render(): View
     {
-        $roles = Role::orderby('name')->get();
+        $currentUser = auth()->user();
+        $activeShopId = $currentUser?->barber_shop_id ?: 0;
+
+        $query = Role::query();
+
+        if ($activeShopId && !$currentUser?->is_global_admin) {
+            $query->where(function ($q) use ($activeShopId) {
+                $q->where('barber_shop_id', $activeShopId)
+                  ->orWhereNull('barber_shop_id')
+                  ->orWhere('barber_shop_id', 0);
+            });
+        }
+
+        // SECURITY: If the logged-in user is NOT a global admin, hide the 'admin' role
+        if (!$currentUser?->is_global_admin) {
+            $query->where('name', '!=', 'admin');
+        }
+
+        $roles = $query->orderby('name')->get();
 
         return view('livewire.admin.users.invite', compact('roles'));
     }
@@ -75,6 +93,8 @@ class Invite extends Component
     public function store(GetInitialsAction $getInitialsAction): void
     {
         $this->validate();
+
+        $currentUser = auth()->user();
 
         $user = User::create([
             'name' => $this->name,
@@ -85,6 +105,7 @@ class Invite extends Component
             'invite_token' => Str::random(32),
             'invited_by' => auth()->id(),
             'invited_at' => now(),
+            'barber_shop_id' => $currentUser?->barber_shop_id,
         ]);
 
         // generate image
@@ -97,11 +118,23 @@ class Invite extends Component
         $user->image = $imagePath;
         $user->save();
 
-        foreach ($this->rolesSelected as $role) {
+        foreach ($this->rolesSelected as $roleId) {
+            $role = is_numeric($roleId) ? Role::find($roleId) : Role::where('name', $roleId)->first();
+            if (!$role) continue;
+
+            // Security guard: Non-global-admins cannot assign the 'admin' role
+            if ($role->name === 'admin' && !$currentUser?->is_global_admin) {
+                continue;
+            }
+
             $user->assignRole($role);
         }
 
-        Mail::send(new SendInviteMail($user));
+        try {
+            Mail::send(new SendInviteMail($user));
+        } catch (\Exception $e) {
+            // Log mail failure
+        }
 
         add_user_log([
             'title' => 'invited '.$user->name,
