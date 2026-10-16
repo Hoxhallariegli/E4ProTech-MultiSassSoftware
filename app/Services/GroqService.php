@@ -219,10 +219,25 @@ class GroqService
 
         // Staff creation
         if (str_contains($lower, 'staf') || str_contains($lower, 'staff') || str_contains($lower, 'berber') || str_contains($lower, 'parukier')) {
-            preg_match('/(\d+)\s*(?:staf|staff|berber|parukier)/u', $lower, $m);
-            $count = isset($m[1]) ? (int) $m[1] : 3;
+            $count = 1; // Default to 1 for singular command
+
+            if (preg_match('/(\d+)\s*(?:staf|staff|berber|parukier)/u', $lower, $m)) {
+                $count = (int) $m[1];
+            } elseif (preg_match('/(?:dy|2)\s*(?:staf|staff|berber|parukier)/u', $lower)) {
+                $count = 2;
+            } elseif (preg_match('/(?:tre|3)\s*(?:staf|staff|berber|parukier)/u', $lower)) {
+                $count = 3;
+            } elseif (preg_match('/(?:katër|kater|4)\s*(?:staf|staff|berber|parukier)/u', $lower)) {
+                $count = 4;
+            } elseif (preg_match('/(?:pesë|pese|5)\s*(?:staf|staff|berber|parukier)/u', $lower)) {
+                $count = 5;
+            } elseif (preg_match('/(?:një|nje|1|a|one)\s*(?:staf|staff|berber|parukier)/u', $lower)) {
+                $count = 1;
+            }
 
             $parsedStaff = [];
+
+            // Colon format e.g. "shto berber: Ermin Cimi"
             if (str_contains($prompt, ':')) {
                 $parts = explode(':', $prompt, 2);
                 $names = explode(',', $parts[1] ?? '');
@@ -230,6 +245,27 @@ class GroqService
                     $clean = trim($n);
                     if (!empty($clean)) {
                         $parsedStaff[] = ['name' => mb_convert_case($clean, MB_CASE_TITLE, 'UTF-8')];
+                    }
+                }
+            }
+
+            // Explicit name match e.g. "me emrin Ermin Cimi", "me ermin cimi", "named Ermin Cimi"
+            if (empty($parsedStaff)) {
+                if (preg_match('/(?:me\s+)?(?:emrin|ermin|emër|emer|named)\s+([a-zA-ZçÇëË\s]+)/ui', $prompt, $nameMatch)) {
+                    $extracted = trim($nameMatch[1]);
+                    if (!empty($extracted)) {
+                        $parsedStaff[] = ['name' => mb_convert_case($extracted, MB_CASE_TITLE, 'UTF-8')];
+                    }
+                }
+            }
+
+            // Direct name match after staff/berber keyword e.g. "shto berber Ermin Cimi"
+            if (empty($parsedStaff)) {
+                if (preg_match('/(?:shto|krijo|add|create)\s+(?:një|nje|1)?\s*(?:staf|staff|berber|parukier)\s+([a-zA-ZçÇëË\s]+)/ui', $prompt, $directMatch)) {
+                    $extracted = trim($directMatch[1]);
+                    $extracted = preg_replace('/^(?:me|per|për|me\s+emrin|me\s+ermin)\s+/ui', '', $extracted);
+                    if (!empty($extracted)) {
+                        $parsedStaff[] = ['name' => mb_convert_case(trim($extracted), MB_CASE_TITLE, 'UTF-8')];
                     }
                 }
             }
