@@ -165,7 +165,7 @@ class Create extends Component
 
         // Get step interval from min_service_time (resolved_min_service_time)
         $slotStep = $shop->resolved_min_service_time;
-        if ($slotStep < 5) $slotStep = 15;
+        if ($slotStep < 1) $slotStep = 15;
 
         $now = Carbon::now();
 
@@ -220,7 +220,7 @@ class Create extends Component
         }
 
         // Required duration for selected service
-        $reqDuration = 30;
+        $reqDuration = $slotStep;
         if ($this->service_id) {
             $service = Service::find($this->service_id);
             if ($service && $service->duration_minutes > 0) {

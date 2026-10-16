@@ -229,14 +229,12 @@ class BarberShop extends Model
             return (int) $this->min_service_time;
         }
 
-        // Standard clean grid step: 15 min or 30 min
-        $hasShortService = \App\Models\Service::withoutGlobalScope('barber_shop_access')
+        $min = \App\Models\Service::withoutGlobalScope('barber_shop_access')
             ->where('barber_shop_id', $this->id)
             ->where('active', true)
             ->where('duration_minutes', '>', 0)
-            ->where('duration_minutes', '<=', 20)
-            ->exists();
+            ->min('duration_minutes');
 
-        return $hasShortService ? 15 : 30;
+        return $min && (int) $min > 0 ? (int) $min : 15;
     }
 }
