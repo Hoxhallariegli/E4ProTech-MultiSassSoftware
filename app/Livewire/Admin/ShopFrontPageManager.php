@@ -67,6 +67,8 @@ class ShopFrontPageManager extends Component
         $this->shop = $shop;
         $this->name = $shop->name;
         $this->app_name = $shop->app_name ?: $shop->name;
+        $this->logo = $shop->logo;
+        $this->banner = $shop->banner;
         $this->primary_color = $shop->primary_color ?: '#7C5CFC';
         $this->secondary_color = $shop->secondary_color ?: '#0A4D44';
         $this->business_type = $shop->business_type ?: 'barber';
@@ -174,6 +176,10 @@ class ShopFrontPageManager extends Component
             'email' => trim($this->email),
             'currency' => trim($this->currency),
         ]);
+
+        $this->shop = $this->shop->fresh();
+        $this->logo = $this->shop->logo;
+        $this->banner = $this->shop->banner;
 
         // Update FrontPageSetting
         ShopFrontPageSetting::updateOrCreate(

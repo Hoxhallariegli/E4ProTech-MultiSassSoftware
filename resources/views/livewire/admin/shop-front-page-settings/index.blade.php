@@ -144,10 +144,10 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                         <div>
-                            <x-file-upload name="logo" wire:model="logo" :label="__('shop-front-page-settings.Shop Logo')" id="logo" :isEditing="true" />
+                            <x-file-upload name="logo" wire:model="logo" :label="__('shop-front-page-settings.Shop Logo')" id="logo" :isEditing="true" :preview="$this->logo ?: $shop->logo" />
                         </div>
                         <div>
-                            <x-file-upload name="banner" wire:model="banner" :label="__('shop-front-page-settings.Hero Banner Image')" id="banner" :isEditing="true" />
+                            <x-file-upload name="banner" wire:model="banner" :label="__('shop-front-page-settings.Hero Banner Image')" id="banner" :isEditing="true" :preview="$this->banner ?: $shop->banner" />
                         </div>
                     </div>
                 </div>

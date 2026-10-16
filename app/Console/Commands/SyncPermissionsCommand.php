@@ -84,20 +84,6 @@ class SyncPermissionsCommand extends Command
             $this->info("✅ Successfully created {$newCount} new permission(s).");
         }
 
-        // Give all permissions to all roles
-        try {
-            $allPerms = Permission::all();
-            $roles = Role::all();
-            foreach ($roles as $r) {
-                setPermissionsTeamId($r->barber_shop_id ?? 0);
-                $r->syncPermissions($allPerms);
-            }
-            setPermissionsTeamId(0);
-            $this->info("🛡️ Automatically granted all " . $allPerms->count() . " permissions to all roles.");
-        } catch (\Throwable $e) {
-            $this->warn("Role permission assignment warning: " . $e->getMessage());
-        }
-
         return Command::SUCCESS;
     }
 }

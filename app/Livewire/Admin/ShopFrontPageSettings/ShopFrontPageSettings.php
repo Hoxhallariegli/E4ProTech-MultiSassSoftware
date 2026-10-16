@@ -94,6 +94,8 @@ class ShopFrontPageSettings extends Component
         $this->shop = $shop;
         $this->name = $shop->name;
         $this->app_name = $shop->app_name ?: $shop->name;
+        $this->logo = $shop->logo;
+        $this->banner = $shop->banner;
         $this->primary_color = $shop->primary_color ?: '#FF9F0A';
         $this->secondary_color = $shop->secondary_color ?: '#1C1C1E';
         $this->business_type = $shop->business_type ?: 'barber';
@@ -204,6 +206,11 @@ class ShopFrontPageSettings extends Component
         }
 
         $this->shop->update($updateData);
+
+        // Keep local properties updated so image previews render instantly
+        $this->shop = $this->shop->fresh();
+        $this->logo = $this->shop->logo;
+        $this->banner = $this->shop->banner;
 
         // Update FrontPageSetting
         ShopFrontPageSetting::updateOrCreate(

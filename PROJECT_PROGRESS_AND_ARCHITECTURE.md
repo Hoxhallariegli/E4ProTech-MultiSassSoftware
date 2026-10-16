@@ -126,6 +126,41 @@ LaraFluterAuto/
 
 ---
 
-## 4. Instructions for Starting a New Chat
+## 5. 🔒 Permissions Management: How to Seed/Sync ONLY Permissions (Without Touching Roles)
+
+### ⚠️ Critical Security & System Rule:
+- **DO NOT TOUCH ROLES OR ASSIGN PERMISSIONS TO NON-ADMIN ROLES AUTOMATICALLY.**
+- Roles like `Berber`, `Pronar i Biznesit / Sallonit`, etc., are configured selectively by the Administrator via the Admin Panel UI (`/admin/roles`).
+- Seeding or syncing permissions must **ONLY** insert missing permission records into the `permissions` database table (`Permission::firstOrCreate`). It must **NEVER** iterate through roles or call `$role->syncPermissions(...)` on non-admin roles.
+
+### 🛠️ How to Add or Sync ONLY Permissions:
+When adding a new module or missing permissions (e.g. `ShopFrontPageSetting`, `Report`, etc.), run either of these two commands:
+
+1. **Option 1 (Artisan Command - Recommended):**
+   ```bash
+   php artisan permissions:sync
+   ```
+
+2. **Option 2 (Module Permissions Seeder):**
+   ```bash
+   php artisan db:seed --class=ModulePermissionsSeeder
+   ```
+
+### 📝 How to Register a New Module's Permissions:
+To add permissions for a new module in the future, add the model name and table name to the `$modules` array in **BOTH** `database/seeders/ModulePermissionsSeeder.php` AND `app/Console/Commands/SyncPermissionsCommand.php`:
+
+```php
+$modules = [
+    'BarberShop' => 'barber_shops',
+    'ShopFrontPageSetting' => 'shop_front_page_settings',
+    'Report' => 'reports',
+    // Add your new module here: 'MyModule' => 'my_modules',
+];
+```
+Executing `php artisan permissions:sync` will then create `view_my_modules`, `add_my_modules`, `edit_my_modules`, and `delete_my_modules` in the `permissions` table without touching existing user/role assignments.
+
+---
+
+## 6. Instructions for Starting a New Chat
 When you start a new chat session, you can simply paste or refer to this summary:
 > *"The project documentation and architecture are saved in `C:\laragon\www\LaraFluterAuto\PROJECT_PROGRESS_AND_ARCHITECTURE.md`. The system uses Laravel 12 + Livewire + Flutter built with Java 17 JDK (`C:\Program Files\Eclipse Adoptium\jdk-17.0.14.7-hotspot`), project-internal Android & Gradle build homes (`mobile-gateway/android/.android_home` & `.gradle_home`), 100% Firebase FCM Push Notifications (isolated per shop/user), Android SIM SMS Gateway using `FlutterBackgroundService` and `telephony`, official E4ProTech Brand Design System, 3-Step Salon Registration Wizard (`/krijo-sallonin`), and In-App APK Updates via `release-apk.ps1` (published to `D:\Share\Apk` and `public/downloads`)."*

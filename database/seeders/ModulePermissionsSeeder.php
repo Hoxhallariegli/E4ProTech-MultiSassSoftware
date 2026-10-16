@@ -55,17 +55,6 @@ class ModulePermissionsSeeder extends Seeder
         Permission::firstOrCreate(['name' => 'edit_roles', 'label' => 'Edit Roles', 'module' => 'Roles']);
         Permission::firstOrCreate(['name' => 'delete_roles', 'label' => 'Delete Roles', 'module' => 'Roles']);
 
-        // Sync all permissions to roles
-        try {
-            $allPermissions = Permission::all();
-            $roles = \App\Models\Role::all();
-            foreach ($roles as $role) {
-                setPermissionsTeamId($role->barber_shop_id ?? 0);
-                $role->syncPermissions($allPermissions);
-            }
-            setPermissionsTeamId(0);
-        } catch (\Throwable $e) {}
-
         $this->command->info('✅ Permissions for all modules have been generated.');
     }
 }
