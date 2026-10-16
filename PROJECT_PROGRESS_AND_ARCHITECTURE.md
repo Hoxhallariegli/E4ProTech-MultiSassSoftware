@@ -154,6 +154,7 @@ $modules = [
     'BarberShop' => 'barber_shops',
     'ShopFrontPageSetting' => 'shop_front_page_settings',
     'Report' => 'reports',
+    'SubscriptionRenewal' => 'subscription_renewals',
     // Add your new module here: 'MyModule' => 'my_modules',
 ];
 ```

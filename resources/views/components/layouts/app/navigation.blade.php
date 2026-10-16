@@ -74,7 +74,7 @@
 @endcan
 
 <!-- 4. SAAS ADMINISTRATION -->
-@if(can('view_barber_shops') || can('view_subscriptions') || can('view_plans') || can('view_users'))
+@if(can('view_barber_shops') || can('view_subscriptions') || can('view_subscription_renewals') || can('view_plans') || can('view_users'))
     <x-nav.divider>{{ __('admin.SaaS Administration') }}</x-nav.divider>
 @endif
 
@@ -84,6 +84,9 @@
 
 @can('view_subscriptions')
     <x-nav.link route="admin.subscriptions.index" icon="clipboard-document">{{ __('subscriptions.Subscriptions') }}</x-nav.link>
+@endcan
+
+@can('view_subscription_renewals')
     <x-nav.link route="admin.subscription-renewals.index" icon="arrow-path">{{ __('admin.Subscription Renewals') }}</x-nav.link>
 @endcan
 

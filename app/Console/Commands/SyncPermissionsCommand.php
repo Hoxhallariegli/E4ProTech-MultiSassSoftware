@@ -20,6 +20,7 @@ class SyncPermissionsCommand extends Command
             'BarberShop' => 'barber_shops',
             'Plan' => 'plans',
             'Subscription' => 'subscriptions',
+            'SubscriptionRenewal' => 'subscription_renewals',
             'Barber' => 'barbers',
             'Service' => 'services',
             'WorkingHour' => 'working_hours',
