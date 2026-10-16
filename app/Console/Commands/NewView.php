@@ -577,11 +577,11 @@ $livewireRules        return \$rules; }\n}");
         <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-6 py-4 rounded-3xl flex items-center gap-4 mb-6">
             <x-heroicon-o-exclamation-triangle class="w-6 h-6 shrink-0" />
             <div>
-                <p class="font-bold">{{ __('Limit i arritur!') }}</p>
-                <p class="text-sm opacity-90">{{ __('Keni arritur numrin maksimal p\u00ebr k\u00ebt\u00eb plan.') }}</p>
+                <p class="font-bold">{{ __('admin.Limit Reached!') }}</p>
+                <p class="text-sm opacity-90">{{ __('admin.You have reached the maximum limit for this plan.') }}</p>
             </div>
             <a href="{{ route('admin.subscriptions.index') }}" class="ml-auto bg-red-600 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase hover:bg-red-700 transition-colors">
-                {{ __('P\u00ebrmir\u00ebso Planin') }}
+                {{ __('admin.Upgrade Plan') }}
             </a>
         </div>
     @endif
