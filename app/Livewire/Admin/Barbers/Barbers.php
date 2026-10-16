@@ -23,7 +23,7 @@ class Barbers extends Component
     #[Url(history: true)] public $user_id = '';
     public bool $openFilter = false;
     public string $sortField = 'id';
-    public bool $sortAsc = true;
+    public bool $sortAsc = false;
 
     public function resetFilters() { $this->reset(['search', 'openFilter', 'barber_shop_id', 'user_id', ]); $this->resetPage(); }
 
@@ -51,12 +51,12 @@ class Barbers extends Component
 
     public function sortBy($field) { if (!in_array($field, Barber::sortable(), true)) return; if ($this->sortField === $field) { $this->sortAsc = ! $this->sortAsc; } $this->sortField = $field; }
 
-    public function deleteBarber($id, DeleteBarberAction $action) 
+    public function deleteBarber($id, DeleteBarberAction $action)
     {
         abort_if_cannot('delete_barbers');
         $item = Barber::find($id);
         if (!$item) { $this->dispatch('toast', message: __('barbers.not_found'), type: 'error'); return; }
-        try { $action->execute($item); $this->dispatch('toast', message: __('barbers.deleted'), type: 'success'); $this->resetPage(); } 
+        try { $action->execute($item); $this->dispatch('toast', message: __('barbers.deleted'), type: 'success'); $this->resetPage(); }
         catch (\Illuminate\Database\QueryException $e) { $this->dispatch('toast', message: __('barbers.delete_error_referenced'), type: 'error'); }
         catch (\Exception $e) { $this->dispatch('toast', message: __('barbers.delete_error'), type: 'error'); }
     }

@@ -24,7 +24,7 @@ class Reviews extends Component
     #[Url(history: true)] public $booking_id = '';
     public bool $openFilter = false;
     public string $sortField = 'id';
-    public bool $sortAsc = true;
+    public bool $sortAsc = false;
 
     public function resetFilters() { $this->reset(['search', 'openFilter', 'barber_shop_id', 'barber_id', 'customer_id', 'booking_id', ]); $this->resetPage(); }
 
@@ -56,12 +56,12 @@ class Reviews extends Component
 
     public function sortBy($field) { if (!in_array($field, Review::sortable(), true)) return; if ($this->sortField === $field) { $this->sortAsc = ! $this->sortAsc; } $this->sortField = $field; }
 
-    public function deleteReview($id, DeleteReviewAction $action) 
+    public function deleteReview($id, DeleteReviewAction $action)
     {
         abort_if_cannot('delete_reviews');
         $item = Review::find($id);
         if (!$item) { $this->dispatch('toast', message: __('reviews.not_found'), type: 'error'); return; }
-        try { $action->execute($item); $this->dispatch('toast', message: __('reviews.deleted'), type: 'success'); $this->resetPage(); } 
+        try { $action->execute($item); $this->dispatch('toast', message: __('reviews.deleted'), type: 'success'); $this->resetPage(); }
         catch (\Illuminate\Database\QueryException $e) { $this->dispatch('toast', message: __('reviews.delete_error_referenced'), type: 'error'); }
         catch (\Exception $e) { $this->dispatch('toast', message: __('reviews.delete_error'), type: 'error'); }
     }

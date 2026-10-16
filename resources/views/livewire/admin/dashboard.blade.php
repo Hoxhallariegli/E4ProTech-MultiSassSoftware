@@ -140,9 +140,15 @@
                         <div class="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-black">
                             <x-heroicon-o-device-phone-mobile class="w-5 h-5" />
                         </div>
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-blue-800 bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300">
-                            📲 APK v1.0.4
-                        </span>
+                        @if($hasFcmDevice)
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-emerald-800 bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                ✓ App Lidhur
+                            </span>
+                        @else
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-blue-800 bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300">
+                                📲 APK v{{ $apkVersion }}
+                            </span>
+                        @endif
                     </div>
                     <span class="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest block">HAPI 3</span>
                     <h4 class="text-sm font-black text-gray-900 dark:text-white mt-1 mb-2">Shkarko Aplikacionin APK</h4>
@@ -166,16 +172,16 @@
                         <div class="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-black">
                             <x-heroicon-o-bolt class="w-5 h-5" />
                         </div>
-                        @if($activeSmsTokens > 0)
+                        @if($smsGatewayOk)
                             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-emerald-800 bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-300">
-                                ✓ SMS Aktiv
+                                ✓ SMS Gateway Aktiv
                             </span>
-                        @elseif($shop?->sms_enabled)
-                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-blue-800 bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300">
-                                ⚡ SIM Karta OK
+                        @elseif($isSmsEnabled)
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-amber-800 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-300">
+                                ⚠️ Zgjidh Pajisjen te APK
                             </span>
                         @else
-                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-amber-800 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-300">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-stone-700 bg-stone-100 dark:bg-gray-700 dark:text-gray-300">
                                 ⚠️ Pa-aktivizuar
                             </span>
                         @endif

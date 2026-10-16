@@ -22,7 +22,7 @@ class Subscriptions extends Component
     #[Url(history: true)] public $plan_id = '';
     public bool $openFilter = false;
     public string $sortField = 'id';
-    public bool $sortAsc = true;
+    public bool $sortAsc = false;
 
     public function resetFilters() { $this->reset(['search', 'openFilter', 'barber_shop_id', 'plan_id', ]); $this->resetPage(); }
 
@@ -50,12 +50,12 @@ class Subscriptions extends Component
 
     public function sortBy($field) { if (!in_array($field, Subscription::sortable(), true)) return; if ($this->sortField === $field) { $this->sortAsc = ! $this->sortAsc; } $this->sortField = $field; }
 
-    public function deleteSubscription($id, DeleteSubscriptionAction $action) 
+    public function deleteSubscription($id, DeleteSubscriptionAction $action)
     {
         abort_if_cannot('delete_subscriptions');
         $item = Subscription::find($id);
         if (!$item) { $this->dispatch('toast', message: __('subscriptions.not_found'), type: 'error'); return; }
-        try { $action->execute($item); $this->dispatch('toast', message: __('subscriptions.deleted'), type: 'success'); $this->resetPage(); } 
+        try { $action->execute($item); $this->dispatch('toast', message: __('subscriptions.deleted'), type: 'success'); $this->resetPage(); }
         catch (\Illuminate\Database\QueryException $e) { $this->dispatch('toast', message: __('subscriptions.delete_error_referenced'), type: 'error'); }
         catch (\Exception $e) { $this->dispatch('toast', message: __('subscriptions.delete_error'), type: 'error'); }
     }

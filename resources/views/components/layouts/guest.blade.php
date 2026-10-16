@@ -50,11 +50,6 @@
             </div>
         </div>
     </header>
-                    {{ __('Krijo Salonin') }} ↗
-                </a>
-            </div>
-        </div>
-    </header>
 
     <!-- Main Content Area -->
     <main class="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-[#FAF8F2]">

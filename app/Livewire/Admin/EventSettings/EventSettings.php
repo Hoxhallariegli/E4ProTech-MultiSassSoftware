@@ -22,7 +22,7 @@ class EventSettings extends Component
     #[Url(history: true)] public $realtime_event_id = '';
     public bool $openFilter = false;
     public string $sortField = 'id';
-    public bool $sortAsc = true;
+    public bool $sortAsc = false;
 
     public function resetFilters() { $this->reset(['search', 'openFilter', 'barber_shop_id', 'realtime_event_id', ]); $this->resetPage(); }
 
@@ -50,12 +50,12 @@ class EventSettings extends Component
 
     public function sortBy($field) { if (!in_array($field, EventSetting::sortable(), true)) return; if ($this->sortField === $field) { $this->sortAsc = ! $this->sortAsc; } $this->sortField = $field; }
 
-    public function deleteEventSetting($id, DeleteEventSettingAction $action) 
+    public function deleteEventSetting($id, DeleteEventSettingAction $action)
     {
         abort_if_cannot('delete_event_settings');
         $item = EventSetting::find($id);
         if (!$item) { $this->dispatch('toast', message: __('event-settings.not_found'), type: 'error'); return; }
-        try { $action->execute($item); $this->dispatch('toast', message: __('event-settings.deleted'), type: 'success'); $this->resetPage(); } 
+        try { $action->execute($item); $this->dispatch('toast', message: __('event-settings.deleted'), type: 'success'); $this->resetPage(); }
         catch (\Illuminate\Database\QueryException $e) { $this->dispatch('toast', message: __('event-settings.delete_error_referenced'), type: 'error'); }
         catch (\Exception $e) { $this->dispatch('toast', message: __('event-settings.delete_error'), type: 'error'); }
     }

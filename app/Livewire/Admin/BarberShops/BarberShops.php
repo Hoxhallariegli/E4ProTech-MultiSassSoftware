@@ -22,7 +22,7 @@ class BarberShops extends Component
     #[Url(history: true)] public $owner_id = '';
     public bool $openFilter = false;
     public string $sortField = 'id';
-    public bool $sortAsc = true;
+    public bool $sortAsc = false;
 
     public function resetFilters() { $this->reset(['search', 'openFilter', 'owner_id', ]); $this->resetPage(); }
 

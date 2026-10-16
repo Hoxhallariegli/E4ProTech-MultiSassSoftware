@@ -243,38 +243,7 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
 
                   return Column(
                     children: [
-                      Row(
-                        children: [
-                          Expanded(child: _buildBarberFilter(barbers)),
-                          Padding(
-                            padding: const EdgeInsets.only(right: 16),
-                            child: InkWell(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (c) => const AiAssistantPage()),
-                                );
-                              },
-                              borderRadius: BorderRadius.circular(20),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF7C5CFC).withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: const Color(0xFF7C5CFC).withOpacity(0.4)),
-                                ),
-                                child: const Row(
-                                  children: [
-                                    Icon(Icons.psychology_rounded, color: Color(0xFF7C5CFC), size: 18),
-                                    SizedBox(width: 4),
-                                    Text('AI 🚀', style: TextStyle(color: Color(0xFF7C5CFC), fontWeight: FontWeight.w900, fontSize: 11)),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      _buildBarberFilter(barbers),
                       const SizedBox(height: 8),
                       _buildCustomWeekCalendar(calendarStats),
                       const SizedBox(height: 4),

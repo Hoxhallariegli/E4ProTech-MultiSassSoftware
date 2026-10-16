@@ -25,6 +25,43 @@
                 </div>
             </div>
 
+            <!-- PAID ADD-ON BANNER: Custom Website & Domain Service -->
+            <div class="mt-8 p-6 sm:p-8 rounded-2xl bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="space-y-1">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                            <x-heroicon-o-sparkles class="w-3.5 h-3.5 text-gray-700 dark:text-gray-300" />
+                            <span>{{ app()->getLocale() === 'en' ? 'ADD-ON SERVICE' : 'SHËRBIM SHTESË ME PAGESË' }}</span>
+                        </div>
+                        <h2 class="text-xl sm:text-2xl font-black tracking-tight text-gray-900 dark:text-white mt-1">
+                            {{ app()->getLocale() === 'en' ? 'Custom Website & Custom Domain (.com / .al) Add-On' : 'Uebsajt & Domain i Personalizuar (.com / .al)' }}
+                        </h2>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 font-medium leading-relaxed max-w-2xl">
+                            {{ app()->getLocale() === 'en'
+                                ? 'For salons desiring a fully custom branded website with their own domain (e.g., www.yoursalon.al), we offer custom web design, domain setup, and hosting as a dedicated add-on service.'
+                                : 'Për sallonet që dëshirojnë uebsajt dhe domain të personalizuar (p.sh. www.sallonituaj.al), ne ofrojmë ndërtimin, konfigurimin e domain-it dhe mirëmbajtjen e uebsajtit si shërbim shtesë me pagesë të dedikuar.' }}
+                        </p>
+                    </div>
+                    <div class="shrink-0">
+                        <x-modal>
+                            <x-slot name="trigger">
+                                <button type="button" @click="on = true" class="px-6 py-3 rounded-full bg-[#1A1D20] hover:bg-black text-white font-black text-xs shadow-md transition flex items-center gap-2 whitespace-nowrap">
+                                    <span>{{ app()->getLocale() === 'en' ? 'Inquire for Custom Web ↗' : 'Kërko Ofertën për Uebsajt ↗' }}</span>
+                                </button>
+                            </x-slot>
+                            <x-slot name="modalTitle">
+                                <div class="dark:text-white px-6 pt-6 font-black text-lg">
+                                    {{ app()->getLocale() === 'en' ? 'Inquire Custom Website Offer' : 'Kërko Ofertë për Uebsajt të Personalizuar' }}
+                                </div>
+                            </x-slot>
+                            <x-slot name="content">
+                                <livewire:admin.website-offer-requests.quick-create />
+                            </x-slot>
+                        </x-modal>
+                    </div>
+                </div>
+            </div>
+
             <!-- PLAN CARDS GRID -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
                 @foreach($availablePlans as $index => $plan)

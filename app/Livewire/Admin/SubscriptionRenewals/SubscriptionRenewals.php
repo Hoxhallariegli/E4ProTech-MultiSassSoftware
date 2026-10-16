@@ -4,6 +4,9 @@ namespace App\Livewire\Admin\SubscriptionRenewals;
 
 use App\Models\SubscriptionRenewal;
 use App\Models\Plan;
+use App\Models\WebsiteOfferRequest;
+use App\Models\AuditTrail;
+use App\Notifications\WebsiteOfferRequestedNotification;
 use App\Domain\SubscriptionRenewal\Queries\SubscriptionRenewalListQuery;
 use App\Domain\SubscriptionRenewal\Actions\DeleteSubscriptionRenewalAction;
 use Livewire\Component;
@@ -25,8 +28,14 @@ class SubscriptionRenewals extends Component
     public string $sortField = 'id';
     public bool $sortAsc = false;
 
-    // Pricing & Duration Toggles: 6 months, 12 months (10% OFF), 24 months (20% OFF)
+    // Pricing & Duration Toggles: 6 months, 12 months (5% OFF), 24 months (10% OFF)
     public int $billingDuration = 6;
+
+    // Website Offer Request Modal Properties
+    public bool $showOfferModal = false;
+    public string $desired_domain = '';
+    public string $offer_phone = '';
+    public string $offer_notes = '';
 
     public function setBillingDuration(int $months)
     {
@@ -39,6 +48,79 @@ class SubscriptionRenewals extends Component
     {
         $this->reset(['search', 'openFilter', 'plan_id']);
         $this->resetPage();
+    }
+
+    public function openOfferModal()
+    {
+        $user = auth()->user();
+        $shop = $user?->barberShop;
+
+        $this->desired_domain = $shop ? 'www.' . $shop->slug . '.al' : '';
+        $this->offer_phone = $shop?->phone ?? '';
+        $this->offer_notes = '';
+        $this->showOfferModal = true;
+    }
+
+    public function closeOfferModal()
+    {
+        $this->showOfferModal = false;
+        $this->reset(['desired_domain', 'offer_phone', 'offer_notes']);
+    }
+
+    public function submitWebsiteOffer()
+    {
+        $this->validate([
+            'desired_domain' => 'required|string|max:100',
+            'offer_phone' => 'required|string|max:30',
+            'offer_notes' => 'nullable|string|max:1000',
+        ], [
+            'desired_domain.required' => 'Ju lutemi shkruani domain-in e dëshiruar (p.sh. www.sallonituaj.al).',
+            'offer_phone.required' => 'Ju lutemi shkruani numrin e telefonit për kontakt.',
+        ]);
+
+        $user = auth()->user();
+        $shop = $user?->barberShop ?: \App\Models\BarberShop::first();
+
+        if (!$shop) {
+            $this->dispatch('toast', message: 'Nuk u gjet asnjë sallon aktiv.', type: 'error');
+            return;
+        }
+
+        $offerRequest = WebsiteOfferRequest::create([
+            'barber_shop_id' => $shop->id,
+            'user_id' => $user->id,
+            'desired_domain' => trim($this->desired_domain),
+            'phone' => trim($this->offer_phone),
+            'notes' => trim($this->offer_notes),
+            'status' => 'pending',
+        ]);
+
+        // Audit Trail Log
+        AuditTrail::logCustom(
+            $offerRequest,
+            'create',
+            'Subscriptions',
+            "Kërkesë për Uebsajt të Personalizuar ({$offerRequest->desired_domain})"
+        );
+
+        // Send Email Notification to Super Admin
+        try {
+            $adminUser = \App\Models\User::where('email', 'admin@e4protech.com')
+                ->orWhere('email', 'hoxhallariegli@gmail.com')
+                ->first();
+
+            if ($adminUser) {
+                $adminUser->notify(new WebsiteOfferRequestedNotification($offerRequest));
+            } else {
+                \Illuminate\Support\Facades\Notification::route('mail', 'admin@e4protech.com')
+                    ->notify(new WebsiteOfferRequestedNotification($offerRequest));
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Website offer notification email warning: " . $e->getMessage());
+        }
+
+        $this->closeOfferModal();
+        $this->dispatch('toast', message: 'Kërkesa juaj për Uebsajt të Personalizuar u dërgua me sukses! Ekipi ynë do t\'ju kontaktojë së shpejti. 🚀', type: 'success');
     }
 
     #[On('echo-private:mobile.subscription-renewals,.subscription-renewals.changed')]

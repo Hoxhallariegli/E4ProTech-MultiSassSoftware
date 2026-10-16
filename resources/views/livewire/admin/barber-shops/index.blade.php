@@ -37,6 +37,8 @@
                         <x-table.th name="id" :label="__('barber-shops.ID')" :$sortField :$sortAsc :sortable="true" />
                         <x-table.th name="owner_id" :label="__('barber-shops.Owner Id')" :$sortField :$sortAsc :sortable="in_array('owner_id', $sortableFields)" />
                         <x-table.th name="name" :label="__('barber-shops.Name')" :$sortField :$sortAsc :sortable="in_array('name', $sortableFields)" />
+                        <th class="px-6 py-4 text-left text-[10px] font-black uppercase text-gray-400 tracking-widest">Plani Aktiv</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-black uppercase text-gray-400 tracking-widest">Ditët e Mbetura</th>
                         <x-table.th name="app_name" :label="__('barber-shops.App Name')" :$sortField :$sortAsc :sortable="in_array('app_name', $sortableFields)" />
                         <x-table.th name="slug" :label="__('barber-shops.Slug')" :$sortField :$sortAsc :sortable="in_array('slug', $sortableFields)" />
                         <x-table.th name="logo" :label="__('barber-shops.Logo')" :$sortField :$sortAsc :sortable="in_array('logo', $sortableFields)" />

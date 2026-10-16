@@ -309,7 +309,7 @@
       </div>
       <div class="inline-flex items-center justify-center pt-1 pb-4 md:pt-4">
         <span>
-            {{ __('Built by') }} <a href="https://e4protech.com" target="_blank" class="font-medium text-blue-600 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300">Hoxhallari Egli</a>
+            {{ __('Built by') }} <a href="https://e4protech.com" target="_blank" class="font-medium text-blue-600 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"E4ProTech</a>
         </span>
       </div>
     </div>

@@ -30,6 +30,7 @@ class ModulePermissionsSeeder extends Seeder
             'AiAssistant' => 'ai_assistant',
             'SystemSettings' => 'system_settings',
             'AuditTrail' => 'audit_trails',
+            'WebsiteOfferRequest' => 'website_offer_requests',
         ];
 
         foreach ($modules as $name => $pluralSnake) {

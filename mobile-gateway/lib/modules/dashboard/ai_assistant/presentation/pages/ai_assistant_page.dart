@@ -26,6 +26,13 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
       final res = await ApiService.post('/ai-assistant', {'prompt': prompt});
       if (res.statusCode == 200 || res.statusCode == 201) {
         final data = jsonDecode(res.body);
+
+        if (data['require_confirmation'] == true && mounted) {
+          setState(() => _isProcessing = false);
+          _showConfirmationDialog(prompt, data);
+          return;
+        }
+
         setState(() {
           _history.insert(0, {
             'type': 'success',
@@ -60,9 +67,121 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
     }
   }
 
+  Future<void> _showConfirmationDialog(String prompt, Map<String, dynamic> data) async {
+    final greeting = data['greeting']?.toString() ?? 'A dëshironi të procedojmë me kryerjen e këtyre veprimeve?';
+    final previews = (data['previews'] as List?) ?? [];
+    final actions = data['actions'];
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: const [
+            Icon(Icons.psychology_rounded, color: Color(0xFF7C5CFC), size: 28),
+            SizedBox(width: 8),
+            Expanded(child: Text('Kërkohet Konfirmimi', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16))),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(greeting, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              const SizedBox(height: 12),
+              ...previews.map((p) {
+                final items = (p['items'] as List?) ?? [];
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF7C5CFC).withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFF7C5CFC).withOpacity(0.2)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(p['title']?.toString() ?? '', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Color(0xFF7C5CFC))),
+                      const SizedBox(height: 4),
+                      ...items.map((it) => Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 1),
+                            child: Text('• ${it.toString()}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          )),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('❌ Jo, Anulo', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF7C5CFC),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('✅ Po, Konfirmo', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() => _isProcessing = true);
+      try {
+        final res = await ApiService.post('/ai-assistant', {
+          'prompt': prompt,
+          'confirm': true,
+          'actions': actions,
+        });
+
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          final resData = jsonDecode(res.body);
+          setState(() {
+            _history.insert(0, {
+              'type': 'success',
+              'prompt': prompt,
+              'time': DateTime.now().toString().substring(11, 16),
+              'results': resData['results'] ?? [],
+            });
+            _promptController.clear();
+          });
+        }
+      } catch (e) {
+        setState(() {
+          _history.insert(0, {
+            'type': 'error',
+            'prompt': prompt,
+            'time': DateTime.now().toString().substring(11, 16),
+            'message': e.toString(),
+          });
+        });
+      } finally {
+        if (mounted) setState(() => _isProcessing = false);
+      }
+    } else {
+      setState(() {
+        _history.insert(0, {
+          'type': 'error',
+          'prompt': prompt,
+          'time': DateTime.now().toString().substring(11, 16),
+          'message': 'Kërkesa u anulua nga përdoruesi. Asnjë e dhënë nuk u ndryshua.',
+        });
+      });
+    }
+  }
+
   void _usePreset(String preset) {
-    _promptController.text = preset;
-    _process();
+    setState(() {
+      _promptController.text = preset;
+    });
   }
 
   @override

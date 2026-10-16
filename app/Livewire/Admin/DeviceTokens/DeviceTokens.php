@@ -22,7 +22,7 @@ class DeviceTokens extends Component
     #[Url(history: true)] public $user_id = '';
     public bool $openFilter = false;
     public string $sortField = 'id';
-    public bool $sortAsc = true;
+    public bool $sortAsc = false;
 
     public function resetFilters() { $this->reset(['search', 'openFilter', 'barber_shop_id', 'user_id', ]); $this->resetPage(); }
 

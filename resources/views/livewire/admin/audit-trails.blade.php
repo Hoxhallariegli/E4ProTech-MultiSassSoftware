@@ -121,6 +121,11 @@
                                 {{ $log->user->name ?? 'Sistemi / Publik' }}
                             </td>
                             <td class="px-6 py-4 font-bold text-gray-800 dark:text-gray-200 whitespace-nowrap">
+                                @if(str_contains($log->title, '[AI Assistant]'))
+                                    <span class="px-2 py-0.5 text-[10px] font-black uppercase text-purple-700 bg-purple-100 dark:bg-purple-900/50 dark:text-purple-300 rounded-md mr-1">
+                                        🤖 AI
+                                    </span>
+                                @endif
                                 {{ $log->title }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">

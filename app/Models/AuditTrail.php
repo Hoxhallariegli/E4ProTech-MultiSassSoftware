@@ -67,6 +67,25 @@ class AuditTrail extends Model
         ]);
     }
 
+    public static function logAi($model, string $type, string $section): void
+    {
+        $dirty = $model->getDirty();
+        $original = $model->getOriginal();
+
+        $oldValues = $type === 'update' ? array_intersect_key($original, $dirty) : ($type === 'delete' ? $model->attributesToArray() : null);
+        $newValues = $type === 'update' ? $dirty : ($type === 'create' ? $model->attributesToArray() : null);
+
+        self::create([
+            'user_id' => auth()->id(),
+            'title' => "🤖 [AI Assistant] " . ucfirst($type) . " " . class_basename($model),
+            'reference_id' => (string)$model->id,
+            'section' => $section,
+            'type' => $type,
+            'old_values' => $oldValues,
+            'new_values' => $newValues,
+        ]);
+    }
+
     public static function logCustom($model, string $type, string $section, string $title, ?array $newValues = null): void
     {
         self::create([

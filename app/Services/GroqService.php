@@ -22,34 +22,19 @@ class GroqService
                 Parse the user's natural language command into a JSON array of operational actions.
 
                 ACTIONS:
-                1. 'create_services':
-                   details: {
-                      services: [ { name: 'Prerje', price: 1000, duration_minutes: 30 } ]
-                   }
-                2. 'create_bookings':
-                   details: {
-                      count: 5,
-                      start_hour: 13,
-                      end_hour: 17,
-                      is_walkin: true,
-                      send_sms: false,
-                      service_name: 'Qethje'
-                   }
-                3. 'create_staff':
-                   details: {
-                      staff: [ { name: 'Ardit' }, { name: 'Klara' } ]
-                   }
-                4. 'create_customers':
-                   details: {
-                      customers: [ { name: 'Klient 1' } ]
-                   }
-                5. 'query_stats':
-                   details: { type: 'today' }
+                1. 'create_services': details: { services: [ { name: 'Prerje', price: 1000, duration_minutes: 30 } ] }
+                2. 'create_bookings': details: { count: 1, start_hour: 13, start_minute: 0, customer_name: 'Ferid', is_walkin: true, send_sms: false }
+                3. 'create_staff': details: { staff: [ { name: 'Ardit' } ] }
+                4. 'create_customers': details: { customers: [ { name: 'Klient 1' } ] }
+                5. 'delete_bookings': details: { count: 5, ids: [] }
+                6. 'delete_services': details: { count: 5 }
+                7. 'delete_staff': details: { count: 3 }
+                8. 'query_stats': details: { type: 'today' }
 
                 RETURN ONLY A VALID JSON ARRAY OF ACTIONS:
                 [
                   {
-                    \"action\": \"create_services|create_bookings|create_staff|create_customers|query_stats\",
+                    \"action\": \"create_services|create_bookings|create_staff|create_customers|delete_bookings|delete_services|delete_staff|query_stats\",
                     \"details\": { ... }
                   }
                 ]";
@@ -85,14 +70,73 @@ class GroqService
     {
         $lower = mb_strtolower($prompt);
         $actions = [];
+        $hasBookingAction = false;
 
-        // Check for Services creation
+        // CHECK INTENT: DELETE vs CREATE
+        $isDelete = str_contains($lower, 'fshi') || str_contains($lower, 'fshij') || str_contains($lower, 'anulo') || str_contains($lower, 'delete') || str_contains($lower, 'remove');
+
+        if ($isDelete) {
+            // Delete Bookings
+            if (str_contains($lower, 'booking') || str_contains($lower, 'rezervim') || str_contains($lower, 'walkin') || str_contains($lower, 'walk-in') || str_contains($lower, 'takim') || str_contains($lower, 'krijove') || str_contains($lower, 'sapo')) {
+                preg_match('/(\d+)/u', $lower, $m);
+                $count = isset($m[1]) ? (int) $m[1] : 5;
+
+                preg_match_all('/#?(\d{2,})/u', $prompt, $idMatches);
+                $ids = !empty($idMatches[1]) ? array_map('intval', $idMatches[1]) : [];
+
+                return [
+                    [
+                        'action' => 'delete_bookings',
+                        'details' => [
+                            'count' => $count,
+                            'ids' => $ids,
+                        ]
+                    ]
+                ];
+            }
+
+            // Delete Services
+            if (str_contains($lower, 'sherbim') || str_contains($lower, 'shërbim') || str_contains($lower, 'service')) {
+                preg_match('/(\d+)/u', $lower, $m);
+                $count = isset($m[1]) ? (int) $m[1] : 5;
+
+                return [
+                    [
+                        'action' => 'delete_services',
+                        'details' => ['count' => $count]
+                    ]
+                ];
+            }
+
+            // Delete Staff
+            if (str_contains($lower, 'staf') || str_contains($lower, 'staff') || str_contains($lower, 'berber') || str_contains($lower, 'parukier')) {
+                preg_match('/(\d+)/u', $lower, $m);
+                $count = isset($m[1]) ? (int) $m[1] : 3;
+
+                return [
+                    [
+                        'action' => 'delete_staff',
+                        'details' => ['count' => $count]
+                    ]
+                ];
+            }
+
+            return [
+                [
+                    'action' => 'delete_bookings',
+                    'details' => ['count' => 5]
+                ]
+            ];
+        }
+
+        // CREATE ACTIONS
+
+        // Services creation
         if (str_contains($lower, 'sherbim') || str_contains($lower, 'shërbim') || str_contains($lower, 'service')) {
             preg_match('/(\d+)\s*(?:sherbim|shërbim|service)/u', $lower, $m);
             $count = isset($m[1]) ? (int) $m[1] : 3;
 
             $parsedServices = [];
-            // Check if specific names/prices are mentioned e.g. after ":"
             if (str_contains($prompt, ':')) {
                 $parts = explode(':', $prompt, 2);
                 $listStr = $parts[1] ?? '';
@@ -102,15 +146,12 @@ class GroqService
                     $itemTrim = trim($item);
                     if (empty($itemTrim)) continue;
 
-                    // Extract price
                     preg_match('/(\d+)\s*(?:lekë|leke|lek|eur|euro|€|\$)?/ui', $itemTrim, $priceMatch);
                     $price = isset($priceMatch[1]) ? (float) $priceMatch[1] : 1000;
 
-                    // Extract duration
                     preg_match('/(\d+)\s*(?:min|minuta)/ui', $itemTrim, $durMatch);
                     $dur = isset($durMatch[1]) ? (int) $durMatch[1] : 30;
 
-                    // Clean service name: remove digits, currencies, min, and extra symbols
                     $cleanName = preg_replace('/\d+/u', '', $itemTrim);
                     $cleanName = preg_replace('/(lekë|leke|lek|eur|euro|€|\$|minuta|min)/ui', '', $cleanName);
                     $cleanName = trim(str_replace([',', ';', '-', ':', 'ë', 'e'], [' ', ' ', ' ', ' ', 'ë', 'e'], $cleanName));
@@ -143,32 +184,40 @@ class GroqService
             ];
         }
 
-        // Check for Bookings creation
+        // Bookings creation
         if (str_contains($lower, 'booking') || str_contains($lower, 'rezervim') || str_contains($lower, 'walkin') || str_contains($lower, 'walk-in') || str_contains($lower, 'takim')) {
+            $hasBookingAction = true;
             preg_match('/(\d+)\s*(?:booking|rezervim|walkin|walk-in|takim)/u', $lower, $m);
-            $count = isset($m[1]) ? (int) $m[1] : 5;
+            $count = isset($m[1]) ? (int) $m[1] : 1;
 
-            // Extract hours e.g. "ora 13 deri 17" or "nga 1 ne 5"
-            preg_match('/(?:ora|nga)?\s*(\d{1,2})\s*(?:ne|deri|-)\s*(\d{1,2})/u', $lower, $hMatch);
-            $startHour = isset($hMatch[1]) ? (int) $hMatch[1] : 13;
-            $endHour = isset($hMatch[2]) ? (int) $hMatch[2] : 17;
+            // Extract exact time e.g. "ne ore 13:00" or "ora 13" or "13:00"
+            preg_match('/(?:ore|ora|orën)?\s*(\d{1,2})(?::(\d{2}))?/ui', $lower, $tMatch);
+            $startHour = isset($tMatch[1]) ? (int) $tMatch[1] : 13;
+            $startMin = isset($tMatch[2]) ? (int) $tMatch[2] : 0;
 
             if ($startHour < 7 && $startHour > 0) $startHour += 12; // e.g. "1" -> 13
-            if ($endHour < 7 && $endHour > 0) $endHour += 12;     // e.g. "5" -> 17
+
+            // Extract customer name e.g. "klient Ferid" or "klientin Sokol"
+            $customerName = null;
+            if (preg_match('/klient(?:in)?\s+([a-zA-ZçÇëË\s]+)/ui', $prompt, $custMatch)) {
+                $customerName = trim(preg_replace('/\s+/', ' ', $custMatch[1]));
+            }
 
             $actions[] = [
                 'action' => 'create_bookings',
                 'details' => [
                     'count' => $count,
                     'start_hour' => $startHour,
-                    'end_hour' => $endHour,
+                    'start_minute' => $startMin,
+                    'end_hour' => $startHour + 1,
+                    'customer_name' => $customerName,
                     'is_walkin' => true,
                     'send_sms' => false,
                 ]
             ];
         }
 
-        // Check for Staff creation
+        // Staff creation
         if (str_contains($lower, 'staf') || str_contains($lower, 'staff') || str_contains($lower, 'berber') || str_contains($lower, 'parukier')) {
             preg_match('/(\d+)\s*(?:staf|staff|berber|parukier)/u', $lower, $m);
             $count = isset($m[1]) ? (int) $m[1] : 3;
@@ -198,8 +247,8 @@ class GroqService
             ];
         }
 
-        // Check for Customers creation
-        if (str_contains($lower, 'klient') || str_contains($lower, 'customer')) {
+        // Customers creation (ONLY if not a booking action)
+        if (!$hasBookingAction && (str_contains($lower, 'klient') || str_contains($lower, 'customer'))) {
             preg_match('/(\d+)\s*(?:klient|customer)/u', $lower, $m);
             $count = isset($m[1]) ? (int) $m[1] : 3;
 

@@ -2,6 +2,16 @@
     <td class="px-6 py-5 font-bold text-blue-600 dark:text-blue-400">{{ $item->id }}</td>
     <td class="px-6 py-5 font-bold text-gray-900 dark:text-white">{{ $item->owner?->name ?? '-' }}</td>
 <td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->name }}</td>
+<td class="px-6 py-5 whitespace-nowrap">
+    <span class="px-3 py-1 rounded-full text-xs font-black {{ $item->is_expired ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' }}">
+        {{ $item->active_plan_name }}
+    </span>
+</td>
+<td class="px-6 py-5 whitespace-nowrap">
+    <span class="px-3 py-1 rounded-full text-xs font-black font-mono {{ $item->is_expired ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' }}">
+        {{ $item->days_left }} Ditë
+    </span>
+</td>
 <td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->app_name }}</td>
 <td class="px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->slug }}</td>
 <td class="px-6 py-3">@if($item->logo) <a href="{{ asset(ltrim($item->logo, '/')) }}" target="_blank" rel="noopener" class="inline-block group" title="View image"><img src="{{ asset(ltrim($item->logo, '/')) }}" alt="{{ e(ucwords(str_replace('_', ' ', 'logo'))) }}" class="w-12 h-12 rounded-xl object-cover border border-gray-200 dark:border-gray-700 shadow-sm group-hover:scale-105 transition-transform duration-150" loading="lazy" /></a> @else <span class="text-gray-400">-</span> @endif</td>

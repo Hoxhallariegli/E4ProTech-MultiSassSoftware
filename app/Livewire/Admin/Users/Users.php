@@ -35,7 +35,7 @@ class Users extends Component
 
     public string $sortField = 'name';
 
-    public bool $sortAsc = true;
+    public bool $sortAsc = false;
 
     public bool $openFilter = false;
 

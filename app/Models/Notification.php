@@ -44,6 +44,11 @@ class Notification extends Model
         return $this->belongsTo(User::class, 'assigned_from_user_id');
     }
 
+    public function getBodyAttribute(): ?string
+    {
+        return $this->attributes['body'] ?? null;
+    }
+
     protected static function newFactory(): NotificationFactory
     {
         return NotificationFactory::new();
