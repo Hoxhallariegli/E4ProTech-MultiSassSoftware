@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
+import '../../services/api_service.dart';
 import '../../core/realtime/realtime_service.dart';
 import '../../modules/dashboard/presentation/pages/module_registry.dart';
 import '../../modules/dashboard/presentation/widgets/shop_switcher_widget.dart';
@@ -30,7 +31,7 @@ class Sidebar extends StatelessWidget {
         children: [
           UserHeaderCard(
             userData: user,
-            baseUrl: '',
+            baseUrl: ApiService.serverUrlSync,
             onSwitchShop: () {
               showModalBottomSheet(
                 context: context,

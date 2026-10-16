@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -34,12 +35,20 @@ void main() async {
 
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString('auth_token');
+  final brandingJson = prefs.getString('branding_data');
+
+  BrandingState initialBranding = BrandingState.defaultBranding();
+  if (brandingJson != null) {
+    try {
+      initialBranding = BrandingState.fromMap(jsonDecode(brandingJson));
+    } catch (_) {}
+  }
 
   runApp(
     MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => LocaleCubit()),
-        BlocProvider(create: (context) => BrandingCubit()),
+        BlocProvider(create: (context) => BrandingCubit(initialState: initialBranding)),
         BlocProvider(create: (context) => ThemeCubit()),
       ],
       child: MyApp(isLoggedIn: token != null && token.isNotEmpty),

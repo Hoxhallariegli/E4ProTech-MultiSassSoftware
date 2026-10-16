@@ -96,6 +96,13 @@ class UserHeaderCard extends StatelessWidget {
     final shopName = userData?['business']?['name'] ?? 'Digital Group';
     final trialDaysLeft = userData?['business']?['trial_days_left'] ?? 30;
 
+    final effectiveBaseUrl = (baseUrl.isNotEmpty) ? baseUrl : ApiService.serverUrlSync;
+    final String? imageUrl = (image != null && image.toString().trim().isNotEmpty)
+        ? (image.toString().startsWith('http')
+            ? image.toString()
+            : '$effectiveBaseUrl/${image.toString().startsWith('/') ? image.toString().substring(1) : image}')
+        : null;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 56, 20, 24),
@@ -126,15 +133,20 @@ class UserHeaderCard extends StatelessWidget {
                     BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4)),
                   ],
                 ),
-                child: CircleAvatar(
-                  radius: 28,
-                  backgroundColor: Colors.white24,
-                  backgroundImage: (image != null && image.toString().isNotEmpty)
-                      ? NetworkImage(image.toString().startsWith('http') ? image.toString() : '$baseUrl/$image')
-                      : null,
-                  child: (image == null || image.toString().isEmpty)
-                      ? Text(name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'A', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold))
-                      : null,
+                child: SizedBox(
+                  width: 56,
+                  height: 56,
+                  child: ClipOval(
+                    child: (imageUrl != null)
+                        ? Image.network(
+                            imageUrl,
+                            width: 56,
+                            height: 56,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _avatarText(name),
+                          )
+                        : _avatarText(name),
+                  ),
                 ),
               ),
               if (onSwitchShop != null)
@@ -217,6 +229,19 @@ class UserHeaderCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _avatarText(String name) {
+    return Container(
+      width: 56,
+      height: 56,
+      color: Colors.white24,
+      alignment: Alignment.center,
+      child: Text(
+        name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'A',
+        style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
       ),
     );
   }

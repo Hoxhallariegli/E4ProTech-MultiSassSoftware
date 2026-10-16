@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/api_service.dart';
 
 class BrandingState {
   final String appName;
@@ -34,12 +35,23 @@ class BrandingState {
     this.serviceLabel = 'Shërbimi',
   });
 
+  String? get fullLogoUrl {
+    if (logoUrl == null || logoUrl!.trim().isEmpty) return null;
+    final url = logoUrl!.trim();
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    final baseUrl = ApiService.serverUrlSync;
+    final cleanPath = url.startsWith('/') ? url.substring(1) : url;
+    return '$baseUrl/$cleanPath';
+  }
+
   bool get isExpired => subscriptionStatus == 'expired' || trialDaysLeft <= 0;
 
   factory BrandingState.defaultBranding() {
     return const BrandingState(
-      appName: 'LaraFlutter Gateway',
-      primaryColor: Color(0xFF3B82F6),
+      appName: 'E4ProTech Engine',
+      primaryColor: Color(0xFF7C5CFC),
     );
   }
 
@@ -63,9 +75,9 @@ class BrandingState {
 
     factory BrandingState.fromMap(Map<String, dynamic> map) {
     return BrandingState(
-      appName: map['appName'] ?? 'LaraFlutter Gateway',
+      appName: map['appName'] ?? 'E4ProTech Engine',
       logoUrl: map['logoUrl'],
-      primaryColor: Color(map['primaryColor'] ?? 0xFF3B82F6),
+      primaryColor: Color(map['primaryColor'] ?? 0xFF7C5CFC),
       smsEnabled: map['smsEnabled'] ?? false,
       reminderHours: map['reminderHours'] ?? 2,
       trialDaysLeft: map['trialDaysLeft'] ?? 0,
@@ -81,7 +93,8 @@ class BrandingState {
 }
 
 class BrandingCubit extends Cubit<BrandingState> {
-  BrandingCubit() : super(BrandingState.defaultBranding()) {
+  BrandingCubit({BrandingState? initialState})
+      : super(initialState ?? BrandingState.defaultBranding()) {
     _loadSavedBranding();
   }
 

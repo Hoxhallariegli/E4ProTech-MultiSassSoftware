@@ -734,10 +734,14 @@ class _BusinessBanner extends StatelessWidget {
                             borderRadius: BorderRadius.circular(24),
                             child: Image.file(File(selectedImagePath!), fit: BoxFit.cover),
                           )
-                        : (branding.logoUrl != null
+                        : (branding.fullLogoUrl != null
                             ? ClipRRect(
                                 borderRadius: BorderRadius.circular(24),
-                                child: Image.network(branding.logoUrl!, fit: BoxFit.cover),
+                                child: Image.network(
+                                  branding.fullLogoUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Icon(Icons.add_a_photo_rounded, size: 32),
+                                ),
                               )
                             : const Icon(Icons.add_a_photo_rounded, size: 32)),
                   ),
@@ -828,10 +832,14 @@ class _BusinessBanner extends StatelessWidget {
                 color: Colors.white24,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: branding.logoUrl != null
+              child: branding.fullLogoUrl != null
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(16),
-                      child: Image.network(branding.logoUrl!, fit: BoxFit.cover),
+                      child: Image.network(
+                        branding.fullLogoUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(Icons.business_center_rounded, color: Colors.white, size: 28),
+                      ),
                     )
                   : const Icon(Icons.business_center_rounded, color: Colors.white, size: 28),
             ),

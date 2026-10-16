@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\Permission;
+use App\Models\Role;
 use Illuminate\Support\Str;
 
 class SyncPermissionsCommand extends Command
@@ -58,9 +59,20 @@ class SyncPermissionsCommand extends Command
         }
 
         if ($newCount === 0) {
-            $this->info('✅ All permissions are already synchronized and up to date.');
+            $this->info('✅ All permissions are already synchronized in the database.');
         } else {
             $this->info("✅ Successfully created {$newCount} new permission(s).");
+        }
+
+        // Give all permissions to Admin role
+        try {
+            setPermissionsTeamId(0);
+            $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web'], ['label' => 'Administrator']);
+            $allPerms = Permission::all();
+            $adminRole->syncPermissions($allPerms);
+            $this->info("🛡️ Automatically granted all " . $allPerms->count() . " permissions to 'admin' role.");
+        } catch (\Throwable $e) {
+            $this->warn("Role permission assignment warning: " . $e->getMessage());
         }
 
         return Command::SUCCESS;

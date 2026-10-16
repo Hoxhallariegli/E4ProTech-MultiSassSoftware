@@ -174,10 +174,17 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ],
                       ),
-                      child: branding.logoUrl != null
+                      child: branding.fullLogoUrl != null
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(22),
-                              child: Image.network(branding.logoUrl!, fit: BoxFit.cover),
+                              child: Image.network(
+                                branding.fullLogoUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => ClipRRect(
+                                  borderRadius: BorderRadius.circular(22),
+                                  child: Image.asset('assets/E4ProTech-Engine.png', fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.bolt_rounded, color: Colors.white, size: 45)),
+                                ),
+                              ),
                             )
                           : ClipRRect(
                               borderRadius: BorderRadius.circular(22),
