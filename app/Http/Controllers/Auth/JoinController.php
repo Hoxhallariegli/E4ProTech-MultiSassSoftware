@@ -49,6 +49,10 @@ class JoinController extends Controller
         $user->email_verified_at = now()->toDateTimeString();
         $user->save();
 
+        if ($user->barber_shop_id) {
+            $user->barberShops()->syncWithoutDetaching([$user->barber_shop_id]);
+        }
+
         AuditTrail::create([
             'user_id' => $user->id,
             'reference_id' => $user->id,

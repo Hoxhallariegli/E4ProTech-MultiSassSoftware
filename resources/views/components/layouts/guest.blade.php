@@ -1,6 +1,3 @@
-@php
-    $isEn = app()->getLocale() === 'en';
-@endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-[#FAF8F2] text-[#1A1D20] overflow-x-hidden">
 <head>
@@ -21,33 +18,33 @@
 
             <!-- Nav Links -->
             <nav class="hidden md:flex items-center gap-6 lg:gap-8 text-xs font-bold text-slate-700">
-                <a href="/" class="hover:text-[#7C5CFC] transition">{{ $isEn ? 'Home' : 'Kreu' }}</a>
-                <a href="/#how-it-works" class="hover:text-[#7C5CFC] transition">{{ $isEn ? 'How It Works' : 'Si Funksionon' }}</a>
-                <a href="/#services" class="hover:text-[#7C5CFC] transition">{{ $isEn ? 'Services' : 'Shërbimet' }}</a>
-                <a href="/#sallonet" class="hover:text-[#7C5CFC] transition">{{ $isEn ? 'Salons' : 'Sallonet' }}</a>
-                <a href="/#faq" class="hover:text-[#7C5CFC] transition">{{ $isEn ? 'FAQ' : 'Pyetjet' }}</a>
+                <a href="/" class="hover:text-[#7C5CFC] transition">{{ __('guest.Home') }}</a>
+                <a href="/#how-it-works" class="hover:text-[#7C5CFC] transition">{{ __('guest.How It Works') }}</a>
+                <a href="/#services" class="hover:text-[#7C5CFC] transition">{{ __('guest.Services') }}</a>
+                <a href="/#sallonet" class="hover:text-[#7C5CFC] transition">{{ __('guest.Salons') }}</a>
+                <a href="/#faq" class="hover:text-[#7C5CFC] transition">{{ __('guest.FAQ') }}</a>
             </nav>
 
             <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
                 <div class="flex items-center gap-0.5 p-0.5 sm:p-1 rounded-xl bg-stone-200/60 text-[10px] sm:text-xs font-bold">
-                    <a href="{{ route('language.switch', 'sq') }}" class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg transition {{ !$isEn ? 'bg-[#0A4D44] text-white' : 'text-slate-600 hover:text-black' }}">
+                    <a href="{{ route('language.switch', 'sq') }}" class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg transition {{ app()->getLocale() === 'sq' ? 'bg-[#0A4D44] text-white' : 'text-slate-600 hover:text-black' }}">
                         SQ
                     </a>
-                    <a href="{{ route('language.switch', 'en') }}" class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg transition {{ $isEn ? 'bg-[#0A4D44] text-white' : 'text-slate-600 hover:text-black' }}">
+                    <a href="{{ route('language.switch', 'en') }}" class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg transition {{ app()->getLocale() === 'en' ? 'bg-[#0A4D44] text-white' : 'text-slate-600 hover:text-black' }}">
                         EN
                     </a>
                 </div>
 
                 @if(!request()->routeIs('login') && !request()->routeIs('password.*'))
                     <a href="{{ route('login') }}" class="inline-flex items-center gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-full text-[10px] sm:text-xs font-black bg-[#1A1D20] text-white hover:bg-black transition shadow-sm whitespace-nowrap">
-                        <span>{{ $isEn ? 'Login' : 'Kyçja' }}</span>
+                        <span>{{ __('guest.Login') }}</span>
                         <span>↗</span>
                     </a>
                 @endif
 
                 <a href="{{ route('krijo-sallonin') }}" class="px-2.5 sm:px-5 py-1.5 sm:py-2.5 rounded-full text-[10px] sm:text-xs font-black text-white bg-[#7C5CFC] hover:bg-[#6366F1] shadow-md transition transform active:scale-95 flex items-center gap-1 whitespace-nowrap">
-                    <span>{{ $isEn ? 'Create' : 'Krijo' }}</span>
-                    <span class="hidden sm:inline">{{ $isEn ? 'Salon' : 'Salonin' }}</span>
+                    <span>{{ __('guest.Create') }}</span>
+                    <span class="hidden sm:inline">{{ __('guest.Salon') }}</span>
                     <span>↗</span>
                 </a>
             </div>
@@ -61,7 +58,7 @@
 
     <!-- Footer -->
     <footer class="bg-[#FAF8F2] border-t border-stone-200/60 py-6 text-center text-xs font-medium text-slate-500 w-full overflow-hidden">
-        &copy; {{ date('Y') }} E4ProTech Engine Multi-SaaS — {{ __('Mundësuar nga E4ProTech.') }}
+        &copy; {{ date('Y') }} E4ProTech Engine Multi-SaaS — {{ __('guest.Powered by E4ProTech') }}
     </footer>
 
 </body>

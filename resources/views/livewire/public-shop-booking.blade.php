@@ -5,19 +5,18 @@
         if (in_array(strtolower($secondaryColor), ['#1c1c1e', '#1c1c1f', '#000000', '#111827'])) {
             $secondaryColor = '#0A4D44';
         }
-        $isEn = app()->getLocale() === 'en';
     @endphp
 
     @if($shop->is_expired)
         <div class="text-center py-12 space-y-4">
-            <div class="w-16 h-16 bg-amber-500/10 border border-amber-500/30 text-amber-700 rounded-3xl flex items-center justify-center mx-auto text-3xl font-black shadow-lg">
-                ⚠️
+            <div class="w-16 h-16 bg-amber-500/10 border border-amber-500/30 text-amber-700 rounded-3xl flex items-center justify-center mx-auto shadow-lg">
+                <x-heroicon-o-exclamation-triangle class="w-8 h-8 text-amber-600" />
             </div>
             <h3 class="text-2xl font-black text-[#1A1D20]">
-                {{ $isEn ? 'Online Bookings are Suspended' : 'Rezervimet Online janë të Pezulluara' }}
+                {{ __('public_booking.Online Bookings Suspended') }}
             </h3>
             <p class="text-slate-600 text-xs max-w-md mx-auto leading-relaxed font-medium">
-                {{ $isEn
+                {{ app()->getLocale() === 'en'
                     ? "Online booking for {$shop->name} is temporarily suspended as the shop subscription has expired. Please contact the salon directly."
                     : "Faqja e rezervimeve online për {$shop->name} është e pezulluar përkohësisht pasi abonimi i sallonit ka përfunduar. Ju lutemi kontaktoni drejtpërdrejt sallonin." }}
             </p>
@@ -28,10 +27,10 @@
                 ✓
             </div>
             <h3 class="text-2xl sm:text-3xl font-black text-[#1A1D20]">
-                {{ $isEn ? 'Booking Completed Successfully! 🎯' : 'Rezervimi u Krye me Sukses! 🎯' }}
+                {{ __('public_booking.Booking Completed') }}
             </h3>
             <p class="text-slate-600 text-sm max-w-md mx-auto font-medium">
-                {{ $isEn
+                {{ app()->getLocale() === 'en'
                     ? "Thank you {$customerName}! Your appointment has been registered at {$shop->name}."
                     : "Faleminderit {$customerName}! Takimi juaj u regjistrua me sukses te {$shop->name}." }}
             </p>
@@ -39,25 +38,25 @@
             <div class="p-6 rounded-2xl text-white text-left max-w-md mx-auto space-y-3 text-xs shadow-lg"
                  style="background-color: {{ $secondaryColor }};">
                 <div class="flex justify-between border-b border-white/20 pb-2">
-                    <span class="text-teal-100">{{ $isEn ? 'Staff Member:' : 'Pjesëtari i Stafit:' }}</span>
+                    <span class="text-teal-100">{{ __('public_booking.Staff Member') }}</span>
                     <span class="font-extrabold text-white">{{ $createdBooking->barber?->name }}</span>
                 </div>
                 <div class="flex justify-between border-b border-white/20 pb-2">
-                    <span class="text-teal-100">{{ $isEn ? 'Service:' : 'Shërbimi:' }}</span>
+                    <span class="text-teal-100">{{ __('public_booking.Service') }}</span>
                     <span class="font-extrabold text-white">{{ $createdBooking->service?->name }}</span>
                 </div>
                 <div class="flex justify-between border-b border-white/20 pb-2">
-                    <span class="text-teal-100">{{ $isEn ? 'Date & Time:' : 'Data & Ora:' }}</span>
+                    <span class="text-teal-100">{{ __('public_booking.Date & Time') }}</span>
                     <span class="font-black text-amber-300">{{ $createdBooking->appointment_at->format('d/m/Y H:i') }}</span>
                 </div>
                 <div class="flex justify-between pt-1">
-                    <span class="text-teal-100">{{ $isEn ? 'Total Price:' : 'Çmimi Total:' }}</span>
+                    <span class="text-teal-100">{{ __('public_booking.Total Price') }}</span>
                     <span class="font-black text-white text-sm">{{ number_format($createdBooking->total_price, 0) }} {{ $shop->resolved_currency }}</span>
                 </div>
             </div>
 
             <button wire:click="resetForm" class="px-8 py-3.5 rounded-full font-black text-xs text-white bg-[#1A1D20] hover:bg-black transition shadow-md">
-                {{ $isEn ? '+ Make Another Booking' : '+ Bëj një Rezervim Tjetër' }}
+                {{ __('public_booking.Make Another Booking') }}
             </button>
         </div>
     @else
@@ -66,20 +65,20 @@
                 <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-black mb-3"
                      style="background-color: {{ $secondaryColor }}1A; color: {{ $secondaryColor }};">
                     <span class="w-2 h-2 rounded-full animate-pulse" style="background-color: {{ $primaryColor }};"></span>
-                    {{ $isEn ? 'Automated 24/7 Booking' : 'Rezervim i Automatizuar 24/7' }}
+                    {{ __('public_booking.Automated 24/7 Booking') }}
                 </div>
                 <h3 class="text-2xl sm:text-3xl font-black text-[#1A1D20] tracking-tight">
-                    {{ $isEn ? '📅 Book Appointment Online' : '📅 Rezervo Takim Online' }}
+                    {{ __('public_booking.Book Appointment Online') }}
                 </h3>
                 <p class="text-xs text-slate-500 font-medium mt-1">
-                    {{ $isEn ? 'Choose your preferred service, staff member, and time slot' : 'Zgjidhni shërbimin, personin dhe orarin tuaj të preferuar' }}
+                    {{ __('public_booking.Booking Subtitle') }}
                 </p>
             </div>
 
             <!-- 1. Select Service -->
             <div>
                 <label class="block text-xs font-extrabold text-[#1A1D20] uppercase tracking-wider mb-3">
-                    {{ $isEn ? '1. Select Service *' : '1. Zgjidhni Shërbimin *' }}
+                    {{ __('public_booking.1 Select Service') }}
                 </label>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     @foreach($services as $s)
@@ -101,7 +100,7 @@
             <!-- 2. Select Staff -->
             <div>
                 <label class="block text-xs font-extrabold text-[#1A1D20] uppercase tracking-wider mb-3">
-                    {{ $isEn ? '2. Select Staff Member *' : '2. Zgjidhni ' . $shop->resolved_staff_label . 'un *' }}
+                    {{ __('public_booking.2 Select Staff Member') }}
                 </label>
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     @foreach($staff as $st)
@@ -124,7 +123,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-extrabold text-[#1A1D20] uppercase tracking-wider mb-2">
-                        {{ $isEn ? '3. Appointment Date *' : '3. Data e Takimit *' }}
+                        {{ __('public_booking.3 Appointment Date') }}
                     </label>
                     <input type="date" wire:model.live="bookingDate" min="{{ date('Y-m-d') }}"
                            class="w-full px-5 py-3.5 rounded-2xl bg-[#FAF8F2] border border-slate-200 text-[#1A1D20] font-bold text-sm focus:outline-none transition">
@@ -132,7 +131,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-extrabold text-[#1A1D20] uppercase tracking-wider mb-2">
-                        {{ $isEn ? '4. Appointment Time *' : '4. Ora e Takimit *' }}
+                        {{ __('public_booking.4 Appointment Time') }}
                     </label>
                     @if(!empty($availableTimeSlots))
                         <select wire:model.live="bookingTime"
@@ -143,7 +142,7 @@
                         </select>
                     @else
                         <div class="px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 font-bold text-xs flex items-center gap-2">
-                            <span>⚠️</span> {{ $isEn ? 'No available slots for this date/staff.' : 'Nuk ka orare të lira për këtë datë/person.' }}
+                            {{ __('public_booking.No Slots Available') }}
                         </div>
                     @endif
                     @error('bookingTime') <p class="text-xs text-rose-500 mt-1 font-bold">{{ $message }}</p> @enderror
@@ -154,7 +153,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-stone-200 pt-6">
                 <div>
                     <label class="block text-xs font-extrabold text-[#1A1D20] uppercase tracking-wider mb-2">
-                        {{ $isEn ? 'Your Name & Surname *' : 'Emri & Mbiemri Juaj *' }}
+                        {{ __('public_booking.Your Name') }}
                     </label>
                     <input type="text" wire:model.live="customerName" placeholder="p.sh: Albano Hoxha"
                            class="w-full px-5 py-3.5 rounded-2xl bg-[#FAF8F2] border border-slate-200 text-[#1A1D20] text-sm font-bold focus:outline-none transition">
@@ -162,7 +161,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-extrabold text-[#1A1D20] uppercase tracking-wider mb-2">
-                        {{ $isEn ? 'Phone Number *' : 'Numri i Telefonit *' }}
+                        {{ __('public_booking.Phone Number') }}
                     </label>
                     <input type="text" wire:model.live="customerPhone" placeholder="p.sh: +355691234567"
                            class="w-full px-5 py-3.5 rounded-2xl bg-[#FAF8F2] border border-slate-200 text-[#1A1D20] text-sm font-bold focus:outline-none transition">
@@ -173,8 +172,8 @@
             <button type="submit" wire:loading.attr="disabled"
                     class="w-full py-4 rounded-full font-black text-sm text-white shadow-xl transition transform active:scale-95 flex items-center justify-center gap-2"
                     style="background-color: {{ $primaryColor }};">
-                <span wire:loading.remove>{{ $isEn ? 'Confirm Online Booking 🚀' : 'Konfirmo Rezervimin Online 🚀' }}</span>
-                <span wire:loading>{{ $isEn ? 'Submitting booking...' : 'Duke dërguar rezervimin...' }}</span>
+                <span wire:loading.remove>{{ __('public_booking.Confirm Booking') }}</span>
+                <span wire:loading>{{ __('public_booking.Submitting') }}</span>
             </button>
         </form>
     @endif

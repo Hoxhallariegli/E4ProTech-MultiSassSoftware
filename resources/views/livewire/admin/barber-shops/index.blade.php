@@ -32,7 +32,7 @@
 
         <div class="overflow-x-auto border-t border-gray-100 dark:border-gray-700">
             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                <thead class="bg-gray-100/50 dark:bg-gray-700/50">
+                <thead class="bg-gray-100/50 dark:bg-gray-700/50 hidden lg:table-header-group">
                     <tr>
                         <x-table.th name="id" :label="__('barber-shops.ID')" :$sortField :$sortAsc :sortable="true" />
                         <x-table.th name="owner_id" :label="__('barber-shops.Owner Id')" :$sortField :$sortAsc :sortable="in_array('owner_id', $sortableFields)" />

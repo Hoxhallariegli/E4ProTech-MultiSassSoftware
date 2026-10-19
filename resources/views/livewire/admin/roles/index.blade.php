@@ -31,7 +31,7 @@
         </div>
 
         <table>
-            <thead>
+            <thead class="hidden lg:table-header-group">
             <tr>
                 <th>
                     <a class="link" href="#" wire:click.prevent="sortBy('label')">{{ __('roles.Name') }}</a>

@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class Roles extends Component
@@ -50,11 +51,11 @@ class Roles extends Component
         // 1. Get the admin role from Global Context (Team 0) to avoid "RoleDoesNotExist"
         $originalTeamId = getPermissionsTeamId();
         setPermissionsTeamId(0);
-        $adminRole = Role::where('name', 'admin')->firstOrFail();
+        $adminRole = Role::where('name', 'admin')->first();
         setPermissionsTeamId($originalTeamId);
 
         // 2. Check if we are trying to remove the last global admin
-        if (!in_array($adminRole->id, $this->roleSelections)) {
+        if ($adminRole && !in_array($adminRole->id, $this->roleSelections)) {
             // Check count in Team 0
             setPermissionsTeamId(0);
             $adminRolesCount = User::role('admin')->count();
@@ -79,7 +80,22 @@ class Roles extends Component
         $originalTeamId = getPermissionsTeamId();
         setPermissionsTeamId($activeShopId);
 
-        $this->user->syncRoles($this->roleSelections);
+        try {
+            $this->user->syncRoles($this->roleSelections);
+        } catch (\Throwable $e) {}
+
+        // Direct DB insertion into model_has_roles to guarantee role attachment
+        foreach ($this->roleSelections as $roleId) {
+            $role = Role::find($roleId) ?? Role::where('name', $roleId)->first();
+            if (!$role) continue;
+
+            DB::table('model_has_roles')->insertOrIgnore([
+                'role_id' => $role->id,
+                'model_type' => 'App\Models\User',
+                'model_id' => $this->user->id,
+                'barber_shop_id' => $activeShopId ?: 0,
+            ]);
+        }
 
         setPermissionsTeamId($originalTeamId);
 

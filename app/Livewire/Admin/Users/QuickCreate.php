@@ -4,8 +4,10 @@ namespace App\Livewire\Admin\Users;
 
 use App\Models\User;
 use App\Models\Role;
+use App\Models\Barber;
 use App\Actions\GetInitialsAction;
 use App\Mail\Users\SendInviteMail;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Livewire\Component;
@@ -59,6 +61,7 @@ class QuickCreate extends Component
         $this->validate();
 
         $currentUser = auth()->user();
+        $activeShopId = $currentUser?->barber_shop_id ?: 0;
 
         $user = User::create([
             'name' => $this->name,
@@ -69,8 +72,13 @@ class QuickCreate extends Component
             'invite_token' => Str::random(32),
             'invited_by' => auth()->id(),
             'invited_at' => now(),
-            'barber_shop_id' => $currentUser?->barber_shop_id,
+            'barber_shop_id' => $activeShopId ?: null,
         ]);
+
+        // Link user to barber_shop_user pivot table
+        if ($user->barber_shop_id) {
+            $user->barberShops()->syncWithoutDetaching([$user->barber_shop_id]);
+        }
 
         // generate image
         $initials = $getInitialsAction($user->name);
@@ -82,16 +90,51 @@ class QuickCreate extends Component
         $user->image = $imagePath;
         $user->save();
 
-        foreach ($this->rolesSelected as $roleId) {
-            $role = is_numeric($roleId) ? Role::find($roleId) : Role::where('name', $roleId)->first();
-            if (!$role) continue;
+        $originalTeamId = getPermissionsTeamId();
+        setPermissionsTeamId($activeShopId);
 
-            // Security guard: Non-global-admins cannot assign the 'admin' role
-            if ($role->name === 'admin' && !$currentUser?->is_global_admin) {
-                continue;
+        $hasBarberRole = false;
+
+        try {
+            foreach ($this->rolesSelected as $roleId) {
+                $role = Role::find($roleId) ?? Role::where('name', $roleId)->first();
+                if (!$role) continue;
+
+                // Security guard: Non-global-admins cannot assign the 'admin' role
+                if ($role->name === 'admin' && !$currentUser?->is_global_admin) {
+                    continue;
+                }
+
+                try {
+                    $user->assignRole($role);
+                } catch (\Throwable $e) {}
+
+                // Direct DB insertion into model_has_roles to guarantee role attachment
+                DB::table('model_has_roles')->insertOrIgnore([
+                    'role_id' => $role->id,
+                    'model_type' => 'App\Models\User',
+                    'model_id' => $user->id,
+                    'barber_shop_id' => $activeShopId ?: 0,
+                ]);
+
+                if (in_array(strtolower($role->name), ['berber', 'barber', 'staff', 'staf', 'parukier', 'estetist', 'pronar_i_biznesit_/_sallonit'])) {
+                    $hasBarberRole = true;
+                }
             }
+        } finally {
+            setPermissionsTeamId($originalTeamId);
+        }
 
-            $user->assignRole($role);
+        // Auto-create Barber staff record if assigned a barber role
+        if ($hasBarberRole && $user->barber_shop_id) {
+            Barber::firstOrCreate(
+                ['user_id' => $user->id, 'barber_shop_id' => $user->barber_shop_id],
+                [
+                    'name' => $user->name,
+                    'phone' => '+355690000000',
+                    'active' => true,
+                ]
+            );
         }
 
         try {

@@ -32,6 +32,9 @@ class AdminSettings extends Component
 
     public function mount(): void
     {
+        if (!auth()->user()?->is_global_admin) {
+            return;
+        }
         $this->isActive = (bool) $this->user->is_active;
         $this->isOfficeLoginOnly = (bool) $this->user->is_office_login_only;
     }
@@ -45,6 +48,10 @@ class AdminSettings extends Component
 
     public function update(): void
     {
+        if (!auth()->user()?->is_global_admin) {
+            abort(403, 'Këto cilësime janë vetëm për Administratorin Global.');
+        }
+
         $this->user->is_office_login_only = $this->isOfficeLoginOnly;
         $this->user->is_active = $this->isActive;
         $this->user->save();

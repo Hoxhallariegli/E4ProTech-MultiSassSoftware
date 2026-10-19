@@ -45,7 +45,7 @@
 
             <div class="overflow-x-auto">
                 <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                    <thead class="bg-gray-100/50 dark:bg-gray-700/50">
+                    <thead class="bg-gray-100/50 dark:bg-gray-700/50 hidden lg:table-header-group">
                         <tr>
                             <x-table.th name="id" label="ID" :$sortField :$sortAsc :sortable="true" />
                             <x-table.th name="barber_shop_id" label="Salloni / Përdoruesi" :$sortField :$sortAsc :sortable="false" />

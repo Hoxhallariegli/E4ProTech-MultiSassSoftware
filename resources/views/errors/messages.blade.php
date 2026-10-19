@@ -4,6 +4,10 @@
 
 {{ session()->forget('flash_notification') }}
 
+@if (session('success'))
+    <x-alert variant="success">{{ session('success') }}</x-alert>
+@endif
+
 @if (session('message'))
     <x-alert>{{ session('message') }}</x-alert>
 @endif

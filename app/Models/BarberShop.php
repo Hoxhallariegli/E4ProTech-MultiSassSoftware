@@ -105,19 +105,19 @@ class BarberShop extends Model
         $sub = $this->subscriptions()->with('plan')->latest('ends_at')->first();
         if ($sub) {
             if ($sub->ends_at < now()) {
-                return 'Abonimi Ka Skaduar ⚠️';
+                return __('admin.Subscription Expired');
             }
-            return $sub->plan?->name ?? 'Plani Aktiv';
+            return $sub->plan?->name ?? __('admin.Active Plan');
         }
 
         if ($this->expires_at && $this->expires_at->isPast()) {
-            return 'Abonimi Ka Skaduar ⚠️';
+            return __('admin.Subscription Expired');
         }
         if ($this->trial_ends_at && $this->trial_ends_at->isPast()) {
-            return 'Abonimi Ka Skaduar ⚠️';
+            return __('admin.Subscription Expired');
         }
 
-        return 'Trial (30 Ditë Falas)';
+        return __('admin.Free Trial (30 Days)');
     }
 
     public function getDaysLeftAttribute(): int
@@ -205,6 +205,18 @@ class BarberShop extends Model
             'spa', 'aesthetic' => $isEn ? 'Spa Center' : 'Qendër Estetike',
             'barbershop', 'barber' => $isEn ? 'Barber Shop' : 'Berberanë',
             default => $isEn ? 'Official Shop' : 'Dyqani',
+        };
+    }
+
+    public function getResolvedShopLabelPluralAttribute(): string
+    {
+        $isEn = app()->getLocale() === 'en';
+        return match($this->business_type ?? 'general') {
+            'beauty_salon' => $isEn ? 'Beauty Salons' : 'Sallonet e Bukurisë',
+            'nail_studio' => $isEn ? 'Nail Studios' : 'Studiot e Thonjve',
+            'spa', 'aesthetic' => $isEn ? 'Spa Centers' : 'Qendrat Estetike',
+            'barbershop', 'barber' => $isEn ? 'Barber Shops' : 'Berberanat',
+            default => $isEn ? 'Official Shops' : 'Dyqanet',
         };
     }
 

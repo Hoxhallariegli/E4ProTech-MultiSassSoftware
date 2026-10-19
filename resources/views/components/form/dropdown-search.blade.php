@@ -22,7 +22,6 @@
          isOpen: false,
          selectedId: @entangle($attributes->wire('model')),
 
-         // VËMENDJE: $el pa 'this.' — 'this' s'është i lidhur ende këtu.
          options: JSON.parse($el.getAttribute('data-list') || '[]'),
 
          get selectedLabel() {
@@ -46,6 +45,7 @@
 
              const observer = new MutationObserver(() => {
                  this.options = JSON.parse(this.$el.getAttribute('data-list') || '[]');
+                 this.search = this.selectedLabel;
              });
              observer.observe(this.$el, { attributes: true, attributeFilter: ['data-list'] });
          },

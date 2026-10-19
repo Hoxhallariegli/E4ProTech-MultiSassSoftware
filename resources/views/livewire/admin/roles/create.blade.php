@@ -14,9 +14,9 @@
 
             @if(auth()->user()->is_global_admin)
                 <x-form.select wire:model="barber_shop_id" :label="__('Assign to Team')" name="barber_shop_id">
-                    <option value="0">🌍 {{ __('GLOBAL (Template Role)') }}</option>
+                    <option value="0">{{ __('GLOBAL (Template Role)') }}</option>
                     @foreach($allShops as $shop)
-                        <option value="{{ $shop->id }}">🏪 {{ $shop->name }}</option>
+                        <option value="{{ $shop->id }}">{{ $shop->name }}</option>
                     @endforeach
                 </x-form.select>
                 <p class="text-[10px] text-gray-500 italic">* {{ __('Global roles are visible and usable by all barber shops.') }}</p>

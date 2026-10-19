@@ -17,29 +17,39 @@ class Create extends Component
 {
     use WithPagination, WithFileUploads;
 
+    public $barber_shop_id = '';
     public $plan_id = '';
-    public $payment_method = 'bank_transfer';
+    public $duration = 6;
+    public $payment_method = 'cash';
     public $transfer_document = '';
-    public $amount = '';
+    public $amount = '0.00';
     public $notes = '';
     public $status = 'pending';
 
     public function mount()
     {
+        if (auth()->check() && auth()->user()->barber_shop_id) {
+            $this->barber_shop_id = (string) auth()->user()->barber_shop_id;
+        }
+
         $planIdParam = request()->query('plan_id');
         $amountParam = request()->query('amount');
         $durationParam = request()->query('duration');
 
-        if ($planIdParam) {
-            $this->plan_id = $planIdParam;
+        if ($durationParam) {
+            $this->duration = max(1, (int) $durationParam);
         }
-        if ($amountParam) {
+
+        if ($planIdParam) {
+            $this->plan_id = (string) $planIdParam;
+            $this->updatedPlanId($this->plan_id);
+        }
+
+        if ($amountParam && (empty($this->amount) || $this->amount == '0.00')) {
             $this->amount = number_format((float) $amountParam, 2, '.', '');
         }
-        if ($durationParam) {
-            $this->notes = "Kërkesë për abonim {$durationParam} Muaj.";
-        }
-        $this->payment_method = 'bank_transfer';
+
+        $this->payment_method = 'cash';
         $this->status = 'pending';
     }
 
@@ -52,12 +62,20 @@ class Create extends Component
 
     public function updatedPlanId($value)
     {
-        if (!$value) return;
-        $related = \App\Models\Plan::find($value);
-        if (!$related) return;
-        if (empty($this->amount) || $this->amount == '0' || $this->amount == '0.00') {
-            $this->amount = number_format((float) ($related->price ?? 0), 2, '.', '');
+        if (!$value) {
+            $this->amount = '0.00';
+            return;
         }
+        $plan = \App\Models\Plan::find($value);
+        if (!$plan) return;
+
+        $basePrice = (float) ($plan->price ?? 0);
+        $months = (int) ($this->duration ?: 6);
+        $discountPct = $months === 12 ? 0.05 : ($months === 24 ? 0.10 : 0.0);
+        $totalPrice = ($basePrice * $months) * (1.0 - $discountPct);
+
+        $this->amount = number_format($totalPrice, 2, '.', '');
+        $this->notes = "Kërkesë për abonim {$months} Muaj për planin {$plan->name}.";
     }
 
     protected function getplansList()
@@ -82,10 +100,13 @@ class Create extends Component
     public function store(CreateSubscriptionRenewalAction $action)
     {
         $this->validate();
+
         if ($this->transfer_document && !is_string($this->transfer_document)) {
             $this->transfer_document = app(\App\Services\ImageUploadService::class)->upload($this->transfer_document, 'uploads/subscription-renewals');
         }
+
         $dto = SubscriptionRenewalDTO::fromArray([
+            'barber_shop_id' => $this->barber_shop_id ?: auth()->user()->barber_shop_id,
             'plan_id' => $this->plan_id,
             'payment_method' => $this->payment_method,
             'transfer_document' => $this->transfer_document,
@@ -93,6 +114,7 @@ class Create extends Component
             'notes' => $this->notes,
             'status' => $this->status,
         ]);
+
         $action->execute($dto);
         session()->flash('success', __('subscription-renewals.created'));
         return to_route('admin.subscription-renewals.index');
@@ -101,6 +123,12 @@ class Create extends Component
     protected function rules(): array
     {
         $rules = SubscriptionRenewal::rules();
+        if (!auth()->user()->is_global_admin) {
+            unset($rules['barber_shop_id']);
+        } else {
+            $rules['barber_shop_id'] = ['nullable'];
+        }
+
         if ($this->transfer_document instanceof \Illuminate\Http\UploadedFile) {
             $rules['transfer_document'] = ['nullable', 'image', 'max:10240'];
         } elseif (is_string($this->transfer_document) && $this->transfer_document !== '') {

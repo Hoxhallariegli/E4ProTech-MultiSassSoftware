@@ -20,7 +20,7 @@
                         <label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100">{{ __('plans.Search') }}</label>
                         <input name="search" wire:model.live.debounce.300ms="search" type="text" placeholder="Search by ID, Name" class="w-full p-3 text-sm font-bold bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500/20 dark:text-white">
                     </div>
-                    
+
                 </div>
             </div>
         </div>
@@ -29,7 +29,7 @@
 
         <div class="overflow-x-auto border-t border-gray-100 dark:border-gray-700">
             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                <thead class="bg-gray-100/50 dark:bg-gray-700/50"><tr><x-table.th name="id" :label="__('plans.ID')" :$sortField :$sortAsc :sortable="true" /><x-table.th name="name" :label="__('plans.Name')" :$sortField :$sortAsc :sortable="in_array('name', $sortableFields)" />
+                <thead class="bg-gray-100/50 dark:bg-gray-700/50 hidden lg:table-header-group"><tr><x-table.th name="id" :label="__('plans.ID')" :$sortField :$sortAsc :sortable="true" /><x-table.th name="name" :label="__('plans.Name')" :$sortField :$sortAsc :sortable="in_array('name', $sortableFields)" />
 <x-table.th name="price" :label="__('plans.Price')" :$sortField :$sortAsc :sortable="in_array('price', $sortableFields)" />
 <x-table.th name="duration_months" :label="__('plans.Duration Months')" :$sortField :$sortAsc :sortable="in_array('duration_months', $sortableFields)" />
 <x-table.th name="max_barbers" :label="__('plans.Max Barbers')" :$sortField :$sortAsc :sortable="in_array('max_barbers', $sortableFields)" />

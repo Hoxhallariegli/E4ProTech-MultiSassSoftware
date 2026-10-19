@@ -31,7 +31,7 @@
 
         <div class="overflow-x-auto border-t border-gray-100 dark:border-gray-700">
             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                <thead class="bg-gray-100/50 dark:bg-gray-700/50"><tr><x-table.th name="id" :label="__('message-templates.ID')" :$sortField :$sortAsc :sortable="true" />@if(auth()->user()->is_global_admin)
+                <thead class="bg-gray-100/50 dark:bg-gray-700/50 hidden lg:table-header-group"><tr><x-table.th name="id" :label="__('message-templates.ID')" :$sortField :$sortAsc :sortable="true" />@if(auth()->user()->is_global_admin)
 <x-table.th name="barber_shop_id" :label="__('message-templates.Barber Shop Id')" :$sortField :$sortAsc :sortable="in_array('barber_shop_id', $sortableFields)" />
 @endif
 <x-table.th name="channel" :label="__('message-templates.Channel')" :$sortField :$sortAsc :sortable="in_array('channel', $sortableFields)" />

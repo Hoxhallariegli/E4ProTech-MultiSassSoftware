@@ -38,9 +38,9 @@
             </div>
         </div>
 
-        <div class="overflow-x-scroll">
-            <table>
-            <thead>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+            <thead class="hidden lg:table-header-group">
             <tr>
                 <th><a href="#" wire:click="sortBy('name')">{{ __('users.Name') }}</a></th>
                 <th><a href="#" wire:click="sortBy('email')">{{ __('users.Email') }}</a></th>
@@ -51,9 +51,47 @@
                 <th>{{ __('users.Action') }}</th>
             </tr>
             </thead>
-            <tbody>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-700/50">
             @foreach($this->users() as $user)
-                <tr wire:key="{{ $user->id }}">
+                <!-- Mobile & Tablet Compact Card Row (< lg) -->
+                <tr wire:key="m-{{ $user->id }}" class="lg:hidden border-b border-gray-50 dark:border-gray-700/50 last:border-none hover:bg-gray-50/50 dark:hover:bg-gray-900/50 transition">
+                    <td colspan="100" class="p-4 space-y-2">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-2">
+                                @if (storage_exists($user->image))
+                                    <img src="{{ storage_url($user->image) }}" alt="{{ $user->name }}" class="h-8 w-8 rounded-full object-cover shrink-0">
+                                @else
+                                    <div class="h-8 w-8 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0">
+                                        {{ mb_substr($user->name, 0, 1) }}
+                                    </div>
+                                @endif
+                                <div>
+                                    <div class="font-extrabold text-xs text-gray-900 dark:text-white">{{ $user->name }}</div>
+                                    <div class="text-[11px] text-gray-500 font-mono">{{ $user->email }}</div>
+                                </div>
+                            </div>
+
+                            <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase shrink-0 {{ $user->email_verified_at ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' }}">
+                                {{ $user->email_verified_at ? 'Verifikuar' : 'Pa verifikuar' }}
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800 text-[10px]">
+                            <span class="text-gray-400 font-mono">Pranuar: {{ $user->created_at ? date('d/m/Y', strtotime((string)$user->created_at)) : '-' }}</span>
+                            <div class="flex items-center gap-2">
+                                @can('view_users_profiles')
+                                    <x-a href="{{ route('admin.users.show', $user) }}" class="!px-2.5 !py-1 !text-[10px]">{{ __('users.Profile') }}</x-a>
+                                @endcan
+                                @if(can('edit_users') || (auth()->id() === $user->id && can('edit_own_account')))
+                                    <x-a href="{{ route('admin.users.edit', $user) }}" class="!px-2.5 !py-1 !text-[10px]">{{ __('admin.Edit') }}</x-a>
+                                @endif
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Desktop Table Row (>= lg) -->
+                <tr wire:key="d-{{ $user->id }}" class="hidden lg:table-row border-b border-gray-50 dark:border-gray-700/50 last:border-none hover:bg-gray-50/50 dark:hover:bg-gray-900/50 transition">
                     <td class="flex">
                         <div>
                             @if (storage_exists($user->image))
@@ -76,7 +114,7 @@
                         @else
                             <div class="flex flex-col gap-0.5">
                                 <span class="inline-flex items-center gap-1 text-[10px] font-black uppercase text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 px-2.5 py-0.5 rounded-md w-max">
-                                    ⚠️ Pa Verifikuar
+                                    Pa Verifikuar
                                 </span>
                                 <span class="text-[10px] text-gray-400 italic">
                                     Në pritje konfirmimi
@@ -107,7 +145,6 @@
                     <td>
                         <div class="flex flex-wrap gap-1">
                             @php
-                                // Bypass Spatie scoping for the index list to show all roles
                                 $allRoles = \Illuminate\Support\Facades\DB::table('model_has_roles')
                                     ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
                                     ->leftJoin('barber_shops', 'model_has_roles.barber_shop_id', '=', 'barber_shops.id')

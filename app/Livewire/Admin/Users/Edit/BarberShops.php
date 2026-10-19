@@ -20,8 +20,14 @@ class BarberShops extends Component
     {
         $this->primaryShopId = $this->user->barber_shop_id;
 
-        // 1. Initialize ALL shops with empty arrays to prevent sharing references
-        $allShops = BarberShop::all();
+        $currentUser = auth()->user();
+        if ($currentUser?->is_global_admin) {
+            $allShops = BarberShop::all();
+        } else {
+            $allShops = BarberShop::where('id', $currentUser?->barber_shop_id)->get();
+        }
+
+        // 1. Initialize shops with empty arrays
         foreach($allShops as $shop) {
             $this->shopRoles[(int)$shop->id] = [];
         }
@@ -42,6 +48,8 @@ class BarberShops extends Component
 
     public function updateAccess()
     {
+        $currentUser = auth()->user();
+
         // 1. Derive selected shop IDs from the shopRoles array keys where values are not empty
         $selectedIds = collect($this->shopRoles)
             ->filter(fn($roles) => !empty($roles))
@@ -59,19 +67,21 @@ class BarberShops extends Component
             }
         }
 
-        // 2. Clear ONLY shop-specific roles for this user
-        // We MUST preserve barber_shop_id = 0 (Global Admin/Templates)
-        // so the user doesn't lose global access when editing shops.
+        // 2. Clear ONLY shop-specific roles for the shops currently being edited
+        $editableShopIds = $currentUser?->is_global_admin
+            ? BarberShop::pluck('id')->toArray()
+            : [$currentUser?->barber_shop_id];
+
         DB::table('model_has_roles')
             ->where('model_id', $this->user->id)
-            ->where('barber_shop_id', '>', 0)
+            ->whereIn('barber_shop_id', $editableShopIds)
             ->delete();
 
         // 3. Assign new roles per shop
         foreach ($this->shopRoles as $shopId => $roleIds) {
             if (!empty($roleIds) && in_array((int)$shopId, $selectedIds)) {
                 foreach ($roleIds as $roleId) {
-                    DB::table('model_has_roles')->insert([
+                    DB::table('model_has_roles')->insertOrIgnore([
                         'role_id' => $roleId,
                         'model_id' => $this->user->id,
                         'model_type' => 'App\Models\User',
@@ -81,11 +91,19 @@ class BarberShops extends Component
             }
         }
 
-        // 4. Sync pivot table barber_shop_user
-        $this->user->barberShops()->sync($selectedIds);
+        // 4. Sync pivot table barber_shop_user for active shop
+        if ($currentUser?->is_global_admin) {
+            $this->user->barberShops()->sync($selectedIds);
+        } else {
+            if (!empty($selectedIds)) {
+                $this->user->barberShops()->syncWithoutDetaching($selectedIds);
+            }
+        }
 
         // 5. Update Primary Shop
-        $this->user->update(['barber_shop_id' => $this->primaryShopId]);
+        if ($this->primaryShopId) {
+            $this->user->update(['barber_shop_id' => $this->primaryShopId]);
+        }
 
         // 6. FORCE Spatie to forget EVERYTHING about this user's permissions
         app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
@@ -93,14 +111,31 @@ class BarberShops extends Component
         // Clear global cache for safety
         \Illuminate\Support\Facades\Cache::flush();
 
-        $this->dispatch('toast', message: 'Akseset u aktivizuan flakë!', type: 'success');
+        $this->dispatch('toast', message: 'Akseset u ruajtën me sukses!', type: 'success');
     }
 
     public function render()
     {
+        $currentUser = auth()->user();
+        if ($currentUser?->is_global_admin) {
+            $allShops = BarberShop::all();
+        } else {
+            $allShops = BarberShop::where('id', $currentUser?->barber_shop_id)->get();
+        }
+
+        $rolesQuery = Role::query()->where('name', '!=', 'admin');
+        if (!$currentUser?->is_global_admin && $currentUser?->barber_shop_id) {
+            $shopId = $currentUser->barber_shop_id;
+            $rolesQuery->where(function($q) use ($shopId) {
+                $q->where('barber_shop_id', $shopId)
+                  ->orWhereNull('barber_shop_id')
+                  ->orWhere('barber_shop_id', 0);
+            });
+        }
+
         return view('livewire.admin.users.edit.barber-shops', [
-            'allShops' => BarberShop::all(),
-            'availableRoles' => Role::where('name', '!=', 'admin')->get() // HIDE ADMIN ROLE
+            'allShops' => $allShops,
+            'availableRoles' => $rolesQuery->get()
         ]);
     }
 }

@@ -75,8 +75,11 @@ class User extends Authenticatable implements MustVerifyEmail
             return $query;
         }
 
-        return $query->whereHas('barberShops', function($q) use ($user) {
-            $q->where('barber_shops.id', $user->barber_shop_id);
+        return $query->where(function($q) use ($user) {
+            $q->where('users.barber_shop_id', $user->barber_shop_id)
+              ->orWhereHas('barberShops', function($qu) use ($user) {
+                  $qu->where('barber_shops.id', $user->barber_shop_id);
+              });
         });
     }
 

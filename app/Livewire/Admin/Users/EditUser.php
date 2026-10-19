@@ -14,10 +14,19 @@ class EditUser extends Component
 {
     public User $user;
 
-    public function mount(): void
+    public function mount(User $user): void
     {
+        $this->user = $user;
+
         if ($this->user->id !== auth()->id()) {
             abort_if_cannot('edit_users');
+
+            if (!auth()->user()?->is_global_admin) {
+                $isShopMember = User::forActiveShop()->where('users.id', $user->id)->exists();
+                if (!$isShopMember) {
+                    abort(403, 'Ju nuk keni akses për të ndryshuar këtë përdorues.');
+                }
+            }
         }
     }
 

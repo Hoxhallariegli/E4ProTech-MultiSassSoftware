@@ -34,6 +34,10 @@ class AiAssistant extends Component
 
     public function mount()
     {
+        if (!auth()->user()?->is_global_admin && !can('view_ai_assistant')) {
+            abort(403, 'Ju nuk keni të drejtë të përdorni Asistentin AI.');
+        }
+
         $this->loadHistory();
         $this->dispatch('scroll-bottom');
     }
@@ -694,6 +698,10 @@ class AiAssistant extends Component
 
     public function render()
     {
+        if (!auth()->user()?->is_global_admin && !can('view_ai_assistant')) {
+            abort(403, 'Ju nuk keni të drejtë të përdorni Asistentin AI.');
+        }
+
         return view('livewire.admin.ai-assistant')->layout('components.layouts.app');
     }
 }

@@ -183,7 +183,7 @@
     <!-- Bottom Sidebar Subscription Status Card -->
     @php
         $sidebarShop = auth()->user()?->barberShop;
-        $sidebarPlanName = $sidebarShop?->active_plan_name ?? 'Trial (30 Ditë Falas)';
+        $sidebarPlanName = $sidebarShop?->active_plan_name ?? __('admin.Free Trial (30 Days)');
         $sidebarDaysLeft = $sidebarShop?->days_left ?? 30;
         $sidebarIsExpired = $sidebarShop?->is_expired ?? false;
     @endphp
@@ -194,10 +194,10 @@
                class="block p-3.5 rounded-2xl border transition group {{ $sidebarIsExpired ? 'bg-red-500/10 border-red-500/30 hover:border-red-500' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-blue-500' }}">
                 <div class="flex items-center justify-between mb-1">
                     <span class="text-[10px] font-black uppercase tracking-wider {{ $sidebarIsExpired ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400' }}">
-                        {{ $sidebarIsExpired ? 'Abonimi Ka Skaduar' : 'Plani Aktiv' }}
+                        {{ $sidebarIsExpired ? __('admin.Subscription Expired') : __('admin.Active Plan') }}
                     </span>
                     <span class="text-[10px] font-bold px-2 py-0.5 rounded-full {{ $sidebarIsExpired ? 'bg-red-500/20 text-red-600 dark:text-red-400' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' }}">
-                        {{ $sidebarDaysLeft }} Ditë
+                        {{ $sidebarDaysLeft }} {{ __('admin.Days') }}
                     </span>
                 </div>
                 <h5 class="text-xs font-black text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
@@ -268,8 +268,8 @@
             <div class="w-full max-w-lg bg-white dark:bg-gray-900 border border-red-500/40 rounded-[2.5rem] shadow-2xl p-8 sm:p-10 text-center relative overflow-hidden">
 
                 <!-- Top Warning Icon Badge -->
-                <div class="w-20 h-20 rounded-3xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto mb-6 text-4xl shadow-xl">
-                    ⚠️
+                <div class="w-20 h-20 rounded-3xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto mb-6 shadow-xl">
+                    <x-heroicon-o-exclamation-triangle class="w-10 h-10 text-red-500" />
                 </div>
 
                 <!-- Modal Title -->

@@ -1,8 +1,8 @@
 <div class="space-y-10">
     <div class="flex items-center justify-between gap-4 px-1">
         <div>
-            <x-h1>Shqyrto Kërkesën e Renovimit #{{ $item->id }}</x-h1>
-            <x-short-description class="dark:text-gray-400">Përditësoni statusin ose rishikoni faturën e mandat-pagesës</x-short-description>
+            <x-h1>{{ __('subscription-renewals.Review Renewal Request', ['id' => $item->id]) }}</x-h1>
+            <x-short-description class="dark:text-gray-400">{{ __('subscription-renewals.Review Renewal Desc') }}</x-short-description>
         </div>
         <x-back-btn route="admin.subscription-renewals.index" />
     </div>
@@ -13,44 +13,49 @@
         <form wire:submit.prevent="update" class="space-y-8">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                 <div>
-                    <x-form.dropdown-search name="plan_id" wire:model.live="plan_id" label="Plani i Abonimit" :data="$plans" placeholder="Zgjidh Planin..." />
+                    <x-form.dropdown-search name="plan_id" wire:model.live="plan_id" :label="__('subscription-renewals.Selected Plan')" :data="$plans" placeholder="{{ __('subscription-renewals.Select Plan') }}" />
                 </div>
 
                 <div>
-                    <label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-700 dark:text-gray-300">Mënyra e Pagesës</label>
+                    <label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-700 dark:text-gray-300">{{ __('subscription-renewals.Payment Method Label') }}</label>
                     <select name="payment_method" wire:model="payment_method" class="w-full p-3.5 text-sm font-bold bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500/20 dark:text-white">
-                        <option value="bank_transfer">🏦 Transfertë Bankare (Bank Transfer)</option>
-                        <option value="cash">💵 Cash (Në Dorë)</option>
-                        <option value="card">💳 Kartë Kreditit/Debitit</option>
-                        <option value="online">🌐 Pagesë Online</option>
+                        <option value="cash">{{ __('subscription-renewals.Cash') }}</option>
+                        <option value="online">{{ __('subscription-renewals.Online Payment') }}</option>
+                        <option value="bank_transfer">{{ __('subscription-renewals.Bank Transfer') }}</option>
                     </select>
                 </div>
 
                 <div>
-                    <x-file-upload name="transfer_document" wire:model="transfer_document" label="Fatura / Mandat-Pagesa Bankare" id="transfer_document" :isEditing="true" />
+                    <x-file-upload name="transfer_document" wire:model="transfer_document" :label="__('subscription-renewals.Upload Receipt')" id="transfer_document" :isEditing="true" />
                 </div>
 
                 <div>
-                    <x-form.input name="amount" type="number" step="0.01" min="0" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'').replace(/(\..*)\./g,'$1').replace(/(\.\d{2}).*/g,'$1')" wire:model.live="amount" label="Shuma e Pagesës (€)" class="dark:bg-gray-900" />
+                    <x-form.input name="amount" type="number" step="0.01" min="0" inputmode="decimal"
+                                  wire:model.live="amount"
+                                  :label="__('subscription-renewals.Amount')"
+                                  class="dark:bg-gray-900 font-bold {{ !auth()->user()->is_global_admin ? 'bg-gray-100 dark:bg-gray-800/80 cursor-not-allowed' : '' }}"
+                                  :readonly="!auth()->user()->is_global_admin" />
                 </div>
 
                 <div class="md:col-span-2">
-                    <x-form.textarea name="notes" wire:model="notes" label="Shënime / Detaje Shtesë për Faturën" class="dark:bg-gray-900" />
+                    <x-form.textarea name="notes" wire:model="notes" :label="__('subscription-renewals.Notes')" class="dark:bg-gray-900" placeholder="{{ __('subscription-renewals.Notes Placeholder') }}" />
                 </div>
 
-                <div>
-                    <label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-700 dark:text-gray-300">Statusi i Miratimit (Admin Only)</label>
-                    <select name="status" wire:model="status" class="w-full p-3.5 text-sm font-bold bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500/20 dark:text-white">
-                        <option value="pending">⏳ Në Pritje (Pending)</option>
-                        <option value="approved">✅ I Miratuar (Approved - Përditëson Abonimin e Sallonit)</option>
-                        <option value="rejected">❌ I Refuzuar (Rejected)</option>
-                    </select>
-                </div>
+                @if(auth()->user()->is_global_admin)
+                    <div>
+                        <label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-700 dark:text-gray-300">{{ __('subscription-renewals.Approval Status Label') }}</label>
+                        <select name="status" wire:model="status" class="w-full p-3.5 text-sm font-bold bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500/20 dark:text-white">
+                            <option value="pending">{{ __('subscription-renewals.Pending') }}</option>
+                            <option value="approved">{{ __('subscription-renewals.Approved') }}</option>
+                            <option value="rejected">{{ __('subscription-renewals.Rejected') }}</option>
+                        </select>
+                    </div>
+                @endif
             </div>
 
             <div class="mt-10 flex justify-end">
                 <x-button type="submit" variant="blue" class="w-full sm:w-auto !px-12 !py-4 !rounded-2xl font-black">
-                    Ruaj & Përditëso Statusin 🚀
+                    {{ __('subscription-renewals.Save and Update Status') }}
                 </x-button>
             </div>
         </form>

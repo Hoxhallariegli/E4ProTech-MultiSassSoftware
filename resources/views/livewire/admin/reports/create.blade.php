@@ -13,7 +13,7 @@
     <div class="p-6 rounded-[2.5rem] bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
             <h3 class="font-black text-gray-900 dark:text-white text-base flex items-center gap-2">
-                <span>📊</span> Kalkulimi Automatik nga Baza e të Dhënave
+                Kalkulimi Automatik nga Baza e të Dhënave
             </h3>
             <p class="text-xs font-medium text-gray-600 dark:text-gray-300 mt-1">
                 Zgjidhni punonjësin, datën dhe periudhën, pastaj klikoni butonin për të llogaritur automatikisht të gjitha xhirot dhe takimet!
@@ -22,7 +22,6 @@
         <button type="button" wire:click="calculateReportMetrics"
                 class="px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs shadow-md transition shrink-0 flex items-center gap-2">
             <span>Kalkulo nga Relacionet</span>
-            <span>⚡</span>
         </button>
     </div>
 
@@ -33,10 +32,10 @@
                 <div>
                     <label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-700 dark:text-gray-300">Periudha e Raportit (Period Type)</label>
                     <select name="period_type" wire:model.live="period_type" class="w-full p-3.5 text-sm font-bold bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500/20 dark:text-white">
-                        <option value="daily">📅 Ditore (Daily Report)</option>
-                        <option value="weekly">🗓️ Javore (Weekly Report)</option>
-                        <option value="monthly">📊 Mujore (Monthly Report)</option>
-                        <option value="custom">⚙️ E Personalizuar (Custom)</option>
+                        <option value="daily">Ditore (Daily Report)</option>
+                        <option value="weekly">Javore (Weekly Report)</option>
+                        <option value="monthly">Mujore (Monthly Report)</option>
+                        <option value="custom">E Personalizuar (Custom)</option>
                     </select>
                 </div>
 
@@ -95,7 +94,7 @@
 
             <div class="mt-10 flex justify-end">
                 <x-button type="submit" variant="blue" class="w-full sm:w-auto !px-12 !py-4 !rounded-2xl font-black">
-                    Ruaj Raportin te Baza e të Dhënave 🚀
+                    Ruaj Raportin te Baza e të Dhënave
                 </x-button>
             </div>
         </form>

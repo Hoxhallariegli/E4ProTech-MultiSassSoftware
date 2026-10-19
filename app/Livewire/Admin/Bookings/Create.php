@@ -31,9 +31,10 @@ class Create extends Component
     public $notes = '';
     public $source = 'walk-in';
 
-    // Time Slots Helpers
+    // Time Slots & Service Search Helpers
     public $booking_date = '';
     public $selected_time = '';
+    public $service_search = '';
 
     #[On('barber-shop-created')]
     public function refreshBarberShops($id) { $this->barber_shop_id = $id; $this->updatedBarberShopId($id); }
@@ -64,21 +65,48 @@ class Create extends Component
         }
 
         // Preselect service if only 1 exists
-        $services = $this->getservicesList();
-        if (count($services) === 1) {
-            $this->service_id = (string) array_key_first($services);
-            $service = Service::find($this->service_id);
-            if ($service) {
-                $this->total_price = $service->price;
-            }
+        $services = $this->getServiceListObjectsProperty();
+        if ($services->count() === 1) {
+            $this->selectService($services->first()->id);
         }
     }
 
     public function updatedBarberShopId($value)
     {
-        if (!$value) return;
         $this->selected_time = '';
         $this->appointment_at = '';
+
+        if ($this->barber_id) {
+            $barber = Barber::find($this->barber_id);
+            if (!$barber || (string)$barber->barber_shop_id !== (string)$value) {
+                $this->barber_id = '';
+            }
+        }
+
+        if ($this->service_id) {
+            $service = Service::find($this->service_id);
+            if (!$service || (string)$service->barber_shop_id !== (string)$value) {
+                $this->service_id = '';
+                $this->total_price = '';
+            }
+        }
+
+        if ($this->customer_id) {
+            $customer = Customer::find($this->customer_id);
+            if (!$customer || (isset($customer->barber_shop_id) && $customer->barber_shop_id && (string)$customer->barber_shop_id !== (string)$value)) {
+                $this->customer_id = '';
+            }
+        }
+
+        $barbers = $this->getbarbersList();
+        if (count($barbers) === 1) {
+            $this->barber_id = (string) array_key_first($barbers);
+        }
+
+        $services = $this->getServiceListObjectsProperty();
+        if ($services->count() === 1) {
+            $this->selectService($services->first()->id);
+        }
     }
 
     public function updatedBarberId($value)
@@ -86,9 +114,32 @@ class Create extends Component
         if (!$value) return;
         $related = Barber::find($value);
         if (!$related) return;
-        if (isset($related->barber_shop_id) && !$this->barber_shop_id) {
-            $this->barber_shop_id = $related->barber_shop_id;
+
+        if (isset($related->barber_shop_id) && (string)$this->barber_shop_id !== (string)$related->barber_shop_id) {
+            $this->barber_shop_id = (string) $related->barber_shop_id;
+            $this->updatedBarberShopId($related->barber_shop_id);
+            $this->barber_id = (string) $value;
         }
+
+        $this->selected_time = '';
+        $this->appointment_at = '';
+    }
+
+    public function selectService($serviceId)
+    {
+        $this->service_id = $serviceId;
+        $related = Service::find($serviceId);
+        if ($related) {
+            if (isset($related->barber_shop_id) && (string)$this->barber_shop_id !== (string)$related->barber_shop_id) {
+                $this->barber_shop_id = (string) $related->barber_shop_id;
+                $this->updatedBarberShopId($related->barber_shop_id);
+                $this->service_id = (string) $serviceId;
+            }
+            if (isset($related->price)) {
+                $this->total_price = $related->price;
+            }
+        }
+
         $this->selected_time = '';
         $this->appointment_at = '';
     }
@@ -96,19 +147,7 @@ class Create extends Component
     public function updatedServiceId($value)
     {
         if (!$value) return;
-        $related = Service::find($value);
-        if (!$related) return;
-        if (isset($related->barber_shop_id) && !$this->barber_shop_id) {
-            $this->barber_shop_id = $related->barber_shop_id;
-        }
-
-        // Auto-fill price
-        if (isset($related->price)) {
-            $this->total_price = $related->price;
-        }
-
-        $this->selected_time = '';
-        $this->appointment_at = '';
+        $this->selectService($value);
     }
 
     public function updatedCustomerId($value)
@@ -116,8 +155,11 @@ class Create extends Component
         if (!$value) return;
         $related = Customer::find($value);
         if (!$related) return;
-        if (isset($related->barber_shop_id) && !$this->barber_shop_id) {
-            $this->barber_shop_id = $related->barber_shop_id;
+
+        if (isset($related->barber_shop_id) && $related->barber_shop_id && (string)$this->barber_shop_id !== (string)$related->barber_shop_id) {
+            $this->barber_shop_id = (string) $related->barber_shop_id;
+            $this->updatedBarberShopId($related->barber_shop_id);
+            $this->customer_id = (string) $value;
         }
     }
 
@@ -142,6 +184,23 @@ class Create extends Component
         }
     }
 
+    public function getServiceListObjectsProperty()
+    {
+        $query = Service::query();
+        if ($this->barber_shop_id) {
+            $query->where('barber_shop_id', $this->barber_shop_id);
+        } elseif (method_exists(Service::class, 'scopeForActiveShop')) {
+            $query->forActiveShop();
+        }
+        $query->where('active', true);
+
+        if (!empty($this->service_search)) {
+            $query->where('name', 'like', '%' . $this->service_search . '%');
+        }
+
+        return $query->get();
+    }
+
     public function getAvailableTimeSlotsProperty()
     {
         if (!$this->booking_date || !$this->barber_shop_id) {
@@ -163,16 +222,20 @@ class Create extends Component
             ];
         }
 
-        // Get step interval from min_service_time (resolved_min_service_time)
+        $tz = config('app.timezone', 'Europe/Tirane');
+        if ($shop->timezone) {
+            $tz = $shop->timezone;
+        }
+
         $slotStep = $shop->resolved_min_service_time;
         if ($slotStep < 1) $slotStep = 15;
 
-        $now = Carbon::now();
+        $now = Carbon::now($tz);
 
         try {
-            $date = Carbon::parse($this->booking_date);
+            $date = Carbon::parse($this->booking_date, $tz);
         } catch (\Throwable $e) {
-            $date = Carbon::today();
+            $date = Carbon::today($tz);
         }
         $dateStr = $date->format('Y-m-d');
 
@@ -211,12 +274,12 @@ class Create extends Component
         if (!$openTimeStr) $openTimeStr = '09:00';
         if (!$closeTimeStr) $closeTimeStr = '20:00';
 
-        $openDt = Carbon::parse("{$dateStr} {$openTimeStr}:00");
-        $closeDt = Carbon::parse("{$dateStr} {$closeTimeStr}:00");
+        $openDt = Carbon::parse("{$dateStr} {$openTimeStr}:00", $tz);
+        $closeDt = Carbon::parse("{$dateStr} {$closeTimeStr}:00", $tz);
 
         if ($closeDt <= $openDt) {
-            $openDt = Carbon::parse("{$dateStr} 09:00:00");
-            $closeDt = Carbon::parse("{$dateStr} 20:00:00");
+            $openDt = Carbon::parse("{$dateStr} 09:00:00", $tz);
+            $closeDt = Carbon::parse("{$dateStr} 20:00:00", $tz);
         }
 
         // Required duration for selected service
@@ -228,7 +291,7 @@ class Create extends Component
             }
         }
 
-        // Fetch existing bookings for this barber/shop on this day
+        // Fetch existing bookings
         $bookingQuery = Booking::query()
             ->whereBetween('appointment_at', [
                 $date->copy()->startOfDay(),
@@ -244,53 +307,68 @@ class Create extends Component
 
         $bookings = $bookingQuery->with(['customer', 'service', 'barber'])->get();
 
-        $bookingEntries = $bookings->map(function ($b) {
-            $start = $b->appointment_at->copy();
+        $bookingEntries = [];
+        foreach ($bookings as $b) {
+            $start = $b->appointment_at->copy()->setTimezone($tz);
             $dur = $b->service?->duration_minutes ?? 30;
-            return [
+            $startMinutes = ($start->hour * 60) + $start->minute;
+            $endMinutes = $startMinutes + $dur;
+
+            $bookingEntries[] = [
                 'type' => 'booking',
                 'title' => ($b->customer?->name ?? 'Klient') . ' (' . ($b->service?->name ?? 'Shërbim') . ')',
-                'start' => $start,
-                'end' => $start->copy()->addMinutes($dur),
+                'start_m' => $startMinutes,
+                'end_m' => $endMinutes,
+                'start_str' => $start->format('H:i'),
+                'end_str' => $start->copy()->addMinutes($dur)->format('H:i'),
             ];
-        });
+        }
 
         // Add lunch break
         $lunchStartStr = $normalizeTime($workingHour?->lunch_start);
         $lunchEndStr = $normalizeTime($workingHour?->lunch_end);
         if ($lunchStartStr && $lunchEndStr) {
-            $lunchStartDt = Carbon::parse("{$dateStr} {$lunchStartStr}:00");
-            $lunchEndDt = Carbon::parse("{$dateStr} {$lunchEndStr}:00");
+            $lunchStartDt = Carbon::parse("{$dateStr} {$lunchStartStr}:00", $tz);
+            $lunchEndDt = Carbon::parse("{$dateStr} {$lunchEndStr}:00", $tz);
             if ($lunchEndDt > $lunchStartDt) {
-                $bookingEntries->push([
+                $lStartM = ($lunchStartDt->hour * 60) + $lunchStartDt->minute;
+                $lEndM = ($lunchEndDt->hour * 60) + $lunchEndDt->minute;
+                $bookingEntries[] = [
                     'type' => 'break',
                     'title' => 'Pushimi i Drekës',
-                    'start' => $lunchStartDt,
-                    'end' => $lunchEndDt,
-                ]);
+                    'start_m' => $lStartM,
+                    'end_m' => $lEndM,
+                    'start_str' => $lunchStartDt->format('H:i'),
+                    'end_str' => $lunchEndDt->format('H:i'),
+                ];
             }
         }
+
+        $closeMinutes = ($closeDt->hour * 60) + $closeDt->minute;
+        $nowMinutes = ($now->hour * 60) + $now->minute;
 
         $slots = [];
         $cursor = $openDt->copy();
 
         while ($cursor < $closeDt) {
-            $slotStart = $cursor->copy();
-            $slotEnd = $slotStart->copy()->addMinutes($reqDuration);
+            $slotStartM = ($cursor->hour * 60) + $cursor->minute;
+            $slotEndM = $slotStartM + $reqDuration;
 
-            $timeStr = $slotStart->format('H:i');
-            $endTimeStr = $slotEnd->format('H:i');
+            $timeStr = $cursor->format('H:i');
+            $endTimeStr = $cursor->copy()->addMinutes($reqDuration)->format('H:i');
 
-            $exceedsClose = ($slotEnd > $closeDt);
-            $isPast = ($date->isToday() && $slotStart->isBefore($now));
+            $exceedsClose = ($slotEndM > $closeMinutes);
+            $isPast = ($date->isToday() && $slotStartM < $nowMinutes);
 
             $overlapReason = null;
             $isOverbooked = false;
 
             foreach ($bookingEntries as $entry) {
-                if ($slotStart < $entry['end'] && $slotEnd > $entry['start']) {
+                // Exact Overlap Condition:
+                // Slot starts before existing ends AND slot ends after existing starts
+                if ($slotStartM < $entry['end_m'] && $slotEndM > $entry['start_m']) {
                     $isOverbooked = true;
-                    $overlapReason = $entry['title'] . " (" . $entry['start']->format('H:i') . "-" . $entry['end']->format('H:i') . ")";
+                    $overlapReason = $entry['title'] . " (" . $entry['start_str'] . "-" . $entry['end_str'] . ")";
                     break;
                 }
             }
@@ -362,6 +440,7 @@ class Create extends Component
             'barberShops' => $this->getbarberShopsList(),
             'barbers' => $this->getbarbersList(),
             'services' => $this->getservicesList(),
+            'serviceListObjects' => $this->getServiceListObjectsProperty(),
             'customers' => $this->getcustomersList(),
             'timeSlotData' => $this->availableTimeSlots,
         ])->layout('components.layouts.app');

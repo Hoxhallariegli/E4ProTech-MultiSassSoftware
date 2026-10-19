@@ -18,11 +18,11 @@
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Lloji i Biznesit (Business Type)</label>
                     <select wire:model.live="business_type" class="w-full px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                        <option value="barbershop">💈 Berberanë (Barbershop)</option>
-                        <option value="beauty_salon">💇‍♀️ Sallon Bukurie / Parukeri (Beauty Salon)</option>
-                        <option value="nail_studio">💅 Studio Thonjsh (Nail Studio)</option>
-                        <option value="spa">💆‍♀️ Qendër Estetike & Spa (Aesthetic Center)</option>
-                        <option value="general">✨ Biznes Përgjithshëm (General Staff)</option>
+                        <option value="barbershop">Berberanë (Barbershop)</option>
+                        <option value="beauty_salon">Sallon Bukurie / Parukeri (Beauty Salon)</option>
+                        <option value="nail_studio">Studio Thonjsh (Nail Studio)</option>
+                        <option value="spa">Qendër Estetike & Spa (Aesthetic Center)</option>
+                        <option value="general">Biznes Përgjithshëm (General Staff)</option>
                     </select>
                 </div>
                 <div><x-form.input name="app_name" type="text" wire:model.live="app_name" :label="__('barber-shops.App Name')" class="dark:bg-gray-900" /></div>

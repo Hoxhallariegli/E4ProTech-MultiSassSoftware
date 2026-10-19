@@ -31,7 +31,7 @@
 
             <div class="mt-6 flex justify-end gap-3 border-t border-stone-100 dark:border-gray-700 pt-4">
                 <x-button type="submit" variant="blue" class="!px-8 !py-3 !rounded-2xl !font-black !text-xs">
-                    <span wire:loading.remove>Dërgo Kërkesën 🚀</span>
+                    <span wire:loading.remove>Dërgo Kërkesën</span>
                     <span wire:loading>...</span>
                 </x-button>
             </div>

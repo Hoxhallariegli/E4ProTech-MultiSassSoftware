@@ -10,8 +10,11 @@
     <livewire:admin.users.edit.change-password :user="$user"/>
     <livewire:admin.users.edit.two-factor-authentication :user="$user"/>
 
-    @can('edit_roles')
+    @if(auth()->user()->is_global_admin)
         <livewire:admin.users.edit.admin-settings :user="$user"/>
+    @endif
+
+    @can('edit_roles')
         <livewire:admin.users.edit.barber-shops :user="$user"/>
     @endcan
 </div>

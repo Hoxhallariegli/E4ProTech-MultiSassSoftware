@@ -42,7 +42,22 @@ class ShopFrontPageSetting extends Model
             return (string) $translations[$lang][$key];
         }
 
-        return (string) ($this->{$key} ?? '');
+        if ($lang === 'sq') {
+            $dbKey = $key;
+            if ($key === 'hero_badge') $dbKey = 'hero_badge_text';
+            if ($key === 'hero_button') $dbKey = 'hero_button_text';
+            if ($key === 'services_badge') $dbKey = 'services_badge_text';
+            if ($key === 'staff_badge') $dbKey = 'staff_badge_text';
+
+            if (!empty($this->{$dbKey})) {
+                return (string) $this->{$dbKey};
+            }
+            if (!empty($this->{$key})) {
+                return (string) $this->{$key};
+            }
+        }
+
+        return '';
     }
 
     public static function rules($id = null): array {

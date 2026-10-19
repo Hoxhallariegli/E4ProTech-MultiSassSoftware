@@ -31,27 +31,25 @@
                     <div class="space-y-1">
                         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
                             <x-heroicon-o-sparkles class="w-3.5 h-3.5 text-gray-700 dark:text-gray-300" />
-                            <span>{{ app()->getLocale() === 'en' ? 'ADD-ON SERVICE' : 'SHËRBIM SHTESË ME PAGESË' }}</span>
+                            <span>{{ __('subscription-renewals.ADD-ON SERVICE') }}</span>
                         </div>
                         <h2 class="text-xl sm:text-2xl font-black tracking-tight text-gray-900 dark:text-white mt-1">
-                            {{ app()->getLocale() === 'en' ? 'Custom Website & Custom Domain (.com / .al) Add-On' : 'Uebsajt & Domain i Personalizuar (.com / .al)' }}
+                            {{ __('subscription-renewals.Custom Website & Custom Domain Add-On') }}
                         </h2>
                         <p class="text-xs text-gray-500 dark:text-gray-400 font-medium leading-relaxed max-w-2xl">
-                            {{ app()->getLocale() === 'en'
-                                ? 'For salons desiring a fully custom branded website with their own domain (e.g., www.yoursalon.al), we offer custom web design, domain setup, and hosting as a dedicated add-on service.'
-                                : 'Për sallonet që dëshirojnë uebsajt dhe domain të personalizuar (p.sh. www.sallonituaj.al), ne ofrojmë ndërtimin, konfigurimin e domain-it dhe mirëmbajtjen e uebsajtit si shërbim shtesë me pagesë të dedikuar.' }}
+                            {{ __('subscription-renewals.Custom Website Add-On Desc') }}
                         </p>
                     </div>
                     <div class="shrink-0">
                         <x-modal>
                             <x-slot name="trigger">
                                 <button type="button" @click="on = true" class="px-6 py-3 rounded-full bg-[#1A1D20] hover:bg-black text-white font-black text-xs shadow-md transition flex items-center gap-2 whitespace-nowrap">
-                                    <span>{{ app()->getLocale() === 'en' ? 'Inquire for Custom Web ↗' : 'Kërko Ofertën për Uebsajt ↗' }}</span>
+                                    <span>{{ __('subscription-renewals.Inquire for Custom Web') }}</span>
                                 </button>
                             </x-slot>
                             <x-slot name="modalTitle">
                                 <div class="dark:text-white px-6 pt-6 font-black text-lg">
-                                    {{ app()->getLocale() === 'en' ? 'Inquire Custom Website Offer' : 'Kërko Ofertë për Uebsajt të Personalizuar' }}
+                                    {{ __('subscription-renewals.Inquire Custom Website Offer') }}
                                 </div>
                             </x-slot>
                             <x-slot name="content">
@@ -171,7 +169,7 @@
 
             <div class="overflow-x-auto">
                 <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                    <thead class="bg-gray-100/50 dark:bg-gray-700/50">
+                    <thead class="bg-gray-100/50 dark:bg-gray-700/50 hidden lg:table-header-group">
                         <tr>
                             <x-table.th name="id" :label="__('subscription-renewals.ID')" :$sortField :$sortAsc :sortable="true" />
                             <x-table.th name="plan_id" :label="__('subscription-renewals.Shop / Plan')" :$sortField :$sortAsc :sortable="true" />
@@ -180,6 +178,7 @@
                             <x-table.th name="amount" :label="__('subscription-renewals.Amount')" :$sortField :$sortAsc :sortable="true" />
                             <x-table.th name="notes" :label="__('subscription-renewals.Notes')" :$sortField :$sortAsc :sortable="false" />
                             <x-table.th name="status" :label="__('subscription-renewals.Approval Status')" :$sortField :$sortAsc :sortable="true" />
+                            <x-table.th name="created_at" :label="__('subscription-renewals.Date & Period')" :$sortField :$sortAsc :sortable="true" />
                             <th class="px-6 py-4 text-right text-[10px] font-black uppercase text-gray-400 tracking-widest">{{ __('subscription-renewals.Actions') }}</th>
                         </tr>
                     </thead>

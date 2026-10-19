@@ -18,6 +18,8 @@
     @php
         use App\Services\ShopTranslationService;
 
+        $isEn = app()->getLocale() === 'en';
+
         // Dynamic Primary & Secondary Colors from barber_shops table
         $primaryColor = !empty($shop->primary_color) ? $shop->primary_color : '#7C5CFC';
         $secondaryColor = !empty($shop->secondary_color) ? $shop->secondary_color : '#0A4D44';
@@ -27,16 +29,38 @@
             $secondaryColor = '#0A4D44';
         }
 
-        $heroBadge = ShopTranslationService::getShopText($shop, 'hero_badge', "✨ {$shop->resolved_shop_label} Zyrtare • {$shop->name}");
-        $heroTitle = ShopTranslationService::getShopText($shop, 'hero_title', "Eksperiencë Premium për {$shop->resolved_service_label} & Stilim");
-        $heroSubtitle = ShopTranslationService::getShopText($shop, 'hero_subtitle', "Rezervoni takimin tuaj online me ekipin tonë profesional në pak sekonda. Zgjidhni shërbimin, orarin dhe stafin tuaj të preferuar 24/7.");
-        $heroButton = ShopTranslationService::getShopText($shop, 'hero_button', "Rezervo Takim Online ↗");
-        $servicesBadge = ShopTranslationService::getShopText($shop, 'services_badge', "Çmimet & Kohëzgjatja");
-        $servicesTitle = ShopTranslationService::getShopText($shop, 'services_title', "Shërbimet e Ofruara");
-        $staffBadge = ShopTranslationService::getShopText($shop, 'staff_badge', "Ekipi Ynë");
-        $staffTitle = ShopTranslationService::getShopText($shop, 'staff_title', "{$shop->resolved_staff_label_plural} Tanë");
+        $defaultBadge = $isEn
+            ? "Official {$shop->resolved_shop_label} • {$shop->name}"
+            : "{$shop->resolved_shop_label} Zyrtare • {$shop->name}";
+
+        $defaultTitle = $isEn
+            ? "Premium Experience for {$shop->resolved_service_label} & Styling"
+            : "Eksperiencë Premium për {$shop->resolved_service_label} & Stilim";
+
+        $defaultSubtitle = $isEn
+            ? "Book your appointment online with our professional team in seconds. Choose your preferred service, schedule, and staff 24/7."
+            : "Rezervoni takimin tuaj online me ekipin tonë profesional në pak sekonda. Zgjidhni shërbimin, orarin dhe stafin tuaj të preferuar 24/7.";
+
+        $defaultButton = $isEn
+            ? "Book Appointment Online ↗"
+            : "Rezervo Takim Online ↗";
+
+        $defaultServicesBadge = $isEn ? "Pricing & Duration" : "Çmimet & Kohëzgjatja";
+        $defaultServicesTitle = $isEn ? "Our Services" : "Shërbimet e Ofruara";
+        $defaultStaffBadge = $isEn ? "Our Team" : "Ekipi Ynë";
+        $defaultStaffTitle = $isEn ? "Our {$shop->resolved_staff_label_plural}" : "{$shop->resolved_staff_label_plural} Tanë";
+        $defaultFooterText = "© " . date('Y') . " {$shop->name} — " . ($isEn ? "Powered by E4ProTech Engine" : "Mundësuar nga E4ProTech Engine");
+
+        $heroBadge = ShopTranslationService::getShopText($shop, 'hero_badge', $defaultBadge);
+        $heroTitle = ShopTranslationService::getShopText($shop, 'hero_title', $defaultTitle);
+        $heroSubtitle = ShopTranslationService::getShopText($shop, 'hero_subtitle', $defaultSubtitle);
+        $heroButton = ShopTranslationService::getShopText($shop, 'hero_button', $defaultButton);
+        $servicesBadge = ShopTranslationService::getShopText($shop, 'services_badge', $defaultServicesBadge);
+        $servicesTitle = ShopTranslationService::getShopText($shop, 'services_title', $defaultServicesTitle);
+        $staffBadge = ShopTranslationService::getShopText($shop, 'staff_badge', $defaultStaffBadge);
+        $staffTitle = ShopTranslationService::getShopText($shop, 'staff_title', $defaultStaffTitle);
         $contactPhone = ShopTranslationService::getShopText($shop, 'contact_phone', $shop->phone ?? '');
-        $footerText = ShopTranslationService::getShopText($shop, 'footer_text', "© " . date('Y') . " {$shop->name} — Mundësuar nga E4ProTech Engine");
+        $footerText = ShopTranslationService::getShopText($shop, 'footer_text', $defaultFooterText);
     @endphp
 
     <!-- Top Navigation Bar (Managed Colors & Language Switcher) -->
@@ -72,12 +96,12 @@
                     <a href="{{ route('language.switch', 'sq') }}"
                        class="px-3 py-1.5 rounded-full transition {{ app()->getLocale() === 'sq' ? 'text-white shadow-sm' : 'text-slate-600 hover:text-black' }}"
                        style="{{ app()->getLocale() === 'sq' ? 'background-color: '.$primaryColor.';' : '' }}">
-                        🇦🇱 SQ
+                        SQ
                     </a>
                     <a href="{{ route('language.switch', 'en') }}"
                        class="px-3 py-1.5 rounded-full transition {{ app()->getLocale() === 'en' ? 'text-white shadow-sm' : 'text-slate-600 hover:text-black' }}"
                        style="{{ app()->getLocale() === 'en' ? 'background-color: '.$primaryColor.';' : '' }}">
-                        🇬🇧 EN
+                        EN
                     </a>
                 </div>
 
@@ -163,7 +187,9 @@
                                     <h4 class="text-xl font-black text-[#1A1D20]">{{ $staff->count() }} {{ $shop->resolved_staff_label_plural }}</h4>
                                 </div>
                                 <span class="w-10 h-10 rounded-xl font-black flex items-center justify-center text-lg"
-                                      style="background-color: {{ $primaryColor }}15; color: {{ $primaryColor }};">✂️</span>
+                                      style="background-color: {{ $primaryColor }}15; color: {{ $primaryColor }};">
+                                    <x-heroicon-o-scissors class="w-5 h-5" />
+                                </span>
                             </div>
 
                             <div class="p-4 rounded-2xl bg-[#FAF8F2] border border-stone-200/60 flex items-center justify-between">
@@ -172,7 +198,9 @@
                                     <h4 class="text-xl font-black text-[#1A1D20]">{{ $services->count() }} {{ app()->getLocale() === 'en' ? 'Options' : 'Opsione' }}</h4>
                                 </div>
                                 <span class="w-10 h-10 rounded-xl font-black flex items-center justify-center text-lg"
-                                      style="background-color: {{ $secondaryColor }}15; color: {{ $secondaryColor }};">⭐</span>
+                                      style="background-color: {{ $secondaryColor }}15; color: {{ $secondaryColor }};">
+                                    <x-heroicon-o-sparkles class="w-5 h-5" />
+                                </span>
                             </div>
                         </div>
 

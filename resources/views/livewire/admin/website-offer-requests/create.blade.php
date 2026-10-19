@@ -48,7 +48,7 @@
             </div>
 
             <div class="mt-8 flex justify-end">
-                <x-button type="submit" variant="blue" class="w-full sm:w-auto !px-10 !py-3.5 !rounded-2xl !font-black">Shto Kërkesën 🚀</x-button>
+                <x-button type="submit" variant="blue" class="w-full sm:w-auto !px-10 !py-3.5 !rounded-2xl !font-black">Shto Kërkesën</x-button>
             </div>
         </form>
     </div>

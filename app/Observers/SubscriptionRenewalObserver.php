@@ -56,13 +56,15 @@ class SubscriptionRenewalObserver
         $months = 1;
         if (!empty($item->notes) && preg_match('/(\d+)\s*(months|muaj)/i', (string) $item->notes, $matches)) {
             $months = max(1, (int) $matches[1]);
-        } elseif ($item->plan) {
-            $cycle = strtolower((string) ($item->plan->billing_cycle ?? ''));
-            if ($cycle === 'yearly' || str_contains($cycle, 'year') || str_contains($cycle, '12')) {
-                $months = 12;
-            }
+        } elseif ($item->plan && $item->plan->duration_months > 0) {
+            $months = (int) $item->plan->duration_months;
         }
 
+        // Exact Accumulation Logic:
+        // If the shop currently has remaining active days (expires_at in the future),
+        // the new duration is added ON TOP of the existing expiration date!
+        // Example: 2 days remaining + 6 months = 6 months and 2 days from now.
+        // If expired or null, it starts from today (now()).
         $baseDate = ($shop->expires_at && $shop->expires_at->isFuture()) ? $shop->expires_at->copy() : now();
         $newExpiresAt = $baseDate->copy()->addMonths($months);
 
