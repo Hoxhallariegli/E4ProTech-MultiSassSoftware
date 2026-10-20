@@ -10,7 +10,7 @@
                 {{ __('bookings.Add Booking') }}
             </h1>
             <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
-                Zgjidhni sallonin, berberin, shërbimin dhe orarin për të regjistruar një takim të ri.
+                {{ __('bookings.New record') }}
             </p>
         </div>
         <x-back-btn route="admin.bookings.index" />
@@ -37,11 +37,11 @@
                             </div>
                             <x-modal>
                                 <x-slot name="trigger">
-                                    <button type="button" @click="on = true" class="mb-6 p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl hover:scale-105 transition-transform" title="Shto Sallon të Ri">
+                                    <button type="button" @click="on = true" class="mb-6 p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl hover:scale-105 transition-transform" title="{{ __('barber-shops.Add BarberShop') }}">
                                         <x-heroicon-o-plus class="w-5 h-5" />
                                     </button>
                                 </x-slot>
-                                <x-slot name="modalTitle"><div class="dark:text-white px-6 pt-6">Shto Sallon të Ri</div></x-slot>
+                                <x-slot name="modalTitle"><div class="dark:text-white px-6 pt-6">{{ __('barber-shops.Add BarberShop') }}</div></x-slot>
                                 <x-slot name="content"><livewire:admin.barber-shops.quick-create /></x-slot>
                             </x-modal>
                         </div>
@@ -56,11 +56,11 @@
                         </div>
                         <x-modal>
                             <x-slot name="trigger">
-                                <button type="button" @click="on = true" class="mb-6 p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl hover:scale-105 transition-transform" title="Shto Staf të Ri">
+                                <button type="button" @click="on = true" class="mb-6 p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl hover:scale-105 transition-transform" title="{{ __('barbers.Add Barber') }}">
                                     <x-heroicon-o-plus class="w-5 h-5" />
                                 </button>
                             </x-slot>
-                            <x-slot name="modalTitle"><div class="dark:text-white px-6 pt-6">Shto Staf / Berber të Ri</div></x-slot>
+                            <x-slot name="modalTitle"><div class="dark:text-white px-6 pt-6">{{ __('barbers.Add Barber') }}</div></x-slot>
                             <x-slot name="content"><livewire:admin.barbers.quick-create /></x-slot>
                         </x-modal>
                     </div>
@@ -74,11 +74,11 @@
                         </div>
                         <x-modal>
                             <x-slot name="trigger">
-                                <button type="button" @click="on = true" class="mb-6 p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl hover:scale-105 transition-transform" title="Shto Klient të Ri">
+                                <button type="button" @click="on = true" class="mb-6 p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl hover:scale-105 transition-transform" title="{{ __('customers.Add Customer') }}">
                                     <x-heroicon-o-plus class="w-5 h-5" />
                                 </button>
                             </x-slot>
-                            <x-slot name="modalTitle"><div class="dark:text-white px-6 pt-6">Shto Klient të Ri</div></x-slot>
+                            <x-slot name="modalTitle"><div class="dark:text-white px-6 pt-6">{{ __('customers.Add Customer') }}</div></x-slot>
                             <x-slot name="content"><livewire:admin.customers.quick-create /></x-slot>
                         </x-modal>
                     </div>
@@ -92,9 +92,9 @@
                     <div>
                         <label class="block text-xs font-black uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-2">
                             <x-heroicon-o-scissors class="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                            <span>{{ __('bookings.Service Id') }} (Kliko për të Zgjedhur)</span>
+                            <span>{{ __('bookings.Service Id') }}</span>
                         </label>
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 font-medium">Kliko mbi një nga shërbimet e mëposhtme për ta zgjedhur.</p>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 font-medium">Zgjidhni shërbimin e dëshiruar më poshtë.</p>
                     </div>
 
                     {{-- Search Input for Services --}}
@@ -102,7 +102,7 @@
                         <x-heroicon-o-magnifying-glass class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                         <input type="text"
                                wire:model.live.debounce.200ms="service_search"
-                               placeholder="Kërko shërbimin..."
+                               placeholder="{{ __('services.Search') }}..."
                                class="w-full pl-9 pr-4 py-2.5 text-xs font-bold bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xs focus:ring-2 focus:ring-blue-500 dark:text-white">
                     </div>
                 </div>
@@ -153,7 +153,7 @@
                     <div>
                         <h3 class="text-sm sm:text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
                             <x-heroicon-o-calendar class="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                            <span>Përzgjidh Datën &amp; Orarin e Lirë</span>
+                            <span>{{ __('bookings.Appointment At') }}</span>
                         </h3>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-medium">
                             Hapi i orarit: <strong class="text-blue-600 dark:text-blue-400 font-bold">{{ $timeSlotData['slot_step'] ?? 15 }} min</strong> • Kohëzgjatja e shërbimit: <strong class="text-blue-600 dark:text-blue-400 font-bold">{{ $timeSlotData['req_duration'] ?? 30 }} min</strong>
@@ -200,13 +200,13 @@
 
                     <div class="lg:col-span-3">
                         <label class="block mb-2 text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
-                            Oraret e Lira të Ditës (Kliko për të zgjedhur)
+                            Oraret e Lira të Ditës
                         </label>
 
                         @if(($timeSlotData['is_closed'] ?? false) === true)
                             <div class="p-6 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-2xl text-rose-800 dark:text-rose-400 text-xs font-bold flex items-center gap-3">
                                 <x-heroicon-o-lock-closed class="w-6 h-6 text-rose-600 shrink-0" />
-                                <span>Salloni ose berberi është i mbyllur në këtë ditë të javës.</span>
+                                <span>Salloni ose stafi është i mbyllur në këtë ditë të javës.</span>
                             </div>
                         @elseif(!empty($timeSlotData['slots']))
                             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 max-h-72 overflow-y-auto p-1 custom-scrollbar">
@@ -304,6 +304,17 @@
                 {{-- Shënime --}}
                 <div class="md:col-span-3">
                     <x-form.textarea name="notes" wire:model="notes" :label="__('bookings.Notes')" class="dark:bg-gray-900" placeholder="Shtoni shënime shtesë për klientin ose takimin..." />
+                </div>
+
+                {{-- Dërgo SMS Toggle --}}
+                <div class="md:col-span-3">
+                    <label class="flex items-center gap-3 p-4 bg-blue-50/50 dark:bg-gray-900 border border-blue-100 dark:border-gray-700 rounded-2xl cursor-pointer">
+                        <input type="checkbox" wire:model="send_sms" class="w-5 h-5 rounded text-blue-600 focus:ring-blue-500">
+                        <div class="flex flex-col">
+                            <span class="text-xs font-black uppercase tracking-wider text-gray-900 dark:text-white">Dërgo SMS Konfirmimi te Klienti (SMS SIM Gateway)</span>
+                            <span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Dërgon menjëherë SMS automatike te numri i klientit dhe planifikon rikujtesën para takimit</span>
+                        </div>
+                    </label>
                 </div>
 
             </div>

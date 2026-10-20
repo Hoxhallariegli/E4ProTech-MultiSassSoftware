@@ -67,9 +67,8 @@ class SendFirebaseNotificationListener
                 if ($sendSmsParam !== null && $sendSmsParam !== '') {
                     $sendSmsRequested = filter_var($sendSmsParam, FILTER_VALIDATE_BOOLEAN);
                 } else {
-                    // For online public bookings, default send_sms is true.
-                    // For manual staff walk-in bookings created in APK/Admin, send_sms defaults to false unless send_sms = true is passed!
-                    $sendSmsRequested = ($source === 'online');
+                    // Default send_sms to TRUE for all bookings with a valid customer phone!
+                    $sendSmsRequested = true;
                 }
 
                 Log::info("📌 [SMS QUEUE CHECK] Booking #{$booking->id} (Source: {$source}) Action: {$action}, SendSMS Requested: " . ($sendSmsRequested ? 'YES' : 'NO') . ", Customer Phone: " . ($booking->customer?->phone ?? 'NONE'));

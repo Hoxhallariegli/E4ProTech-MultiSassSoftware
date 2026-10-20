@@ -30,6 +30,7 @@ class Create extends Component
     public $total_price = '';
     public $notes = '';
     public $source = 'walk-in';
+    public bool $send_sms = true;
 
     // Time Slots & Service Search Helpers
     public $booking_date = '';
@@ -111,7 +112,11 @@ class Create extends Component
 
     public function updatedBarberId($value)
     {
+        $this->selected_time = '';
+        $this->appointment_at = '';
+
         if (!$value) return;
+
         $related = Barber::find($value);
         if (!$related) return;
 
@@ -120,14 +125,14 @@ class Create extends Component
             $this->updatedBarberShopId($related->barber_shop_id);
             $this->barber_id = (string) $value;
         }
-
-        $this->selected_time = '';
-        $this->appointment_at = '';
     }
 
     public function selectService($serviceId)
     {
+        $this->selected_time = '';
+        $this->appointment_at = '';
         $this->service_id = $serviceId;
+
         $related = Service::find($serviceId);
         if ($related) {
             if (isset($related->barber_shop_id) && (string)$this->barber_shop_id !== (string)$related->barber_shop_id) {
@@ -139,9 +144,6 @@ class Create extends Component
                 $this->total_price = $related->price;
             }
         }
-
-        $this->selected_time = '';
-        $this->appointment_at = '';
     }
 
     public function updatedServiceId($value)
@@ -291,12 +293,12 @@ class Create extends Component
             }
         }
 
-        // Fetch existing bookings
+        // Timezone-safe start and end of day query in UTC
+        $startOfDayUtc = $date->copy()->startOfDay()->setTimezone('UTC');
+        $endOfDayUtc = $date->copy()->endOfDay()->setTimezone('UTC');
+
         $bookingQuery = Booking::query()
-            ->whereBetween('appointment_at', [
-                $date->copy()->startOfDay(),
-                $date->copy()->endOfDay(),
-            ])
+            ->whereBetween('appointment_at', [$startOfDayUtc, $endOfDayUtc])
             ->where('status', '!=', 'cancelled');
 
         if ($this->barber_id) {
@@ -306,6 +308,9 @@ class Create extends Component
         }
 
         $bookings = $bookingQuery->with(['customer', 'service', 'barber'])->get();
+
+        $activeBarbersCount = Barber::where('barber_shop_id', $this->barber_shop_id)->where('active', true)->count();
+        if ($activeBarbersCount < 1) $activeBarbersCount = 1;
 
         $bookingEntries = [];
         foreach ($bookings as $b) {
@@ -360,18 +365,22 @@ class Create extends Component
             $exceedsClose = ($slotEndM > $closeMinutes);
             $isPast = ($date->isToday() && $slotStartM < $nowMinutes);
 
+            $bookingsInSlotCount = 0;
             $overlapReason = null;
-            $isOverbooked = false;
 
             foreach ($bookingEntries as $entry) {
-                // Exact Overlap Condition:
-                // Slot starts before existing ends AND slot ends after existing starts
                 if ($slotStartM < $entry['end_m'] && $slotEndM > $entry['start_m']) {
-                    $isOverbooked = true;
-                    $overlapReason = $entry['title'] . " (" . $entry['start_str'] . "-" . $entry['end_str'] . ")";
-                    break;
+                    $bookingsInSlotCount++;
+                    if (!$overlapReason) {
+                        $overlapReason = $entry['title'] . " (" . $entry['start_str'] . "-" . $entry['end_str'] . ")";
+                    }
                 }
             }
+
+            // Max allowed simultaneous bookings in a slot:
+            // 1 if specific barber selected; otherwise activeBarbersCount
+            $maxAllowedBookings = $this->barber_id ? 1 : $activeBarbersCount;
+            $isOverbooked = ($bookingsInSlotCount >= $maxAllowedBookings);
 
             $isAvailable = !$exceedsClose && !$isPast && !$isOverbooked;
 
@@ -453,6 +462,9 @@ class Create extends Component
         }
 
         $this->validate();
+
+        // Pass send_sms flag into request so SendFirebaseNotificationListener processes it
+        request()->merge(['send_sms' => $this->send_sms]);
 
         $dto = BookingDTO::fromArray([
             'barber_shop_id' => $this->barber_shop_id,
