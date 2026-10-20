@@ -1,11 +1,11 @@
-<tr class="hover:bg-gray-50/50 dark:hover:bg-gray-900/50 transition-none border-b border-gray-50 dark:border-gray-700/50 last:border-none">
+<tr class="hover:bg-gray-50/80 dark:hover:bg-gray-900/60 transition-colors border-b border-gray-200 dark:border-gray-700/80 last:border-none">
     <!-- Mobile & Tablet Compact Cell (< lg) -->
     <td colspan="100" class="p-4 space-y-2 lg:hidden">
         <div class="flex items-center justify-between gap-2 text-xs">
             <span class="font-extrabold text-gray-900 dark:text-white truncate">
                 Plani: {{ $item->plan?->name ?? 'Standard' }}
             </span>
-            <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase shrink-0 {{ $item->status === 'active' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' }}">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase shrink-0 {{ $item->status === 'active' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' }}">
                 {{ $item->status }}
             </span>
         </div>
@@ -33,15 +33,19 @@
     </td>
 
     <!-- Desktop Table Cells (>= lg) -->
-    <td class="hidden lg:table-cell px-6 py-5 font-bold text-blue-600 dark:text-blue-400">{{ $item->id }}</td>
+    <td class="hidden lg:table-cell px-6 py-5 font-bold text-blue-600 dark:text-blue-400">#{{ $item->id }}</td>
     @if(auth()->user()->is_global_admin)
         <td class="hidden lg:table-cell px-6 py-5 font-bold text-gray-900 dark:text-white">{{ $item->barberShop?->name ?? '-' }}</td>
     @endif
-    <td class="hidden lg:table-cell px-6 py-5 font-bold text-gray-900 dark:text-white">{{ $item->plan?->name ?? '-' }}</td>
-    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->starts_at?->format('d/m/Y H:i') ?? '-' }}</td>
-    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->ends_at?->format('d/m/Y H:i') ?? '-' }}</td>
-    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->status }}</td>
-    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->auto_renew }}</td>
+    <td class="hidden lg:table-cell px-6 py-5 font-extrabold text-gray-900 dark:text-white">{{ $item->plan?->name ?? '-' }}</td>
+    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300 font-mono text-xs">{{ $item->starts_at?->format('d/m/Y H:i') ?? '-' }}</td>
+    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300 font-mono text-xs">{{ $item->ends_at?->format('d/m/Y H:i') ?? '-' }}</td>
+    <td class="hidden lg:table-cell px-6 py-5">
+        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase {{ $item->status === 'active' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' }}">
+            {{ $item->status }}
+        </span>
+    </td>
+    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->auto_renew ? 'Po' : 'Jo' }}</td>
     <td class="hidden lg:table-cell px-6 py-5 text-right !transition-none">
         <div class="flex justify-end gap-3 !transition-none">
             @can('edit_subscriptions')

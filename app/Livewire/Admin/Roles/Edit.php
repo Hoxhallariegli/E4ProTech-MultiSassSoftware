@@ -37,6 +37,11 @@ class Edit extends Component
     {
         $this->role = Role::where('id', $this->role->id)->firstOrFail();
 
+        // Security check: Non-global admin CANNOT view or edit the 'admin' role
+        if ($this->role->name === 'admin' && !auth()->user()?->is_global_admin) {
+            abort(403, 'Ju nuk keni akses për të ndryshuar rolin e Administratorit Global.');
+        }
+
         $this->label = $this->role->label ?? '';
 
         if (isset($this->role->permissions)) {
@@ -67,6 +72,10 @@ class Edit extends Component
     public function update(): Redirector|RedirectResponse
     {
         $this->validate();
+
+        if ($this->role->name === 'admin' && !auth()->user()?->is_global_admin) {
+            abort(403, 'Ju nuk keni akses për të ndryshuar rolin e Administratorit Global.');
+        }
 
         // @phpstan-ignore-next-line
         $this->role->label = $this->label;

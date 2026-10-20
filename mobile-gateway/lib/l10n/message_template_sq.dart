@@ -39,4 +39,11 @@ const Map<String, String> message_templateSq = {
   'field.channel': 'Kanali',
   'field.type': 'Lloji',
   'field.content': 'Përmbajtja',
+  'type.confirmation': 'Konfirmim',
+  'type.reminder': 'Rikujtesë',
+  'type.welcome': 'Mirëseardhje',
+  'type.reschedule': 'Ndryshim Takimi',
+  'type.cancellation': 'Anulim Takimi',
+  'card.albanian': '🇦🇱 Shqip (SQ):',
+  'card.english': '🇬🇧 English (EN):',
 };

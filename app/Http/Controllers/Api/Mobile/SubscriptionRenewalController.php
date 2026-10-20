@@ -125,6 +125,58 @@ class SubscriptionRenewalController extends Controller
         }
     }
 
+    public function websiteOffer(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'desired_domain' => 'required|string|max:100',
+            'offer_phone' => 'required|string|max:30',
+            'offer_notes' => 'nullable|string|max:1000',
+        ]);
+
+        $user = auth()->user();
+        $shop = $user?->barberShop ?: \App\Models\BarberShop::first();
+
+        if (!$shop) {
+            return response()->json(['success' => false, 'message' => 'Nuk u gjet asnjë sallon aktiv.'], 422);
+        }
+
+        $offerRequest = \App\Models\WebsiteOfferRequest::create([
+            'barber_shop_id' => $shop->id,
+            'user_id' => $user->id,
+            'desired_domain' => trim($validated['desired_domain']),
+            'phone' => trim($validated['offer_phone']),
+            'notes' => trim($validated['offer_notes'] ?? ''),
+            'status' => 'pending',
+        ]);
+
+        \App\Models\AuditTrail::logCustom(
+            $offerRequest,
+            'create',
+            'Subscriptions',
+            "Kërkesë për Uebsajt të Personalizuar ({$offerRequest->desired_domain})"
+        );
+
+        try {
+            $adminUser = \App\Models\User::where('email', 'admin@e4protech.com')
+                ->orWhere('email', 'hoxhallariegli@gmail.com')
+                ->first();
+
+            if ($adminUser) {
+                $adminUser->notify(new \App\Notifications\WebsiteOfferRequestedNotification($offerRequest));
+            } else {
+                \Illuminate\Support\Facades\Notification::route('mail', 'admin@e4protech.com')
+                    ->notify(new \App\Notifications\WebsiteOfferRequestedNotification($offerRequest));
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Website offer notification email warning: " . $e->getMessage());
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kërkesa juaj për Uebsajt të Personalizuar u dërgua me sukses!',
+        ]);
+    }
+
     private function prepareData(Request $request): array
     {
         $data = $request->all();

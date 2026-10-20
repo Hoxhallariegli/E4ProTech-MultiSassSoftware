@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/api_service.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'package:mobile_gateway/l10n/core_localization.dart';
 
 class ShopSwitcherWidget extends StatefulWidget {
   final VoidCallback onSwitched;
@@ -23,7 +24,7 @@ class _ShopSwitcherWidgetState extends State<ShopSwitcherWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gabim: $e'), backgroundColor: Colors.redAccent),
+          SnackBar(content: Text(coreTr(context, 'sidebar.error_prefix', {'error': e.toString()})), backgroundColor: Colors.redAccent),
         );
       }
     } finally {
@@ -51,7 +52,7 @@ class _ShopSwitcherWidgetState extends State<ShopSwitcherWidget> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
               child: Text(
-                'NDËRRO DYQANIN',
+                coreTr(context, 'sidebar.switch_shop_title'),
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w900,
@@ -83,7 +84,7 @@ class _ShopSwitcherWidgetState extends State<ShopSwitcherWidget> {
                     ),
                   ),
                   title: Text(
-                    shop['name'] ?? 'Dyqan pa emër',
+                    shop['name'] ?? coreTr(context, 'sidebar.unnamed_shop'),
                     style: TextStyle(
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                       color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface,

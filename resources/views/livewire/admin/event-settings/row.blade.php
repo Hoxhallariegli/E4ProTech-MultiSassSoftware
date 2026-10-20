@@ -1,4 +1,4 @@
-<tr class="hover:bg-gray-50/50 dark:hover:bg-gray-900/50 transition-none border-b border-gray-50 dark:border-gray-700/50 last:border-none">
+<tr class="hover:bg-gray-50/80 dark:hover:bg-gray-900/60 transition-colors border-b border-gray-200 dark:border-gray-700/80 last:border-none">
     <!-- Mobile & Tablet Compact Cell (< lg) -->
     <td colspan="100" class="p-4 space-y-2 lg:hidden">
         <div class="flex items-center justify-between gap-2 text-xs">
@@ -9,15 +9,15 @@
         </div>
 
         <div class="flex items-center gap-2 text-[10px] font-bold">
-            <span class="px-2 py-0.5 rounded {{ $item->reverb_enabled ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
+            <span class="px-2.5 py-0.5 rounded-full {{ $item->reverb_enabled ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
                 Reverb: {{ $item->reverb_enabled ? 'Aktiv' : 'Jo' }}
             </span>
-            <span class="px-2 py-0.5 rounded {{ $item->firebase_enabled ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
+            <span class="px-2.5 py-0.5 rounded-full {{ $item->firebase_enabled ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
                 Firebase: {{ $item->firebase_enabled ? 'Aktiv' : 'Jo' }}
             </span>
         </div>
 
-        <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800 text-[10px]">
             @can('edit_event_settings')
                 <x-a href="{{ route('admin.event-settings.edit', $item) }}" class="!rounded-xl !bg-blue-50 dark:!bg-blue-900/30 !text-blue-600 dark:!text-blue-400 !px-3 !py-1 !text-[10px] !font-black !uppercase !border-none">Edit</x-a>
             @endcan
@@ -35,13 +35,21 @@
     </td>
 
     <!-- Desktop Table Cells (>= lg) -->
-    <td class="hidden lg:table-cell px-6 py-5 font-bold text-blue-600 dark:text-blue-400">{{ $item->id }}</td>
+    <td class="hidden lg:table-cell px-6 py-5 font-bold text-blue-600 dark:text-blue-400">#{{ $item->id }}</td>
     @if(auth()->user()->is_global_admin)
         <td class="hidden lg:table-cell px-6 py-5 font-bold text-gray-900 dark:text-white">{{ $item->barberShop?->name ?? '-' }}</td>
     @endif
     <td class="hidden lg:table-cell px-6 py-5 font-bold text-gray-900 dark:text-white">{{ $item->realtimeEvent?->event ?? '-' }}</td>
-    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->reverb_enabled }}</td>
-    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->firebase_enabled }}</td>
+    <td class="hidden lg:table-cell px-6 py-5">
+        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase {{ $item->reverb_enabled ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
+            {{ $item->reverb_enabled ? 'Aktiv' : 'Inaktiv' }}
+        </span>
+    </td>
+    <td class="hidden lg:table-cell px-6 py-5">
+        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase {{ $item->firebase_enabled ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
+            {{ $item->firebase_enabled ? 'Aktiv' : 'Inaktiv' }}
+        </span>
+    </td>
     <td class="hidden lg:table-cell px-6 py-5 text-right !transition-none">
         <div class="flex justify-end gap-3 !transition-none">
             @can('edit_event_settings')

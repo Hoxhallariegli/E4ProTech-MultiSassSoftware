@@ -1,19 +1,19 @@
-<div>
-    <div class="flex justify-between">
-
-        <h1>{{ __('roles.Roles') }}</h1>
-
+<div class="space-y-6">
+    <div class="flex items-center justify-between gap-4">
+        <div>
+            <x-h1>{{ __('roles.Roles') }}</x-h1>
+            <x-short-description class="dark:text-gray-400">Menaxhoni rolet dhe lejet e aksesit për përdoruesit</x-short-description>
+        </div>
         <div>
             @can('add_roles')
                 <livewire:admin.roles.create @added="$refresh"/>
             @endcan
         </div>
-
     </div>
 
     @include('errors.messages')
 
-    <div class="card">
+    <div class="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 sm:p-8 border border-gray-100 dark:border-gray-700 shadow-sm space-y-6">
 
         <x-alert>
             <x-heroicon-c-information-circle class="size-6 sm:size-5 mr-2 sm:mr-1.5 flex-shrink-0" />
@@ -22,42 +22,42 @@
             </span>
         </x-alert>
 
-        <div class="grid sm:grid-cols-1 md:grid-cols-4 gap-4">
-
-            <div class="col-span-2">
-                <x-form.input type="search" id="roles" name="name" wire:model.live="name" label="none" :placeholder="__('roles.Search Roles')" />
-            </div>
-
+        <div class="max-w-xl">
+            <x-form.input type="search" id="roles" name="name" wire:model.live="name" label="none" :placeholder="__('roles.Search Roles')" class="dark:bg-gray-900" />
         </div>
 
-        <table>
-            <thead class="hidden lg:table-header-group">
-            <tr>
-                <th>
-                    <a class="link" href="#" wire:click.prevent="sortBy('label')">{{ __('roles.Name') }}</a>
-                </th>
-                <th>
-                    {{ __('Team') }}
-                </th>
-                <th class="text-center">
-                    {{ __('Permissions') }}
-                </th>
-                <th class="text-center">
-                    {{ __('Guard') }}
-                </th>
-                <th class="text-right">
-                    {{ __('roles.Action') }}
-                </th>
-            </tr>
-            </thead>
-            <tbody>
-            @foreach($this->roles() as $role)
-                <livewire:admin.roles.row :$role :key="$role->id" @delete="deleteRole('{{ $role->id }}')" />
-            @endforeach
-            </tbody>
-        </table>
+        <div class="overflow-x-auto rounded-2xl border border-gray-200 dark:border-gray-700/80">
+            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead class="bg-gray-100/70 dark:bg-gray-700/70 hidden lg:table-header-group border-b border-gray-200 dark:border-gray-700">
+                <tr>
+                    <th class="px-6 py-4 text-left text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        <a class="link" href="#" wire:click.prevent="sortBy('label')">{{ __('roles.Name') }}</a>
+                    </th>
+                    <th class="px-6 py-4 text-left text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        {{ __('Team') }}
+                    </th>
+                    <th class="px-6 py-4 text-center text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        {{ __('Permissions') }}
+                    </th>
+                    <th class="px-6 py-4 text-center text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        {{ __('Guard') }}
+                    </th>
+                    <th class="px-6 py-4 text-right text-[10px] font-black uppercase tracking-wider text-gray-400">
+                        {{ __('roles.Action') }}
+                    </th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700/80">
+                @foreach($this->roles() as $role)
+                    <livewire:admin.roles.row :$role :key="$role->id" @delete="deleteRole('{{ $role->id }}')" />
+                @endforeach
+                </tbody>
+            </table>
+        </div>
 
-        {{ $this->roles()->links() }}
+        <div class="mt-4">
+            {{ $this->roles()->links() }}
+        </div>
 
     </div>
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile_gateway/l10n/core_localization.dart';
 import 'package:mobile_gateway/modules/dashboard/booking/presentation/cubit/booking_cubit.dart';
 import 'package:mobile_gateway/modules/dashboard/booking/data/booking_repository.dart';
 import 'package:mobile_gateway/modules/dashboard/booking/presentation/pages/booking_calendar_page.dart';
@@ -158,7 +159,7 @@ class UserHeaderCard extends StatelessWidget {
                   child: IconButton(
                     onPressed: onSwitchShop,
                     icon: const Icon(Icons.swap_horiz_rounded, color: Colors.white, size: 22),
-                    tooltip: 'Ndrysho Sallonin',
+                    tooltip: coreTr(context, 'sidebar.switch_shop'),
                   ),
                 ),
             ],
@@ -219,7 +220,7 @@ class UserHeaderCard extends StatelessWidget {
                       const Icon(Icons.verified_rounded, color: Colors.white, size: 13),
                       const SizedBox(width: 5),
                       Text(
-                        '$trialDaysLeft Ditë Mbetura ↗',
+                        coreTr(context, 'sidebar.days_remaining', {'days': trialDaysLeft.toString()}),
                         style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900),
                       ),
                     ],

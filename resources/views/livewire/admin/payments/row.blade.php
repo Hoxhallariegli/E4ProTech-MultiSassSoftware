@@ -1,4 +1,4 @@
-<tr class="hover:bg-gray-50/50 dark:hover:bg-gray-900/50 transition-none border-b border-gray-50 dark:border-gray-700/50 last:border-none">
+<tr class="hover:bg-gray-50/80 dark:hover:bg-gray-900/60 transition-colors border-b border-gray-200 dark:border-gray-700/80 last:border-none">
     <!-- Mobile & Tablet Compact Cell (< lg) -->
     <td colspan="100" class="p-4 space-y-2 lg:hidden">
         <div class="flex items-center justify-between gap-2 text-xs">
@@ -12,7 +12,7 @@
 
         <div class="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 font-medium pt-1">
             <span class="font-bold text-gray-700 dark:text-gray-300">Mënyra: {{ $item->method ?? 'CASH' }}</span>
-            <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase {{ $item->status === 'paid' || $item->status === 'completed' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' }}">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase {{ $item->status === 'paid' || $item->status === 'completed' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' }}">
                 {{ $item->status }}
             </span>
         </div>
@@ -38,14 +38,18 @@
     </td>
 
     <!-- Desktop Table Cells (>= lg) -->
-    <td class="hidden lg:table-cell px-6 py-5 font-bold text-blue-600 dark:text-blue-400">{{ $item->id }}</td>
+    <td class="hidden lg:table-cell px-6 py-5 font-bold text-blue-600 dark:text-blue-400">#{{ $item->id }}</td>
     @if(auth()->user()->is_global_admin)
         <td class="hidden lg:table-cell px-6 py-5 font-bold text-gray-900 dark:text-white">{{ $item->barberShop?->name ?? '-' }}</td>
     @endif
     <td class="hidden lg:table-cell px-6 py-5 font-bold text-gray-900 dark:text-white">{{ $item->booking?->customer?->name ?? '-' }}</td>
-    <td class="hidden lg:table-cell px-6 py-5 font-extrabold text-gray-900 dark:text-white">{{ format_currency($item->amount, $item->barberShop) }}</td>
-    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->method }}</td>
-    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->status }}</td>
+    <td class="hidden lg:table-cell px-6 py-5 font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">{{ format_currency($item->amount, $item->barberShop) }}</td>
+    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300 font-bold uppercase text-xs">{{ $item->method ?: 'CASH' }}</td>
+    <td class="hidden lg:table-cell px-6 py-5">
+        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase {{ $item->status === 'paid' || $item->status === 'completed' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' }}">
+            {{ $item->status }}
+        </span>
+    </td>
     <td class="hidden lg:table-cell px-6 py-5 text-right !transition-none">
         <div class="flex justify-end gap-3 !transition-none">
             @can('edit_payments')

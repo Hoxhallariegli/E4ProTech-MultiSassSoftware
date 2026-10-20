@@ -39,4 +39,11 @@ const Map<String, String> message_templateEn = {
   'field.channel': 'Channel',
   'field.type': 'Type',
   'field.content': 'Content',
+  'type.confirmation': 'Confirmation',
+  'type.reminder': 'Reminder',
+  'type.welcome': 'Welcome',
+  'type.reschedule': 'Reschedule',
+  'type.cancellation': 'Cancellation',
+  'card.albanian': '🇦🇱 Albanian (SQ):',
+  'card.english': '🇬🇧 English (EN):',
 };

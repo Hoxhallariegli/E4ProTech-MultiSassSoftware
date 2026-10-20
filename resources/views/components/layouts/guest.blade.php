@@ -1,11 +1,33 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-[#FAF8F2] text-[#1A1D20] overflow-x-hidden">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-[#FAF8F2] text-[#1A1D20] overflow-x-hidden light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+        (function() {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
+            try {
+                localStorage.setItem('theme', 'light');
+            } catch(e) {}
+        })();
+    </script>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title') — {{ config('app.name', 'E4ProTech Engine') }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        :root, html, body {
+            color-scheme: light !important;
+            background-color: #FAF8F2 !important;
+            color: #1A1D20 !important;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            color: #1A1D20 !important;
+        }
+        p, label, input, select, textarea {
+            color: #1A1D20 !important;
+        }
+    </style>
 </head>
 <body class="min-h-full flex flex-col justify-between bg-[#FAF8F2] text-[#1A1D20] antialiased selection:bg-[#7C5CFC] selection:text-white overflow-x-hidden max-w-full">
 

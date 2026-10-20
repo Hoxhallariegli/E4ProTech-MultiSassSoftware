@@ -162,6 +162,8 @@ const Map<String, String> coreEn = {
   'module.working_hour': 'Working Hours',
   'module.report': 'Reports & Analytics',
   'module.subscription_renewal': 'Subscription Renewals',
+  'module.ai_assistant': 'AI Assistant',
+  'module.shop_front_page_setting': 'Front Page Settings',
 
   'sidebar.overview': 'Overview Dashboard',
   'sidebar.dynamic_modules': 'DYNAMIC MODULES',
@@ -170,6 +172,11 @@ const Map<String, String> coreEn = {
   'sidebar.sms_notifications': 'SMS GATEWAY & NOTIFICATIONS',
   'sidebar.saas_administration': 'SAAS ADMINISTRATION',
   'sidebar.other': 'OTHER MODULES',
+  'sidebar.switch_shop': 'Switch Salon',
+  'sidebar.days_remaining': '{days} Days Remaining ↗',
+  'sidebar.switch_shop_title': 'SWITCH SALON',
+  'sidebar.unnamed_shop': 'Unnamed Salon',
+  'sidebar.error_prefix': 'Error: {error}',
 
   'nav.dashboard': 'Dashboard',
   'nav.modules': 'Modules',

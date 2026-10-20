@@ -10,4 +10,8 @@ const Map<String, String> languageSq = {
   'Save Changes': 'Ruaj Ndryshimet',
   'Select a file to begin': 'Zgjidh një skedar për të filluar',
   'Choose a language and a translation file from the sidebar to edit its content.': 'Zgjidh një gjuhë dhe një skedar përkthimi nga anësia për të edituar përmbajtjen e tij.',
+  'page.title': 'Menaxhimi i Gjuhës',
+  'page.subtitle': 'Zgjidhni gjuhën tuaj të preferuar të ndërfaqes',
+  'page.available': 'Gjuhët e Disponueshme',
+  'page.note': 'Sqarim: Ndryshimi i gjuhës do të përditësojë menjëherë të gjitha etiketat e modulit.',
 };

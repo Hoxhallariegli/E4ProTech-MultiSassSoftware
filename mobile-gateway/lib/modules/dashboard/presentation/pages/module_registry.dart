@@ -19,6 +19,7 @@ import '../../review/presentation/pages/review_list_page.dart';
 import '../../working_hour/presentation/pages/working_hour_list_page.dart';
 import '../../shop_front_page_setting/presentation/pages/shop_front_page_setting_list_page.dart';
 import '../../report/presentation/pages/report_list_page.dart';
+import '../../ai_assistant/presentation/pages/ai_assistant_page.dart';
 
 class ModuleEntry {
   final String key;
@@ -63,5 +64,6 @@ class ModuleRegistry {
     ModuleEntry(key: 'message_log', name: 'Logjet e Mesazheve', icon: Icons.mark_email_read_rounded, page: const MessageLogListPage(), permission: 'view_message_logs'),
     ModuleEntry(key: 'device_token', name: 'Tokenat e Pajisjeve', icon: Icons.phonelink_ring_rounded, page: const DeviceTokenListPage(), permission: 'view_device_tokens'),
     ModuleEntry(key: 'shop_front_page_setting', name: 'Faqja Ime (Front Page)', icon: Icons.desktop_windows_outlined, page: const ShopFrontPageSettingListPage(), permission: 'view_shop_front_page_settings'),
+    ModuleEntry(key: 'ai_assistant', name: 'Asistenti AI', icon: Icons.psychology_rounded, page: const AiAssistantPage(), permission: null),
   ];
 }

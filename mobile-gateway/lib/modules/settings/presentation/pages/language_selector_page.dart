@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/localization/locale_cubit.dart';
 import '../../../../core/widgets/premium_widgets.dart';
+import '../../../../l10n/language_localization.dart';
 import '../../data/language_repository.dart';
 
 class LanguageSelectorPage extends StatefulWidget {
@@ -48,11 +49,11 @@ class _LanguageSelectorPageState extends State<LanguageSelectorPage> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Language Management', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-            Text('Select your preferred interface language', style: TextStyle(fontSize: 11, color: Colors.grey)),
+            Text(languageTr(context, 'page.title'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            Text(languageTr(context, 'page.subtitle'), style: const TextStyle(fontSize: 11, color: Colors.grey)),
           ],
         ),
       ),
@@ -61,18 +62,18 @@ class _LanguageSelectorPageState extends State<LanguageSelectorPage> {
           : ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.language_rounded, color: Colors.blueAccent, size: 20),
+                    const Icon(Icons.language_rounded, color: Colors.blueAccent, size: 20),
                     const SizedBox(width: 8),
-                    const Text('Available Languages', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                    Text(languageTr(context, 'page.available'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                   ],
                 ),
                 const SizedBox(height: 18),
                 ..._languages.map((lang) => _buildLanguageTile(context, lang)),
                 const SizedBox(height: 30),
                 Text(
-                  'Note: Changing the language will update the UI labels across all dynamic modules instantly.',
+                  languageTr(context, 'page.note'),
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
                   textAlign: TextAlign.center,
                 ),

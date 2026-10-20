@@ -79,6 +79,19 @@ class SubscriptionRenewalRepository {
     clearCache();
   }
 
+  Future<void> submitWebsiteOffer({
+    required String domain,
+    required String phone,
+    String? notes,
+  }) async {
+    final res = await ApiService.post('/subscription-renewals/website-offer', {
+      'desired_domain': domain,
+      'offer_phone': phone,
+      'offer_notes': notes ?? '',
+    });
+    _ensureSuccess(res);
+  }
+
   Future<List<Map<String, dynamic>>> lookup(String endpoint, {String search = '', bool forceRefresh = false}) async {
     final cacheKey = '$endpoint:$search';
     final cached = _lookupCache[cacheKey];

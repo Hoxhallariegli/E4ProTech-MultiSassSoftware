@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/l10n/device_token_localization.dart';
 
 class DeviceTokenCard extends StatelessWidget {
   final Map<String, dynamic> item;
@@ -13,7 +14,7 @@ class DeviceTokenCard extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final primaryColor = theme.colorScheme.primary;
 
-    final deviceName = (item['device_name'] ?? item['name'] ?? 'Pajisje Mobile').toString();
+    final deviceName = (item['device_name'] ?? item['name'] ?? device_tokenTr(context, 'card.default_device')).toString();
     final userName = (item['user_name'] ?? item['user']?['name'] ?? '').toString();
     final platform = (item['platform'] ?? 'android').toString().toUpperCase();
     final isGateway = item['is_sms_gateway'] == true || item['is_sms_gateway'] == 1 || item['is_sms_gateway'] == '1';
@@ -66,9 +67,9 @@ class DeviceTokenCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: gatewayColor.withOpacity(0.4)),
                         ),
-                        child: const Text(
-                          '📱 SMS GATEWAY',
-                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: gatewayColor),
+                        child: Text(
+                          device_tokenTr(context, 'card.gateway'),
+                          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: gatewayColor),
                         ),
                       )
                     else
@@ -88,7 +89,7 @@ class DeviceTokenCard extends StatelessWidget {
                 if (userName.isNotEmpty) ...[
                   const SizedBox(height: 3),
                   Text(
-                    'Përdoruesi: $userName',
+                    device_tokenTr(context, 'card.user', {'name': userName}),
                     style: TextStyle(fontSize: 11.5, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontWeight: FontWeight.w500),
                   ),
                 ],
@@ -104,8 +105,8 @@ class DeviceTokenCard extends StatelessWidget {
                 if (value == 'delete' && onDelete != null) onDelete!();
               },
               itemBuilder: (_) => [
-                if (onTap != null) const PopupMenuItem(value: 'edit', child: Text('✏️ Edito')),
-                if (onDelete != null) const PopupMenuItem(value: 'delete', child: Text('🗑️ Fshi')),
+                if (onTap != null) PopupMenuItem(value: 'edit', child: Text('✏️ ${device_tokenTr(context, 'list.edit')}')),
+                if (onDelete != null) PopupMenuItem(value: 'delete', child: Text('🗑️ ${device_tokenTr(context, 'list.delete')}')),
               ],
             ),
         ],

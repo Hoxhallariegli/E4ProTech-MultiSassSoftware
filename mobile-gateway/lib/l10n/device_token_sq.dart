@@ -40,4 +40,7 @@ const Map<String, String> device_tokenSq = {
   'field.fcm_token': 'Fcm Token',
   'field.platform': 'Platforma',
   'field.last_used_at': 'E përdorur për herë të fundit në',
+  'card.default_device': 'Pajisje Mobile',
+  'card.user': 'Përdoruesi: {name}',
+  'card.gateway': '📱 SMS GATEWAY',
 };

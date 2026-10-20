@@ -1,15 +1,38 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth bg-[#FAF8F2] text-[#1A1D20] antialiased font-sans">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth bg-[#FAF8F2] text-[#1A1D20] antialiased font-sans light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+        (function() {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
+            try {
+                localStorage.setItem('theme', 'light');
+            } catch(e) {}
+        })();
+    </script>
     <title>E4ProTech Engine — {{ __('Multi-SaaS Salon Management Engine & SIM SMS Gateway') }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+        :root, html, body {
+            color-scheme: light !important;
+            background-color: #FAF8F2 !important;
+            color: #1A1D20 !important;
+        }
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        h1, h2, h3, h4, h5, h6 {
+            color: #1A1D20 !important;
+        }
+        p, label {
+            color: #1A1D20 !important;
+        }
+        .bg-\[\#0A4D44\] *, .bg-\[\#1A1D20\] *, .bg-\[\#7C5CFC\] * {
+            color: inherit !important;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between bg-[#FAF8F2] text-[#1A1D20] selection:bg-[#7C5CFC] selection:text-white">
@@ -141,53 +164,53 @@
     </section>
 
     <!-- How It Works Step-By-Step Section -->
-    <section id="how-it-works" class="py-20 lg:py-28 bg-[#0A4D44] border-t border-stone-200/80 relative overflow-hidden" style="background-color: #0A4D44 !important;">
+    <section id="how-it-works" class="py-20 lg:py-28 bg-[#0A4D44] text-white border-t border-stone-200/80 relative overflow-hidden">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
             <div class="text-center max-w-3xl mx-auto mb-16">
-                <span class="text-xs font-extrabold uppercase tracking-widest" style="color: #6ee7b7 !important;">HOW IT WORKS</span>
-                <h2 class="text-3xl sm:text-5xl font-black tracking-tight mt-2 mb-4" style="color: #FFFFFF !important;">
+                <span class="text-xs font-extrabold uppercase tracking-widest text-emerald-300">HOW IT WORKS</span>
+                <h2 class="text-3xl sm:text-5xl font-black tracking-tight text-white mt-2 mb-4">
                     {{ __('welcome.Transforming Your Salon') }}
                 </h2>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="p-8 rounded-[2.5rem] shadow-xl transition" style="background-color: rgba(255, 255, 255, 0.1) !important; border: 1px solid rgba(110, 231, 183, 0.3) !important;">
-                    <span class="text-xs font-black uppercase tracking-wider" style="color: #fde047 !important;">{{ __('welcome.STEP 1') }}</span>
-                    <h3 class="text-xl font-black mt-2 mb-3" style="color: #FFFFFF !important;">{{ __('welcome.Discovery & Online Page') }}</h3>
-                    <p class="text-sm leading-relaxed font-medium" style="color: #FFFFFF !important;">
+                <div class="p-8 rounded-[2.5rem] bg-white/10 backdrop-blur-md border border-emerald-400/20 shadow-xl">
+                    <span class="text-xs font-black uppercase text-amber-300">{{ __('welcome.STEP 1') }}</span>
+                    <h3 class="text-xl font-black text-white mt-2 mb-3">{{ __('welcome.Discovery & Online Page') }}</h3>
+                    <p class="text-xs text-emerald-100 leading-relaxed font-medium">
                         {{ app()->getLocale() === 'en'
                             ? 'Clients find your customized public link and view your services, prices and team.'
                             : 'Klientët gjejnë adresën tuaj të personalizuar dhe shohin shërbimet, çmimet dhe ekipin.' }}
                     </p>
                 </div>
 
-                <div class="p-8 rounded-[2.5rem] shadow-xl transition" style="background-color: rgba(255, 255, 255, 0.1) !important; border: 1px solid rgba(110, 231, 183, 0.3) !important;">
-                    <span class="text-xs font-black uppercase tracking-wider" style="color: #fde047 !important;">{{ __('welcome.STEP 2') }}</span>
-                    <h3 class="text-xl font-black mt-2 mb-3" style="color: #FFFFFF !important;">{{ __('welcome.24/7 Online Bookings') }}</h3>
-                    <p class="text-sm leading-relaxed font-medium" style="color: #FFFFFF !important;">
+                <div class="p-8 rounded-[2.5rem] bg-white/10 backdrop-blur-md border border-emerald-400/20 shadow-xl">
+                    <span class="text-xs font-black uppercase text-amber-300">{{ __('welcome.STEP 2') }}</span>
+                    <h3 class="text-xl font-black text-white mt-2 mb-3">{{ __('welcome.24/7 Online Bookings') }}</h3>
+                    <p class="text-xs text-emerald-100 leading-relaxed font-medium">
                         {{ app()->getLocale() === 'en'
                             ? 'Clients select their preferred service, stylist, and time slot 24/7.'
                             : 'Klientët zgjedhin shërbimin, berberin dhe orarin e lirë në çdo moment 24/7.' }}
                     </p>
                 </div>
 
-                <div class="p-8 rounded-[2.5rem] shadow-xl transition" style="background-color: rgba(255, 255, 255, 0.1) !important; border: 1px solid rgba(110, 231, 183, 0.3) !important;">
-                    <span class="text-xs font-black uppercase tracking-wider" style="color: #fde047 !important;">{{ __('welcome.STEP 3') }}</span>
-                    <h3 class="text-xl font-black mt-2 mb-3" style="color: #FFFFFF !important;">{{ __('welcome.Automated SMS & Reminders') }}</h3>
-                    <p class="text-sm leading-relaxed font-medium" style="color: #FFFFFF !important;">
+                <div class="p-8 rounded-[2.5rem] bg-white/10 backdrop-blur-md border border-emerald-400/20 shadow-xl">
+                    <span class="text-xs font-black uppercase text-amber-300">{{ __('welcome.STEP 3') }}</span>
+                    <h3 class="text-xl font-black text-white mt-2 mb-3">{{ __('welcome.Automated SMS & Reminders') }}</h3>
+                    <p class="text-xs text-emerald-100 leading-relaxed font-medium">
                         {{ app()->getLocale() === 'en'
                             ? 'Automated confirmation and reminder SMS dispatched directly from your Android mobile SIM.'
                             : 'Dërgim automatik i SMS-ve të konfirmimit dhe rikujtesës direkt nga celulari juaj Android.' }}
                     </p>
                 </div>
 
-                <div class="p-8 rounded-[2.5rem] shadow-xl transition" style="background-color: rgba(255, 255, 255, 0.1) !important; border: 1px solid rgba(110, 231, 183, 0.3) !important;">
-                    <span class="text-xs font-black uppercase tracking-wider" style="color: #fde047 !important;">{{ __('welcome.STEP 4') }}</span>
-                    <h3 class="text-xl font-black mt-2 mb-3" style="color: #FFFFFF !important;">{{ __('welcome.Mobile App & Live Sync') }}</h3>
-                    <p class="text-sm leading-relaxed font-medium" style="color: #FFFFFF !important;">
+                <div class="p-8 rounded-[2.5rem] bg-white/10 backdrop-blur-md border border-emerald-400/20 shadow-xl">
+                    <span class="text-xs font-black uppercase text-amber-300">{{ __('welcome.STEP 4') }}</span>
+                    <h3 class="text-xl font-black text-white mt-2 mb-3">{{ __('welcome.Mobile App & Live Sync') }}</h3>
+                    <p class="text-xs text-emerald-100 leading-relaxed font-medium">
                         {{ app()->getLocale() === 'en'
                             ? 'Appointments sync instantly with your mobile app and admin dashboard.'
-                            : 'Takimet sinkronizohen menjëherë me aplikacionin celular dhe panelin tuaj të kontrollit.' }}
+                            : 'Rezervimi sinkronizohet menjëherë me aplikacionin celular dhe panelin tuaj të kontrollit.' }}
                     </p>
                 </div>
             </div>

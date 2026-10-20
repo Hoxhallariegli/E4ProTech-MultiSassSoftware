@@ -24,7 +24,7 @@ class _SubscriptionRenewalFormPageState extends State<SubscriptionRenewalFormPag
   bool _loading = true;
   String? _transferDocumentPath;
 
-  String? _paymentMethod = 'bank_transfer';
+  String? _paymentMethod = 'cash';
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
   String? _status = 'pending';
@@ -35,9 +35,11 @@ class _SubscriptionRenewalFormPageState extends State<SubscriptionRenewalFormPag
   @override void initState() { super.initState(); _init(); }
 
   Future<void> _init() async {
-    _paymentMethod = widget.item?['payment_method']?.toString() ?? 'bank_transfer';
-    final _initialamount = widget.item?['amount'];
-    _amountController.text = _initialamount == null ? '' : (double.tryParse(_initialamount.toString())?.toStringAsFixed(2) ?? _initialamount.toString());
+    _paymentMethod = widget.item?['payment_method']?.toString() ?? 'cash';
+    if (_paymentMethod == 'bank_transfer') _paymentMethod = 'cash';
+
+    final initialAmount = widget.item?['amount'];
+    _amountController.text = initialAmount == null ? '' : (double.tryParse(initialAmount.toString())?.toStringAsFixed(2) ?? initialAmount.toString());
     _notesController.text = widget.item?['notes']?.toString() ?? '';
     _status = widget.item?['status']?.toString() ?? 'pending';
 
@@ -47,10 +49,40 @@ class _SubscriptionRenewalFormPageState extends State<SubscriptionRenewalFormPag
         final name = (p['name'] ?? p['title'] ?? '').toString().toLowerCase();
         return !name.contains('trial') && !name.contains('prova');
       }).toList();
-      if (widget.item?['plan_id'] != null) _planId = int.tryParse(widget.item!['plan_id'].toString());
+      if (widget.item?['plan_id'] != null) {
+        _planId = int.tryParse(widget.item!['plan_id'].toString());
+      }
+
+      // Auto calculate price if empty
+      if ((_amountController.text.isEmpty || _amountController.text == '0.00') && _planId != null) {
+        final currentPlan = _planOptions.firstWhere(
+          (p) => p['id'].toString() == _planId.toString(),
+          orElse: () => <String, dynamic>{},
+        );
+        if (currentPlan.isNotEmpty) {
+          final calculated = _calculateAmount(currentPlan, _notesController.text);
+          _amountController.text = calculated.toStringAsFixed(2);
+        }
+      }
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(subscription_renewalTr(context, 'form.could_not_load')), behavior: SnackBarBehavior.floating));
     } finally { if (mounted) setState(() => _loading = false); }
+  }
+
+  double _calculateAmount(Map<String, dynamic> plan, String notes) {
+    final basePrice = double.tryParse(plan['price']?.toString() ?? '0') ?? 0.0;
+    int months = 6;
+    final lowerNotes = notes.toLowerCase();
+    if (lowerNotes.contains('24') || lowerNotes.contains('2 vite') || lowerNotes.contains('2 years')) {
+      months = 24;
+    } else if (lowerNotes.contains('12') || lowerNotes.contains('1 vit') || lowerNotes.contains('1 year')) {
+      months = 12;
+    } else if (lowerNotes.contains('6')) {
+      months = 6;
+    }
+
+    double discountPct = months == 12 ? 0.05 : (months == 24 ? 0.10 : 0.0);
+    return (basePrice * months) * (1.0 - discountPct);
   }
 
   Future<void> _pickplanId() async {
@@ -70,9 +102,8 @@ class _SubscriptionRenewalFormPageState extends State<SubscriptionRenewalFormPag
     if (selected != null) {
       setState(() {
         _planId = int.tryParse(selected['id'].toString());
-        if (selected['price'] != null) {
-          _amountController.text = (double.tryParse(selected['price'].toString()) ?? 0.0).toStringAsFixed(2);
-        }
+        final price = _calculateAmount(selected, _notesController.text);
+        _amountController.text = price.toStringAsFixed(2);
       });
     }
   }
@@ -81,12 +112,11 @@ class _SubscriptionRenewalFormPageState extends State<SubscriptionRenewalFormPag
     return (item['name'] ?? item['title'] ?? 'ID: ' + item['id'].toString()).toString();
   }
 
-  String _getPaymentMethodLabel(String v) {
+  String _getPaymentMethodLabel(BuildContext context, String v) {
     switch (v) {
-      case 'bank_transfer': return '🏦 Transfertë Bankare (Bank Transfer)';
-      case 'cash': return '💵 Para në Dorë (Cash)';
-      case 'card': return '💳 Kartë Kreditit/Debitit (Card)';
-      case 'online': return '🌐 Pagesë Online';
+      case 'cash': return subscription_renewalTr(context, 'card.cash');
+      case 'card': return subscription_renewalTr(context, 'card.card');
+      case 'online': return subscription_renewalTr(context, 'card.online');
       default: return v;
     }
   }
@@ -123,136 +153,137 @@ class _SubscriptionRenewalFormPageState extends State<SubscriptionRenewalFormPag
         child: Scaffold(
           appBar: AppBar(
             leading: IconButton(
-              tooltip: 'Mbrapa',
+              tooltip: subscription_renewalTr(context, 'common.no'),
               icon: const Icon(Icons.arrow_back_rounded),
               onPressed: () => Navigator.of(context).maybePop(),
             ),
-            title: Text(widget.item == null ? 'Kërkesë e Re për Renovim' : 'Redakto Kërkesën e Renovimit', style: const TextStyle(fontWeight: FontWeight.w800)),
+            title: Text(
+              widget.item == null
+                  ? subscription_renewalTr(context, 'form.create_title')
+                  : subscription_renewalTr(context, 'form.edit_title'),
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
           ),
-          body: _loading ? const Center(child: CircularProgressIndicator.adaptive()) : Form(key: _formKey, child: Builder(builder: (formContext) => ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 120), children: [
-            _FormHeader(isEdit: widget.item != null),
-            const SizedBox(height: 22),
-
-            // Bank Account Details Card
-            if (_paymentMethod == 'bank_transfer') ...[
-              Container(
-                margin: const EdgeInsets.only(bottom: 14),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer.withOpacity(0.3),
-                  border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3)),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+          body: _loading
+              ? const Center(child: CircularProgressIndicator.adaptive())
+              : Form(
+                  key: _formKey,
+                  child: Builder(
+                    builder: (formContext) => ListView(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
                       children: [
-                        Icon(Icons.account_balance_rounded, size: 18, color: theme.colorScheme.primary),
-                        const SizedBox(width: 8),
-                        const Text('Të Dhënat e Llogarisë Bankare', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        _FormHeader(isEdit: widget.item != null),
+                        const SizedBox(height: 22),
+
+                        _FieldShell(
+                          label: subscription_renewalTr(context, 'form.select_plan_label'),
+                          child: InkWell(
+                            onTap: _pickplanId,
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      _displayName(_planOptions.firstWhere((e) => e['id'].toString() == _planId?.toString(), orElse: () => {'id': '', 'name': subscription_renewalTr(context, 'form.select_plan_label')})),
+                                    ),
+                                  ),
+                                  const Icon(Icons.keyboard_arrow_down_rounded),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        _FieldShell(
+                          label: subscription_renewalTr(context, 'form.select_payment_label'),
+                          child: DropdownButtonFormField<String>(
+                            value: ['cash', 'card', 'online'].contains(_paymentMethod) ? _paymentMethod : 'cash',
+                            items: ['cash', 'card', 'online'].map((v) => DropdownMenuItem<String>(value: v, child: Text(_getPaymentMethodLabel(context, v)))).toList(),
+                            onChanged: (v) => setState(() => _paymentMethod = v),
+                            validator: (v) { if (v == null || v.isEmpty) return subscription_renewalTr(context, 'form.required'); return null; },
+                            decoration: const InputDecoration(border: InputBorder.none, isDense: true),
+                          ),
+                        ),
+                        PremiumImagePicker(
+                          label: subscription_renewalTr(context, 'form.receipt_label'),
+                          path: _transferDocumentPath,
+                          currentUrl: widget.item?['transfer_document'] != null ? '${ApiService.serverUrl}/${widget.item!['transfer_document']}' : null,
+                          onPicked: (p) => setState(() => _transferDocumentPath = p),
+                        ),
+                        _FieldShell(
+                          label: subscription_renewalTr(context, 'form.amount_label'),
+                          child: TextFormField(
+                            controller: _amountController,
+                            readOnly: !isAdmin,
+                            enabled: isAdmin,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: isAdmin ? theme.colorScheme.onSurface : theme.colorScheme.onSurface.withOpacity(0.7),
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            inputFormatters: [
+                              TextInputFormatter.withFunction((oldValue, newValue) {
+                                final text = newValue.text;
+                                if (text.isEmpty || RegExp(r'^\d*\.?\d{0,2}$').hasMatch(text)) return newValue;
+                                return oldValue;
+                              })
+                            ],
+                            decoration: InputDecoration(
+                              hintText: subscription_renewalTr(context, 'form.amount_hint'),
+                              border: InputBorder.none,
+                              isDense: true,
+                              suffixText: '€',
+                              suffixStyle: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) return subscription_renewalTr(context, 'form.required');
+                              if (double.tryParse(v) == null) return subscription_renewalTr(context, 'form.invalid_decimal');
+                              return null;
+                            },
+                          ),
+                        ),
+                        _FieldShell(
+                          label: subscription_renewalTr(context, 'form.notes_label'),
+                          child: TextFormField(
+                            controller: _notesController,
+                            maxLines: 2,
+                            decoration: InputDecoration(hintText: subscription_renewalTr(context, 'form.notes_hint'), border: InputBorder.none, isDense: true),
+                          ),
+                        ),
+                        if (isAdmin)
+                          _FieldShell(
+                            label: subscription_renewalTr(context, 'form.status_label'),
+                            child: DropdownButtonFormField<String>(
+                              value: ['pending', 'approved', 'rejected'].contains(_status) ? _status : 'pending',
+                              items: [
+                                DropdownMenuItem(value: 'pending', child: Text(subscription_renewalTr(context, 'card.pending'))),
+                                DropdownMenuItem(value: 'approved', child: Text(subscription_renewalTr(context, 'card.approved'))),
+                                DropdownMenuItem(value: 'rejected', child: Text(subscription_renewalTr(context, 'card.rejected'))),
+                              ],
+                              onChanged: (v) => setState(() => _status = v),
+                              decoration: const InputDecoration(border: InputBorder.none, isDense: true),
+                            ),
+                          ),
+
+                        const SizedBox(height: 14),
+                        BlocBuilder<SubscriptionRenewalCubit, SubscriptionRenewalState>(
+                          builder: (context, state) => PremiumButton(
+                            onPressed: () => _save(context),
+                            label: state is SubscriptionRenewalSaving
+                                ? subscription_renewalTr(context, 'form.saving')
+                                : subscription_renewalTr(context, 'form.save'),
+                            icon: Icons.check_circle_rounded,
+                            loading: state is SubscriptionRenewalSaving,
+                            expand: true,
+                          ),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    const Text('Banka: BKT (Banka Kombëtare Tregtare)', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 3),
-                    const Text('IBAN: AL89205111000000000012345678', style: TextStyle(fontSize: 11.5, fontFamily: 'monospace', fontWeight: FontWeight.bold, color: Colors.blue)),
-                    const SizedBox(height: 3),
-                    const Text('Marrësi: E4ProTech Engine SH.P.K', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-              ),
-            ],
-
-            _FieldShell(
-              label: 'Zgjidh Planin e Abonimit',
-              child: InkWell(
-                onTap: _pickplanId,
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(_displayName(_planOptions.firstWhere((e) => e['id'].toString() == _planId?.toString(), orElse: () => {'id': '', 'name': 'Zgjidh Planin...'}))),
-                      ),
-                      const Icon(Icons.keyboard_arrow_down_rounded),
-                    ],
                   ),
                 ),
-              ),
-            ),
-            _FieldShell(
-              label: 'Mënyra e Pagesës',
-              child: DropdownButtonFormField<String>(
-                value: ['bank_transfer', 'cash', 'card', 'online'].contains(_paymentMethod) ? _paymentMethod : 'bank_transfer',
-                items: ['bank_transfer', 'cash', 'card', 'online'].map((v) => DropdownMenuItem<String>(value: v, child: Text(_getPaymentMethodLabel(v)))).toList(),
-                onChanged: (v) => setState(() => _paymentMethod = v),
-                validator: (v) { if (v == null || v.isEmpty) return 'Zgjidhni mënyrën e pagesës'; return null; },
-                decoration: const InputDecoration(border: InputBorder.none, isDense: true),
-              ),
-            ),
-            PremiumImagePicker(
-              label: 'Fatura / Dokumenti i Transfertës (Mandat-Pagesa)',
-              path: _transferDocumentPath,
-              currentUrl: widget.item?['transfer_document'] != null ? '${ApiService.serverUrl}/${widget.item!['transfer_document']}' : null,
-              onPicked: (p) => setState(() => _transferDocumentPath = p),
-            ),
-            _FieldShell(
-              label: 'Shuma e Pagesës (€)',
-              child: TextFormField(
-                controller: _amountController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  TextInputFormatter.withFunction((oldValue, newValue) {
-                    final text = newValue.text;
-                    if (text.isEmpty || RegExp(r'^\d*\.?\d{0,2}$').hasMatch(text)) return newValue;
-                    return oldValue;
-                  })
-                ],
-                decoration: const InputDecoration(hintText: 'Vendosni shumën në Euro (€)...', border: InputBorder.none, isDense: true),
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Shuma është e detyrueshme';
-                  if (double.tryParse(v) == null) return 'Vendosni një numër të vlefshëm';
-                  return null;
-                },
-              ),
-            ),
-            _FieldShell(
-              label: 'Shënime / Detaje Shtesë',
-              child: TextFormField(
-                controller: _notesController,
-                maxLines: 2,
-                decoration: const InputDecoration(hintText: 'Shënime për transfertën ose numrin e faturës...', border: InputBorder.none, isDense: true),
-              ),
-            ),
-            if (isAdmin)
-              _FieldShell(
-                label: 'Statusi i Miratimit (Admin Only)',
-                child: DropdownButtonFormField<String>(
-                  value: ['pending', 'approved', 'rejected'].contains(_status) ? _status : 'pending',
-                  items: const [
-                    DropdownMenuItem(value: 'pending', child: Text('⏳ Në Pritje (Pending)')),
-                    DropdownMenuItem(value: 'approved', child: Text('✅ I Miratuar (Approved)')),
-                    DropdownMenuItem(value: 'rejected', child: Text('❌ I Refuzuar (Rejected)')),
-                  ],
-                  onChanged: (v) => setState(() => _status = v),
-                  decoration: const InputDecoration(border: InputBorder.none, isDense: true),
-                ),
-              ),
-
-            const SizedBox(height: 14),
-            BlocBuilder<SubscriptionRenewalCubit, SubscriptionRenewalState>(
-              builder: (context, state) => PremiumButton(
-                onPressed: () => _save(context),
-                label: state is SubscriptionRenewalSaving ? 'Duke Ruajtur...' : 'Dërgo Kërkesën për Renovim 🚀',
-                icon: Icons.check_circle_rounded,
-                loading: state is SubscriptionRenewalSaving,
-                expand: true,
-              ),
-            ),
-          ]))),
         ),
       ),
     );
@@ -268,7 +299,7 @@ class _SubscriptionRenewalFormPageState extends State<SubscriptionRenewalFormPag
 class _FormHeader extends StatelessWidget {
   final bool isEdit;
   const _FormHeader({required this.isEdit});
-  @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primaryContainer, Theme.of(context).colorScheme.secondaryContainer]), borderRadius: BorderRadius.circular(24)), child: Row(children: [Container(width: 48, height: 48, decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface.withOpacity(.7), borderRadius: BorderRadius.circular(15)), child: Icon(isEdit ? Icons.edit_rounded : Icons.add_rounded)), const SizedBox(width: 14), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(isEdit ? 'Ndrysho Kërkesën e Renovimit' : 'Kërkesë e Re për Renovim', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)), const SizedBox(height: 3), Text(isEdit ? 'Rishikoni ose përdoroni dokumentin e faturës' : 'Plotësoni të dhënat dhe ngarkoni faturën e transfertës bankare', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant))]))]));
+  @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primaryContainer, Theme.of(context).colorScheme.secondaryContainer]), borderRadius: BorderRadius.circular(24)), child: Row(children: [Container(width: 48, height: 48, decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface.withOpacity(.7), borderRadius: BorderRadius.circular(15)), child: Icon(isEdit ? Icons.edit_rounded : Icons.add_rounded)), const SizedBox(width: 14), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(isEdit ? subscription_renewalTr(context, 'form.edit_title') : subscription_renewalTr(context, 'form.create_title'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)), const SizedBox(height: 3), Text(isEdit ? subscription_renewalTr(context, 'form.review_update') : subscription_renewalTr(context, 'form.fill_create'), style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant))]))]));
 }
 
 class _FieldShell extends StatelessWidget {

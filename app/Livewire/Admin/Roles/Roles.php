@@ -34,7 +34,14 @@ class Roles extends Component
 
     public function builder(): mixed
     {
-        return Role::with(['barberShop'])->withCount('permissions')->orderBy($this->sortField, $this->sortAsc ? 'asc' : 'desc');
+        $query = Role::with(['barberShop'])->withCount('permissions');
+
+        // SECURITY: If the logged-in user is NOT a global admin, hide the 'admin' role
+        if (!auth()->user()?->is_global_admin) {
+            $query->where('name', '!=', 'admin');
+        }
+
+        return $query->orderBy($this->sortField, $this->sortAsc ? 'asc' : 'desc');
     }
 
     public function sortBy(string $field): void
@@ -60,8 +67,14 @@ class Roles extends Component
     {
         abort_if_cannot('delete_roles');
 
+        $role = Role::findOrFail($id);
+
+        if ($role->name === 'admin' && !auth()->user()?->is_global_admin) {
+            abort(403, 'Ju nuk keni të drejtë të fshini rolin e Administratorit Global.');
+        }
+
         try {
-            $this->builder()->findOrFail($id)->delete();
+            $role->delete();
             $this->dispatch('toast', message: __('roles.deleted'), type: 'success');
             $this->reset();
         } catch (\Illuminate\Database\QueryException $e) {

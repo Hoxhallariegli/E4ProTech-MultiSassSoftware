@@ -65,9 +65,6 @@
     </td>
     <td class="hidden lg:table-cell px-6 py-4 font-bold text-xs text-gray-700 dark:text-gray-300">
         @switch($item->payment_method)
-            @case('bank_transfer')
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">{{ __('subscription-renewals.Bank Transfer') }}</span>
-                @break
             @case('cash')
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">{{ __('subscription-renewals.Cash') }}</span>
                 @break

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/l10n/message_queue_localization.dart';
 
 class MessageQueueCard extends StatelessWidget {
   final Map<String, dynamic> item;
@@ -13,7 +14,7 @@ class MessageQueueCard extends StatelessWidget {
     this.onDelete,
   });
 
-  String _formatDateTime(String? raw) {
+  String _formatDateTime(BuildContext context, String? raw) {
     if (raw == null || raw.trim().isEmpty) return '';
     try {
       final dt = DateTime.parse(raw.trim()).toLocal();
@@ -30,11 +31,11 @@ class MessageQueueCard extends StatelessWidget {
       final isYesterday = dt.year == yesterday.year && dt.month == yesterday.month && dt.day == yesterday.day;
 
       if (isToday) {
-        return 'Sot në $timeStr';
+        return message_queueTr(context, 'card.today_at', {'time': timeStr});
       } else if (isTomorrow) {
-        return 'Nesër në $timeStr';
+        return message_queueTr(context, 'card.tomorrow_at', {'time': timeStr});
       } else if (isYesterday) {
-        return 'Dje në $timeStr';
+        return message_queueTr(context, 'card.yesterday_at', {'time': timeStr});
       } else {
         final day = dt.day.toString().padLeft(2, '0');
         final month = dt.month.toString().padLeft(2, '0');
@@ -61,7 +62,7 @@ class MessageQueueCard extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final primaryColor = theme.colorScheme.primary;
 
-    final customerName = (item['customer_name'] ?? item['booking']?['customer']?['name'] ?? item['phone_number'] ?? 'Radhë Mesazhi').toString();
+    final customerName = (item['customer_name'] ?? item['booking']?['customer']?['name'] ?? item['phone_number'] ?? message_queueTr(context, 'card.queue_item')).toString();
     final phone = (item['phone_number'] ?? '').toString();
     final channel = (item['channel'] ?? 'sms').toString().toLowerCase();
     final message = (item['message_content'] ?? '').toString();
@@ -73,7 +74,7 @@ class MessageQueueCard extends StatelessWidget {
     final retryCount = int.tryParse(item['retry_count']?.toString() ?? '0') ?? 0;
 
     final templateType = (item['template_type'] ?? 'confirmation').toString().toLowerCase();
-    final templateTypeLabel = (item['template_type_label'] ?? (templateType == 'reminder' ? 'Rikujtesë' : (templateType == 'welcome' ? 'Mirëseardhje' : 'Konfirmim'))).toString();
+    final templateTypeLabel = (item['template_type_label'] ?? (templateType == 'reminder' ? message_queueTr(context, 'type.reminder') : (templateType == 'welcome' ? message_queueTr(context, 'type.welcome') : message_queueTr(context, 'type.confirmation')))).toString();
 
     IconData channelIcon = Icons.sms_rounded;
     Color channelColor = primaryColor;
@@ -144,7 +145,7 @@ class MessageQueueCard extends StatelessWidget {
                     if (value == 'delete' && onDelete != null) onDelete!();
                   },
                   itemBuilder: (_) => [
-                    if (onDelete != null) const PopupMenuItem(value: 'delete', child: Text('🗑️ Fshi nga Radha')),
+                    if (onDelete != null) PopupMenuItem(value: 'delete', child: Text(message_queueTr(context, 'card.delete_queue'))),
                   ],
                 ),
             ],
@@ -232,7 +233,7 @@ class MessageQueueCard extends StatelessWidget {
               ),
             ),
             child: Text(
-              message.isEmpty ? 'Përmbajtja e mesazhit nuk ekziston.' : message,
+              message.isEmpty ? message_queueTr(context, 'card.no_content') : message,
               style: TextStyle(
                 fontSize: 12.5,
                 height: 1.4,
@@ -259,7 +260,7 @@ class MessageQueueCard extends StatelessWidget {
                       Icon(Icons.event_available_rounded, size: 11, color: primaryColor),
                       const SizedBox(width: 4),
                       Text(
-                        'Takimi Për: ${_formatDateTime(appointmentAtRaw)}',
+                        message_queueTr(context, 'card.appointment_for', {'time': _formatDateTime(context, appointmentAtRaw)}),
                         style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: primaryColor),
                       ),
                     ],
@@ -274,7 +275,7 @@ class MessageQueueCard extends StatelessWidget {
                           Icon(Icons.schedule_rounded, size: 11, color: isDark ? Colors.white70 : Colors.black54),
                           const SizedBox(width: 4),
                           Text(
-                            'Planifikuar: ${_formatDateTime(scheduledAtRaw)}',
+                            message_queueTr(context, 'card.scheduled', {'time': _formatDateTime(context, scheduledAtRaw)}),
                             style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black87),
                           ),
                         ],
@@ -289,8 +290,8 @@ class MessageQueueCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           status == 'sent' && updatedAtRaw != null
-                              ? 'Dërguar: ${_formatDateTime(updatedAtRaw)}'
-                              : (status == 'failed' ? 'Dështoi' : 'Në Pritje'),
+                              ? message_queueTr(context, 'card.sent', {'time': _formatDateTime(context, updatedAtRaw)})
+                              : (status == 'failed' ? message_queueTr(context, 'card.failed') : message_queueTr(context, 'card.pending')),
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,

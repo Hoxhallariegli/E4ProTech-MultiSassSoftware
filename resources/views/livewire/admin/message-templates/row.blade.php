@@ -1,11 +1,11 @@
-<tr class="hover:bg-gray-50/50 dark:hover:bg-gray-900/50 transition-none border-b border-gray-50 dark:border-gray-700/50 last:border-none">
+<tr class="hover:bg-gray-50/80 dark:hover:bg-gray-900/60 transition-colors border-b border-gray-200 dark:border-gray-700/80 last:border-none">
     <!-- Mobile & Tablet Compact Cell (< lg) -->
-    <td colspan="100" class="p-4 space-y-2 lg:hidden">
+    <td colspan="100" class="p-4 space-y-3 lg:hidden">
         <div class="flex items-center justify-between gap-2 text-xs">
             <span class="font-extrabold text-gray-900 dark:text-white uppercase tracking-wider">
-                Template: {{ $item->type }}
+                Shablloni: {{ $item->type }}
             </span>
-            <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 shrink-0">
                 {{ $item->channel }}
             </span>
         </div>
@@ -27,7 +27,7 @@
             }
         @endphp
 
-        <div class="text-[11px] font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/50 p-2 rounded-xl border border-gray-100 dark:border-gray-800 space-y-1">
+        <div class="text-xs font-medium text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-900/60 p-3 rounded-2xl border border-gray-100 dark:border-gray-800 break-words whitespace-pre-line leading-relaxed space-y-1">
             @if($sq) <div>SQ: {{ $sq }}</div> @endif
             @if($en) <div class="text-gray-400">EN: {{ $en }}</div> @endif
         </div>
@@ -53,12 +53,12 @@
     </td>
 
     <!-- Desktop Table Cells (>= lg) -->
-    <td class="hidden lg:table-cell px-6 py-5 font-bold text-blue-600 dark:text-blue-400">{{ $item->id }}</td>
+    <td class="hidden lg:table-cell px-6 py-5 font-bold text-blue-600 dark:text-blue-400">#{{ $item->id }}</td>
     @if(auth()->user()->is_global_admin)
         <td class="hidden lg:table-cell px-6 py-5 font-bold text-gray-900 dark:text-white">{{ $item->barberShop?->name ?? '-' }}</td>
     @endif
-    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300 font-bold uppercase text-xs">{{ $item->channel }}</td>
-    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300 font-bold uppercase text-xs">{{ $item->type }}</td>
+    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300 font-extrabold uppercase text-xs">{{ $item->channel }}</td>
+    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300 font-extrabold uppercase text-xs">{{ $item->type }}</td>
     <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300">
         @if($sq)
             <div class="text-xs font-semibold text-gray-900 dark:text-white">SQ: {{ $sq }}</div>

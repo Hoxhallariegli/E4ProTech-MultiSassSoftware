@@ -1,12 +1,13 @@
-<tr class="hover:bg-gray-50/50 dark:hover:bg-gray-900/50 transition-none border-b border-gray-50 dark:border-gray-700/50 last:border-none">
+<tr class="hover:bg-gray-50/80 dark:hover:bg-gray-900/60 transition-colors border-b border-gray-200 dark:border-gray-700/80 last:border-none">
     <!-- Mobile & Tablet Compact Cell (< lg) -->
     <td colspan="100" class="p-4 space-y-2 lg:hidden">
         <div class="flex items-center justify-between gap-2 text-xs">
             <span class="font-extrabold text-gray-900 dark:text-white truncate">
                 {{ $item->customer?->name ?? 'Klient Anonim' }}
             </span>
-            <span class="font-extrabold text-amber-500 text-xs shrink-0">
-                Rating: {{ $item->rating }}/5
+            <span class="font-extrabold text-amber-500 text-xs shrink-0 flex items-center gap-1">
+                <x-heroicon-o-star class="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                {{ $item->rating }}/5
             </span>
         </div>
 
@@ -35,15 +36,19 @@
     </td>
 
     <!-- Desktop Table Cells (>= lg) -->
-    <td class="hidden lg:table-cell px-6 py-5 font-bold text-blue-600 dark:text-blue-400">{{ $item->id }}</td>
+    <td class="hidden lg:table-cell px-6 py-5 font-bold text-blue-600 dark:text-blue-400">#{{ $item->id }}</td>
     @if(auth()->user()->is_global_admin)
         <td class="hidden lg:table-cell px-6 py-5 font-bold text-gray-900 dark:text-white">{{ $item->barberShop?->name ?? '-' }}</td>
     @endif
     <td class="hidden lg:table-cell px-6 py-5 font-bold text-gray-900 dark:text-white">{{ $item->barber?->name ?? '-' }}</td>
     <td class="hidden lg:table-cell px-6 py-5 font-bold text-gray-900 dark:text-white">{{ $item->customer?->name ?? '-' }}</td>
-    <td class="hidden lg:table-cell px-6 py-5 font-bold text-gray-900 dark:text-white">{{ $item->booking?->customer?->name ?? '-' }}</td>
-    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->rating }}</td>
-    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->comment }}</td>
+    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300 font-mono text-xs">#{{ $item->booking_id ?: '-' }}</td>
+    <td class="hidden lg:table-cell px-6 py-5 font-extrabold text-amber-500 whitespace-nowrap">
+        <span class="inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-900/30 px-2.5 py-0.5 rounded-full text-xs">
+            ★ {{ $item->rating }}/5
+        </span>
+    </td>
+    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300 truncate max-w-xs">{{ $item->comment ?: '-' }}</td>
     <td class="hidden lg:table-cell px-6 py-5 text-right !transition-none">
         <div class="flex justify-end gap-3 !transition-none">
             @can('edit_reviews')

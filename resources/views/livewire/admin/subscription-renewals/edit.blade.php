@@ -21,7 +21,6 @@
                     <select name="payment_method" wire:model="payment_method" class="w-full p-3.5 text-sm font-bold bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500/20 dark:text-white">
                         <option value="cash">{{ __('subscription-renewals.Cash') }}</option>
                         <option value="online">{{ __('subscription-renewals.Online Payment') }}</option>
-                        <option value="bank_transfer">{{ __('subscription-renewals.Bank Transfer') }}</option>
                     </select>
                 </div>
 

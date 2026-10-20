@@ -22,17 +22,22 @@ class Dashboard extends Component
         $staffCount = $shop ? Barber::where('barber_shop_id', $shop->id)->count() : 0;
         $servicesCount = $shop ? Service::where('barber_shop_id', $shop->id)->count() : 0;
 
-        // Check if user has a registered Firebase FCM device token
-        $hasFcmDevice = ($shop && $user)
-            ? DeviceToken::where('barber_shop_id', $shop->id)->where('user_id', $user->id)->exists()
-            : false;
-
         // Check if SMS Gateway is enabled for shop AND has an active primary SMS gateway device token
         $isSmsEnabled = $shop ? (bool) $shop->sms_enabled : false;
         $activeSmsTokens = $shop
             ? DeviceToken::where('barber_shop_id', $shop->id)->where('is_sms_gateway', true)->count()
             : 0;
         $smsGatewayOk = $isSmsEnabled && ($activeSmsTokens > 0);
+
+        // Check if shop has a registered Firebase FCM device token (APK App connected)
+        $hasFcmDevice = $shop
+            ? DeviceToken::where('barber_shop_id', $shop->id)->exists()
+            : false;
+
+        // Logical rule: If SMS Gateway is active, the APK App is definitively connected!
+        if ($smsGatewayOk) {
+            $hasFcmDevice = true;
+        }
 
         // Calculate Onboarding Progress
         $completedSteps = 0;

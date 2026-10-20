@@ -162,6 +162,8 @@ const Map<String, String> coreSq = {
   'module.working_hour': 'Orari Javor',
   'module.report': 'Raportet & Statistikat',
   'module.subscription_renewal': 'Renovimi i Abonimit',
+  'module.ai_assistant': 'Asistenti AI',
+  'module.shop_front_page_setting': 'Cilësimet e Faqes Kryesore',
 
   'sidebar.overview': 'Paneli Kryesor',
   'sidebar.dynamic_modules': 'MODULET E SISTEMIT',
@@ -170,6 +172,11 @@ const Map<String, String> coreSq = {
   'sidebar.sms_notifications': 'SMS GATEWAY & NJOFTIMET',
   'sidebar.saas_administration': 'ADMINISTRIMI SAAS',
   'sidebar.other': 'TË TJERA',
+  'sidebar.switch_shop': 'Ndrysho Sallonin',
+  'sidebar.days_remaining': '{days} Ditë Mbetura ↗',
+  'sidebar.switch_shop_title': 'NDËRRO DYQANIN',
+  'sidebar.unnamed_shop': 'Dyqan pa emër',
+  'sidebar.error_prefix': 'Gabim: {error}',
 
   'nav.dashboard': 'Kryefaqja',
   'nav.modules': 'Modulet',

@@ -10,4 +10,8 @@ const Map<String, String> languageEn = {
   'Save Changes': 'Save Changes',
   'Select a file to begin': 'Select a file to begin',
   'Choose a language and a translation file from the sidebar to edit its content.': 'Choose a language and a translation file from the sidebar to edit its content.',
+  'page.title': 'Language Management',
+  'page.subtitle': 'Select your preferred interface language',
+  'page.available': 'Available Languages',
+  'page.note': 'Note: Changing the language will update the UI labels across all dynamic modules instantly.',
 };

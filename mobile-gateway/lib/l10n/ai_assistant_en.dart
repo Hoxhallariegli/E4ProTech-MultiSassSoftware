@@ -1,0 +1,18 @@
+const Map<String, String> ai_assistantEn = {
+  'title': '🤖 AI Assistant',
+  'subtitle': 'AI Operational Assistant',
+  'hint': 'e.g: Create 3 services: Haircut 1000Lek 30min...',
+  'processing': 'Processing...',
+  'execute': 'Execute via AI 🚀',
+  'preset.services': '✂️ 3 Services',
+  'preset.services_prompt': 'Create 3 services: Haircut 1000Lek 30min, Beard 500Lek 15min, Wash 300Lek 10min',
+  'preset.walkin': '📅 5 Walk-In Bookings',
+  'preset.walkin_prompt': 'Create 5 walk-in bookings with random customers for today from 13:00 to 17:00 without sending SMS messages',
+  'preset.staff': '👥 3 Staff',
+  'preset.staff_prompt': 'Add 3 staff members: Ardit Barber, Klara Stylist, Egli Hoxha',
+  'empty_history': 'Provide an instruction for AI Assistant above.',
+  'confirmation_required': 'Confirmation Required',
+  'cancelled_by_user': 'Request was cancelled by user. No data was modified.',
+  'cancel': '❌ No, Cancel',
+  'confirm': '✅ Yes, Confirm',
+};

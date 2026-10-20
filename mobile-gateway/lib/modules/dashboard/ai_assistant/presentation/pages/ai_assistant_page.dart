@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:mobile_gateway/l10n/ai_assistant_localization.dart';
 import '../../../../../services/api_service.dart';
 
 class AiAssistantPage extends StatefulWidget {
@@ -68,7 +69,7 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
   }
 
   Future<void> _showConfirmationDialog(String prompt, Map<String, dynamic> data) async {
-    final greeting = data['greeting']?.toString() ?? 'A dëshironi të procedojmë me kryerjen e këtyre veprimeve?';
+    final greeting = data['greeting']?.toString() ?? ai_assistantTr(context, 'confirmation_required');
     final previews = (data['previews'] as List?) ?? [];
     final actions = data['actions'];
 
@@ -77,10 +78,10 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
-          children: const [
-            Icon(Icons.psychology_rounded, color: Color(0xFF7C5CFC), size: 28),
-            SizedBox(width: 8),
-            Expanded(child: Text('Kërkohet Konfirmimi', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16))),
+          children: [
+            const Icon(Icons.psychology_rounded, color: Color(0xFF7C5CFC), size: 28),
+            const SizedBox(width: 8),
+            Expanded(child: Text(ai_assistantTr(context, 'confirmation_required'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16))),
           ],
         ),
         content: SingleChildScrollView(
@@ -119,7 +120,7 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('❌ Jo, Anulo', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: Text(ai_assistantTr(context, 'cancel'), style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -127,7 +128,7 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
               backgroundColor: const Color(0xFF7C5CFC),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('✅ Po, Konfirmo', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+            child: Text(ai_assistantTr(context, 'confirm'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
           ),
         ],
       ),
@@ -172,7 +173,7 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
           'type': 'error',
           'prompt': prompt,
           'time': DateTime.now().toString().substring(11, 16),
-          'message': 'Kërkesa u anulua nga përdoruesi. Asnjë e dhënë nuk u ndryshua.',
+          'message': ai_assistantTr(context, 'cancelled_by_user'),
         });
       });
     }
@@ -199,7 +200,7 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('🤖 AI Assistant', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: Text(ai_assistantTr(context, 'title'), style: const TextStyle(fontWeight: FontWeight.w900)),
         centerTitle: false,
       ),
       body: Column(
@@ -216,7 +217,7 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
                     const Icon(Icons.psychology_rounded, color: Color(0xFF7C5CFC), size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      'AI Operational Assistant',
+                      ai_assistantTr(context, 'subtitle'),
                       style: TextStyle(
                         fontWeight: FontWeight.w900,
                         fontSize: 13,
@@ -231,7 +232,7 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
                   maxLines: 3,
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   decoration: InputDecoration(
-                    hintText: 'p.sh: Më krijo 5 shërbime: Prerje 1000Lekë 30min...',
+                    hintText: ai_assistantTr(context, 'hint'),
                     hintStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
                     filled: true,
                     fillColor: isDark ? const Color(0xFF12151C) : const Color(0xFFF8FAFC),
@@ -251,7 +252,7 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
                         ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                         : const Icon(Icons.rocket_launch_rounded, color: Colors.white, size: 18),
                     label: Text(
-                      _isProcessing ? 'Duke përpunuar...' : 'Ekzekuto nga AI 🚀',
+                      _isProcessing ? ai_assistantTr(context, 'processing') : ai_assistantTr(context, 'execute'),
                       style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.white),
                     ),
                     style: ElevatedButton.styleFrom(
@@ -273,20 +274,20 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
                 children: [
                   ActionChip(
                     avatar: const Icon(Icons.content_cut_rounded, size: 14, color: Colors.blue),
-                    label: const Text('✂️ 5 Shërbime', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                    onPressed: () => _usePreset('Më krijo 5 shërbime: Prerje 1000Lekë 30min, Mjekërr 500Lekë 15min, Larje 300Lekë 10min'),
+                    label: Text(ai_assistantTr(context, 'preset.services'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    onPressed: () => _usePreset(ai_assistantTr(context, 'preset.services_prompt')),
                   ),
                   const SizedBox(width: 8),
                   ActionChip(
                     avatar: const Icon(Icons.calendar_today_rounded, size: 14, color: Colors.amber),
-                    label: const Text('📅 5 Rezervime Walk-In', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                    onPressed: () => _usePreset('Më krijo 5 rezervime walk-in me klientë rastësorë për sot nga ora 13:00 deri 17:00 pa dërguar mesazhe SMS'),
+                    label: Text(ai_assistantTr(context, 'preset.walkin'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    onPressed: () => _usePreset(ai_assistantTr(context, 'preset.walkin_prompt')),
                   ),
                   const SizedBox(width: 8),
                   ActionChip(
                     avatar: Icon(Icons.people_rounded, size: 14, color: emeraldColor),
-                    label: const Text('👥 3 Staf', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                    onPressed: () => _usePreset('Më shto 3 pjesëtarë stafi: Ardit Berber, Klara Stylist, Egli Hoxha'),
+                    label: Text(ai_assistantTr(context, 'preset.staff'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    onPressed: () => _usePreset(ai_assistantTr(context, 'preset.staff_prompt')),
                   ),
                 ],
               ),
@@ -298,10 +299,10 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
           // History List
           Expanded(
             child: _history.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text(
-                      'Jepni një udhëzim për AI Assistant më sipër.',
-                      style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 12),
+                      ai_assistantTr(context, 'empty_history'),
+                      style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 12),
                     ),
                   )
                 : ListView.builder(

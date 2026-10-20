@@ -1,0 +1,18 @@
+const Map<String, String> ai_assistantSq = {
+  'title': '🤖 Asistenti AI',
+  'subtitle': 'Asistenti Operacional AI',
+  'hint': 'p.sh: Më krijo 3 shërbime: Prerje 1000Lekë 30min...',
+  'processing': 'Duke përpunuar...',
+  'execute': 'Ekzekuto nga AI 🚀',
+  'preset.services': '✂️ 3 Shërbime',
+  'preset.services_prompt': 'Më krijo 3 shërbime: Prerje 1000Lekë 30min, Mjekërr 500Lekë 15min, Larje 300Lekë 10min',
+  'preset.walkin': '📅 5 Rezervime Walk-In',
+  'preset.walkin_prompt': 'Më krijo 5 rezervime walk-in me klientë rastësorë për sot nga ora 13:00 deri 17:00 pa dërguar mesazhe SMS',
+  'preset.staff': '👥 3 Staf',
+  'preset.staff_prompt': 'Më shto 3 pjesëtarë stafi: Ardit Berber, Klara Stylist, Egli Hoxha',
+  'empty_history': 'Jepni një udhëzim për AI Assistant më sipër.',
+  'confirmation_required': 'Kërkohet Konfirmimi',
+  'cancelled_by_user': 'Kërkesa u anulua nga përdoruesi. Asnjë e dhënë nuk u ndryshua.',
+  'cancel': '❌ Jo, Anulo',
+  'confirm': '✅ Po, Konfirmo',
+};

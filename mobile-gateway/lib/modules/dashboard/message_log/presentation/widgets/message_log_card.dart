@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/l10n/message_log_localization.dart';
 
 class MessageLogCard extends StatelessWidget {
   final Map<String, dynamic> item;
@@ -13,7 +14,7 @@ class MessageLogCard extends StatelessWidget {
     this.onDelete,
   });
 
-  String _formatDateTime(String? raw) {
+  String _formatDateTime(BuildContext context, String? raw) {
     if (raw == null || raw.trim().isEmpty) return '';
     try {
       final dt = DateTime.parse(raw.trim()).toLocal();
@@ -28,9 +29,9 @@ class MessageLogCard extends StatelessWidget {
       final isYesterday = dt.year == yesterday.year && dt.month == yesterday.month && dt.day == yesterday.day;
 
       if (isToday) {
-        return 'Sot në $timeStr';
+        return message_logTr(context, 'card.today_at', {'time': timeStr});
       } else if (isYesterday) {
-        return 'Dje në $timeStr';
+        return message_logTr(context, 'card.yesterday_at', {'time': timeStr});
       } else {
         final day = dt.day.toString().padLeft(2, '0');
         final month = dt.month.toString().padLeft(2, '0');
@@ -57,7 +58,7 @@ class MessageLogCard extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final primaryColor = theme.colorScheme.primary;
 
-    final customerName = (item['customer_name'] ?? item['customer']?['name'] ?? 'Klient').toString();
+    final customerName = (item['customer_name'] ?? item['customer']?['name'] ?? message_logTr(context, 'card.customer')).toString();
     final customerPhone = (item['customer_phone'] ?? item['customer']?['phone'] ?? '').toString();
     final channel = (item['channel'] ?? 'sms').toString().toLowerCase();
     final message = (item['message'] ?? '').toString();
@@ -69,7 +70,7 @@ class MessageLogCard extends StatelessWidget {
     final errorMsg = item['error_message']?.toString() ?? '';
 
     final templateType = (item['template_type'] ?? 'confirmation').toString().toLowerCase();
-    final templateTypeLabel = (item['template_type_label'] ?? (templateType == 'reminder' ? 'Rikujtesë' : (templateType == 'welcome' ? 'Mirëseardhje' : 'Konfirmim'))).toString();
+    final templateTypeLabel = (item['template_type_label'] ?? (templateType == 'reminder' ? message_logTr(context, 'type.reminder') : (templateType == 'welcome' ? message_logTr(context, 'type.welcome') : message_logTr(context, 'type.confirmation')))).toString();
 
     IconData channelIcon = Icons.sms_rounded;
     Color channelColor = primaryColor;
@@ -134,7 +135,7 @@ class MessageLogCard extends StatelessWidget {
                     if (value == 'delete' && onDelete != null) onDelete!();
                   },
                   itemBuilder: (_) => [
-                    if (onDelete != null) const PopupMenuItem(value: 'delete', child: Text('🗑️ Fshi Log-un')),
+                    if (onDelete != null) PopupMenuItem(value: 'delete', child: Text(message_logTr(context, 'card.delete_log'))),
                   ],
                 ),
             ],
@@ -222,7 +223,7 @@ class MessageLogCard extends StatelessWidget {
               ),
             ),
             child: Text(
-              message.isEmpty ? 'Përmbajtja e mesazhit nuk ekziston.' : message,
+              message.isEmpty ? message_logTr(context, 'card.no_content') : message,
               style: TextStyle(
                 fontSize: 12.5,
                 height: 1.35,
@@ -259,7 +260,7 @@ class MessageLogCard extends StatelessWidget {
                       Icon(Icons.event_available_rounded, size: 11, color: primaryColor),
                       const SizedBox(width: 4),
                       Text(
-                        'Takimi Për: ${_formatDateTime(appointmentAtRaw)}',
+                        message_logTr(context, 'card.appointment_for', {'time': _formatDateTime(context, appointmentAtRaw)}),
                         style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: primaryColor),
                       ),
                     ],
@@ -274,7 +275,7 @@ class MessageLogCard extends StatelessWidget {
                           Icon(Icons.schedule_rounded, size: 11, color: isDark ? Colors.white70 : Colors.black54),
                           const SizedBox(width: 4),
                           Text(
-                            'Krijuar: ${_formatDateTime(createdAtRaw)}',
+                            message_logTr(context, 'card.created', {'time': _formatDateTime(context, createdAtRaw)}),
                             style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black87),
                           ),
                         ],
@@ -289,8 +290,8 @@ class MessageLogCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           status == 'sent' && sentAtRaw != null
-                              ? 'Dërguar: ${_formatDateTime(sentAtRaw)}'
-                              : (status == 'failed' ? 'Dështoi' : 'Në Pritje'),
+                              ? message_logTr(context, 'card.sent', {'time': _formatDateTime(context, sentAtRaw)})
+                              : (status == 'failed' ? message_logTr(context, 'card.failed') : message_logTr(context, 'card.pending')),
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,

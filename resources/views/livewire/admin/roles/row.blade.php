@@ -1,4 +1,4 @@
-<tr class="hover:bg-gray-50/50 dark:hover:bg-gray-900/50 transition border-b border-gray-50 dark:border-gray-700/50 last:border-none">
+<tr class="hover:bg-gray-50/80 dark:hover:bg-gray-900/60 transition-colors border-b border-gray-200 dark:border-gray-700/80 last:border-none">
     <!-- Mobile & Tablet Compact Cell (< lg) -->
     <td colspan="100" class="p-4 space-y-2 lg:hidden">
         <div class="flex items-center justify-between gap-2 text-xs">
@@ -80,21 +80,21 @@
     </td>
     <td class="hidden lg:table-cell px-6 py-5">
         @if($role->barber_shop_id === 0 || is_null($role->barber_shop_id))
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 uppercase tracking-tighter">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 uppercase tracking-tighter">
                 {{ __('Global Template') }}
             </span>
         @else
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
                 {{ $role->barberShop->name ?? __('Shop #') . $role->barber_shop_id }}
             </span>
         @endif
     </td>
     <td class="hidden lg:table-cell px-6 py-5 text-center">
-        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
             {{ $role->permissions_count }}
         </span>
     </td>
-    <td class="hidden lg:table-cell px-6 py-5 text-center text-xs text-gray-500 uppercase">
+    <td class="hidden lg:table-cell px-6 py-5 text-center text-xs font-bold text-gray-500 uppercase">
         {{ $role->guard_name }}
     </td>
     <td class="hidden lg:table-cell px-6 py-5 text-right">

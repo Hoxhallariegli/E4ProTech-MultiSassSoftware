@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/l10n/message_template_localization.dart';
 
 class MessageTemplateCard extends StatelessWidget {
   final Map<String, dynamic> item;
@@ -40,19 +41,19 @@ class MessageTemplateCard extends StatelessWidget {
     }
 
     Color typeColor = primaryColor;
-    String typeLabel = 'Konfirmim';
+    String typeLabel = message_templateTr(context, 'type.confirmation');
     if (type == 'reminder') {
       typeColor = Colors.amber.shade700;
-      typeLabel = 'Rikujtesë';
+      typeLabel = message_templateTr(context, 'type.reminder');
     } else if (type == 'welcome') {
       typeColor = Colors.green.shade600;
-      typeLabel = 'Mirëseardhje';
+      typeLabel = message_templateTr(context, 'type.welcome');
     } else if (type == 'reschedule' || type == 'update') {
       typeColor = Colors.blue.shade600;
-      typeLabel = 'Ndryshim Takimi';
+      typeLabel = message_templateTr(context, 'type.reschedule');
     } else if (type == 'cancellation' || type == 'cancelled') {
       typeColor = Colors.red.shade600;
-      typeLabel = 'Anulim Takimi';
+      typeLabel = message_templateTr(context, 'type.cancellation');
     }
 
     return PremiumCard(
@@ -128,8 +129,8 @@ class MessageTemplateCard extends StatelessWidget {
                     if (value == 'delete' && onDelete != null) onDelete!();
                   },
                   itemBuilder: (_) => [
-                    if (onTap != null) const PopupMenuItem(value: 'edit', child: Text('✏️ Edito')),
-                    if (onDelete != null) const PopupMenuItem(value: 'delete', child: Text('🗑️ Fshi')),
+                    if (onTap != null) PopupMenuItem(value: 'edit', child: Text('✏️ ${message_templateTr(context, 'list.edit')}')),
+                    if (onDelete != null) PopupMenuItem(value: 'delete', child: Text('🗑️ ${message_templateTr(context, 'list.delete')}')),
                   ],
                 ),
             ],
@@ -156,7 +157,7 @@ class MessageTemplateCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('🇦🇱 Shqip (SQ):', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Colors.grey)),
+                  Text(message_templateTr(context, 'card.albanian'), style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Colors.grey)),
                   const SizedBox(height: 3),
                   Text(
                     contentSq,
@@ -191,7 +192,7 @@ class MessageTemplateCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('🇬🇧 English (EN):', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Colors.grey)),
+                  Text(message_templateTr(context, 'card.english'), style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Colors.grey)),
                   const SizedBox(height: 3),
                   Text(
                     contentEn,

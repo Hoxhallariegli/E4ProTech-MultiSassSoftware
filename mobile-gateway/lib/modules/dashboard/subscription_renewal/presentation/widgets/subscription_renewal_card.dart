@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_gateway/services/api_service.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/l10n/subscription_renewal_localization.dart';
 
 class SubscriptionRenewalCard extends StatelessWidget {
   final Map<String, dynamic> item;
@@ -48,29 +49,28 @@ class SubscriptionRenewalCard extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final primaryColor = theme.colorScheme.primary;
 
-    final planName = (item['plan']?['name'] ?? 'Plani i Abonimit').toString();
+    final planName = (item['plan']?['name'] ?? subscription_renewalTr(context, 'card.default_plan')).toString();
     final shopName = (item['barberShop']?['name'] ?? item['barber_shop']?['name'] ?? '').toString();
     final amount = (item['amount'] ?? '0').toString();
-    final method = (item['payment_method'] ?? 'bank_transfer').toString();
+    final method = (item['payment_method'] ?? 'cash').toString();
     final status = (item['status'] ?? 'pending').toString().toLowerCase();
     final documentUrl = item['transfer_document']?.toString();
     final notes = (item['notes'] ?? '').toString();
     final createdAt = _formatDate(item['created_at']?.toString());
 
     Color statusColor = Colors.amber.shade700;
-    String statusLabel = '⏳ NË PRITJE';
+    String statusLabel = subscription_renewalTr(context, 'card.pending');
     if (status == 'approved') {
       statusColor = Colors.green.shade600;
-      statusLabel = '✅ I MIRATUAR';
+      statusLabel = subscription_renewalTr(context, 'card.approved');
     } else if (status == 'rejected') {
       statusColor = Colors.red.shade600;
-      statusLabel = '❌ I REFUZUAR';
+      statusLabel = subscription_renewalTr(context, 'card.rejected');
     }
 
-    String methodLabel = '🏦 Transfertë Bankare';
-    if (method == 'cash') methodLabel = '💵 Cash (Në Dorë)';
-    if (method == 'card') methodLabel = '💳 Kartë';
-    if (method == 'online') methodLabel = '🌐 Online';
+    String methodLabel = subscription_renewalTr(context, 'card.cash');
+    if (method == 'card') methodLabel = subscription_renewalTr(context, 'card.card');
+    if (method == 'online') methodLabel = subscription_renewalTr(context, 'card.online');
 
     final fullDocUrl = (documentUrl != null && documentUrl.isNotEmpty)
         ? (documentUrl.startsWith('http') ? documentUrl : '${ApiService.serverUrl}/$documentUrl')
@@ -147,8 +147,8 @@ class SubscriptionRenewalCard extends StatelessWidget {
                     if (value == 'delete' && onDelete != null) onDelete!();
                   },
                   itemBuilder: (_) => [
-                    if (onTap != null) const PopupMenuItem(value: 'edit', child: Text('✏️ Redakto')),
-                    if (onDelete != null) const PopupMenuItem(value: 'delete', child: Text('🗑️ Fshi Kërkesën')),
+                    if (onTap != null) PopupMenuItem(value: 'edit', child: Text(subscription_renewalTr(context, 'card.edit'))),
+                    if (onDelete != null) PopupMenuItem(value: 'delete', child: Text(subscription_renewalTr(context, 'card.delete'))),
                   ],
                 ),
             ],
@@ -178,7 +178,7 @@ class SubscriptionRenewalCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                'Shënime: $notes',
+                subscription_renewalTr(context, 'card.notes', {'notes': notes}),
                 style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: isDark ? Colors.white70 : Colors.grey.shade800),
               ),
             ),

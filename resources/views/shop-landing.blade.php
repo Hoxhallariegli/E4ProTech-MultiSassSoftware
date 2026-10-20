@@ -1,14 +1,21 @@
 <!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}" class="h-full bg-[#FAF8F2] text-[#1A1D20]">
+<html lang="{{ app()->getLocale() }}" class="h-full bg-[#FAF8F2] text-[#1A1D20] light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
+    </script>
     <title>{{ $shop->name }} | {{ $shop->resolved_shop_label }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+        html, body {
+            color-scheme: light !important;
+        }
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
     </style>
     @livewireStyles
