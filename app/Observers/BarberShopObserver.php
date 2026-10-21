@@ -4,8 +4,10 @@ namespace App\Observers;
 
 use App\Events\BarberShopChanged;
 use App\Models\BarberShop;
+use App\Models\EventSetting;
 use App\Models\MessageTemplate;
 use App\Models\Plan;
+use App\Models\RealtimeEvent;
 use App\Models\Subscription;
 use App\Services\NotificationRouter;
 
@@ -61,6 +63,26 @@ class BarberShopObserver
                     ],
                     [
                         'content' => $content,
+                    ]
+                );
+            }
+
+            // Automatically create default EventSetting rows for all RealtimeEvents for the new shop
+            $realtimeEvents = RealtimeEvent::all();
+            if ($realtimeEvents->isEmpty() && class_exists(\Database\Seeders\RealtimeEventsSeeder::class)) {
+                app(\Database\Seeders\RealtimeEventsSeeder::class)->run();
+                $realtimeEvents = RealtimeEvent::all();
+            }
+
+            foreach ($realtimeEvents as $event) {
+                EventSetting::firstOrCreate(
+                    [
+                        'barber_shop_id' => $item->id,
+                        'realtime_event_id' => $event->id,
+                    ],
+                    [
+                        'reverb_enabled' => false,
+                        'firebase_enabled' => (bool) $event->firebase_enabled,
                     ]
                 );
             }

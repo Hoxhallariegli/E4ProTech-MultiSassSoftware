@@ -144,7 +144,7 @@
                         <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">{{ __('subscription-renewals.View status of invoices and admin approvals') }}</p>
                     </div>
                     <div class="flex items-center gap-3">
-                        @if($search || $openFilter)
+                        @if($search || $plan_id || $openFilter)
                             <button wire:click="resetFilters" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl transition-none shadow-none"><span>{{ __('subscription-renewals.Reset') }}</span></button>
                         @endif
                         <button @click="openFilter = !openFilter" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-600 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm transition-none"><span>{{ __('subscription-renewals.Filters') }}</span></button>

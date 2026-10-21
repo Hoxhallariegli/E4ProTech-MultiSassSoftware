@@ -5,7 +5,7 @@
             <x-short-description class="dark:text-gray-400">{{ __('barbers.description') }}</x-short-description>
         </div>
         <div class="flex items-center gap-3">
-            @if($search || $openFilter)
+            @if($search || $barber_shop_id || $user_id || $openFilter)
                 <button wire:click="resetFilters" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl transition-none shadow-none"><span>{{ __('barbers.Reset') }}</span></button>
             @endif
             <button @click="openFilter = !openFilter" class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-extrabold text-gray-700 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xs transition-none"><span>{{ __('barbers.Filters') }}</span></button>

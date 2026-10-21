@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class MessageTemplate extends Model
@@ -40,6 +40,36 @@ class MessageTemplate extends Model
     }
 
     /**
+     * Extracts the specific locale content ('sq' or 'en') from a string that contains SQ: / EN: blocks.
+     */
+    public static function extractLocaleFromText(string $rawText, string $locale = 'sq'): string
+    {
+        $rawText = trim($rawText);
+
+        if (preg_match('/(?:SQ|AL|SHQIP)\s*:\s*(.*?)(?=(?:EN|ENGLISH)\s*:|$)/is', $rawText) ||
+            preg_match('/(?:EN|ENGLISH)\s*:\s*(.*?)(?=(?:SQ|AL|SHQIP)\s*:|$)/is', $rawText)) {
+
+            $sqText = '';
+            $enText = '';
+
+            if (preg_match('/(?:SQ|AL|SHQIP)\s*:\s*(.*?)(?=(?:EN|ENGLISH)\s*:|$)/is', $rawText, $m)) {
+                $sqText = trim($m[1]);
+            }
+            if (preg_match('/(?:EN|ENGLISH)\s*:\s*(.*?)(?=(?:SQ|AL|SHQIP)\s*:|$)/is', $rawText, $m)) {
+                $enText = trim($m[1]);
+            }
+
+            if ($locale === 'en') {
+                return !empty($enText) ? $enText : (!empty($sqText) ? $sqText : $rawText);
+            } else {
+                return !empty($sqText) ? $sqText : (!empty($enText) ? $enText : $rawText);
+            }
+        }
+
+        return $rawText;
+    }
+
+    /**
      * Parses the message template for a booking based on the customer's preferred language.
      * Falls back to default env language (sq/en) if not specified.
      */
@@ -52,16 +82,16 @@ class MessageTemplate extends Model
                 $booking->customer?->language
                 ?? $booking->customer?->locale
                 ?? $booking->source_locale
-                ?? app()->getLocale()
+                ?? request()->header('Accept-Language')
+                ?? request()->input('locale')
+                ?? request()->input('lang')
                 ?? session('locale')
                 ?? 'sq'
             ));
-            if (in_array($customerLang, ['en', 'english'], true)) {
+
+            if (str_contains($customerLang, 'en') && !str_contains($customerLang, 'sq')) {
                 $locale = 'en';
-            } elseif (in_array($customerLang, ['sq', 'al', 'albanian', 'shqip'], true)) {
-                $locale = 'sq';
             } else {
-                // Default SMS language for Albania/Kosovo salons is Albanian ('sq')
                 $locale = 'sq';
             }
         }
@@ -95,7 +125,7 @@ class MessageTemplate extends Model
                 if (is_array($decoded)) {
                     $templateText = $decoded[$locale] ?? $decoded['sq'] ?? $decoded['en'] ?? null;
                 } else {
-                    $templateText = $contentRaw;
+                    $templateText = static::extractLocaleFromText($contentRaw, $locale);
                 }
             }
         }

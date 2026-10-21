@@ -5,7 +5,7 @@
             <x-short-description class="dark:text-gray-400">{{ __('message-queues.List of') }} {{ mb_strtolower(__('message-queues.MessageQueues')) }}</x-short-description>
         </div>
         <div class="flex items-center gap-3">
-            @if($search || $openFilter)
+            @if($search || $barber_shop_id || $booking_id || $openFilter)
                 <button wire:click="resetFilters" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl transition-none shadow-none">
                     <span>{{ __('message-queues.Reset') }}</span>
                 </button>
