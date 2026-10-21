@@ -1,6 +1,7 @@
 <?php
 
 $shop = auth()->check() ? auth()->user()?->barberShop : null;
+$shopLabel = $shop ? $shop->resolved_shop_label : 'Salloni';
 $staffLabel = $shop ? $shop->resolved_staff_label : 'Stafi';
 
 return [
