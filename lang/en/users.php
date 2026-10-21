@@ -3,6 +3,7 @@
 return [
   'Users' => 'Users',
   'User' => 'User',
+  'description' => 'Manage system users and team members',
   'Add User' => 'Add User',
   'Edit User' => 'Edit User',
   'Name' => 'Name',
@@ -36,6 +37,10 @@ return [
   'to confirm' => 'to confirm',
   'Delete User' => 'Delete User',
   'Joined Date Range' => 'Joined Date Range',
+  'Account Verification' => 'Account Verification',
+  'Verified' => 'Verified',
+  'Unverified' => 'Unverified',
+  'Pending confirmation' => 'Pending confirmation',
   'Account Settings' => 'Account Settings',
   'required' => 'required',
   'Image' => 'Image',

@@ -3,6 +3,7 @@
 return [
   'Roles' => 'Roles',
   'Role' => 'Role',
+  'description' => 'Manage user roles and access permissions',
   'Add Role' => 'Add Role',
   'Edit Role' => 'Edit Role',
   'Permissions' => 'Permissions',

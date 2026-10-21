@@ -48,7 +48,14 @@ class MessageTemplate extends Model
         $shopId = $booking->barber_shop_id;
 
         if (!$locale) {
-            $customerLang = strtolower((string) ($booking->customer?->language ?? $booking->customer?->locale ?? $booking->source_locale ?? ''));
+            $customerLang = strtolower((string) (
+                $booking->customer?->language
+                ?? $booking->customer?->locale
+                ?? $booking->source_locale
+                ?? app()->getLocale()
+                ?? session('locale')
+                ?? 'sq'
+            ));
             if (in_array($customerLang, ['en', 'english'], true)) {
                 $locale = 'en';
             } elseif (in_array($customerLang, ['sq', 'al', 'albanian', 'shqip'], true)) {

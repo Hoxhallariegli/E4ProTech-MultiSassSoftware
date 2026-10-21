@@ -3,6 +3,7 @@
 return [
   'Roles' => 'Rolet',
   'Role' => 'Roli',
+  'description' => 'Menaxhoni rolet dhe lejet e aksesit për përdoruesit',
   'Add Role' => 'Shto Rol',
   'Edit Role' => 'Redakto Rolin',
   'Permissions' => 'Lejet',

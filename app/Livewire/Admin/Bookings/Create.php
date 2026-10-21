@@ -169,6 +169,15 @@ class Create extends Component
     {
         $this->selected_time = '';
         $this->appointment_at = '';
+
+        try {
+            $date = Carbon::parse($this->booking_date);
+            if ($date->isBefore(now()->startOfDay())) {
+                $this->send_sms = false;
+            } else {
+                $this->send_sms = true;
+            }
+        } catch (\Throwable $e) {}
     }
 
     public function selectQuickDate($days)
@@ -176,6 +185,12 @@ class Create extends Component
         $this->booking_date = now()->addDays($days)->format('Y-m-d');
         $this->selected_time = '';
         $this->appointment_at = '';
+
+        if ($days < 0) {
+            $this->send_sms = false;
+        } else {
+            $this->send_sms = true;
+        }
     }
 
     public function selectTimeSlot($time)
@@ -183,6 +198,19 @@ class Create extends Component
         $this->selected_time = $time;
         if ($this->booking_date && $time) {
             $this->appointment_at = $this->booking_date . 'T' . $time;
+
+            // Auto-check/uncheck send_sms based on whether selected time is in the past
+            $shop = BarberShop::find($this->barber_shop_id);
+            $tz = ($shop && $shop->timezone) ? $shop->timezone : config('app.timezone', 'Europe/Tirane');
+
+            try {
+                $dt = Carbon::parse($this->booking_date . ' ' . $time . ':00', $tz);
+                if ($dt->isPast()) {
+                    $this->send_sms = false;
+                } else {
+                    $this->send_sms = true;
+                }
+            } catch (\Throwable $e) {}
         }
     }
 
@@ -363,7 +391,11 @@ class Create extends Component
             $endTimeStr = $cursor->copy()->addMinutes($reqDuration)->format('H:i');
 
             $exceedsClose = ($slotEndM > $closeMinutes);
-            $isPast = ($date->isToday() && $slotStartM < $nowMinutes);
+
+            // Correct past logic: Entire date in the past OR slot time today earlier than now
+            $isPastDate = $date->isBefore($now->copy()->startOfDay());
+            $isPastTime = ($date->isToday() && $slotStartM < $nowMinutes);
+            $isPast = $isPastDate || $isPastTime;
 
             $bookingsInSlotCount = 0;
             $overlapReason = null;
@@ -377,8 +409,7 @@ class Create extends Component
                 }
             }
 
-            // Max allowed simultaneous bookings in a slot:
-            // 1 if specific barber selected; otherwise activeBarbersCount
+            // Max allowed simultaneous bookings in a slot
             $maxAllowedBookings = $this->barber_id ? 1 : $activeBarbersCount;
             $isOverbooked = ($bookingsInSlotCount >= $maxAllowedBookings);
 

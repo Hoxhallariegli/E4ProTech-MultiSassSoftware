@@ -14,26 +14,32 @@ use Livewire\WithFileUploads;
 
 class QuickCreate extends Component
 {
-        use WithPagination, WithFileUploads;
-     public $barber_shop_id = '';
+    use WithPagination, WithFileUploads;
+
+    public $barber_shop_id = '';
     public $name = '';
     public $phone = '';
     public $email = '';
     public $photo = '';
-    public $total_bookings = '';
-    public $no_show_count = '';
-    public $blocked_at = '';
- 
-    #[On('barber-shop-created')] 
+    public bool $is_blocked = false;
+
+    public function mount()
+    {
+        if (auth()->check() && auth()->user()->barber_shop_id) {
+            $this->barber_shop_id = auth()->user()->barber_shop_id;
+        }
+    }
+
+    #[On('barber-shop-created')]
     public function refreshBarberShops($id) { $this->barber_shop_id = $id; $this->updatedBarberShopId($id); }
- 
+
     public function updatedBarberShopId($value)
     {
         if (!$value) return;
         $related = \App\Models\BarberShop::find($value);
         if (!$related) return;
     }
- 
+
     protected function getbarberShopsList() {
         $query = \App\Models\BarberShop::query();
         if (method_exists(\App\Models\BarberShop::class, 'scopeForActiveShop')) { $query->forActiveShop(); }
@@ -50,17 +56,21 @@ class QuickCreate extends Component
 
     public function store(CreateCustomerAction $action)
     {
+        if (auth()->check() && auth()->user()->barber_shop_id) {
+            $this->barber_shop_id = auth()->user()->barber_shop_id;
+        }
         $this->validate();
         if ($this->photo && !is_string($this->photo)) { $this->photo = app(\App\Services\ImageUploadService::class)->upload($this->photo, 'uploads/customers'); }
+
+        $blockedAt = $this->is_blocked ? now()->toDateTimeString() : null;
+
         $dto = CustomerDTO::fromArray([
             'barber_shop_id' => $this->barber_shop_id,
             'name' => $this->name,
             'phone' => $this->phone,
             'email' => $this->email,
             'photo' => $this->photo,
-            'total_bookings' => $this->total_bookings,
-            'no_show_count' => $this->no_show_count,
-            'blocked_at' => $this->blocked_at,
+            'blocked_at' => $blockedAt,
         ]);
         $item = $action->execute($dto);
         $this->dispatch('customer-created', id: $item->id);
@@ -69,7 +79,12 @@ class QuickCreate extends Component
         $this->created = true;
         $this->createdId = $item->id;
         $this->createdLabel = (string) ($item->name ?? $item->id);
-        $this->reset(['barber_shop_id', 'name', 'phone', 'email', 'photo', 'total_bookings', 'no_show_count', 'blocked_at']);
+        $this->reset(['name', 'phone', 'email', 'photo', 'is_blocked']);
+        if (auth()->check() && auth()->user()->barber_shop_id) {
+            $this->barber_shop_id = auth()->user()->barber_shop_id;
+        } else {
+            $this->reset('barber_shop_id');
+        }
     }
 
     public function addAnother()
@@ -79,7 +94,15 @@ class QuickCreate extends Component
         $this->createdLabel = '';
     }
 
-    protected function rules(): array { $rules = Customer::rules();
+    protected function rules(): array {
+        $rules = [
+            'barber_shop_id' => ['required', 'integer'],
+            'name' => ['required', 'string', 'max:255'],
+            'phone' => ['required', 'string', 'max:255'],
+            'email' => ['nullable', 'string', 'max:255'],
+            'is_blocked' => ['nullable', 'boolean'],
+        ];
         if ($this->photo instanceof \Illuminate\Http\UploadedFile) { $rules['photo'] = ['nullable', 'image', 'max:10240']; } elseif (is_string($this->photo) && $this->photo !== '') { $rules['photo'] = ['nullable', 'string', 'max:255']; } else { $rules['photo'] = ['nullable']; }
-        return $rules; }
+        return $rules;
+    }
 }

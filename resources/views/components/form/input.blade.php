@@ -27,7 +27,7 @@
         type="{{ $type }}"
         id="{{ $name }}"
         name="{{ $name }}"
-        value="{{ $slot }}"
+        value="{{ $slot->isNotEmpty() ? $slot : ($value ?: $attributes->get('value')) }}"
         {{ $required }}
         @class([
             'block w-full bg-gray-50/50 dark:bg-gray-900/50 dark:text-gray-200 dark:placeholder-gray-500 border rounded-2xl py-3 px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-none sm:text-sm shadow-none',

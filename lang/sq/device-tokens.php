@@ -4,6 +4,10 @@ return [
   'ID' => 'ID',
   'DeviceToken' => 'Pajisje e Lidhura',
   'DeviceTokens' => 'Pajisjet APK & SMS Gateway',
+  'description' => 'Pajisjet e regjistruara dhe SMS Gateway Status',
+  'search_placeholder' => 'Kërko me ID, Emër Pajisje, Token',
+  'filter_shop_placeholder' => 'Filtro dyqanin',
+  'filter_user_placeholder' => 'Filtro përdoruesin',
   'Action' => 'Veprimet',
   'Reset' => 'Pastro',
   'Filters' => 'Filtrat',
@@ -27,4 +31,6 @@ return [
   'Fcm Token' => 'Tokeni FCM',
   'Platform' => 'Platforma',
   'Last Used At' => 'Përdorur për Herë të Fundit',
+  'device_and_user' => 'Pajisja & Përdoruesi',
+  'sms_gateway_status' => 'SMS Gateway Status',
 ];

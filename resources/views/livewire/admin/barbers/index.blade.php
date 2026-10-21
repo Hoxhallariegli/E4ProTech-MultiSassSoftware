@@ -2,7 +2,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <x-h1>{{ __('barbers.Barbers') }}</x-h1>
-            <x-short-description class="dark:text-gray-400">Lista e anëtarëve të stafit dhe berberëve</x-short-description>
+            <x-short-description class="dark:text-gray-400">{{ __('barbers.description') }}</x-short-description>
         </div>
         <div class="flex items-center gap-3">
             @if($search || $openFilter)
@@ -19,12 +19,12 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div>
                 <label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100">{{ __('barbers.Search') }}</label>
-                <input name="search" wire:model.live.debounce.300ms="search" type="text" placeholder="Kërko me ID, Emër, Telefon, Bio" class="w-full p-3 text-sm font-bold bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500/20 dark:text-white">
+                <input name="search" wire:model.live.debounce.300ms="search" type="text" placeholder="{{ __('barbers.search_placeholder') }}" class="w-full p-3 text-sm font-bold bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500/20 dark:text-white">
             </div>
             @if(auth()->user()->is_global_admin)
-                <div><label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100">{{ __('barbers.Barber Shop Id') }}</label><x-form.dropdown-search name="barber_shop_id" wire:model.live="barber_shop_id" label="none" :data="$barberShops" placeholder="Filtro sipas dyqanit" /></div>
+                <div><label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100">{{ __('barbers.Barber Shop Id') }}</label><x-form.dropdown-search name="barber_shop_id" wire:model.live="barber_shop_id" label="none" :data="$barberShops" placeholder="{{ __('barbers.filter_shop_placeholder') }}" /></div>
             @endif
-            <div><label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100">{{ __('barbers.User Id') }}</label><x-form.dropdown-search name="user_id" wire:model.live="user_id" label="none" :data="$users" placeholder="Filtro sipas përdoruesit" /></div>
+            <div><label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100">{{ __('barbers.User Id') }}</label><x-form.dropdown-search name="user_id" wire:model.live="user_id" label="none" :data="$users" placeholder="{{ __('barbers.filter_user_placeholder') }}" /></div>
         </div>
     </div>
 

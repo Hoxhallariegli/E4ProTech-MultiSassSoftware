@@ -23,14 +23,14 @@ class Create extends Component
     public $slug = '';
     public $logo = '';
     public $banner = '';
-    public $primary_color = '';
-    public $secondary_color = '';
+    public $primary_color = '#2563EB';
+    public $secondary_color = '#F59E0B';
     public $trial_ends_at = '';
     public $expires_at = '';
-    public $active = false;
-    public $sms_enabled = false;
-    public $timezone = '';
-    public $max_no_show_before_block = '';
+    public $active = true;
+    public $sms_enabled = true;
+    public $timezone = 'Europe/Tirane';
+    public $max_no_show_before_block = '3';
     public $min_service_time = '';
     public $business_type = 'barbershop';
     public $staff_label = '';
@@ -55,6 +55,12 @@ class Create extends Component
         return $query->pluck('name', 'id')->toArray();
     }
 
+    public function mount() {
+        if (auth()->check() && !auth()->user()->is_global_admin) {
+            $this->owner_id = auth()->id();
+        }
+    }
+
     public function render() {
         abort_if_cannot('add_barber_shops');
         return view('livewire.admin.barber-shops.create', [
@@ -63,6 +69,9 @@ class Create extends Component
     }
 
     public function store(CreateBarberShopAction $action) {
+        if (!auth()->user()->is_global_admin || empty($this->owner_id)) {
+            $this->owner_id = auth()->id();
+        }
         $this->validate();
         if ($this->logo && !is_string($this->logo)) { $this->logo = app(\App\Services\ImageUploadService::class)->upload($this->logo, 'uploads/barber-shops'); }
         if ($this->banner && !is_string($this->banner)) { $this->banner = app(\App\Services\ImageUploadService::class)->upload($this->banner, 'uploads/barber-shops'); }

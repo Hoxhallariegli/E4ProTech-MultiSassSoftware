@@ -1,6 +1,6 @@
 <div x-data="{ openFilter: @entangle('openFilter') }" class="space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div><x-h1>{{ __('device-tokens.DeviceTokens') }}</x-h1><x-short-description class="dark:text-gray-400">Pajisjet e regjistruara dhe SMS Gateway Status</x-short-description></div>
+        <div><x-h1>{{ __('device-tokens.DeviceTokens') }}</x-h1><x-short-description class="dark:text-gray-400">{{ __('device-tokens.description') }}</x-short-description></div>
         <div class="flex items-center gap-3">
             @if($search || $openFilter)
                 <button wire:click="resetFilters" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl transition-none shadow-none"><span>{{ __('device-tokens.Reset') }}</span></button>
@@ -16,12 +16,12 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div>
                 <label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100">{{ __('device-tokens.Search') }}</label>
-                <input name="search" wire:model.live.debounce.300ms="search" type="text" placeholder="Kërko me ID, Emër Pajisje, Token" class="w-full p-3 text-sm font-bold bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500/20 dark:text-white">
+                <input name="search" wire:model.live.debounce.300ms="search" type="text" placeholder="{{ __('device-tokens.search_placeholder') }}" class="w-full p-3 text-sm font-bold bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500/20 dark:text-white">
             </div>
             @if(auth()->user()->is_global_admin)
-                <div><label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100">Barber Shop Id</label><x-form.dropdown-search name="barber_shop_id" wire:model.live="barber_shop_id" label="none" :data="$barberShops" placeholder="Filtro dyqanin" /></div>
+                <div><label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100">{{ __('device-tokens.Barber Shop Id') }}</label><x-form.dropdown-search name="barber_shop_id" wire:model.live="barber_shop_id" label="none" :data="$barberShops" placeholder="{{ __('device-tokens.filter_shop_placeholder') }}" /></div>
             @endif
-            <div><label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100">User Id</label><x-form.dropdown-search name="user_id" wire:model.live="user_id" label="none" :data="$users" placeholder="Filtro përdoruesin" /></div>
+            <div><label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100">{{ __('device-tokens.User Id') }}</label><x-form.dropdown-search name="user_id" wire:model.live="user_id" label="none" :data="$users" placeholder="{{ __('device-tokens.filter_user_placeholder') }}" /></div>
         </div>
     </div>
 
@@ -36,8 +36,8 @@
                         @if(auth()->user()->is_global_admin)
                             <x-table.th name="barber_shop_id" :label="__('device-tokens.Barber Shop Id')" :$sortField :$sortAsc :sortable="in_array('barber_shop_id', $sortableFields)" />
                         @endif
-                        <x-table.th name="device_name" label="Pajisja &amp; Përdoruesi" :$sortField :$sortAsc :sortable="in_array('device_name', $sortableFields)" />
-                        <x-table.th name="is_sms_gateway" label="SMS Gateway Status" :$sortField :$sortAsc :sortable="in_array('is_sms_gateway', $sortableFields)" />
+                        <x-table.th name="device_name" :label="__('device-tokens.device_and_user')" :$sortField :$sortAsc :sortable="in_array('device_name', $sortableFields)" />
+                        <x-table.th name="is_sms_gateway" :label="__('device-tokens.sms_gateway_status')" :$sortField :$sortAsc :sortable="in_array('is_sms_gateway', $sortableFields)" />
                         <x-table.th name="platform" :label="__('device-tokens.Platform')" :$sortField :$sortAsc :sortable="in_array('platform', $sortableFields)" />
                         <x-table.th name="last_used_at" :label="__('device-tokens.Last Used At')" :$sortField :$sortAsc :sortable="in_array('last_used_at', $sortableFields)" />
                         <th class="px-6 py-4 text-right text-[10px] font-black uppercase text-gray-400 tracking-widest">{{ __('device-tokens.Action') }}</th>

@@ -42,5 +42,5 @@
 <div><x-form.input name="phone" type="text" wire:model.live="phone" :label="__('barbers.Phone')" class="dark:bg-gray-900" /></div>
 <div><x-file-upload name="photo" wire:model="photo" :label="__('barbers.Photo')" id="photo" :isEditing="false" /></div>
 <div class="md:col-span-2"><x-form.textarea name="bio" wire:model="bio" :label="__('barbers.Bio')" class="dark:bg-gray-900" /></div>
-<div><x-form.checkbox name="active" wire:model="active" :label="__('barbers.Active')" /></div></div><div class="mt-10 flex justify-end"><x-button type="submit" variant="blue" class="w-full sm:w-auto !px-12 !py-4 !rounded-2xl">{{ __('barbers.Save') }}</x-button></div></form></div>
+<div><x-form.checkbox name="active" wire:model="active" :label="__('barbers.Active')" /></div></div>@include('errors.errors')<div class="mt-10 flex justify-end"><x-button type="submit" variant="blue" class="w-full sm:w-auto !px-12 !py-4 !rounded-2xl">{{ __('barbers.Save') }}</x-button></div></form></div>
 </div>

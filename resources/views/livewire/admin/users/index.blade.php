@@ -2,7 +2,7 @@
     <div class="flex items-center justify-between gap-4">
         <div>
             <x-h1>{{ __('users.Users') }}</x-h1>
-            <x-short-description class="dark:text-gray-400">Menaxhoni përdoruesit dhe anëtarët e ekipit tuaj</x-short-description>
+            <x-short-description class="dark:text-gray-400">{{ __('users.description') }}</x-short-description>
         </div>
         <div>
             @can('add_users')
@@ -53,9 +53,9 @@
                             <a href="#" wire:click="sortBy('email')" class="flex items-center gap-1">{{ __('users.Email') }}</a>
                         </th>
                         <th class="px-6 py-4 text-left text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                            <a href="#" wire:click="sortBy('email_verified_at')" class="flex items-center gap-1">{{ __('Verifikimi i Llogarisë') }}</a>
+                            <a href="#" wire:click="sortBy('email_verified_at')" class="flex items-center gap-1">{{ __('users.Account Verification') }}</a>
                         </th>
-                        <th class="px-6 py-4 text-left text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ __('Shops') }}</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ __('barber-shops.BarberShops') ?? 'Shops' }}</th>
                         <th class="px-6 py-4 text-left text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ __('users.Joined') }}</th>
                         <th class="px-6 py-4 text-left text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ __('users.Roles') }}</th>
                         <th class="px-6 py-4 text-right text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ __('users.Action') }}</th>
@@ -82,7 +82,7 @@
                                 </div>
 
                                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase shrink-0 {{ $user->email_verified_at ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' }}">
-                                    {{ $user->email_verified_at ? 'Verifikuar' : 'Pa verifikuar' }}
+                                    {{ $user->email_verified_at ? __('users.Verified') : __('users.Unverified') }}
                                 </span>
                             </div>
 
@@ -95,7 +95,7 @@
                             </div>
 
                             <div class="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800 text-[10px]">
-                                <span class="text-gray-400 font-mono">Pranuar: {{ $user->created_at ? date('d/m/Y', strtotime((string)$user->created_at)) : '-' }}</span>
+                                <span class="text-gray-400 font-mono">{{ $user->created_at ? date('d/m/Y', strtotime((string)$user->created_at)) : '-' }}</span>
                                 <div class="flex items-center gap-2">
                                     @can('view_users_profiles')
                                         <x-a href="{{ route('admin.users.show', $user) }}" class="!rounded-xl !bg-blue-50 dark:!bg-blue-900/30 !text-blue-600 dark:!text-blue-400 !px-3 !py-1 !text-[10px] !font-black !uppercase !border-none">{{ __('users.Profile') }}</x-a>
@@ -127,7 +127,7 @@
                             @if ($user->email_verified_at)
                                 <div class="flex flex-col gap-0.5">
                                     <span class="inline-flex items-center gap-1 text-[10px] font-black uppercase text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/40 px-2.5 py-0.5 rounded-md w-max">
-                                        ✓ Verifikuar
+                                        ✓ {{ __('users.Verified') }}
                                     </span>
                                     <span class="text-[11px] font-mono text-gray-500 dark:text-gray-400">
                                         {{ date('d/m/Y H:i', strtotime((string)$user->email_verified_at)) }}
@@ -136,10 +136,10 @@
                             @else
                                 <div class="flex flex-col gap-0.5">
                                     <span class="inline-flex items-center gap-1 text-[10px] font-black uppercase text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 px-2.5 py-0.5 rounded-md w-max">
-                                        Pa Verifikuar
+                                        {{ __('users.Unverified') }}
                                     </span>
                                     <span class="text-[10px] text-gray-400 italic">
-                                        Në pritje konfirmimi
+                                        {{ __('users.Pending confirmation') }}
                                     </span>
                                 </div>
                             @endif

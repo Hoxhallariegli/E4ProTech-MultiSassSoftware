@@ -3,6 +3,7 @@
 return [
   'Users' => 'Përdoruesit',
   'User' => 'Përdoruesi',
+  'description' => 'Menaxhoni përdoruesit dhe anëtarët e ekipit tuaj',
   'Add User' => 'Shto Përdorues',
   'Edit User' => 'Redakto Përdoruesin',
   'Name' => 'Emri',
@@ -36,6 +37,10 @@ return [
   'to confirm' => 'për të konfirmuar',
   'Delete User' => 'Fshij Përdoruesin',
   'Joined Date Range' => 'Gama e Datave të Anëtarësimit',
+  'Account Verification' => 'Verifikimi i Llogarisë',
+  'Verified' => 'Verifikuar',
+  'Unverified' => 'Pa verifikuar',
+  'Pending confirmation' => 'Në pritje konfirmimi',
   'Account Settings' => 'Cilësimet e Llogarisë',
   'required' => 'e detyrueshme',
   'Image' => 'Imazhi',

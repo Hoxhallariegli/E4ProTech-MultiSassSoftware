@@ -33,5 +33,5 @@
 <div><x-form.input name="price" type="number" step="0.01" min="0" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'').replace(/(\..*)\./g,'$1').replace(/(\.\d{2}).*/g,'$1')" wire:model.live="price" :label="__('services.Price')" class="dark:bg-gray-900" /></div>
 <div><x-form.input name="duration_minutes" type="number" step="1" wire:model.live="duration_minutes" :label="__('services.Duration Minutes')" class="dark:bg-gray-900" /></div>
 <div><x-form.input name="category" type="text" wire:model.live="category" :label="__('services.Category')" class="dark:bg-gray-900" /></div>
-<div><x-form.checkbox name="active" wire:model="active" :label="__('services.Active')" /></div></div><div class="mt-10 flex justify-end"><x-button type="submit" variant="blue" class="w-full sm:w-auto !px-12 !py-4 !rounded-2xl">{{ __('services.Save') }}</x-button></div></form></div>
+<div><x-form.checkbox name="active" wire:model="active" :label="__('services.Active')" /></div></div>@include('errors.errors')<div class="mt-10 flex justify-end"><x-button type="submit" variant="blue" class="w-full sm:w-auto !px-12 !py-4 !rounded-2xl">{{ __('services.Save') }}</x-button></div></form></div>
 </div>

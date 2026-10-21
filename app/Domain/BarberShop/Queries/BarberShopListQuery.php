@@ -10,6 +10,34 @@ class BarberShopListQuery
     public function handle(array $params = [], string $sortField = 'id', string $sortAsc = 'asc'): Builder
     {
         $query = BarberShop::query()->with(['owner']);
+
+        if (auth()->check()) {
+            $user = auth()->user();
+            if (!$user->is_global_admin) {
+                $userShopIdsFromRoles = \Illuminate\Support\Facades\DB::table('model_has_roles')
+                    ->where('model_id', $user->id)
+                    ->where('barber_shop_id', '>', 0)
+                    ->pluck('barber_shop_id')
+                    ->toArray();
+
+                $query->where(function ($q) use ($user, $userShopIdsFromRoles) {
+                    $q->where('owner_id', $user->id);
+
+                    if ($user->barber_shop_id) {
+                        $q->orWhere('id', $user->barber_shop_id);
+                    }
+
+                    if (!empty($userShopIdsFromRoles)) {
+                        $q->orWhereIn('id', $userShopIdsFromRoles);
+                    }
+
+                    $q->orWhereHas('users', function ($qu) use ($user) {
+                        $qu->where('users.id', $user->id);
+                    });
+                });
+            }
+        }
+
         if (isset($params['search']) && $params['search']) {
             $query->where(function($query) use ($params) {
                 $query->where('id', 'like', '%' . $params['search'] . '%');

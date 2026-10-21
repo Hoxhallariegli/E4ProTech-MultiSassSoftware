@@ -22,13 +22,13 @@ class QuickCreate extends Component
     public $photo = '';
     public $bio = '';
     public $active = false;
- 
-    #[On('barber-shop-created')] 
+
+    #[On('barber-shop-created')]
     public function refreshBarberShops($id) { $this->barber_shop_id = $id; $this->updatedBarberShopId($id); }
 
-    #[On('user-created')] 
+    #[On('user-created')]
     public function refreshUsers($id) { $this->user_id = $id; $this->updatedUserId($id); }
- 
+
     public function updatedBarberShopId($value)
     {
         if (!$value) return;
@@ -44,7 +44,7 @@ class QuickCreate extends Component
         if (!$related) return;
         if (isset($related->barber_shop_id)) { $this->barber_shop_id = $related->barber_shop_id; }
     }
- 
+
     protected function getbarberShopsList() {
         $query = \App\Models\BarberShop::query();
         if (method_exists(\App\Models\BarberShop::class, 'scopeForActiveShop')) { $query->forActiveShop(); }

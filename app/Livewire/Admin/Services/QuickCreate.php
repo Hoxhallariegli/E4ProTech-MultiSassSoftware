@@ -21,17 +21,17 @@ class QuickCreate extends Component
     public $duration_minutes = '';
     public $category = '';
     public $active = false;
- 
-    #[On('barber-shop-created')] 
+
+    #[On('barber-shop-created')]
     public function refreshBarberShops($id) { $this->barber_shop_id = $id; $this->updatedBarberShopId($id); }
- 
+
     public function updatedBarberShopId($value)
     {
         if (!$value) return;
         $related = \App\Models\BarberShop::find($value);
         if (!$related) return;
     }
- 
+
     protected function getbarberShopsList() {
         $query = \App\Models\BarberShop::query();
         if (method_exists(\App\Models\BarberShop::class, 'scopeForActiveShop')) { $query->forActiveShop(); }

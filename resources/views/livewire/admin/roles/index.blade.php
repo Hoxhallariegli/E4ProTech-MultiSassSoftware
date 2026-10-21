@@ -2,7 +2,7 @@
     <div class="flex items-center justify-between gap-4">
         <div>
             <x-h1>{{ __('roles.Roles') }}</x-h1>
-            <x-short-description class="dark:text-gray-400">Menaxhoni rolet dhe lejet e aksesit për përdoruesit</x-short-description>
+            <x-short-description class="dark:text-gray-400">{{ __('roles.description') }}</x-short-description>
         </div>
         <div>
             @can('add_roles')
@@ -34,13 +34,13 @@
                         <a class="link" href="#" wire:click.prevent="sortBy('label')">{{ __('roles.Name') }}</a>
                     </th>
                     <th class="px-6 py-4 text-left text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                        {{ __('Team') }}
+                        {{ __('roles.Team') ?? __('Team') }}
                     </th>
                     <th class="px-6 py-4 text-center text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                        {{ __('Permissions') }}
+                        {{ __('roles.Permissions') }}
                     </th>
                     <th class="px-6 py-4 text-center text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                        {{ __('Guard') }}
+                        {{ __('roles.Guard') }}
                     </th>
                     <th class="px-6 py-4 text-right text-[10px] font-black uppercase tracking-wider text-gray-400">
                         {{ __('roles.Action') }}

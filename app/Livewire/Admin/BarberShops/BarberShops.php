@@ -15,7 +15,7 @@ use Livewire\WithFileUploads;
 #[Title('BarberShops')]
 class BarberShops extends Component
 {
-        use WithPagination, WithFileUploads;
+    use WithPagination, WithFileUploads;
 
     public int $paginate = 10;
     #[Url(history: true)] public string $search = '';
@@ -24,25 +24,31 @@ class BarberShops extends Component
     public string $sortField = 'id';
     public bool $sortAsc = false;
 
-    public function resetFilters() { $this->reset(['search', 'openFilter', 'owner_id', ]); $this->resetPage(); }
+    public function resetFilters() { $this->reset(['search', 'openFilter', 'owner_id']); $this->resetPage(); }
 
     #[On('echo-private:mobile.barber-shops,.barber-shops.changed')]
     public function onBroadcastCloudChange($event)
     {
-        // Realtime refresh when DB changes via APK or other sessions
         $this->render();
     }
 
     public function render()
     {
         abort_if_cannot('view_barber_shops');
-        $query = (new BarberShopListQuery())->handle(['search' => $this->search,             'owner_id' => $this->owner_id,
-], $this->sortField, $this->sortAsc ? 'asc' : 'desc');
+        $query = (new BarberShopListQuery())->handle([
+            'search' => $this->search,
+            'owner_id' => $this->owner_id,
+        ], $this->sortField, $this->sortAsc ? 'asc' : 'desc');
+
+        $owners = [];
+        if (auth()->check() && auth()->user()->is_global_admin) {
+            $owners = \App\Models\User::scopeForActiveShop()->pluck('name', 'id')->toArray();
+        }
 
         return view('livewire.admin.barber-shops.index', [
             'items' => $query->paginate($this->paginate),
             'sortableFields' => BarberShop::sortable(),
-            'owners' => \App\Models\User::pluck('name', 'id')->toArray(),
+            'owners' => $owners,
         ])->layout('components.layouts.app');
     }
 
@@ -55,6 +61,22 @@ class BarberShops extends Component
         if (!$item) {
             $this->dispatch('toast', message: __('barber-shops.not_found'), type: 'error');
             return;
+        }
+
+        if (auth()->check() && !auth()->user()->is_global_admin) {
+            $user = auth()->user();
+            $userShopIdsFromRoles = \Illuminate\Support\Facades\DB::table('model_has_roles')
+                ->where('model_id', $user->id)
+                ->where('barber_shop_id', '>', 0)
+                ->pluck('barber_shop_id')
+                ->toArray();
+
+            $isAllowed = ($item->owner_id == $user->id)
+                || ($item->id == $user->barber_shop_id)
+                || in_array($item->id, $userShopIdsFromRoles)
+                || $item->users()->where('users.id', $user->id)->exists();
+
+            abort_if(!$isAllowed, 403);
         }
 
         try {

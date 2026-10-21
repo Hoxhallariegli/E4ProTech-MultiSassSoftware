@@ -64,6 +64,22 @@ class Edit extends Component
             }
         }
 
+        if (auth()->check() && !auth()->user()->is_global_admin) {
+            $user = auth()->user();
+            $userShopIdsFromRoles = \Illuminate\Support\Facades\DB::table('model_has_roles')
+                ->where('model_id', $user->id)
+                ->where('barber_shop_id', '>', 0)
+                ->pluck('barber_shop_id')
+                ->toArray();
+
+            $isAllowed = ($barberShop->owner_id == $user->id)
+                || ($barberShop->id == $user->barber_shop_id)
+                || in_array($barberShop->id, $userShopIdsFromRoles)
+                || $barberShop->users()->where('users.id', $user->id)->exists();
+
+            abort_if(!$isAllowed, 403);
+        }
+
         $this->item = $barberShop;
         $this->fill($barberShop->toArray());
         $this->trial_ends_at = $barberShop->trial_ends_at?->format('Y-m-d\TH:i');
