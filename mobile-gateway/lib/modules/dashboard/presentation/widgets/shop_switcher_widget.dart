@@ -66,7 +66,7 @@ class _ShopSwitcherWidgetState extends State<ShopSwitcherWidget> {
               const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
             else
               ...shops.map((shop) {
-                final id = shop['id'] as int;
+                final id = int.tryParse(shop['id']?.toString() ?? '') ?? 0;
                 final isSelected = id == currentId;
                 return ListTile(
                   onTap: isSelected ? null : () => _handleSwitch(id),

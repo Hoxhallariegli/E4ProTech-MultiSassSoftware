@@ -191,10 +191,10 @@ class _ReportListPageState extends State<ReportListPage> {
     final isDark = theme.brightness == Brightness.dark;
     final primaryColor = theme.colorScheme.primary;
 
-    final totalRevenue = (_generatedMetrics?['total_revenue'] ?? 0.0) as double;
-    final totalBookings = _generatedMetrics?['total_bookings'] ?? 0;
-    final totalCompleted = _generatedMetrics?['total_completed'] ?? 0;
-    final totalCancelled = _generatedMetrics?['total_cancelled'] ?? 0;
+    final totalRevenue = double.tryParse(_generatedMetrics?['total_revenue']?.toString() ?? '0') ?? 0.0;
+    final totalBookings = int.tryParse(_generatedMetrics?['total_bookings']?.toString() ?? '0') ?? 0;
+    final totalCompleted = int.tryParse(_generatedMetrics?['total_completed']?.toString() ?? '0') ?? 0;
+    final totalCancelled = int.tryParse(_generatedMetrics?['total_cancelled']?.toString() ?? '0') ?? 0;
 
     final selectedBarberName = _selectedBarberId != null
         ? (_barberOptions.firstWhere((e) => e['id']?.toString() == _selectedBarberId.toString(), orElse: () => {'name': 'Stafi'})['name'] ?? 'Stafi')

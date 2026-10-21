@@ -9,6 +9,7 @@ return [
   'Permissions' => 'Lejet',
   'Name' => 'Emri',
   'Label' => 'Etiketa',
+  'Team' => 'Salloni / Ekipi',
   'Guard' => 'Mbrojtësi',
   'Action' => 'Veprimi',
   'Edit' => 'Modifiko',

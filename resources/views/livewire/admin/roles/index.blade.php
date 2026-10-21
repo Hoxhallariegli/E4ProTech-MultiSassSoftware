@@ -34,7 +34,7 @@
                         <a class="link" href="#" wire:click.prevent="sortBy('label')">{{ __('roles.Name') }}</a>
                     </th>
                     <th class="px-6 py-4 text-left text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                        {{ __('roles.Team') ?? __('Team') }}
+                        {{ __('roles.Team') }}
                     </th>
                     <th class="px-6 py-4 text-center text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
                         {{ __('roles.Permissions') }}

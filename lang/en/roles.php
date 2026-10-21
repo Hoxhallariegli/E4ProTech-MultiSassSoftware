@@ -9,6 +9,7 @@ return [
   'Permissions' => 'Permissions',
   'Name' => 'Name',
   'Label' => 'Label',
+  'Team' => 'Salon / Team',
   'Guard' => 'Guard',
   'Action' => 'Action',
   'Edit' => 'Edit',
