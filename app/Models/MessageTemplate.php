@@ -78,24 +78,32 @@ class MessageTemplate extends Model
         $shopId = $booking->barber_shop_id;
 
         if (!$locale) {
-            $customerLang = strtolower((string) (
-                $booking->customer?->language
-                ?? $booking->customer?->locale
-                ?? $booking->source_locale
-                ?? request()->header('Accept-Language')
-                ?? request()->input('locale')
-                ?? request()->input('lang')
-                ?? session('locale')
-                ?? 'sq'
-            ));
+            // 1. Customer preferred language (safely fetch without MissingAttributeException in Eloquent strict mode)
+            $lang = data_get($booking->customer, 'language') ?? data_get($booking->customer, 'locale');
 
-            if (str_contains($customerLang, 'en') && !str_contains($customerLang, 'sq')) {
+            // 2. Web session locale / API request locale / Accept-Language header
+            if (!$lang) {
+                $lang = session('locale')
+                    ?? request()->input('locale')
+                    ?? request()->input('lang')
+                    ?? request()->header('Accept-Language')
+                    ?? app()->getLocale();
+            }
+
+            $langStr = strtolower((string) $lang);
+
+            // Match primary language code
+            if (preg_match('/^(en|english)/i', $langStr)) {
+                $locale = 'en';
+            } elseif (preg_match('/^(sq|al|albanian|shqip)/i', $langStr)) {
+                $locale = 'sq';
+            } elseif (str_contains($langStr, 'en') && !str_contains($langStr, 'sq')) {
                 $locale = 'en';
             } else {
                 $locale = 'sq';
             }
         }
-        $locale = in_array(strtolower($locale), ['en', 'sq'], true) ? strtolower($locale) : 'sq';
+        $locale = in_array(strtolower((string)$locale), ['en', 'sq'], true) ? strtolower((string)$locale) : 'sq';
 
         // 1. Try shop-specific template for this exact type
         $templateRecord = static::where('barber_shop_id', $shopId)
