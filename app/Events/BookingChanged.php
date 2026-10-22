@@ -8,6 +8,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class BookingChanged implements ShouldBroadcast, ShouldDispatchAfterCommit
 {
@@ -16,7 +17,10 @@ class BookingChanged implements ShouldBroadcast, ShouldDispatchAfterCommit
     public function __construct(
         public Booking $item,
         public string $action,
-    ) {}
+    ) {
+        $tenantId = $this->item->barber_shop_id ?? $this->item->id;
+        Log::info("📡 [REVERB BROADCAST] Booking #{$this->item->id} ({$this->action}) dispatched for Reverb on channel mobile.{$tenantId}.bookings");
+    }
 
     public function broadcastOn(): array
     {
