@@ -42,7 +42,7 @@ class BarberShops extends Component
 
         $owners = [];
         if (auth()->check() && auth()->user()->is_global_admin) {
-            $owners = \App\Models\User::scopeForActiveShop()->pluck('name', 'id')->toArray();
+            $owners = \App\Models\User::forActiveShop()->pluck('name', 'id')->toArray();
         }
 
         return view('livewire.admin.barber-shops.index', [
