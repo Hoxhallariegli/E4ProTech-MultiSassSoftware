@@ -72,11 +72,15 @@ class SendFirebaseNotificationListener
                     $sendSmsRequested = true;
                 }
 
-                Log::info("📌 [SMS QUEUE CHECK] Booking #{$booking->id} (Source: {$source}) Action: {$action}, SendSMS Requested: " . ($sendSmsRequested ? 'YES' : 'NO') . ", Customer Phone: " . ($booking->customer?->phone ?? 'NONE'));
-
-                // Check if shop has SMS enabled
+                // Check if shop has SMS enabled OR if any gateway device is active for this shop
                 $shop = $booking->barberShop;
                 $shopSmsEnabled = $shop ? (bool)$shop->sms_enabled : true;
+
+                if (!$shopSmsEnabled && DeviceToken::where('barber_shop_id', $shopId)->where('is_sms_gateway', true)->exists()) {
+                    $shopSmsEnabled = true;
+                }
+
+                Log::info("📌 [SMS QUEUE CHECK] Booking #{$booking->id} (Shop #{$shopId}, Source: {$source}) Action: {$action}, Shop SMS Enabled: " . ($shopSmsEnabled ? 'YES' : 'NO') . ", SendSMS Requested: " . ($sendSmsRequested ? 'YES' : 'NO') . ", Customer Phone: " . ($booking->customer?->phone ?? 'NONE'));
 
                 if (!$shopSmsEnabled) {
                     Log::info("⏸️ [STEP 4] SMS is disabled for Shop #{$shopId} (sms_enabled = false). Skipping SMS queue.");
@@ -351,6 +355,8 @@ class SendFirebaseNotificationListener
 
             $res = $this->firebaseService->sendDataMessage($gatewayDevice->fcm_token, $data);
             Log::info("📲 [TRIGGER GATEWAY] Direct FCM Data Message trigger sent to Gateway Device token [{$gatewayDevice->fcm_token}] for SMS #{$smsId}. Status: " . ($res ? 'SUCCESS' : 'FAILED'));
+        } else {
+            Log::warning("⚠️ [TRIGGER GATEWAY] No active SMS Gateway Device Token found for Shop #{$shopId}!");
         }
     }
 
