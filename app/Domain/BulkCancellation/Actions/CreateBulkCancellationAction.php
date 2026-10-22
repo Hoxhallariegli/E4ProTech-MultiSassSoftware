@@ -45,16 +45,21 @@ class CreateBulkCancellationAction
             foreach ($affectedBookings as $booking) {
                 $cancelledBookingIds[] = $booking->id;
 
-                // 1. Mark booking as cancelled
+                // 1. Delete all existing pending SMS queue items (reminders, etc.) for this booking
+                MessageQueue::where('booking_id', $booking->id)
+                    ->where('status', 'pending')
+                    ->delete();
+
+                // 2. Mark booking as cancelled
                 $booking->update([
                     'status' => 'cancelled',
                     'notes' => trim(($booking->notes ? $booking->notes . ' | ' : '') . 'Anuluar për mungesë stafi: ' . ($item->reason ?: 'Mungesë emergjente')),
                 ]);
 
-                // 2. Parse SMS template in customer/request language
+                // 3. Parse SMS template in customer/request language
                 $parsedMessage = MessageTemplate::parseForBooking($booking, 'cancellation');
 
-                // 3. Space out SMS in MessageQueue by 1 minute apart (1st SMS now, 2nd SMS now+1m, 3rd SMS now+2m...)
+                // 4. Space out Cancellation SMS in MessageQueue by 1 minute apart (1st SMS now, 2nd SMS now+1m, 3rd SMS now+2m...)
                 $scheduledAt = $now->copy()->addMinutes($minuteOffset);
 
                 if ($booking->customer && $booking->customer->phone) {

@@ -292,10 +292,10 @@ class SendFirebaseNotificationListener
                     }
 
                     // -------------------------------------------------------------
-                    // ACTION C: DELETED -> Cancel Pending Reminder + Send Cancellation SMS
+                    // ACTION C: DELETED or CANCELLED -> Cancel Pending Reminders + Send Cancellation SMS
                     // -------------------------------------------------------------
-                    elseif ($action === 'deleted') {
-                        // Cancel pending reminders for this booking
+                    elseif ($action === 'deleted' || ($action === 'updated' && $booking->status === 'cancelled')) {
+                        // Cancel all pending reminders/confirmations for this cancelled booking
                         MessageQueue::where('booking_id', $booking->id)
                             ->where('status', 'pending')
                             ->delete();

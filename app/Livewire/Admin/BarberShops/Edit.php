@@ -8,7 +8,6 @@ use App\Domain\BarberShop\Actions\UpdateBarberShopAction;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Title;
-use Livewire\Attributes\Url;
 use Livewire\Attributes\On;
 use Livewire\WithFileUploads;
 
@@ -30,6 +29,7 @@ class Edit extends Component
     public $expires_at = '';
     public $active = false;
     public $sms_enabled = false;
+    public $reminder_hours_before = 2;
     public $timezone = '';
     public $max_no_show_before_block = '';
     public $min_service_time = '';
@@ -84,6 +84,7 @@ class Edit extends Component
         $this->fill($barberShop->toArray());
         $this->trial_ends_at = $barberShop->trial_ends_at?->format('Y-m-d\TH:i');
         $this->expires_at = $barberShop->expires_at?->format('Y-m-d\TH:i');
+        $this->reminder_hours_before = $barberShop->reminder_hours_before ?? 2;
         $this->min_service_time = $barberShop->min_service_time ?? '';
         $this->business_type = $barberShop->business_type ?? 'barbershop';
         $this->staff_label = $barberShop->staff_label ?? '';
@@ -116,6 +117,7 @@ class Edit extends Component
             'expires_at' => $this->expires_at,
             'active' => $this->active,
             'sms_enabled' => $this->sms_enabled,
+            'reminder_hours_before' => $this->reminder_hours_before,
             'timezone' => $this->timezone,
             'max_no_show_before_block' => $this->max_no_show_before_block,
             'min_service_time' => $this->min_service_time,
