@@ -77,6 +77,11 @@ class Edit extends Component
             abort(403, 'Ju nuk keni akses për të ndryshuar rolin e Administratorit Global.');
         }
 
+        // Reset Spatie permission cache before syncing permissions
+        if (class_exists(\Spatie\Permission\PermissionRegistrar::class)) {
+            app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        }
+
         // @phpstan-ignore-next-line
         $this->role->label = $this->label;
         $this->role->name = mb_strtolower(str_replace(' ', '_', $this->label));

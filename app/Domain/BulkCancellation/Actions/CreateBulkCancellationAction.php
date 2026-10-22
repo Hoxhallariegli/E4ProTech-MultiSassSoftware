@@ -6,7 +6,6 @@ use App\Models\BulkCancellation;
 use App\Domain\BulkCancellation\DTOs\BulkCancellationDTO;
 use App\Models\Booking;
 use App\Models\MessageQueue;
-use App\Models\MessageLog;
 use App\Models\MessageTemplate;
 use App\Models\AuditTrail;
 use Illuminate\Support\Facades\Schema;
@@ -50,7 +49,7 @@ class CreateBulkCancellationAction
                 // 2. Parse SMS template in customer/request language
                 $parsedMessage = MessageTemplate::parseForBooking($booking, 'cancellation');
 
-                // 3. Space out SMS by 1 minute apart (1st SMS now, 2nd SMS now+1m, 3rd SMS now+2m...)
+                // 3. Space out SMS in MessageQueue by 1 minute apart (1st SMS now, 2nd SMS now+1m, 3rd SMS now+2m...)
                 $scheduledAt = $now->copy()->addMinutes($minuteOffset);
                 $minuteOffset++;
 
@@ -71,19 +70,6 @@ class CreateBulkCancellationAction
                         $queueData['template_type'] = 'cancellation';
                     }
                     MessageQueue::create($queueData);
-
-                    $logData = [
-                        'barber_shop_id' => $booking->barber_shop_id,
-                        'customer_id' => $booking->customer_id,
-                        'channel' => 'sms',
-                        'message' => $parsedMessage,
-                        'status' => 'pending',
-                        'sent_at' => null,
-                    ];
-                    if (Schema::hasColumn('message_logs', 'template_type')) {
-                        $logData['template_type'] = 'cancellation';
-                    }
-                    MessageLog::create($logData);
                 }
             }
 
