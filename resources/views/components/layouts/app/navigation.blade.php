@@ -134,7 +134,3 @@
 @can('view_audit_trails')
     <x-nav.link route="admin.settings.audit-trails.index" icon="identification">{{ __('admin.Audit Trails') }}</x-nav.link>
 @endcan
-
-@can('view_bulk_cancellations')
-    <x-nav.link route="admin.bulk-cancellations.index" icon="calendar">{{ __('bulk-cancellations.BulkCancellations') }}</x-nav.link>
-@endcan
