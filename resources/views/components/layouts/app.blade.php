@@ -43,11 +43,8 @@
                     firebase.initializeApp(firebaseConfig);
                     const messaging = firebase.messaging();
 
-                    if (isDebug) console.log('🔥 Firebase initialized successfully.');
-
                     // Handle messages when app is in foreground
                     messaging.onMessage((payload) => {
-                        if (isDebug) console.log('📩 Message received (Foreground):', payload);
 
                         // 1. Shfaq Toast-in
                         window.dispatchEvent(new CustomEvent('toast', {
