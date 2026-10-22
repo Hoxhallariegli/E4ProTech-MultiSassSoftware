@@ -45,6 +45,13 @@ return [
   'Expires At' => 'Data e Skadimit',
   'Active' => 'Aktiv',
   'Sms Enabled' => 'SMS Gateway Aktiv',
+  'Reminder Hours Before' => 'Koha e Rikujtesës me SMS',
+  'SMS Reminder Time' => 'Koha e Rikujtesës me SMS',
+  '30 Minutes Before' => '30 Minuta para orarit',
+  '1 Hour Before' => '1 Orë para orarit',
+  '2 Hours Before' => '2 Orë para orarit',
+  '4 Hours Before' => '4 Orë para orarit',
+  '24 Hours Before' => '1 Ditë (24 Orë) para orarit',
   'Timezone' => 'Zona Orare (Timezone)',
   'Max No Show Before Block' => 'Maks. Mosparaqitje para Bllokimit',
 ];

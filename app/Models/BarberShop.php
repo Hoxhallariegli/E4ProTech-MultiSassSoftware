@@ -43,6 +43,7 @@ class BarberShop extends Model
             'expires_at' => 'datetime',
             'active' => 'boolean',
             'sms_enabled' => 'boolean',
+            'reminder_hours_before' => 'float',
             'max_no_show_before_block' => 'integer',
             'min_service_time' => 'integer',
         ];
@@ -62,6 +63,7 @@ class BarberShop extends Model
             'expires_at' => ['nullable', 'date'],
             'active' => ['boolean'],
             'sms_enabled' => ['boolean'],
+            'reminder_hours_before' => ['nullable', 'numeric', 'min:0.1', 'max:168'],
             'timezone' => ['nullable', 'string', 'max:255'],
             'max_no_show_before_block' => ['nullable', 'integer'],
             'min_service_time' => ['nullable', 'integer', 'min:1', 'max:480'],
@@ -75,7 +77,7 @@ class BarberShop extends Model
     }
 
     public static function sortable(): array {
-        return ['id', 'owner_id', 'name', 'app_name', 'business_type', 'active', 'timezone'];
+        return ['id', 'owner_id', 'name', 'app_name', 'business_type', 'active', 'timezone', 'reminder_hours_before'];
     }
 
     protected static function booted(): void

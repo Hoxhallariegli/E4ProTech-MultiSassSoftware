@@ -9,7 +9,7 @@ class BrandingState {
   final String? logoUrl;
   final Color primaryColor;
   final bool smsEnabled;
-  final int reminderHours;
+  final double reminderHours;
   final int trialDaysLeft;
   final String planName;
   final String subscriptionStatus;
@@ -24,7 +24,7 @@ class BrandingState {
     this.logoUrl,
     required this.primaryColor,
     this.smsEnabled = false,
-    this.reminderHours = 2,
+    this.reminderHours = 2.0,
     this.trialDaysLeft = 0,
     this.planName = 'Plani Pro',
     this.subscriptionStatus = 'active',
@@ -73,13 +73,13 @@ class BrandingState {
     };
   }
 
-    factory BrandingState.fromMap(Map<String, dynamic> map) {
+  factory BrandingState.fromMap(Map<String, dynamic> map) {
     return BrandingState(
       appName: map['appName'] ?? 'E4ProTech Engine',
       logoUrl: map['logoUrl'],
       primaryColor: Color(map['primaryColor'] ?? 0xFF7C5CFC),
       smsEnabled: map['smsEnabled'] ?? false,
-      reminderHours: map['reminderHours'] ?? 2,
+      reminderHours: (double.tryParse(map['reminderHours']?.toString() ?? '2') ?? 2.0).toDouble(),
       trialDaysLeft: map['trialDaysLeft'] ?? 0,
       planName: map['planName'] ?? 'Plani Pro',
       subscriptionStatus: map['subscriptionStatus'] ?? 'active',
@@ -102,36 +102,44 @@ class BrandingCubit extends Cubit<BrandingState> {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString('branding_data');
     if (data != null) {
-      emit(BrandingState.fromMap(jsonDecode(data)));
+      try {
+        emit(BrandingState.fromMap(jsonDecode(data)));
+      } catch (_) {}
     }
   }
 
   void updateBranding(Map<String, dynamic> businessData) async {
-    final hexColor = businessData['color'] ?? '#3B82F6';
-    final color = Color(int.parse(hexColor.replaceFirst('#', '0xFF')));
+    final hexColor = businessData['color'] ?? businessData['primaryColor'] ?? '#3B82F6';
+    Color color;
+    if (hexColor is int) {
+      color = Color(hexColor);
+    } else {
+      final hexStr = hexColor.toString().replaceFirst('#', '');
+      color = Color(int.parse(hexStr.length == 6 ? 'FF$hexStr' : hexStr, radix: 16));
+    }
 
     final newState = BrandingState(
-      appName: businessData['app_name'] ?? businessData['name'] ?? 'LaraFlutter Gateway',
-      logoUrl: businessData['logo'],
+      appName: businessData['app_name'] ?? businessData['name'] ?? businessData['appName'] ?? 'E4ProTech Engine',
+      logoUrl: businessData['logo'] ?? businessData['logoUrl'],
       primaryColor: color,
-      smsEnabled: businessData['sms_active'] ?? false,
-      reminderHours: businessData['reminder_hours_before'] ?? 2,
-      trialDaysLeft: businessData['trial_days_left'] ?? 0,
-      planName: businessData['plan_name'] ?? 'Plani Pro',
-      subscriptionStatus: businessData['subscription_status'] ?? 'active',
-      businessType: businessData['business_type'] ?? 'general',
+      smsEnabled: businessData['sms_active'] ?? businessData['smsEnabled'] ?? false,
+      reminderHours: (double.tryParse((businessData['reminder_hours_before'] ?? businessData['reminderHours'])?.toString() ?? '2') ?? 2.0).toDouble(),
+      trialDaysLeft: businessData['trial_days_left'] ?? businessData['trialDaysLeft'] ?? 0,
+      planName: businessData['plan_name'] ?? businessData['planName'] ?? 'Plani Pro',
+      subscriptionStatus: businessData['subscription_status'] ?? businessData['subscriptionStatus'] ?? 'active',
+      businessType: businessData['business_type'] ?? businessData['businessType'] ?? 'general',
       staffLabel: (businessData['staff_label'] != null && businessData['staff_label'].toString().isNotEmpty)
           ? businessData['staff_label'].toString()
-          : 'Punonjësi',
+          : (businessData['staffLabel'] ?? 'Punonjësi').toString(),
       staffLabelPlural: (businessData['staff_label_plural'] != null && businessData['staff_label_plural'].toString().isNotEmpty)
           ? businessData['staff_label_plural'].toString()
-          : 'Punonjësit',
+          : (businessData['staffLabelPlural'] ?? 'Punonjësit').toString(),
       shopLabel: (businessData['shop_label'] != null && businessData['shop_label'].toString().isNotEmpty)
           ? businessData['shop_label'].toString()
-          : 'Dyqanet',
+          : (businessData['shopLabel'] ?? 'Dyqanet').toString(),
       serviceLabel: (businessData['service_label'] != null && businessData['service_label'].toString().isNotEmpty)
           ? businessData['service_label'].toString()
-          : 'Shërbimi',
+          : (businessData['serviceLabel'] ?? 'Shërbimi').toString(),
     );
 
     final prefs = await SharedPreferences.getInstance();
@@ -191,7 +199,6 @@ extension BrandingContextExtension on BuildContext {
 String applyDynamicBranding(BuildContext context, String text) {
   try {
     final isEn = Localizations.localeOf(context).languageCode == 'en';
-    final state = context.read<BrandingCubit>().state;
     final staffLabel = context.staffLabel;
     final staffLabelPlural = context.staffLabelPlural;
     final shopLabel = context.shopLabel;

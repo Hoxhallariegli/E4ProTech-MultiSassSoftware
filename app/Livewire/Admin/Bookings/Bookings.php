@@ -14,7 +14,7 @@ use Livewire\Attributes\On;
 #[Title('Bookings')]
 class Bookings extends Component
 {
-        use WithPagination;
+    use WithPagination;
 
     public int $paginate = 10;
     #[Url(history: true)] public string $search = '';
@@ -26,23 +26,33 @@ class Bookings extends Component
     public string $sortField = 'id';
     public bool $sortAsc = false;
 
-    public function resetFilters() { $this->reset(['search', 'openFilter', 'barber_shop_id', 'barber_id', 'service_id', 'customer_id', ]); $this->resetPage(); }
+    public function resetFilters() { $this->reset(['search', 'openFilter', 'barber_shop_id', 'barber_id', 'service_id', 'customer_id']); $this->resetPage(); }
 
-    #[On('echo-private:mobile.bookings,.bookings.changed')]
+    public function getListeners()
+    {
+        $shopId = auth()->check() ? auth()->user()->barber_shop_id : 0;
+        return [
+            "echo-private:mobile.{$shopId}.bookings,.bookings.changed" => 'onBroadcastCloudChange',
+            "echo-private:mobile.bookings,.bookings.changed" => 'onBroadcastCloudChange',
+        ];
+    }
+
     public function onBroadcastCloudChange($event)
     {
-        // Realtime refresh when DB changes via APK or other sessions
+        // Realtime refresh when DB changes via APK or other web sessions
         $this->render();
     }
 
     public function render()
     {
         abort_if_cannot('view_bookings');
-        $query = (new BookingListQuery())->handle(['search' => $this->search,             'barber_shop_id' => $this->barber_shop_id,
+        $query = (new BookingListQuery())->handle([
+            'search' => $this->search,
+            'barber_shop_id' => $this->barber_shop_id,
             'barber_id' => $this->barber_id,
             'service_id' => $this->service_id,
             'customer_id' => $this->customer_id,
-], $this->sortField, $this->sortAsc ? 'asc' : 'desc');
+        ], $this->sortField, $this->sortAsc ? 'asc' : 'desc');
 
         return view('livewire.admin.bookings.index', [
             'items' => $query->paginate($this->paginate),

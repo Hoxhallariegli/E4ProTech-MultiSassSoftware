@@ -138,12 +138,8 @@ class SendFirebaseNotificationListener
                         $shop = $booking->barberShop;
                         if ($booking->appointment_at) {
                             $rawVal = $shop?->reminder_hours_before;
-                            $reminderMins = 30;
-
-                            if ($rawVal !== null && is_numeric($rawVal) && (float)$rawVal > 0) {
-                                $num = (float) $rawVal;
-                                $reminderMins = ($num <= 12) ? (int) round($num * 60) : (int) round($num);
-                            }
+                            $hours = (float) ($rawVal !== null && is_numeric($rawVal) && (float)$rawVal > 0 ? $rawVal : 2);
+                            $reminderMins = (int) round($hours * 60);
                             $reminderMins = max(10, $reminderMins);
 
                             $scheduledReminderTime = $booking->appointment_at->copy()->subMinutes($reminderMins);
@@ -202,11 +198,8 @@ class SendFirebaseNotificationListener
                         // 1. Reschedule and update pending reminder SMS
                         if ($booking->appointment_at) {
                             $rawVal = $shop?->reminder_hours_before;
-                            $reminderMins = 30;
-                            if ($rawVal !== null && is_numeric($rawVal) && (float)$rawVal > 0) {
-                                $num = (float) $rawVal;
-                                $reminderMins = ($num <= 12) ? (int) round($num * 60) : (int) round($num);
-                            }
+                            $hours = (float) ($rawVal !== null && is_numeric($rawVal) && (float)$rawVal > 0 ? $rawVal : 2);
+                            $reminderMins = (int) round($hours * 60);
                             $reminderMins = max(10, $reminderMins);
 
                             $scheduledReminderTime = $booking->appointment_at->copy()->subMinutes($reminderMins);

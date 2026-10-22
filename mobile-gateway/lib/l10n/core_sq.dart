@@ -164,6 +164,7 @@ const Map<String, String> coreSq = {
   'module.subscription_renewal': 'Renovimi i Abonimit',
   'module.ai_assistant': 'Asistenti AI',
   'module.shop_front_page_setting': 'Cilësimet e Faqes Kryesore',
+  'module.bulk_cancellation': 'Mungesa Stafi',
 
   'sidebar.overview': 'Paneli Kryesor',
   'sidebar.dynamic_modules': 'MODULET E SISTEMIT',

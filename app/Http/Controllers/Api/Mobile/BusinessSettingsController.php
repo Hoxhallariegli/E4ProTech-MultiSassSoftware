@@ -14,7 +14,7 @@ class BusinessSettingsController extends Controller
     {
         $request->validate([
             'enabled' => 'nullable|boolean',
-            'reminder_hours' => 'nullable|integer|min:0|max:72',
+            'reminder_hours' => 'nullable|numeric|min:0.1|max:168',
         ]);
 
         $status = null;
@@ -25,13 +25,14 @@ class BusinessSettingsController extends Controller
         if ($request->has('reminder_hours')) {
             $shop = Auth::user()->activeShop;
             if ($shop) {
-                $shop->update(['reminder_hours_before' => $request->reminder_hours]);
+                $shop->update(['reminder_hours_before' => (float) $request->reminder_hours]);
             }
         }
 
         return response()->json([
             'success' => true,
-            'sms_enabled' => $status ?? Auth::user()?->activeShop?->sms_enabled
+            'sms_enabled' => $status ?? Auth::user()?->activeShop?->sms_enabled,
+            'reminder_hours_before' => (float) (Auth::user()?->activeShop?->reminder_hours_before ?? 2),
         ]);
     }
 
@@ -61,7 +62,7 @@ class BusinessSettingsController extends Controller
                 'logo' => $shop->logo_url,
                 'color' => $shop->primary_color,
                 'sms_active' => (bool) $shop->sms_enabled,
-                'reminder_hours_before' => (int) $shop->reminder_hours_before,
+                'reminder_hours_before' => (float) $shop->reminder_hours_before,
                 'plan_name' => $shop->active_plan_name,
                 'trial_days_left' => $shop->days_left,
                 'subscription_status' => $shop->days_left > 0 ? 'active' : 'expired',

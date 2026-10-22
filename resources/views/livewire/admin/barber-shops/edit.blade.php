@@ -89,7 +89,16 @@
                 <div><x-form.input name="expires_at" type="datetime-local" wire:model.live="expires_at" :label="__('barber-shops.Expires At')" class="dark:bg-gray-900" /></div>
                 <div><x-form.checkbox name="active" wire:model="active" :label="__('barber-shops.Active')" /></div>
                 <div><x-form.checkbox name="sms_enabled" wire:model="sms_enabled" :label="__('barber-shops.Sms Enabled')" /></div>
-                <div><x-form.input name="reminder_hours_before" type="number" step="1" wire:model.live="reminder_hours_before" label="Koha e Rikujtesës me SMS (Orë)" placeholder="2" class="dark:bg-gray-900 font-bold" /></div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('barber-shops.SMS Reminder Time') }}</label>
+                    <select wire:model.live="reminder_hours_before" class="w-full px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-bold focus:ring-2 focus:ring-blue-500">
+                        <option value="0.5">{{ __('barber-shops.30 Minutes Before') }}</option>
+                        <option value="1">{{ __('barber-shops.1 Hour Before') }}</option>
+                        <option value="2">{{ __('barber-shops.2 Hours Before') }}</option>
+                        <option value="4">{{ __('barber-shops.4 Hours Before') }}</option>
+                        <option value="24">{{ __('barber-shops.24 Hours Before') }}</option>
+                    </select>
+                </div>
                 <div><x-form.input name="timezone" type="text" wire:model.live="timezone" :label="__('barber-shops.Timezone')" class="dark:bg-gray-900" /></div>
                 <div><x-form.input name="max_no_show_before_block" type="number" step="1" wire:model.live="max_no_show_before_block" :label="__('barber-shops.Max No Show Before Block')" class="dark:bg-gray-900" /></div>
                 <div><x-form.input name="min_service_time" type="number" step="1" wire:model.live="min_service_time" label="Koha Minimale e Shërbimit / Hapi i Orareve (Minuta)" placeholder="Automatik nga shërbimet nëse lihet bosh" class="dark:bg-gray-900" /></div>

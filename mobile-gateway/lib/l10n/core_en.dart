@@ -164,6 +164,7 @@ const Map<String, String> coreEn = {
   'module.subscription_renewal': 'Subscription Renewals',
   'module.ai_assistant': 'AI Assistant',
   'module.shop_front_page_setting': 'Front Page Settings',
+  'module.bulk_cancellation': 'Staff Absences',
 
   'sidebar.overview': 'Overview Dashboard',
   'sidebar.dynamic_modules': 'DYNAMIC MODULES',

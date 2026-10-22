@@ -51,24 +51,15 @@ class SendBookingReminders extends Command
             }
 
             $rawVal = $shop?->reminder_hours_before;
-            $reminderMins = 30; // Default minimum 30 minutes before appointment if unconfigured
-
-            if ($rawVal !== null && is_numeric($rawVal) && (float)$rawVal > 0) {
-                $num = (float) $rawVal;
-                if ($num <= 12) {
-                    $reminderMins = (int) round($num * 60);
-                } else {
-                    $reminderMins = (int) round($num);
-                }
-            }
-
-            $reminderMins = max(15, $reminderMins);
+            $hours = (float) ($rawVal !== null && is_numeric($rawVal) && (float)$rawVal > 0 ? $rawVal : 2);
+            $reminderMins = (int) round($hours * 60);
+            $reminderMins = max(10, $reminderMins);
 
             $appointmentTime = Carbon::parse($booking->appointment_at);
             $createdAtTime = Carbon::parse($booking->created_at);
 
-            // Do not send separate reminder if appointment was booked last-minute (less than 45 min before appointment)
-            if ($appointmentTime->diffInMinutes($now) < 15 || $appointmentTime->diffInMinutes($createdAtTime) < 45) {
+            // Do not send separate reminder if appointment was booked last-minute
+            if ($appointmentTime->diffInMinutes($now) < 10 || $appointmentTime->diffInMinutes($createdAtTime) < 30) {
                 continue;
             }
 
@@ -102,15 +93,6 @@ class SendBookingReminders extends Command
                     'scheduled_at' => now(), // Queue it to go out immediately
                     'status' => 'pending',
                     'retry_count' => 0,
-                ]);
-
-                MessageLog::create([
-                    'barber_shop_id' => $shop->id,
-                    'customer_id' => $booking->customer_id,
-                    'channel' => 'sms',
-                    'message' => $parsedMessage,
-                    'status' => 'pending',
-                    'sent_at' => null,
                 ]);
 
                 $count++;

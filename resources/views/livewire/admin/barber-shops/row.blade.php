@@ -57,6 +57,15 @@
             {{ $item->days_left }} Ditë
         </span>
     </td>
+    <td class="hidden lg:table-cell px-6 py-5 whitespace-nowrap">
+        @php
+            $rHours = (float) ($item->reminder_hours_before ?? 2);
+            $rLabel = $rHours >= 1 ? ($rHours == (int)$rHours ? (int)$rHours . ' h' : $rHours . ' h') : round($rHours * 60) . ' min';
+        @endphp
+        <span class="px-2.5 py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-xl text-xs font-bold font-mono">
+            {{ $rLabel }}
+        </span>
+    </td>
     <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->app_name }}</td>
     <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300 font-mono text-xs">{{ $item->slug }}</td>
     <td class="hidden lg:table-cell px-6 py-3">@if($item->logo) <a href="{{ asset(ltrim($item->logo, '/')) }}" target="_blank" rel="noopener" class="inline-block group" title="View image"><img src="{{ asset(ltrim($item->logo, '/')) }}" alt="Logo" class="w-11 h-11 rounded-xl object-cover border border-gray-200 dark:border-gray-700 shadow-sm group-hover:scale-105 transition-transform duration-150" loading="lazy" /></a> @else <span class="text-gray-400">-</span> @endif</td>

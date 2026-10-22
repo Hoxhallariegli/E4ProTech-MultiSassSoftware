@@ -1749,12 +1749,34 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
     }
   }
 
-  Future<void> _updateReminderHours(int hours) async {
+  Future<void> _updateReminderHours(double hours) async {
     try {
       final res = await ApiService.post('/business/toggle-sms', {'reminder_hours': hours});
-      if (res.statusCode == 200) {
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        final decoded = jsonDecode(res.body);
+        final newHours = (double.tryParse(decoded['reminder_hours_before']?.toString() ?? hours.toString()) ?? hours).toDouble();
+
+        context.read<BrandingCubit>().updateBranding({
+          ...context.read<BrandingCubit>().state.toMap(),
+          'reminder_hours_before': newHours,
+        });
+
         await AuthService.instance.sync();
         widget.onAuthChange();
+
+        if (mounted) {
+          final label = newHours >= 1
+              ? '${newHours.toStringAsFixed(newHours.truncateToDouble() == newHours ? 0 : 1)} orë'
+              : '${(newHours * 60).round()} minuta';
+
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Koha e rikujtesës u ruajt: $label para orarit.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     } catch (e) {
       debugPrint('Error updating reminder hours: $e');
@@ -1880,10 +1902,10 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
                   ),
                   const SizedBox(width: 12),
                   SizedBox(
-                    width: 85,
+                    width: 95,
                     child: DropdownButtonHideUnderline(
-                      child: DropdownButton<int>(
-                        value: [30, 60, 120, 240, 1440].contains(widget.branding.reminderHours) ? widget.branding.reminderHours : 30,
+                      child: DropdownButton<double>(
+                        value: [0.5, 1.0, 2.0, 4.0, 24.0].contains(widget.branding.reminderHours) ? widget.branding.reminderHours : 2.0,
                         isExpanded: true,
                         dropdownColor: isDark ? const Color(0xFF2A2E3B) : Colors.white,
                         style: TextStyle(
@@ -1892,11 +1914,11 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
                           color: isDark ? Colors.white : Colors.black,
                         ),
                         items: const [
-                          DropdownMenuItem(value: 30, child: Text('30 Min')),
-                          DropdownMenuItem(value: 60, child: Text('1 Orë')),
-                          DropdownMenuItem(value: 120, child: Text('2 Orë')),
-                          DropdownMenuItem(value: 240, child: Text('4 Orë')),
-                          DropdownMenuItem(value: 1440, child: Text('1 Ditë')),
+                          DropdownMenuItem(value: 0.5, child: Text('30 Min')),
+                          DropdownMenuItem(value: 1.0, child: Text('1 Orë')),
+                          DropdownMenuItem(value: 2.0, child: Text('2 Orë')),
+                          DropdownMenuItem(value: 4.0, child: Text('4 Orë')),
+                          DropdownMenuItem(value: 24.0, child: Text('1 Ditë')),
                         ],
                         onChanged: (val) {
                           if (val != null) {

@@ -41,6 +41,13 @@ return [
   'Expires At' => 'Expires At',
   'Active' => 'Active',
   'Sms Enabled' => 'SMS Gateway Enabled',
+  'Reminder Hours Before' => 'SMS Reminder Time',
+  'SMS Reminder Time' => 'SMS Reminder Time',
+  '30 Minutes Before' => '30 Minutes before appointment',
+  '1 Hour Before' => '1 Hour before appointment',
+  '2 Hours Before' => '2 Hours before appointment',
+  '4 Hours Before' => '4 Hours before appointment',
+  '24 Hours Before' => '1 Day (24 Hours) before appointment',
   'Timezone' => 'Timezone',
   'Max No Show Before Block' => 'Max No Show Before Block',
 ];
