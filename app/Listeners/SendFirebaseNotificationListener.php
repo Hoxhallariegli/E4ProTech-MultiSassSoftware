@@ -113,7 +113,6 @@ class SendFirebaseNotificationListener
                                 $queueData['template_type'] = 'confirmation';
                             }
                             $queue = MessageQueue::create($queueData);
-                            AuditTrail::log($queue, 'create', 'MessageQueues');
 
                             $logData = [
                                 'barber_shop_id' => $booking->barber_shop_id,
@@ -126,8 +125,7 @@ class SendFirebaseNotificationListener
                             if (Schema::hasColumn('message_logs', 'template_type')) {
                                 $logData['template_type'] = 'confirmation';
                             }
-                            $msgLog = MessageLog::create($logData);
-                            AuditTrail::log($msgLog, 'create', 'MessageLogs');
+                            MessageLog::create($logData);
 
                             Log::info("✉️ [STEP 4a] Confirmation SMS queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
                         }
@@ -160,7 +158,6 @@ class SendFirebaseNotificationListener
                                     $reminderQueueData['template_type'] = 'reminder';
                                 }
                                 $reminderQueue = MessageQueue::create($reminderQueueData);
-                                AuditTrail::log($reminderQueue, 'create', 'MessageQueues');
 
                                 $reminderLogData = [
                                     'barber_shop_id' => $booking->barber_shop_id,
@@ -173,8 +170,7 @@ class SendFirebaseNotificationListener
                                 if (Schema::hasColumn('message_logs', 'template_type')) {
                                     $reminderLogData['template_type'] = 'reminder';
                                 }
-                                $reminderLog = MessageLog::create($reminderLogData);
-                                AuditTrail::log($reminderLog, 'create', 'MessageLogs');
+                                MessageLog::create($reminderLogData);
 
                                 Log::info("⏰ [STEP 4a] SMS Reminder Message scheduled for Booking #{$booking->id} at {$scheduledReminderTime} (Shop #{$booking->barber_shop_id})");
                             }
@@ -245,7 +241,6 @@ class SendFirebaseNotificationListener
                                 $updateQueueData['template_type'] = 'reschedule';
                             }
                             $updateQueue = MessageQueue::create($updateQueueData);
-                            AuditTrail::log($updateQueue, 'create', 'MessageQueues');
 
                             $updateLogData = [
                                 'barber_shop_id' => $booking->barber_shop_id,
@@ -258,8 +253,7 @@ class SendFirebaseNotificationListener
                             if (Schema::hasColumn('message_logs', 'template_type')) {
                                 $updateLogData['template_type'] = 'reschedule';
                             }
-                            $msgLog = MessageLog::create($updateLogData);
-                            AuditTrail::log($msgLog, 'create', 'MessageLogs');
+                            MessageLog::create($updateLogData);
 
                             Log::info("🔄 [STEP 4a-UPDATE] SMS Update Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
 
