@@ -16,15 +16,6 @@ AddType application/vnd.android.package-archive .apk
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-    # ==========================================
-    # Laravel Reverb - WebSocket Reverse Proxy
-    # ==========================================
-    RewriteCond %{HTTP:Upgrade} =websocket [NC]
-    RewriteRule ^app/(.*)$ ws://127.0.0.1:8085/app/$1 [P,L]
-
-    RewriteCond %{HTTP:Upgrade} !=websocket [NC]
-    RewriteRule ^app/(.*)$ http://127.0.0.1:8085/app/$1 [P,L]
-
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$

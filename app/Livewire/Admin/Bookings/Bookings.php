@@ -28,18 +28,9 @@ class Bookings extends Component
 
     public function resetFilters() { $this->reset(['search', 'openFilter', 'barber_shop_id', 'barber_id', 'service_id', 'customer_id']); $this->resetPage(); }
 
-    public function getListeners()
+    #[On('refreshData')]
+    public function onRefreshData()
     {
-        $shopId = auth()->check() ? auth()->user()->barber_shop_id : 0;
-        return [
-            "echo-private:mobile.{$shopId}.bookings,.bookings.changed" => 'onBroadcastCloudChange',
-            "echo-private:mobile.bookings,.bookings.changed" => 'onBroadcastCloudChange',
-        ];
-    }
-
-    public function onBroadcastCloudChange($event)
-    {
-        // Realtime refresh when DB changes via APK or other web sessions
         $this->render();
     }
 
