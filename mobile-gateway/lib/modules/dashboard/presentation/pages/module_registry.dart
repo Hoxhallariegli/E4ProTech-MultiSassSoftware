@@ -11,6 +11,7 @@ import '../../notification_channel/presentation/pages/notification_channel_list_
 import '../../event_setting/presentation/pages/event_setting_list_page.dart';
 import '../../message_template/presentation/pages/message_template_list_page.dart';
 import '../../booking/presentation/pages/booking_list_page.dart';
+import '../../bulk_cancellation/presentation/pages/bulk_cancellation_list_page.dart';
 import '../../payment/presentation/pages/payment_list_page.dart';
 import '../../message_queue/presentation/pages/message_queue_list_page.dart';
 import '../../message_log/presentation/pages/message_log_list_page.dart';
@@ -53,6 +54,7 @@ class ModuleRegistry {
     ModuleEntry(key: 'service', name: 'Shërbimet', icon: Icons.content_cut_rounded, page: const ServiceListPage(), permission: 'view_services'),
     ModuleEntry(key: 'customer', name: 'Klientët', icon: Icons.people_alt_rounded, page: const CustomerListPage(), permission: 'view_customers'),
     ModuleEntry(key: 'booking', name: 'Rezervimet', icon: Icons.event_note_rounded, page: const BookingListPage(), permission: 'view_bookings'),
+    ModuleEntry(key: 'bulk_cancellation', name: 'Mungesa Stafi', icon: Icons.event_busy_rounded, page: const BulkCancellationListPage(), permission: 'view_bulk_cancellations'),
     ModuleEntry(key: 'payment', name: 'Pagesat', icon: Icons.payments_rounded, page: const PaymentListPage(), permission: 'view_payments'),
     ModuleEntry(key: 'report', name: 'Raportet & Statistikat', icon: Icons.analytics_rounded, page: const ReportListPage(), permission: 'view_reports'),
     ModuleEntry(key: 'review', name: 'Vlerësimet', icon: Icons.star_rounded, page: const ReviewListPage(), permission: 'view_reviews'),

@@ -377,6 +377,31 @@ class Create extends Component
             }
         }
 
+        // Add staff absence / bulk cancellation periods
+        if ($this->barber_id) {
+            $bulkCancellations = \App\Models\BulkCancellation::withoutGlobalScope('barber_shop_access')
+                ->where('barber_id', $this->barber_id)
+                ->where('start_at', '<', $endOfDayUtc)
+                ->where('end_at', '>', $startOfDayUtc)
+                ->get();
+
+            foreach ($bulkCancellations as $bc) {
+                $bcStart = $bc->start_at->copy()->setTimezone($tz);
+                $bcEnd = $bc->end_at->copy()->setTimezone($tz);
+                $bcStartM = ($bcStart->hour * 60) + $bcStart->minute;
+                $bcEndM = ($bcEnd->hour * 60) + $bcEnd->minute;
+
+                $bookingEntries[] = [
+                    'type' => 'break',
+                    'title' => 'Mungesë Stafi: ' . ($bc->reason ?: 'Pushim Emergjent'),
+                    'start_m' => $bcStartM,
+                    'end_m' => $bcEndM,
+                    'start_str' => $bcStart->format('H:i'),
+                    'end_str' => $bcEnd->format('H:i'),
+                ];
+            }
+        }
+
         $closeMinutes = ($closeDt->hour * 60) + $closeDt->minute;
         $nowMinutes = ($now->hour * 60) + $now->minute;
 

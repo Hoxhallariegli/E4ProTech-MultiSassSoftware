@@ -8,12 +8,16 @@ use Illuminate\Database\Eloquent\Model;
 class BulkCancellation extends Model
 {
     use HasFactory, \App\Models\Traits\BelongsToBarberShop;
-    protected $fillable = ['barber_shop_id', 'barber_id', 'start_at', 'end_at', 'reason', 'affected_count'];
+
+    protected $fillable = ['barber_shop_id', 'barber_id', 'start_at', 'end_at', 'reason', 'affected_count', 'booking_ids'];
+
     protected function casts(): array { return [
             'start_at' => 'datetime',
             'end_at' => 'datetime',
             'affected_count' => 'integer',
+            'booking_ids' => 'array',
         ]; }
+
     public static function rules($id = null): array { return [
             'barber_shop_id' => ['required', 'integer'],
             'barber_id' => ['required', 'integer'],
@@ -21,7 +25,9 @@ class BulkCancellation extends Model
             'end_at' => ['required', 'date'],
             'reason' => ['nullable', 'string', 'max:255'],
             'affected_count' => ['nullable', 'integer'],
+            'booking_ids' => ['nullable'],
         ]; }
+
     public static function sortable(): array { return ['id', 'barber_id', 'start_at', 'end_at', 'reason', 'affected_count']; }
 
     protected static function booted(): void

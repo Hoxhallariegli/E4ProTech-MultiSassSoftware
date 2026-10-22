@@ -2,9 +2,9 @@
     <div class="card !p-0 overflow-hidden shadow-none border-gray-200 dark:border-gray-700 dark:bg-gray-800">
         <div class="p-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div><x-h1>{{ __('bulk-cancellations.BulkCancellations') }}</x-h1><x-short-description class="dark:text-gray-400">{{ __('bulk-cancellations.List of') }} bulkcancellations</x-short-description></div>
+                <div><x-h1>{{ __('bulk-cancellations.BulkCancellations') }}</x-h1><x-short-description class="dark:text-gray-400">{{ __('bulk-cancellations.description') }}</x-short-description></div>
                 <div class="flex items-center gap-3">
-                    @if($search || $openFilter)
+                    @if($search || $barber_shop_id || $barber_id || $openFilter)
                         <button wire:click="resetFilters" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl transition-none shadow-none"><span>{{ __('bulk-cancellations.Reset') }}</span></button>
                     @endif
                     <button @click="openFilter = !openFilter" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-600 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm transition-none"><span>{{ __('bulk-cancellations.Filters') }}</span></button>
@@ -18,12 +18,12 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div>
                         <label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100">{{ __('bulk-cancellations.Search') }}</label>
-                        <input name="search" wire:model.live.debounce.300ms="search" type="text" placeholder="Search by ID, Reason" class="w-full p-3 text-sm font-bold bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500/20 dark:text-white">
+                        <input name="search" wire:model.live.debounce.300ms="search" type="text" placeholder="Kërko me arsye..." class="w-full p-3 text-sm font-bold bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500/20 dark:text-white">
                     </div>
                     @if(auth()->user()->is_global_admin)
-<div><label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100">Barber Shop Id</label><x-form.dropdown-search name="barber_shop_id" wire:model.live="barber_shop_id" label="none" :data="$barberShops" placeholder="Filter Barber Shop Id" /></div>
-@endif
-<div><label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100">Barber Id</label><x-form.dropdown-search name="barber_id" wire:model.live="barber_id" label="none" :data="$barbers" placeholder="Filter Barber Id" /></div>
+                        <div><label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100">{{ __('bulk-cancellations.Barber Shop Id') }}</label><x-form.dropdown-search name="barber_shop_id" wire:model.live="barber_shop_id" label="none" :data="$barberShops" placeholder="{{ __('bulk-cancellations.Barber Shop Id') }}" /></div>
+                    @endif
+                    <div><label class="block mb-1.5 text-[10px] font-bold uppercase tracking-widest ml-1 text-gray-900 dark:text-gray-100">{{ __('bulk-cancellations.Barber Id') }}</label><x-form.dropdown-search name="barber_id" wire:model.live="barber_id" label="none" :data="$barbers" placeholder="{{ __('bulk-cancellations.Barber Id') }}" /></div>
                 </div>
             </div>
         </div>

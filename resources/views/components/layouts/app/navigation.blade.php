@@ -17,7 +17,7 @@
 @endcan
 
 @can('view_bulk_cancellations')
-    <x-nav.link route="admin.bulk-cancellations.index" icon="calendar">Anulime Masive (Stafi)</x-nav.link>
+    <x-nav.link route="admin.bulk-cancellations.index" icon="calendar">{{ __('bulk-cancellations.BulkCancellations') }}</x-nav.link>
 @endcan
 
 @can('view_barbers')

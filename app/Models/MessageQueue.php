@@ -44,6 +44,12 @@ class MessageQueue extends Model
         }
 
         $content = mb_strtolower($this->attributes['message_content'] ?? '');
+        if (str_contains($content, 'cancelled') || str_contains($content, 'anulua') || str_contains($content, 'cancellation')) {
+            return 'cancellation';
+        }
+        if (str_contains($content, 'updated') || str_contains($content, 'ndryshua') || str_contains($content, 'reschedule')) {
+            return 'reschedule';
+        }
         if (str_contains($content, 'kujtoj') || str_contains($content, 'rikujtes') || str_contains($content, 'reminder')) {
             return 'reminder';
         }

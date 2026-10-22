@@ -405,6 +405,37 @@ class BookingController extends Controller
             ]);
         }
 
+        if ($barberId) {
+            $bulkCancellations = \App\Models\BulkCancellation::withoutGlobalScope('barber_shop_access')
+                ->where('barber_id', $barberId)
+                ->where('start_at', '<', $date->copy()->endOfDay())
+                ->where('end_at', '>', $date->copy()->startOfDay())
+                ->get();
+
+            foreach ($bulkCancellations as $bc) {
+                $bcStart = $bc->start_at instanceof \Carbon\Carbon ? $bc->start_at->copy() : \Carbon\Carbon::parse($bc->start_at);
+                $bcEnd = $bc->end_at instanceof \Carbon\Carbon ? $bc->end_at->copy() : \Carbon\Carbon::parse($bc->end_at);
+
+                if ($bcEnd > $bcStart) {
+                    $bcDuration = max(1, (int) floor(($bcEnd->getTimestamp() - $bcStart->getTimestamp()) / 60));
+                    $absenceBooking = new Booking();
+                    $absenceBooking->id = 'absence_' . $bc->id;
+                    $absenceBooking->barber_shop_id = $barberShopId;
+                    $absenceBooking->barber_id = $barberId;
+                    $absenceBooking->status = 'break';
+                    $absenceBooking->notes = 'Mungesë Stafi: ' . ($bc->reason ?: 'Pushim Emergjent');
+
+                    $bookingEntries->push([
+                        'booking' => $absenceBooking,
+                        'start' => $bcStart,
+                        'end' => $bcEnd,
+                        'duration' => $bcDuration,
+                        'is_break' => true,
+                    ]);
+                }
+            }
+        }
+
         $bookingEntries = $bookingEntries->sortBy('start')->values();
 
         $slots = [];

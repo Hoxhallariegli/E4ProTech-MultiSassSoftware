@@ -192,6 +192,25 @@ class PublicShopBooking extends Component
             }
         }
 
+        // Add staff absence periods (Bulk Cancellations)
+        if ($this->selectedBarberId) {
+            $absences = \App\Models\BulkCancellation::where('barber_id', $this->selectedBarberId)
+                ->where('start_at', '<', $date->copy()->endOfDay())
+                ->where('end_at', '>', $date->copy()->startOfDay())
+                ->get();
+
+            foreach ($absences as $abs) {
+                $absStart = $abs->start_at instanceof Carbon ? $abs->start_at : Carbon::parse($abs->start_at);
+                $absEnd = $abs->end_at instanceof Carbon ? $abs->end_at : Carbon::parse($abs->end_at);
+                if ($absEnd > $absStart) {
+                    $bookingEntries->push([
+                        'start' => $absStart,
+                        'end' => $absEnd,
+                    ]);
+                }
+            }
+        }
+
         $slots = [];
         $cursor = $openDt->copy();
 

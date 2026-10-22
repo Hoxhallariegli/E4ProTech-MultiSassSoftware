@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_gateway/services/api_service.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
 import 'package:mobile_gateway/l10n/bulk_cancellation_localization.dart';
 
@@ -9,51 +8,152 @@ class BulkCancellationCard extends StatelessWidget {
   final VoidCallback? onDelete;
   const BulkCancellationCard({super.key, required this.item, this.onTap, this.onDelete});
 
-  String get title {
-    final value = (item['name'] ?? item['title'] ?? 'ID: ${item['id']}').toString();
-    return value.toString().trim().isEmpty ? 'ID: ' + item['id'].toString() : value.toString();
+  String get barberName => (item['barber']?['name'] ?? 'Anëtar Stafi').toString();
+  String get shopName => (item['barber_shop']?['name'] ?? item['barberShop']?['name'] ?? 'Sallon').toString();
+  String get reason => (item['reason'] ?? 'Mungesë Emergjenë Stafi').toString();
+  int get affectedCount => int.tryParse(item['affected_count']?.toString() ?? '0') ?? 0;
+
+  List<String> get bookingIds {
+    final raw = item['booking_ids'];
+    if (raw is List) {
+      return raw.map((e) => '#$e').toList();
+    }
+    return [];
+  }
+
+  String _formatDateTime(dynamic value) {
+    if (value == null || value.toString().trim().isEmpty) return '-';
+    try {
+      final parsed = DateTime.tryParse(value.toString())?.toLocal();
+      if (parsed == null) return value.toString();
+      return '${parsed.day.toString().padLeft(2, '0')}/${parsed.month.toString().padLeft(2, '0')}/${parsed.year} ${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return value.toString();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final startStr = _formatDateTime(item['start_at']);
+    final endStr = _formatDateTime(item['end_at']);
+
     return PremiumCard(
       onTap: onTap,
-      padding: const EdgeInsets.all(14),
-      child: Row(children: [
-          _Avatar(title: title),
-        const SizedBox(width: 14),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 7),
-          Wrap(spacing: 6, runSpacing: 6, children: [_InfoChip(label: bulk_cancellationTr(context, 'field.barber_id'), value: item['barber']?['name']?.toString() ?? '-'),
-_InfoChip(label: bulk_cancellationTr(context, 'field.start_at'), value: item['start_at']?.toString() ?? '-'),
-_InfoChip(label: bulk_cancellationTr(context, 'field.end_at'), value: item['end_at']?.toString() ?? '-'),]),
-        ])),
-        if (onTap != null || onDelete != null)
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'edit' && onTap != null) onTap!();
-              if (value == 'delete' && onDelete != null) onDelete!();
-            },
-            itemBuilder: (_) => [
-              if (onTap != null) PopupMenuItem(value: 'edit', child: Text(bulk_cancellationTr(context, 'list.edit'))),
-              if (onDelete != null) PopupMenuItem(value: 'delete', child: Text(bulk_cancellationTr(context, 'list.delete'))),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.event_busy_rounded, color: Colors.redAccent, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      barberName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      shopName,
+                      style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.cancel_outlined, size: 13, color: Colors.redAccent),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$affectedCount Takime',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.redAccent),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
-      ]),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E212B) : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.access_time_rounded, size: 15, color: Colors.grey),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        '$startStr  ➔  $endStr',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(Icons.info_outline_rounded, size: 15, color: Colors.grey),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Arsyeja: $reason',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 11.5, color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ),
+                  ],
+                ),
+                if (bookingIds.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.format_list_bulleted_rounded, size: 15, color: Colors.blueAccent),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Takimet e anuluara: ${bookingIds.join(", ")}',
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blueAccent),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
-}
-
-class _Avatar extends StatelessWidget {
-  final String title;
-  const _Avatar({required this.title});
-  @override Widget build(BuildContext context) => Container(width: 58, height: 58, decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primaryContainer, Theme.of(context).colorScheme.secondaryContainer]), borderRadius: BorderRadius.circular(17)), child: Center(child: Text(title.isEmpty ? '?' : title.substring(0,1).toUpperCase(), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900))));
-}
-
-class _InfoChip extends StatelessWidget {
-  final String label, value;
-  const _InfoChip({required this.label, required this.value});
-  @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(8)), child: Text('$label: $value', style: TextStyle(fontSize: 10.5, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600)));
 }

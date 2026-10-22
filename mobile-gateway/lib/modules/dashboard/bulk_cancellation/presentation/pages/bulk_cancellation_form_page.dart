@@ -1,11 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
-import 'package:mobile_gateway/core/widgets/premium_image_picker.dart';
 import 'package:mobile_gateway/l10n/bulk_cancellation_localization.dart';
 import '../cubit/bulk_cancellation_cubit.dart';
 import '../cubit/bulk_cancellation_state.dart';
@@ -27,35 +24,98 @@ class _BulkCancellationFormPageState extends State<BulkCancellationFormPage> {
   final _startAtController = TextEditingController();
   final _endAtController = TextEditingController();
   final _reasonController = TextEditingController();
-  final _affectedCountController = TextEditingController();
 
   List<Map<String, dynamic>> _barberShopOptions = [];
   int? _barberShopId;
   List<Map<String, dynamic>> _barberOptions = [];
   int? _barberId;
 
+  int _previewAffectedCount = 0;
+  bool _checkingPreview = false;
+  Timer? _previewDebounce;
 
   @override void initState() { super.initState(); _init(); }
 
   Future<void> _init() async {
-    _startAtController.text = _displayDateTime(widget.item?['start_at'], includeTime: true);
-    _endAtController.text = _displayDateTime(widget.item?['end_at'], includeTime: true);
+    final now = DateTime.now();
+    _startAtController.text = _displayDateTime(widget.item?['start_at'] ?? now, includeTime: true);
+    _endAtController.text = _displayDateTime(widget.item?['end_at'] ?? now.add(const Duration(hours: 6)), includeTime: true);
     _reasonController.text = widget.item?['reason']?.toString() ?? '';
-    _affectedCountController.text = widget.item?['affected_count']?.toString() ?? '';
 
     try {
-    _barberShopOptions = await repository.lookup('barber-shops');
-    if (widget.item?['barber_shop_id'] != null) _barberShopId = int.tryParse(widget.item!['barber_shop_id'].toString());
-    if (_barberShopId == null && AuthService.instance.user?['is_admin'] != true) _barberShopId = AuthService.instance.user?['barber_shop_id'] as int?;
-    _barberOptions = await repository.lookup('barbers');
-    if (widget.item?['barber_id'] != null) _barberId = int.tryParse(widget.item!['barber_id'].toString());
+      _barberShopOptions = await repository.lookup('barber-shops');
+      if (widget.item?['barber_shop_id'] != null) {
+        _barberShopId = int.tryParse(widget.item!['barber_shop_id'].toString());
+      }
+      if (_barberShopId == null && AuthService.instance.user?['is_admin'] != true) {
+        _barberShopId = AuthService.instance.user?['barber_shop_id'] as int?;
+      }
+
+      _barberOptions = await repository.lookup('barbers');
+      if (widget.item?['barber_id'] != null) {
+        _barberId = int.tryParse(widget.item!['barber_id'].toString());
+      } else if (_barberOptions.isNotEmpty) {
+        _barberId = int.tryParse(_barberOptions.first['id']?.toString() ?? '');
+      }
+
+      _triggerPreviewCheck();
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(bulk_cancellationTr(context, 'form.could_not_load')), behavior: SnackBarBehavior.floating));
-    } finally { if (mounted) setState(() => _loading = false); }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(bulk_cancellationTr(context, 'form.could_not_load')), behavior: SnackBarBehavior.floating),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _triggerPreviewCheck() {
+    _previewDebounce?.cancel();
+    _previewDebounce = Timer(const Duration(milliseconds: 300), _calculateAffectedPreview);
+  }
+
+  Future<void> _calculateAffectedPreview() async {
+    if (_barberId == null || _startAtController.text.isEmpty || _endAtController.text.isEmpty) {
+      if (mounted) setState(() => _previewAffectedCount = 0);
+      return;
+    }
+
+    final startIso = _apiDateTimeValue(_startAtController.text);
+    final endIso = _apiDateTimeValue(_endAtController.text);
+
+    if (startIso == null || endIso == null) return;
+
+    if (mounted) setState(() => _checkingPreview = true);
+
+    try {
+      final res = await ApiService.get('/bookings?barber_id=$_barberId&per_page=100');
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        final decoded = jsonDecode(res.body);
+        final list = (decoded['data'] as List? ?? []);
+        final startDt = DateTime.parse(startIso);
+        final endDt = DateTime.parse(endIso);
+
+        int count = 0;
+        for (var b in list) {
+          final status = (b['status'] ?? '').toString();
+          if (status == 'pending' || status == 'confirmed') {
+            final appAt = DateTime.tryParse((b['appointment_at'] ?? '').toString());
+            if (appAt != null && appAt.isAfter(startDt.subtract(const Duration(seconds: 1))) && appAt.isBefore(endDt.add(const Duration(seconds: 1)))) {
+              count++;
+            }
+          }
+        }
+        if (mounted) setState(() => _previewAffectedCount = count);
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _checkingPreview = false);
+    }
   }
 
   Future<void> _pickbarberShopId() async {
-    if ("barber_shop_id" == "barber_shop_id" && AuthService.instance.user?['is_admin'] != true) return;
+    if (AuthService.instance.user?['is_admin'] != true) return;
     var filtered = List<Map<String, dynamic>>.from(_barberShopOptions);
     final selected = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -69,9 +129,13 @@ class _BulkCancellationFormPageState extends State<BulkCancellationFormPage> {
         const SizedBox(height: 12), Expanded(child: ListView.separated(itemCount: filtered.length, separatorBuilder: (_, __) => const Divider(height: 1), itemBuilder: (_, i) { final option = filtered[i]; return ListTile(title: Text(_displayName(option), style: const TextStyle(fontWeight: FontWeight.w700)), trailing: option['id'].toString() == _barberShopId?.toString() ? const Icon(Icons.check_circle_rounded) : null, onTap: () => Navigator.pop(sheetContext, option)); })),
       ])))),
     );
-    if (selected != null) setState(() => _barberShopId = int.tryParse(selected['id'].toString()));
-  }  Future<void> _pickbarberId() async {
-    if ("barber_id" == "barber_shop_id" && AuthService.instance.user?['is_admin'] != true) return;
+    if (selected != null) {
+      setState(() => _barberShopId = int.tryParse(selected['id'].toString()));
+      _triggerPreviewCheck();
+    }
+  }
+
+  Future<void> _pickbarberId() async {
     var filtered = List<Map<String, dynamic>>.from(_barberOptions);
     final selected = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -85,12 +149,10 @@ class _BulkCancellationFormPageState extends State<BulkCancellationFormPage> {
         const SizedBox(height: 12), Expanded(child: ListView.separated(itemCount: filtered.length, separatorBuilder: (_, __) => const Divider(height: 1), itemBuilder: (_, i) { final option = filtered[i]; return ListTile(title: Text(_displayName(option), style: const TextStyle(fontWeight: FontWeight.w700)), trailing: option['id'].toString() == _barberId?.toString() ? const Icon(Icons.check_circle_rounded) : null, onTap: () => Navigator.pop(sheetContext, option)); })),
       ])))),
     );
-    if (selected != null) setState(() => _barberId = int.tryParse(selected['id'].toString()));
-  }
-  Future<void> _pickDate(TextEditingController controller) async {
-    final initial = _parseDisplayDate(controller.text) ?? DateTime.now();
-    final picked = await showDatePicker(context: context, initialDate: initial, firstDate: DateTime(1900), lastDate: DateTime(2200));
-    if (picked != null && mounted) setState(() => controller.text = _formatDisplayDate(picked, includeTime: false));
+    if (selected != null) {
+      setState(() => _barberId = int.tryParse(selected['id'].toString()));
+      _triggerPreviewCheck();
+    }
   }
 
   Future<void> _pickDateTime(TextEditingController controller) async {
@@ -101,6 +163,7 @@ class _BulkCancellationFormPageState extends State<BulkCancellationFormPage> {
     if (time == null || !mounted) return;
     final value = DateTime(date.year, date.month, date.day, time.hour, time.minute);
     setState(() => controller.text = _formatDisplayDate(value, includeTime: true));
+    _triggerPreviewCheck();
   }
 
   DateTime? _parseDisplayDate(String value) {
@@ -131,12 +194,6 @@ class _BulkCancellationFormPageState extends State<BulkCancellationFormPage> {
     return parsed == null ? value.toString() : _formatDisplayDate(parsed, includeTime: includeTime);
   }
 
-  String? _apiDateValue(String value) {
-    final parsed = _parseDisplayDate(value);
-    if (parsed == null) return null;
-    return '${parsed.year.toString().padLeft(4, '0')}-${parsed.month.toString().padLeft(2, '0')}-${parsed.day.toString().padLeft(2, '0')}';
-  }
-
   String? _apiDateTimeValue(String value) {
     final parsed = _parseDisplayDate(value);
     return parsed?.toIso8601String();
@@ -153,16 +210,15 @@ class _BulkCancellationFormPageState extends State<BulkCancellationFormPage> {
     payload['barber_id'] = _barberId;
     payload['start_at'] = _startAtController.text.isEmpty ? null : _apiDateTimeValue(_startAtController.text);
     payload['end_at'] = _endAtController.text.isEmpty ? null : _apiDateTimeValue(_endAtController.text);
-    payload['reason'] = _reasonController.text;
-    payload['affected_count'] = int.tryParse(_affectedCountController.text);
-
-    final files = <String, String>{};
+    payload['reason'] = _reasonController.text.isEmpty ? 'Mungesë emergjente stafi' : _reasonController.text;
 
     context.read<BulkCancellationCubit>().save(payload, id: widget.item?['id']);
   }
 
   @override Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return BlocProvider(
       create: (_) => BulkCancellationCubit(repository),
       child: BlocListener<BulkCancellationCubit, BulkCancellationState>(
@@ -182,34 +238,166 @@ class _BulkCancellationFormPageState extends State<BulkCancellationFormPage> {
             ),
             title: Text(widget.item == null ? bulk_cancellationTr(context, 'form.create_title') : bulk_cancellationTr(context, 'form.edit_title'), style: const TextStyle(fontWeight: FontWeight.w800)),
           ),
-          body: _loading ? const Center(child: CircularProgressIndicator.adaptive()) : Form(key: _formKey, child: Builder(builder: (formContext) => ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 120), children: [
-            _FormHeader(isEdit: widget.item != null),
-            const SizedBox(height: 22),
-            (AuthService.instance.user?['is_admin'] == true) 
-              ? _FieldShell(label: bulk_cancellationTr(context, 'field.barber_shop_id'), child: InkWell(onTap: _pickbarberShopId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_barberShopOptions.firstWhere((e) => e['id'].toString() == _barberShopId?.toString(), orElse: () => {'id': '', 'name': bulk_cancellationTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)]))))
-              : _FieldShell(label: bulk_cancellationTr(context, 'field.barber_shop_id'), child: Container(padding: const EdgeInsets.all(16), width: double.infinity, decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5), border: Border.all(color: theme.colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Text(AuthService.instance.user?['business']?['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)))),
-            _FieldShell(label: bulk_cancellationTr(context, 'field.barber_id'), child: InkWell(onTap: _pickbarberId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_barberOptions.firstWhere((e) => e['id'].toString() == _barberId?.toString(), orElse: () => {'id': '', 'name': bulk_cancellationTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)])))),
-            _FieldShell(label: bulk_cancellationTr(context, 'field.start_at'), child: InkWell(onTap: () => _pickDateTime(_startAtController), borderRadius: BorderRadius.circular(12), child: InputDecorator(decoration: InputDecoration(border: InputBorder.none, isDense: true, suffixIcon: const Icon(Icons.event_rounded)), child: Text(_startAtController.text.isEmpty ? bulk_cancellationTr(context, 'form.select_datetime') : _startAtController.text, style: TextStyle(color: _startAtController.text.isEmpty ? Theme.of(context).colorScheme.onSurfaceVariant : null, fontWeight: FontWeight.w600))))),
-            _FieldShell(label: bulk_cancellationTr(context, 'field.end_at'), child: InkWell(onTap: () => _pickDateTime(_endAtController), borderRadius: BorderRadius.circular(12), child: InputDecorator(decoration: InputDecoration(border: InputBorder.none, isDense: true, suffixIcon: const Icon(Icons.event_rounded)), child: Text(_endAtController.text.isEmpty ? bulk_cancellationTr(context, 'form.select_datetime') : _endAtController.text, style: TextStyle(color: _endAtController.text.isEmpty ? Theme.of(context).colorScheme.onSurfaceVariant : null, fontWeight: FontWeight.w600))))),
-            _FieldShell(label: bulk_cancellationTr(context, 'field.reason'), child: TextFormField(controller: _reasonController,  decoration: InputDecoration(hintText: bulk_cancellationTr(context, 'field.reason'), border: InputBorder.none, isDense: true), validator: (v) {  return null; })),
-            _FieldShell(label: bulk_cancellationTr(context, 'field.affected_count'), child: TextFormField(controller: _affectedCountController, keyboardType: const TextInputType.numberWithOptions(decimal: false), inputFormatters: [FilteringTextInputFormatter.digitsOnly],  decoration: InputDecoration(hintText: bulk_cancellationTr(context, 'field.affected_count'), border: InputBorder.none, isDense: true), validator: (v) { if (v != null && v.isNotEmpty && int.tryParse(v) == null) return bulk_cancellationTr(context, 'form.invalid_integer');  return null; })),
+          body: _loading
+              ? const Center(child: CircularProgressIndicator.adaptive())
+              : Form(
+                  key: _formKey,
+                  child: Builder(
+                    builder: (formContext) => ListView(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
+                      children: [
+                        _FormHeader(isEdit: widget.item != null),
+                        const SizedBox(height: 22),
 
-            const SizedBox(height: 14),
-            BlocBuilder<BulkCancellationCubit, BulkCancellationState>(builder: (context, state) => PremiumButton(onPressed: () => _save(context), label: state is BulkCancellationSaving ? bulk_cancellationTr(context, 'form.saving') : bulk_cancellationTr(context, 'form.save'), icon: Icons.check_rounded, loading: state is BulkCancellationSaving, expand: true)),
-          ]))),
+                        if (AuthService.instance.user?['is_admin'] == true)
+                          _FieldShell(
+                            label: bulk_cancellationTr(context, 'field.barber_shop_id'),
+                            child: InkWell(
+                              onTap: _pickbarberShopId,
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)),
+                                child: Row(children: [
+                                  Expanded(child: Text(_displayName(_barberShopOptions.firstWhere((e) => e['id'].toString() == _barberShopId?.toString(), orElse: () => {'id': '', 'name': bulk_cancellationTr(context, 'form.select')})))) ,
+                                  const Icon(Icons.keyboard_arrow_down_rounded),
+                                ]),
+                              ),
+                            ),
+                          )
+                        else
+                          _FieldShell(
+                            label: bulk_cancellationTr(context, 'field.barber_shop_id'),
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              width: double.infinity,
+                              decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5), border: Border.all(color: theme.colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)),
+                              child: Text(AuthService.instance.user?['business']?['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+
+                        _FieldShell(
+                          label: bulk_cancellationTr(context, 'field.barber_id'),
+                          child: InkWell(
+                            onTap: _pickbarberId,
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)),
+                              child: Row(children: [
+                                Expanded(child: Text(_displayName(_barberOptions.firstWhere((e) => e['id'].toString() == _barberId?.toString(), orElse: () => {'id': '', 'name': bulk_cancellationTr(context, 'form.select')})))) ,
+                                const Icon(Icons.keyboard_arrow_down_rounded),
+                              ]),
+                            ),
+                          ),
+                        ),
+
+                        _FieldShell(
+                          label: bulk_cancellationTr(context, 'field.start_at'),
+                          child: InkWell(
+                            onTap: () => _pickDateTime(_startAtController),
+                            borderRadius: BorderRadius.circular(12),
+                            child: InputDecorator(
+                              decoration: const InputDecoration(border: InputBorder.none, isDense: true, suffixIcon: Icon(Icons.event_rounded)),
+                              child: Text(_startAtController.text.isEmpty ? bulk_cancellationTr(context, 'form.select_datetime') : _startAtController.text, style: TextStyle(color: _startAtController.text.isEmpty ? Theme.of(context).colorScheme.onSurfaceVariant : null, fontWeight: FontWeight.w600)),
+                            ),
+                          ),
+                        ),
+
+                        _FieldShell(
+                          label: bulk_cancellationTr(context, 'field.end_at'),
+                          child: InkWell(
+                            onTap: () => _pickDateTime(_endAtController),
+                            borderRadius: BorderRadius.circular(12),
+                            child: InputDecorator(
+                              decoration: const InputDecoration(border: InputBorder.none, isDense: true, suffixIcon: Icon(Icons.event_rounded)),
+                              child: Text(_endAtController.text.isEmpty ? bulk_cancellationTr(context, 'form.select_datetime') : _endAtController.text, style: TextStyle(color: _endAtController.text.isEmpty ? Theme.of(context).colorScheme.onSurfaceVariant : null, fontWeight: FontWeight.w600)),
+                            ),
+                          ),
+                        ),
+
+                        _FieldShell(
+                          label: bulk_cancellationTr(context, 'field.reason'),
+                          child: TextFormField(
+                            controller: _reasonController,
+                            decoration: const InputDecoration(
+                              hintText: 'P.sh. Emergjencë Familjare / Ndryshim Orari',
+                              border: InputBorder.none,
+                              isDense: true,
+                            ),
+                          ),
+                        ),
+
+                        // LIVE PREVIEW CARD OF AFFECTED BOOKINGS COUNT
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.amber.withOpacity(0.4)),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withOpacity(0.2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 24),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _checkingPreview
+                                        ? const Text('Skanim i takimeve te prekura...', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))
+                                        : Text(
+                                            '$_previewAffectedCount Takime do të Anulohen',
+                                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: Colors.amber),
+                                          ),
+                                    const SizedBox(height: 2),
+                                    const Text(
+                                      'SMS-të do të dërgohen me radhë (1 SMS/minutë) për çdo klient.',
+                                      style: TextStyle(fontSize: 11, color: Colors.grey),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 22),
+                        BlocBuilder<BulkCancellationCubit, BulkCancellationState>(
+                          builder: (context, state) => PremiumButton(
+                            onPressed: () => _save(context),
+                            label: state is BulkCancellationSaving ? bulk_cancellationTr(context, 'form.saving') : bulk_cancellationTr(context, 'form.save'),
+                            icon: Icons.check_circle_outline_rounded,
+                            loading: state is BulkCancellationSaving,
+                            expand: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
         ),
       ),
     );
   }
 
   @override void dispose() {
+    _previewDebounce?.cancel();
     _startAtController.dispose();
     _endAtController.dispose();
     _reasonController.dispose();
-    _affectedCountController.dispose();
     super.dispose();
   }
 }
+
 class _FormHeader extends StatelessWidget {
   final bool isEdit;
   const _FormHeader({required this.isEdit});
@@ -220,10 +408,4 @@ class _FieldShell extends StatelessWidget {
   final String label; final Widget child;
   const _FieldShell({required this.label, required this.child});
   @override Widget build(BuildContext context) => Container(margin: const EdgeInsets.only(bottom: 14), padding: const EdgeInsets.fromLTRB(16, 12, 16, 6), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(.35), border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(.7)), borderRadius: BorderRadius.circular(18)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurfaceVariant)), child]));
-}
-
-class _FilePickerCard extends StatelessWidget {
-  final String? current, path; final VoidCallback onPick;
-  const _FilePickerCard({this.current, this.path, required this.onPick});
-  @override Widget build(BuildContext context) => InkWell(onTap: onPick, borderRadius: BorderRadius.circular(20), child: Container(height: 150, margin: const EdgeInsets.only(bottom: 14), decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(.25)), child: path != null ? ClipRRect(borderRadius: BorderRadius.circular(20), child: Image.file(File(path!), fit: BoxFit.cover, width: double.infinity)) : current != null ? ClipRRect(borderRadius: BorderRadius.circular(20), child: Image.network('${ApiService.serverUrl}/$current', fit: BoxFit.cover, width: double.infinity)) : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.cloud_upload_outlined, size: 34), SizedBox(height: 8), Text('Tap to choose image', style: TextStyle(fontWeight: FontWeight.w700)), SizedBox(height: 3), Text('PNG, JPG', style: TextStyle(fontSize: 11, color: Colors.grey))])));
 }

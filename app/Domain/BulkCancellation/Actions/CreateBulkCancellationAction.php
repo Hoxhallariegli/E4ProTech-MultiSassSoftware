@@ -8,6 +8,7 @@ use App\Models\Booking;
 use App\Models\MessageQueue;
 use App\Models\MessageTemplate;
 use App\Models\AuditTrail;
+use App\Jobs\SendSmsToGatewayJob;
 use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 
@@ -38,8 +39,12 @@ class CreateBulkCancellationAction
 
             $minuteOffset = 0;
             $now = now();
+            $cancelledBookingIds = [];
+            $firstQueueId = null;
 
             foreach ($affectedBookings as $booking) {
+                $cancelledBookingIds[] = $booking->id;
+
                 // 1. Mark booking as cancelled
                 $booking->update([
                     'status' => 'cancelled',
@@ -51,7 +56,6 @@ class CreateBulkCancellationAction
 
                 // 3. Space out SMS in MessageQueue by 1 minute apart (1st SMS now, 2nd SMS now+1m, 3rd SMS now+2m...)
                 $scheduledAt = $now->copy()->addMinutes($minuteOffset);
-                $minuteOffset++;
 
                 if ($booking->customer && $booking->customer->phone) {
                     $formattedPhone = $booking->customer->phone;
@@ -69,11 +73,29 @@ class CreateBulkCancellationAction
                     if (Schema::hasColumn('message_queues', 'template_type')) {
                         $queueData['template_type'] = 'cancellation';
                     }
-                    MessageQueue::create($queueData);
+                    $queue = MessageQueue::create($queueData);
+
+                    if ($minuteOffset === 0) {
+                        $firstQueueId = $queue->id;
+                    }
                 }
+
+                $minuteOffset++;
             }
 
-            $item->update(['affected_count' => $affectedCount]);
+            $item->update([
+                'affected_count' => $affectedCount,
+                'booking_ids' => $cancelledBookingIds,
+            ]);
+
+            // Dispatch immediate FCM trigger to Gateway Phone for the 1st SMS
+            if ($firstQueueId) {
+                try {
+                    SendSmsToGatewayJob::dispatch($firstQueueId);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("Could not dispatch SendSmsToGatewayJob for Queue #{$firstQueueId}: " . $e->getMessage());
+                }
+            }
         }
 
         return $item->fresh();

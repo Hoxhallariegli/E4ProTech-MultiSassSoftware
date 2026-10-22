@@ -113,5 +113,24 @@ class Booking extends Model
                 ]);
             }
         }
+
+        // Check overlap with Staff Absence / Bulk Cancellations
+        $absenceExists = \App\Models\BulkCancellation::query()
+            ->where('barber_id', $barberId)
+            ->where(function($q) use ($start, $end) {
+                $q->where('start_at', '<', $end)
+                  ->where('end_at', '>', $start);
+            })
+            ->exists();
+
+        if ($absenceExists) {
+            $shop = auth()->check() ? auth()->user()?->barberShop : null;
+            $staffLabel = $shop ? $shop->resolved_staff_label : 'Stafi';
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'appointment_at' => [
+                    "{$staffLabel} nuk është në punë / ka mungesë të regjistruar në këtë orar."
+                ]
+            ]);
+        }
     }
 }

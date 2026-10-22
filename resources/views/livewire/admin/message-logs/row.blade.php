@@ -43,7 +43,15 @@
         @endif
     </td>
     <td class="hidden lg:table-cell px-6 py-5 min-w-[130px] whitespace-nowrap">
-        @if($item->resolved_template_type === 'reminder')
+        @if($item->resolved_template_type === 'cancellation' || $item->resolved_template_type === 'cancelled')
+            <span class="inline-flex items-center px-2.5 py-0.5 text-[10px] font-black uppercase text-red-800 bg-red-100 dark:bg-red-900/40 dark:text-red-300 rounded-full">
+                ANULIM
+            </span>
+        @elseif($item->resolved_template_type === 'reschedule' || $item->resolved_template_type === 'update')
+            <span class="inline-flex items-center px-2.5 py-0.5 text-[10px] font-black uppercase text-purple-800 bg-purple-100 dark:bg-purple-900/40 dark:text-purple-300 rounded-full">
+                NDRYSHIM
+            </span>
+        @elseif($item->resolved_template_type === 'reminder')
             <span class="inline-flex items-center px-2.5 py-0.5 text-[10px] font-black uppercase text-amber-800 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-300 rounded-full">
                 RIKUJTESË
             </span>
