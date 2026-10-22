@@ -1,4 +1,5 @@
 import './bootstrap';
+import './echo';
 import './dark';
 import 'flatpickr';
 import "flatpickr/dist/flatpickr.css";
