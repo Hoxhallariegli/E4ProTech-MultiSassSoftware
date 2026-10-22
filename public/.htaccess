@@ -18,9 +18,9 @@ AddType application/vnd.android.package-archive .apk
 
     # Reverb WebSocket Reverse Proxy (wss://app.e4protech.com/app/...)
     RewriteCond %{HTTP:Upgrade} =websocket [NC]
-    RewriteRule ^app/(.*) ws://127.0.0.1:8080/app/$1 [P,L]
+    RewriteRule ^app/(.*) ws://127.0.0.1:8085/app/$1 [P,L]
     RewriteCond %{HTTP:Upgrade} !=websocket [NC]
-    RewriteRule ^app/(.*) http://127.0.0.1:8080/app/$1 [P,L]
+    RewriteRule ^app/(.*) http://127.0.0.1:8085/app/$1 [P,L]
 
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
