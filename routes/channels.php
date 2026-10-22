@@ -54,3 +54,5 @@ Broadcast::channel('mobile.{shopId}.shop-front-page-settings', function (\App\Mo
 Broadcast::channel('mobile.{shopId}.subscription-renewals', function (\App\Models\User $user, $shopId) { if ($user->hasRole('admin')) return true; return (int) $user->barber_shop_id === (int) $shopId; });
 
 Broadcast::channel('mobile.{shopId}.reports', function (\App\Models\User $user, $shopId) { if ($user->hasRole('admin')) return true; return (int) $user->barber_shop_id === (int) $shopId; });
+
+Broadcast::channel('mobile.{shopId}.bulk-cancellations', function (\App\Models\User $user, $shopId) { if ($user->hasRole('admin')) return true; return (int) $user->barber_shop_id === (int) $shopId; });

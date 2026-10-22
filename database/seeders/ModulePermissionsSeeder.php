@@ -34,6 +34,7 @@ class ModulePermissionsSeeder extends Seeder
             'Report' => 'reports',
             'WebsiteOfferRequest' => 'website_offer_requests',
             'ShopFrontPageSetting' => 'shop_front_page_settings',
+            'BulkCancellation' => 'bulk_cancellations',
         ];
 
         foreach ($modules as $name => $pluralSnake) {

@@ -107,9 +107,12 @@ class ApiService {
   static Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
+    final langCode = prefs.getString('app_locale') ?? 'en';
     return {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'Accept-Language': langCode,
+      'X-App-Locale': langCode,
       if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
     };
   }
@@ -212,10 +215,13 @@ class ApiService {
       final uri = Uri.parse('$baseUrl$apiVersion$url');
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
+      final langCode = prefs.getString('app_locale') ?? 'en';
 
       final request = http.MultipartRequest('POST', uri);
       request.headers.addAll({
         'Accept': 'application/json',
+        'Accept-Language': langCode,
+        'X-App-Locale': langCode,
         if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
       });
 

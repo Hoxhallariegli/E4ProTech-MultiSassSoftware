@@ -151,6 +151,7 @@ Route::prefix('mobile')->group(function () {
 });
 
 Route::middleware('auth:sanctum')->prefix('mobile')->group(function () {
+    Route::apiResource('bulk-cancellations', \App\Http\Controllers\Api\Mobile\BulkCancellationController::class);
     Route::get('reports/generate', [\App\Http\Controllers\Api\Mobile\ReportController::class, 'generate']);
     Route::apiResource('reports', \App\Http\Controllers\Api\Mobile\ReportController::class);
     Route::post('subscription-renewals/website-offer', [\App\Http\Controllers\Api\Mobile\SubscriptionRenewalController::class, 'websiteOffer']);

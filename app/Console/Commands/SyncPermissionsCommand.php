@@ -40,6 +40,7 @@ class SyncPermissionsCommand extends Command
             'Report' => 'reports',
             'WebsiteOfferRequest' => 'website_offer_requests',
             'ShopFrontPageSetting' => 'shop_front_page_settings',
+            'BulkCancellation' => 'bulk_cancellations',
         ];
 
         $newCount = 0;

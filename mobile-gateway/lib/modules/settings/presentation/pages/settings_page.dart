@@ -1653,7 +1653,6 @@ class _SmsGatewayGroupCard extends StatefulWidget {
 
 class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
   bool _isGatewayDevice = false;
-  bool _deviceLoading = false;
   bool _shopSmsLoading = false;
 
   @override
@@ -1698,14 +1697,42 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
   Future<void> _toggleShopSms(bool enabled) async {
     setState(() => _shopSmsLoading = true);
     try {
+      if (enabled) {
+        final statuses = await [Permission.sms, Permission.notification, Permission.phone].request();
+        if (statuses[Permission.sms]?.isGranted != true) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Kërkohet leje për SMS që kjo pajisje të mund të dërgojë mesazhe.'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+          setState(() => _shopSmsLoading = false);
+          return;
+        }
+      }
+
       final res = await ApiService.post('/business/toggle-sms', {'enabled': enabled});
+
+      // Automatically register / unregister device as SMS gateway
+      try {
+        await ApiService.post('/device-tokens/set-primary-gateway', {
+          'is_sms_gateway': enabled,
+          'device_name': Platform.isAndroid ? 'Android Gateway' : 'Mobile Device',
+        });
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('is_sms_gateway_device', enabled);
+        if (mounted) setState(() => _isGatewayDevice = enabled);
+      } catch (_) {}
+
       if (res.statusCode == 200) {
         await AuthService.instance.sync();
         widget.onAuthChange();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(enabled ? coreTr(context, 'settings.sms_active') : coreTr(context, 'settings.sms_inactive')),
+              content: Text(enabled ? 'Shërbimi SMS për dyqanin u aktivizua në këtë pajisje!' : 'Shërbimi SMS u çaktivizua.'),
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -1731,137 +1758,6 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
       }
     } catch (e) {
       debugPrint('Error updating reminder hours: $e');
-    }
-  }
-
-  Future<void> _toggleGatewayDevice(bool value) async {
-    setState(() => _deviceLoading = true);
-    try {
-      String? fcmToken;
-      if (value) {
-        try {
-          await [Permission.sms, Permission.notification, Permission.phone].request();
-          await Future.delayed(const Duration(milliseconds: 500));
-        } catch (e) {
-          debugPrint('Permission request error: $e');
-        }
-
-        try {
-          await Firebase.initializeApp();
-        } catch (_) {}
-
-        try {
-          fcmToken = await FirebaseMessaging.instance.getToken();
-        } catch (e) {
-          debugPrint('FCM getToken direct error: $e');
-        }
-
-        if (fcmToken == null || fcmToken.isEmpty) {
-          for (int i = 0; i < 4; i++) {
-            try {
-              fcmToken = await FirebaseMessaging.instance.getToken().timeout(const Duration(seconds: 4));
-              if (fcmToken != null && fcmToken.isNotEmpty) break;
-            } catch (e) {
-              debugPrint('FCM getToken error attempt $i: $e');
-            }
-            await Future.delayed(const Duration(milliseconds: 600));
-          }
-        }
-
-        if (fcmToken == null || fcmToken.isEmpty) {
-          if (mounted) {
-            setState(() => _deviceLoading = false);
-            ScaffoldMessenger.of(context).clearSnackBars();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Nuk u mor dot Token-i nga Firebase. Ju lutemi verifikoni lejet te cilësimet e telefonit.'),
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: widget.branding.primaryColor,
-                duration: const Duration(seconds: 4),
-                dismissDirection: DismissDirection.horizontal,
-                action: SnackBarAction(
-                  label: 'CILËSIMET',
-                  textColor: Colors.white,
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                    openAppSettings();
-                  },
-                ),
-              ),
-            );
-          }
-          return;
-        }
-
-        // Register with device-tokens save-web-token as well
-        await PushService.registerTokenWithBackend();
-      } else {
-        try {
-          fcmToken = await FirebaseMessaging.instance.getToken();
-        } catch (_) {
-          fcmToken = 'inactive_token';
-        }
-      }
-
-      final currentServer = await ApiService.serverUrl;
-      final rawShopId = AuthService.instance.user?['barber_shop_id'] ?? AuthService.instance.user?['business']?['id'];
-
-      final res = await ApiService.post('/device-tokens/set-primary-gateway', {
-        'fcm_token': fcmToken,
-        'is_sms_gateway': value,
-        'device_name': 'Android Phone (${AuthService.instance.user?['name'] ?? 'Staff'})',
-        if (rawShopId != null) 'barber_shop_id': rawShopId,
-      });
-
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('is_sms_gateway_device', value);
-        await AuthService.instance.sync();
-        widget.onAuthChange();
-
-        if (mounted) {
-          setState(() {
-            _isGatewayDevice = value;
-            _deviceLoading = false;
-          });
-          final tokenPreview = (fcmToken != null && fcmToken.length > 10) ? fcmToken.substring(0, 10) : fcmToken;
-          ScaffoldMessenger.of(context).clearSnackBars();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(value
-                  ? 'Aktivizuar me sukses ✅ [Server: $currentServer | Token: $tokenPreview...]'
-                  : 'SMS Gateway u çaktivizua.'),
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: widget.branding.primaryColor,
-              duration: const Duration(seconds: 4),
-              dismissDirection: DismissDirection.horizontal,
-            ),
-          );
-        }
-      } else {
-        final err = ApiService.extractErrorMessage(res);
-        if (mounted) {
-          setState(() => _deviceLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Gabim serveri ($currentServer - HTTP ${res.statusCode}): $err'),
-              backgroundColor: Colors.redAccent,
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _deviceLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gabim gjatë ruajtjes: $e'), behavior: SnackBarBehavior.floating, backgroundColor: Colors.redAccent),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _deviceLoading = false);
     }
   }
 
@@ -2016,65 +1912,6 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
             const SizedBox(height: 12),
           ],
 
-          AnimatedOpacity(
-            duration: const Duration(milliseconds: 200),
-            opacity: widget.branding.smsEnabled ? 1.0 : 0.5,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: _isGatewayDevice
-                    ? widget.branding.primaryColor.withOpacity(0.12)
-                    : (isDark ? const Color(0xFF1E212B) : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4)),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: _isGatewayDevice
-                      ? widget.branding.primaryColor.withOpacity(0.4)
-                      : (isDark ? const Color(0xFF3B4052) : theme.colorScheme.outlineVariant),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    _isGatewayDevice ? Icons.phonelink_ring_rounded : Icons.phonelink_setup_rounded,
-                    size: 20,
-                    color: _isGatewayDevice ? widget.branding.primaryColor : Colors.grey,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          coreTr(context, 'settings.sms_device_enable'),
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13,
-                            color: _isGatewayDevice ? widget.branding.primaryColor : (isDark ? Colors.white : Colors.black87),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _isGatewayDevice
-                              ? coreTr(context, 'settings.sms_device_active_desc')
-                              : coreTr(context, 'settings.sms_device_inactive_desc'),
-                          style: TextStyle(fontSize: 10.5, color: _isGatewayDevice ? widget.branding.primaryColor : Colors.grey),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  _deviceLoading
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator.adaptive(strokeWidth: 2))
-                      : Switch.adaptive(
-                          value: _isGatewayDevice,
-                          onChanged: _toggleGatewayDevice,
-                          activeColor: widget.branding.primaryColor,
-                        ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
