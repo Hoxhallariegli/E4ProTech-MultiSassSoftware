@@ -60,6 +60,12 @@ class FirebaseService
 
             if (!$response->successful()) {
                 Log::error('Firebase API Error Response: ' . $response->body());
+                if (str_contains($response->body(), 'UNREGISTERED') || str_contains($response->body(), 'NotRegistered')) {
+                    if (strlen($topic) > 30) {
+                        DeviceToken::where('fcm_token', $topic)->delete();
+                        Log::warning("🧹 Deleted unregistered/stale FCM token [{$topic}] from DB.");
+                    }
+                }
                 return false;
             }
 
@@ -102,7 +108,16 @@ class FirebaseService
                 'message' => $message
             ]);
 
-            return $response->successful();
+            if (!$response->successful()) {
+                Log::error('Firebase Data Message Error: ' . $response->body());
+                if (str_contains($response->body(), 'UNREGISTERED') || str_contains($response->body(), 'NotRegistered')) {
+                    DeviceToken::where('fcm_token', $token)->delete();
+                    Log::warning("🧹 Deleted unregistered/stale FCM token [{$token}] from DB.");
+                }
+                return false;
+            }
+
+            return true;
         } catch (\Exception $e) {
             Log::error('Firebase Data Message Exception: ' . $e->getMessage());
             return false;
