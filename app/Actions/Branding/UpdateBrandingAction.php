@@ -23,9 +23,9 @@ class UpdateBrandingAction
         if (isset($data['primary_color']) && !empty($data['primary_color'])) {
             $updateData['primary_color'] = $data['primary_color'];
         }
-        if (isset($data['logo'])) {
+        if (isset($data['logo']) && !empty($data['logo'])) {
             $updateData['logo'] = $data['logo'];
-        } elseif (isset($data['logo_url'])) {
+        } elseif (isset($data['logo_url']) && !empty($data['logo_url'])) {
             $updateData['logo'] = $data['logo_url'];
         }
 
