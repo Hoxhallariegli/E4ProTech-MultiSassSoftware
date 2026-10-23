@@ -1717,14 +1717,33 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
 
       // Automatically register / unregister device as SMS gateway
       try {
+        String? fcmToken;
+        try {
+          if (Firebase.apps.isNotEmpty) {
+            fcmToken = await FirebaseMessaging.instance.getToken();
+          }
+        } catch (_) {}
+
+        final user = AuthService.instance.user;
+        final userName = user?['name'] ?? 'User';
+        final userId = user?['id'];
+        final rawShopId = user?['barber_shop_id'] ?? user?['business']?['id'];
+
         await ApiService.post('/device-tokens/set-primary-gateway', {
           'is_sms_gateway': enabled,
-          'device_name': Platform.isAndroid ? 'Android Gateway' : 'Mobile Device',
+          'fcm_token': fcmToken ?? '',
+          'platform': 'android',
+          'device_name': 'Android Phone ($userName)',
+          if (userId != null) 'user_id': userId,
+          if (rawShopId != null) 'barber_shop_id': rawShopId,
         });
+
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('is_sms_gateway_device', enabled);
         if (mounted) setState(() => _isGatewayDevice = enabled);
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Error toggling primary gateway: $e');
+      }
 
       if (res.statusCode == 200) {
         await AuthService.instance.sync();
@@ -2052,31 +2071,20 @@ class _PushDiagnosticsModalState extends State<_PushDiagnosticsModal> {
       _log('❌ [4/5] Gabim gjatë marrjes së FCM Token: $e');
     }
 
-    // 4. API Endpoint Test
-    if (fcmToken != null && fcmToken.isNotEmpty) {
-      try {
-        final serverUrl = await ApiService.serverUrl;
-        _log('🌐 [5/5] Testimi i lidhjes me Serverin ($serverUrl)...');
+    // 4. API Endpoint Health Check (Read-Only Test)
+    try {
+      final serverUrl = await ApiService.serverUrl;
+      _log('🌐 [5/5] Testimi i lidhjes me Serverin ($serverUrl)...');
 
-        final user = AuthService.instance.user;
-        final rawShopId = user?['barber_shop_id'] ?? user?['business']?['id'];
+      final res = await ApiService.get('/status');
 
-        final res = await ApiService.post('/device-tokens/save-web-token', {
-          'fcm_token': fcmToken,
-          'platform': 'android',
-          'device_name': 'Android Diagnostic Test (${user?['name'] ?? 'Staff'})',
-          if (rawShopId != null) 'barber_shop_id': rawShopId,
-        });
-
-        if (res.statusCode == 200) {
-          _log('✅ API HTTP 200 OK: Token-i u regjistrua me sukses te baza e të dhënave!');
-          _log('📄 Përgjigja nga Laravel: ${res.body}');
-        } else {
-          _log('❌ API HTTP ${res.statusCode} Error: ${res.body}');
-        }
-      } catch (e) {
-        _log('💥 [5/5] Gabim gjatë POST kërkesës në server: $e');
+      if (res.statusCode >= 200 && res.statusCode < 400) {
+        _log('✅ API HTTP ${res.statusCode} OK: Lidhja me serverin është 100% aktiv!');
+      } else {
+        _log('❌ API HTTP ${res.statusCode} Error: ${res.body}');
       }
+    } catch (e) {
+      _log('💥 [5/5] Gabim gjatë lidhjes me serverin: $e');
     }
 
     if (mounted) setState(() => _testing = false);

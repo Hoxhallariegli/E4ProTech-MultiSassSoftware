@@ -317,12 +317,14 @@ class PushService {
       if (token != null && token.isNotEmpty) {
         final platform = defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android';
         final userName = AuthService.instance.user?['name'] ?? 'User';
+        final userId = AuthService.instance.user?['id'];
         final rawShopId = AuthService.instance.user?['barber_shop_id'] ?? AuthService.instance.user?['business']?['id'];
 
         await ApiService.post('/device-tokens/save-web-token', {
           'fcm_token': token,
           'platform': platform,
           'device_name': 'Mobile Device ($userName)',
+          if (userId != null) 'user_id': userId,
           if (rawShopId != null) 'barber_shop_id': rawShopId,
         });
 
