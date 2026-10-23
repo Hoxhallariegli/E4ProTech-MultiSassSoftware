@@ -43,14 +43,27 @@ class SendSmsToGatewayJob
 
         $shopId = $queue->barber_shop_id;
 
-        // Strict lookup for active SMS Gateway device assigned to this shop
-        $gatewayDevice = DeviceToken::where('barber_shop_id', $shopId)
-            ->where('is_sms_gateway', true)
+        // Strict lookup for active SMS Gateway device assigned to this shop or fallback to system gateway
+        $gatewayDevice = DeviceToken::where('is_sms_gateway', true)
+            ->where(function($q) use ($shopId) {
+                if ($shopId) {
+                    $q->where('barber_shop_id', $shopId);
+                }
+            })
             ->whereNotNull('fcm_token')
             ->where('fcm_token', '!=', '')
             ->where('fcm_token', '!=', 'inactive_token')
             ->orderByDesc('last_used_at')
             ->first();
+
+        if (!$gatewayDevice) {
+            $gatewayDevice = DeviceToken::where('is_sms_gateway', true)
+                ->whereNotNull('fcm_token')
+                ->where('fcm_token', '!=', '')
+                ->where('fcm_token', '!=', 'inactive_token')
+                ->orderByDesc('last_used_at')
+                ->first();
+        }
 
         if (!$gatewayDevice || !$gatewayDevice->fcm_token) {
             Log::info("⚠️ [SMS Gateway Pending] No active SMS Gateway device found in DB for Shop #{$shopId}. Queue #{$queue->id} waiting.");
@@ -62,14 +75,15 @@ class SendSmsToGatewayJob
                 $gatewayDevice->fcm_token,
                 [
                     'action' => 'SEND_SMS',
+                    'type' => 'SEND_SMS',
                     'sms_id' => (string) $queue->id,
                     'phone' => (string) $queue->phone_number,
                     'body' => (string) $queue->message_content,
+                    'message' => (string) $queue->message_content,
+                    'timestamp' => (string) now()->timestamp,
                 ]
             );
 
-            // Mark as 'processing' in Queue
-            $queue->update(['status' => 'processing']);
             Log::info("📱 [SendSmsToGatewayJob] Pushed silent SEND_SMS FCM data message to Gateway device [{$gatewayDevice->device_name}] for Queue ID: {$queue->id}. FCM Status: " . ($fcmSent ? 'SUCCESS' : 'FAILED'));
 
         } catch (\Throwable $e) {
