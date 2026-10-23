@@ -73,7 +73,13 @@
                                 console.log('⚙️ Service Worker registered for Web Push.');
 
                                 const getWebFcmToken = () => {
-                                    messaging.getToken({ serviceWorkerRegistration: registration })
+                                    const vapidKey = @json(env('FIREBASE_VAPID_KEY') ?: config('firebase_vapid_key'));
+                                    const opts = { serviceWorkerRegistration: registration };
+                                    if (vapidKey && String(vapidKey).trim() !== '') {
+                                        opts.vapidKey = String(vapidKey).trim();
+                                    }
+
+                                    messaging.getToken(opts)
                                         .then((token) => {
                                             if (token) {
                                                 console.log('🔑 Web FCM Token:', token);

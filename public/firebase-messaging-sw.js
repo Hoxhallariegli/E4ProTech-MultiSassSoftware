@@ -1,18 +1,31 @@
-importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
-
-// Këto do të plotësohen automatikisht nga konfigurimi yt në të ardhmen
-// Për momentin, Service Worker thjesht lejon marrjen e njoftimeve në background.
+importScripts('https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.1.1/firebase-messaging-compat.js');
 
 self.addEventListener('push', function(event) {
-    const data = event.data.json();
-    const options = {
-        body: data.notification.body,
-        icon: '/apple-touch-icon.png', // Vendos ikonën tënde këtu
-        badge: '/favicon.ico'
-    };
+    if (!event.data) return;
+    try {
+        const data = event.data.json();
+        const title = data.notification ? data.notification.title : (data.data ? data.data.title : 'Njoftim i Ri');
+        const body = data.notification ? data.notification.body : (data.data ? data.data.body : '');
 
+        const options = {
+            body: body,
+            icon: '/favicon.ico',
+            badge: '/favicon.ico',
+            data: data.data || {}
+        };
+
+        event.waitUntil(
+            self.registration.showNotification(title, options)
+        );
+    } catch (e) {
+        console.error('Service Worker push error:', e);
+    }
+});
+
+self.addEventListener('notificationclick', function(event) {
+    event.notification.close();
     event.waitUntil(
-        self.registration.showNotification(data.notification.title, options)
+        clients.openWindow('/admin/bookings')
     );
 });
