@@ -45,6 +45,7 @@
 
                     // Handle messages when app is in foreground
                     messaging.onMessage((payload) => {
+                        console.log('📩 [WEB FCM FOREGROUND MESSAGE RECEIVED]:', payload);
 
                         // 1. Shfaq Toast-in
                         window.dispatchEvent(new CustomEvent('toast', {
