@@ -8,7 +8,6 @@ use App\Models\MessageQueue;
 use App\Models\MessageLog;
 use App\Models\MessageTemplate;
 use App\Models\DeviceToken;
-use App\Models\EventSetting;
 use App\Services\FirebaseService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -72,19 +71,18 @@ class SendFirebaseNotificationListener
                     $sendSmsRequested = true;
                 }
 
-                // Check if shop has SMS enabled OR if any gateway device is active
+                Log::info("📌 [SMS QUEUE CHECK] Booking #{$booking->id} (Source: {$source}) Action: {$action}, SendSMS Requested: " . ($sendSmsRequested ? 'YES' : 'NO') . ", Customer Phone: " . ($booking->customer?->phone ?? 'NONE'));
+
+                // Check if shop has SMS enabled
                 $shop = $booking->barberShop;
                 $shopSmsEnabled = $shop ? (bool)$shop->sms_enabled : true;
 
-                if (!$shopSmsEnabled && DeviceToken::where('is_sms_gateway', true)->exists()) {
-                    $shopSmsEnabled = true;
+                if (!$shopSmsEnabled) {
+                    Log::info("⏸️ [STEP 4] SMS is disabled for Shop #{$shopId} (sms_enabled = false). Skipping SMS queue and trigger.");
+                    return;
                 }
 
-                Log::info("📌 [SMS QUEUE CHECK] Booking #{$booking->id} (Shop #{$shopId}, Source: {$source}) Action: {$action}, Shop SMS Enabled: " . ($shopSmsEnabled ? 'YES' : 'NO') . ", SendSMS Requested: " . ($sendSmsRequested ? 'YES' : 'NO') . ", Customer Phone: " . ($booking->customer?->phone ?? 'NONE'));
-
-                if (!$shopSmsEnabled) {
-                    Log::info("⏸️ [STEP 4] SMS is disabled for Shop #{$shopId} (sms_enabled = false). Skipping SMS queue.");
-                } elseif ($booking->customer && $booking->customer->phone && $sendSmsRequested) {
+                if ($booking->customer && $booking->customer->phone && $sendSmsRequested) {
                     $formattedPhone = $this->formatPhone($booking->customer->phone);
 
                     // -------------------------------------------------------------
@@ -117,24 +115,32 @@ class SendFirebaseNotificationListener
                                 $queueData['template_type'] = 'confirmation';
                             }
                             $queue = MessageQueue::create($queueData);
+                            \App\Models\AuditTrail::log($queue, 'create', 'MessageQueues');
 
-                            Log::info("✉️ [STEP 4a] Confirmation SMS queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
+                            Log::info("📝 [STEP 4a] SMS Confirmation Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
                         }
 
                         // 2. Scheduled Reminder SMS (Pending until reminder hours before appointment)
+                        $shop = $booking->barberShop;
                         if ($booking->appointment_at) {
                             $rawVal = $shop?->reminder_hours_before;
-                            $hours = (float) ($rawVal !== null && is_numeric($rawVal) && (float)$rawVal > 0 ? $rawVal : 2);
-                            $reminderMins = (int) round($hours * 60);
+                            $reminderMins = 30;
+
+                            if ($rawVal !== null && is_numeric($rawVal) && (float)$rawVal > 0) {
+                                $num = (float) $rawVal;
+                                $reminderMins = ($num <= 12) ? (int) round($num * 60) : (int) round($num);
+                            }
                             $reminderMins = max(10, $reminderMins);
 
                             $scheduledReminderTime = $booking->appointment_at->copy()->subMinutes($reminderMins);
+                            if ($scheduledReminderTime->isPast()) {
+                                $scheduledReminderTime = now();
+                            }
 
+                            $parsedReminder = MessageTemplate::parseForBooking($booking, 'reminder');
                             $existingReminder = $existingSmsQueues->first(fn($q) => ($q->template_type ?? $q->resolved_template_type) === 'reminder');
 
-                            if (!$existingReminder && $scheduledReminderTime->isFuture()) {
-                                $parsedReminder = MessageTemplate::parseForBooking($booking, 'reminder');
-
+                            if (!$existingReminder) {
                                 $reminderQueueData = [
                                     'barber_shop_id' => $booking->barber_shop_id,
                                     'booking_id' => $booking->id,
@@ -149,6 +155,7 @@ class SendFirebaseNotificationListener
                                     $reminderQueueData['template_type'] = 'reminder';
                                 }
                                 $reminderQueue = MessageQueue::create($reminderQueueData);
+                                \App\Models\AuditTrail::log($reminderQueue, 'create', 'MessageQueues');
 
                                 Log::info("⏰ [STEP 4a] SMS Reminder Message scheduled for Booking #{$booking->id} at {$scheduledReminderTime} (Shop #{$booking->barber_shop_id})");
                             }
@@ -162,21 +169,33 @@ class SendFirebaseNotificationListener
                     // ACTION B: UPDATED -> Reschedule Pending Reminder + Send Update SMS
                     // -------------------------------------------------------------
                     elseif ($action === 'updated') {
+                        $shop = $booking->barberShop;
+
                         // 1. Reschedule and update pending reminder SMS
                         if ($booking->appointment_at) {
                             $rawVal = $shop?->reminder_hours_before;
-                            $hours = (float) ($rawVal !== null && is_numeric($rawVal) && (float)$rawVal > 0 ? $rawVal : 2);
-                            $reminderMins = (int) round($hours * 60);
+                            $reminderMins = 30;
+                            if ($rawVal !== null && is_numeric($rawVal) && (float)$rawVal > 0) {
+                                $num = (float) $rawVal;
+                                $reminderMins = ($num <= 12) ? (int) round($num * 60) : (int) round($num);
+                            }
                             $reminderMins = max(10, $reminderMins);
 
                             $scheduledReminderTime = $booking->appointment_at->copy()->subMinutes($reminderMins);
+                            if ($scheduledReminderTime->isPast()) {
+                                $scheduledReminderTime = now();
+                            }
+
                             $parsedReminder = MessageTemplate::parseForBooking($booking, 'reminder');
 
+                            // Find and update existing pending reminder in MessageQueue
                             $pendingReminder = MessageQueue::where('booking_id', $booking->id)
+                                ->where('channel', 'sms')
                                 ->where('status', 'pending')
                                 ->where(function($q) {
                                     $q->where('template_type', 'reminder')
-                                      ->orWhere('message_content', 'like', '%Rikujtesë%');
+                                      ->orWhere('message_content', 'like', '%Rikujtese%')
+                                      ->orWhere('message_content', 'like', '%Reminder%');
                                 })
                                 ->first();
 
@@ -219,6 +238,7 @@ class SendFirebaseNotificationListener
                                 $updateQueueData['template_type'] = 'reschedule';
                             }
                             $updateQueue = MessageQueue::create($updateQueueData);
+                            \App\Models\AuditTrail::log($updateQueue, 'create', 'MessageQueues');
 
                             Log::info("🔄 [STEP 4a-UPDATE] SMS Update Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
 
@@ -230,10 +250,10 @@ class SendFirebaseNotificationListener
                     }
 
                     // -------------------------------------------------------------
-                    // ACTION C: DELETED or CANCELLED -> Cancel Pending Reminders + Send Cancellation SMS
+                    // ACTION C: DELETED -> Cancel Pending Reminder + Send Cancellation SMS
                     // -------------------------------------------------------------
                     elseif ($action === 'deleted' || ($action === 'updated' && $booking->status === 'cancelled')) {
-                        // Cancel all pending reminders/confirmations for this cancelled booking
+                        // Cancel pending reminders for this booking
                         MessageQueue::where('booking_id', $booking->id)
                             ->where('status', 'pending')
                             ->delete();
@@ -262,22 +282,6 @@ class SendFirebaseNotificationListener
                     }
                 }
 
-                // Check EventSetting for Firebase Push Notification toggle for this shop and event (default true)
-                $eventName = "bookings.{$action}";
-                $eventSettingEnabled = true;
-                if (Schema::hasTable('event_settings')) {
-                    $setting = EventSetting::where('barber_shop_id', $shopId)
-                        ->where(function($sq) use ($eventName) {
-                            $sq->whereHas('realtimeEvent', function($q) use ($eventName) {
-                                $q->where('event', $eventName)->orWhere('event', 'bookings.changed');
-                            })->orWhere('event_name', $eventName);
-                        })
-                        ->first();
-                    if ($setting !== null) {
-                        $eventSettingEnabled = (bool) ($setting->firebase_enabled ?? $setting->firebase_push_enabled ?? true);
-                    }
-                }
-
                 // Dispatch FCM Push Notification STRICTLY ISOLATED PER SHOP ID!
                 $customData = [
                     'shop_id' => (string) ($shopId ?? 0),
@@ -286,11 +290,9 @@ class SendFirebaseNotificationListener
                     'model_id' => (string) $booking->id,
                 ];
 
-                if ($shopId && $eventSettingEnabled) {
+                if ($shopId) {
                     $sentCount = $this->firebaseService->sendToShop($shopId, $title, $body, $customData);
-                    Log::info("🔔 [STEP 5] FCM Push Notification sent for shop #{$shopId} event [{$eventName}] to {$sentCount} devices. Title: '{$title}'");
-                } else {
-                    Log::info("⏸️ [STEP 5] FCM Push Notification skipped for shop #{$shopId} event [{$eventName}] (firebase_push_enabled = false).");
+                    Log::info("🔔 [STEP 5] FCM Push Notification sent for shop #{$shopId} event [bookings.{$action}] to {$sentCount} devices. Title: '{$title}'");
                 }
             }
         } catch (\Throwable $e) {
@@ -300,47 +302,58 @@ class SendFirebaseNotificationListener
 
     private function triggerGatewayDevice(int $shopId, int $smsId, string $phone, string $body): void
     {
-        $query = DeviceToken::where('is_sms_gateway', true)
+        $gatewayDevice = DeviceToken::where('is_sms_gateway', true)
+            ->where(function($q) use ($shopId) {
+                if ($shopId) {
+                    $q->where('barber_shop_id', $shopId);
+                }
+            })
             ->whereNotNull('fcm_token')
             ->where('fcm_token', '!=', '')
-            ->where('fcm_token', '!=', 'inactive_token');
+            ->where('fcm_token', '!=', 'inactive_token')
+            ->orderByDesc('last_used_at')
+            ->first();
 
-        if ($shopId) {
-            $shopDevices = (clone $query)->where('barber_shop_id', $shopId)->get();
-            $gatewayDevices = $shopDevices->isNotEmpty() ? $shopDevices : $query->get();
+        if (!$gatewayDevice) {
+            $gatewayDevice = DeviceToken::where('is_sms_gateway', true)
+                ->whereNotNull('fcm_token')
+                ->where('fcm_token', '!=', '')
+                ->where('fcm_token', '!=', 'inactive_token')
+                ->orderByDesc('last_used_at')
+                ->first();
+        }
+
+        if ($gatewayDevice && $gatewayDevice->fcm_token) {
+            $fcmSent = $this->firebaseService->sendDataMessage(
+                $gatewayDevice->fcm_token,
+                [
+                    'action' => 'SEND_SMS',
+                    'type' => 'SEND_SMS',
+                    'sms_id' => (string) $smsId,
+                    'phone' => (string) $phone,
+                    'body' => (string) $body,
+                    'message' => (string) $body,
+                ]
+            );
+            Log::info("📱 [TRIGGER GATEWAY] SEND_SMS FCM data message sent to gateway device #{$gatewayDevice->id} [{$gatewayDevice->device_name}] for Shop #{$shopId}. FCM Status: " . ($fcmSent ? 'SUCCESS' : 'FAILED'));
         } else {
-            $gatewayDevices = $query->get();
-        }
-
-        if ($gatewayDevices->isEmpty()) {
-            Log::warning("⚠️ [TRIGGER GATEWAY] No active SMS Gateway Device Token found in DB!");
-            return;
-        }
-
-        $data = [
-            'type' => 'SEND_SMS',
-            'action' => 'SEND_SMS',
-            'sms_id' => (string) $smsId,
-            'phone' => $phone,
-            'message' => $body,
-            'body' => $body,
-            'timestamp' => (string) now()->timestamp,
-        ];
-
-        foreach ($gatewayDevices as $device) {
-            $res = $this->firebaseService->sendDataMessage($device->fcm_token, $data);
-            Log::info("📲 [TRIGGER GATEWAY] Direct FCM Data Message trigger sent to Gateway Device [{$device->device_name}] (Shop #{$device->barber_shop_id}) for SMS #{$smsId}. Status: " . ($res ? 'SUCCESS' : 'FAILED'));
+            Log::warning("⚠️ [TRIGGER GATEWAY] No active SMS Gateway device found in DB for Shop #{$shopId}. SMS queued as pending.");
         }
     }
 
-    private function formatPhone(string $phone): string
+    private function formatPhone(string $raw): string
     {
-        $phone = preg_replace('/[^\d+]/', '', $phone);
-        if (str_starts_with($phone, '06')) {
-            $phone = '+355' . substr($phone, 1);
-        } elseif (str_starts_with($phone, '6') && strlen($phone) === 9) {
-            $phone = '+355' . $phone;
+        $digits = preg_replace('/[^\d]/', '', $raw);
+        if (empty($digits)) return $raw;
+
+        if (str_starts_with($digits, '00355')) {
+            $digits = substr($digits, 2);
+        } elseif (str_starts_with($digits, '0')) {
+            $digits = '355' . substr($digits, 1);
+        } elseif (!str_starts_with($digits, '355')) {
+            $digits = '355' . $digits;
         }
-        return $phone;
+
+        return '+' . $digits;
     }
 }

@@ -185,6 +185,12 @@ class Create extends Component
         $this->booking_date = now()->addDays($days)->format('Y-m-d');
         $this->selected_time = '';
         $this->appointment_at = '';
+
+        if ($days < 0) {
+            $this->send_sms = false;
+        } else {
+            $this->send_sms = true;
+        }
     }
 
     public function selectTimeSlot($time)
@@ -192,6 +198,19 @@ class Create extends Component
         $this->selected_time = $time;
         if ($this->booking_date && $time) {
             $this->appointment_at = $this->booking_date . 'T' . $time;
+
+            // Auto-check/uncheck send_sms based on whether selected time is in the past
+            $shop = BarberShop::find($this->barber_shop_id);
+            $tz = ($shop && $shop->timezone) ? $shop->timezone : config('app.timezone', 'Europe/Tirane');
+
+            try {
+                $dt = Carbon::parse($this->booking_date . ' ' . $time . ':00', $tz);
+                if ($dt->isPast()) {
+                    $this->send_sms = false;
+                } else {
+                    $this->send_sms = true;
+                }
+            } catch (\Throwable $e) {}
         }
     }
 
