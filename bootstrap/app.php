@@ -32,6 +32,13 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->throttleApi();
 
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+            'api/mobile/*',
+            'admin/image-upload',
+            'broadcasting/*',
+        ]);
+
         $middleware->replaceInGroup('web', ValidateCsrfToken::class, VerifyCsrfToken::class);
 
         $middleware->appendToGroup('web', \App\Http\Middleware\LanguageMiddleware::class);

@@ -14,7 +14,10 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
+        'api/*',
+        'api/mobile/*',
         'admin/image-upload',
         'broadcasting/auth',
+        'broadcasting/*',
     ];
 }
