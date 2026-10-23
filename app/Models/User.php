@@ -99,6 +99,14 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get active shop instance safely for strict Eloquent mode.
+     */
+    public function getActiveShopAttribute(): ?BarberShop
+    {
+        return $this->barberShop ?: ($this->barber_shop_id ? BarberShop::find($this->barber_shop_id) : null);
+    }
+
+    /**
      * Determine if the user is a Global Super Admin (Team 0).
      */
     public function getIsGlobalAdminAttribute(): bool

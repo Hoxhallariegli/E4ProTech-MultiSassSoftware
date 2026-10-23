@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Mobile;
 use App\Http\Controllers\Controller;
 use App\Actions\Sms\ToggleSmsGatewayAction;
 use App\Actions\Branding\UpdateBrandingAction;
+use App\Models\BarberShop;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -22,8 +23,10 @@ class BusinessSettingsController extends Controller
             $status = $action->execute($request->enabled);
         }
 
+        $user = Auth::user();
+        $shop = $user?->barberShop ?: ($user?->barber_shop_id ? BarberShop::find($user->barber_shop_id) : null);
+
         if ($request->has('reminder_hours')) {
-            $shop = Auth::user()->activeShop;
             if ($shop) {
                 $shop->update(['reminder_hours_before' => (float) $request->reminder_hours]);
             }
@@ -31,8 +34,8 @@ class BusinessSettingsController extends Controller
 
         return response()->json([
             'success' => true,
-            'sms_enabled' => $status ?? Auth::user()?->activeShop?->sms_enabled,
-            'reminder_hours_before' => (float) (Auth::user()?->activeShop?->reminder_hours_before ?? 2),
+            'sms_enabled' => $status ?? ($shop?->sms_enabled ?? false),
+            'reminder_hours_before' => (float) ($shop?->reminder_hours_before ?? 2),
         ]);
     }
 

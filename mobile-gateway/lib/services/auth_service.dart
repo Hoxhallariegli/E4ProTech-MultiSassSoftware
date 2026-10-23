@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mobile_gateway/core/notifications/push_service.dart';
 
 import 'api_service.dart';
 
@@ -17,6 +18,7 @@ class AuthService extends ChangeNotifier {
     if (data != null) {
       _userData = jsonDecode(data);
       _permissions = List<String>.from(_userData?['permissions'] ?? []);
+      PushService.registerTokenWithBackend();
     } else {
       _userData = null;
       _permissions = [];
@@ -75,6 +77,8 @@ class AuthService extends ChangeNotifier {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('user_data', encodedNew);
 
+        PushService.registerTokenWithBackend();
+
         if (encodedNew != encodedOld) {
           notifyListeners();
         }
@@ -93,6 +97,7 @@ class AuthService extends ChangeNotifier {
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_data', jsonEncode(_userData));
+      PushService.registerTokenWithBackend();
       notifyListeners();
     } else {
       throw Exception('Dështoi ndërrimi i dyqanit.');
