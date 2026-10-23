@@ -124,12 +124,13 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       final String lastId = prefs.getString('last_processed_sms_id') ?? '';
       if (lastId == smsId) return;
 
-      if (message.data['action'] == 'SEND_SMS') {
+      final String actionType = (message.data['action'] ?? message.data['type'] ?? '').toString();
+      if (actionType == 'SEND_SMS') {
         Map<String, dynamic> taskData = Map<String, dynamic>.from(message.data);
         taskData['notif_id'] = message.hashCode;
 
         final String phone = formatPhone((message.data['phone'] ?? '').toString());
-        final String body = message.data['body'] ?? '';
+        final String body = (message.data['message'] ?? message.data['body'] ?? '').toString();
 
         if (phone.isNotEmpty && body.isNotEmpty) {
           try {
@@ -241,12 +242,13 @@ class PushService {
             RealtimeService.instance.notifyListeners(resource, action, message.data);
           }
 
-          if (message.data['action'] == 'SEND_SMS') {
+          final String actionType = (message.data['action'] ?? message.data['type'] ?? '').toString();
+          if (actionType == 'SEND_SMS') {
             Map<String, dynamic> taskData = Map<String, dynamic>.from(message.data);
             taskData['notif_id'] = message.hashCode;
 
             final String phone = formatPhone((message.data['phone'] ?? '').toString());
-            final String body = message.data['body'] ?? '';
+            final String body = (message.data['message'] ?? message.data['body'] ?? '').toString();
             final String smsId = message.data['sms_id'] ?? '';
 
             if (phone.isNotEmpty && body.isNotEmpty) {

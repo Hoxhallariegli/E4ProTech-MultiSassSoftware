@@ -339,24 +339,36 @@ class SendFirebaseNotificationListener
 
     private function triggerGatewayDevice(int $shopId, int $smsId, string $phone, string $body): void
     {
-        $gatewayDevice = DeviceToken::where('barber_shop_id', $shopId)
-            ->where('is_sms_gateway', true)
+        $gatewayDevice = DeviceToken::where('is_sms_gateway', true)
+            ->where(function($q) use ($shopId) {
+                if ($shopId) {
+                    $q->where('barber_shop_id', $shopId);
+                }
+            })
             ->orderByDesc('last_used_at')
             ->first();
+
+        if (!$gatewayDevice) {
+            $gatewayDevice = DeviceToken::where('is_sms_gateway', true)
+                ->orderByDesc('last_used_at')
+                ->first();
+        }
 
         if ($gatewayDevice && $gatewayDevice->fcm_token) {
             $data = [
                 'type' => 'SEND_SMS',
+                'action' => 'SEND_SMS',
                 'sms_id' => (string) $smsId,
                 'phone' => $phone,
                 'message' => $body,
+                'body' => $body,
                 'timestamp' => (string) now()->timestamp,
             ];
 
             $res = $this->firebaseService->sendDataMessage($gatewayDevice->fcm_token, $data);
             Log::info("📲 [TRIGGER GATEWAY] Direct FCM Data Message trigger sent to Gateway Device token [{$gatewayDevice->fcm_token}] for SMS #{$smsId}. Status: " . ($res ? 'SUCCESS' : 'FAILED'));
         } else {
-            Log::warning("⚠️ [TRIGGER GATEWAY] No active SMS Gateway Device Token found for Shop #{$shopId}!");
+            Log::warning("⚠️ [TRIGGER GATEWAY] No active SMS Gateway Device Token found for Shop #{$shopId} or system!");
         }
     }
 
