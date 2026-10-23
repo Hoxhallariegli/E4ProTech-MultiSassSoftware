@@ -117,6 +117,20 @@ class SendFirebaseNotificationListener
                             $queue = MessageQueue::create($queueData);
                             \App\Models\AuditTrail::log($queue, 'create', 'MessageQueues');
 
+                            $logData = [
+                                'barber_shop_id' => $booking->barber_shop_id,
+                                'customer_id' => $booking->customer_id,
+                                'channel' => 'sms',
+                                'message' => $parsedConfirmation,
+                                'status' => 'pending',
+                                'sent_at' => null,
+                            ];
+                            if (Schema::hasColumn('message_logs', 'template_type')) {
+                                $logData['template_type'] = 'confirmation';
+                            }
+                            $msgLog = MessageLog::create($logData);
+                            \App\Models\AuditTrail::log($msgLog, 'create', 'MessageLogs');
+
                             Log::info("📝 [STEP 4a] SMS Confirmation Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
                         }
 
@@ -156,6 +170,20 @@ class SendFirebaseNotificationListener
                                 }
                                 $reminderQueue = MessageQueue::create($reminderQueueData);
                                 \App\Models\AuditTrail::log($reminderQueue, 'create', 'MessageQueues');
+
+                                $reminderLogData = [
+                                    'barber_shop_id' => $booking->barber_shop_id,
+                                    'customer_id' => $booking->customer_id,
+                                    'channel' => 'sms',
+                                    'message' => $parsedReminder,
+                                    'status' => 'pending',
+                                    'sent_at' => null,
+                                ];
+                                if (Schema::hasColumn('message_logs', 'template_type')) {
+                                    $reminderLogData['template_type'] = 'reminder';
+                                }
+                                $reminderLog = MessageLog::create($reminderLogData);
+                                \App\Models\AuditTrail::log($reminderLog, 'create', 'MessageLogs');
 
                                 Log::info("⏰ [STEP 4a] SMS Reminder Message scheduled for Booking #{$booking->id} at {$scheduledReminderTime} (Shop #{$booking->barber_shop_id})");
                             }
@@ -240,6 +268,20 @@ class SendFirebaseNotificationListener
                             $updateQueue = MessageQueue::create($updateQueueData);
                             \App\Models\AuditTrail::log($updateQueue, 'create', 'MessageQueues');
 
+                            $updateLogData = [
+                                'barber_shop_id' => $booking->barber_shop_id,
+                                'customer_id' => $booking->customer_id,
+                                'channel' => 'sms',
+                                'message' => $parsedUpdate,
+                                'status' => 'pending',
+                                'sent_at' => null,
+                            ];
+                            if (Schema::hasColumn('message_logs', 'template_type')) {
+                                $updateLogData['template_type'] = 'reschedule';
+                            }
+                            $msgLog = MessageLog::create($updateLogData);
+                            \App\Models\AuditTrail::log($msgLog, 'create', 'MessageLogs');
+
                             Log::info("🔄 [STEP 4a-UPDATE] SMS Update Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
 
                             // Trigger Gateway Device
@@ -252,7 +294,7 @@ class SendFirebaseNotificationListener
                     // -------------------------------------------------------------
                     // ACTION C: DELETED -> Cancel Pending Reminder + Send Cancellation SMS
                     // -------------------------------------------------------------
-                    elseif ($action === 'deleted' || ($action === 'updated' && $booking->status === 'cancelled')) {
+                    elseif ($action === 'deleted') {
                         // Cancel pending reminders for this booking
                         MessageQueue::where('booking_id', $booking->id)
                             ->where('status', 'pending')
@@ -302,12 +344,8 @@ class SendFirebaseNotificationListener
 
     private function triggerGatewayDevice(int $shopId, int $smsId, string $phone, string $body): void
     {
-        $gatewayDevice = DeviceToken::where('is_sms_gateway', true)
-            ->where(function($q) use ($shopId) {
-                if ($shopId) {
-                    $q->where('barber_shop_id', $shopId);
-                }
-            })
+        $gatewayDevice = DeviceToken::where('barber_shop_id', $shopId)
+            ->where('is_sms_gateway', true)
             ->whereNotNull('fcm_token')
             ->where('fcm_token', '!=', '')
             ->where('fcm_token', '!=', 'inactive_token')
