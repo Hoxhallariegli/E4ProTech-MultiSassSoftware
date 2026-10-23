@@ -72,11 +72,11 @@ class SendFirebaseNotificationListener
                     $sendSmsRequested = true;
                 }
 
-                // Check if shop has SMS enabled OR if any gateway device is active for this shop
+                // Check if shop has SMS enabled OR if any gateway device is active
                 $shop = $booking->barberShop;
                 $shopSmsEnabled = $shop ? (bool)$shop->sms_enabled : true;
 
-                if (!$shopSmsEnabled && DeviceToken::where('barber_shop_id', $shopId)->where('is_sms_gateway', true)->exists()) {
+                if (!$shopSmsEnabled && DeviceToken::where('is_sms_gateway', true)->exists()) {
                     $shopSmsEnabled = true;
                 }
 
@@ -118,19 +118,6 @@ class SendFirebaseNotificationListener
                             }
                             $queue = MessageQueue::create($queueData);
 
-                            $logData = [
-                                'barber_shop_id' => $booking->barber_shop_id,
-                                'customer_id' => $booking->customer_id,
-                                'channel' => 'sms',
-                                'message' => $parsedConfirmation,
-                                'status' => 'pending',
-                                'sent_at' => null,
-                            ];
-                            if (Schema::hasColumn('message_logs', 'template_type')) {
-                                $logData['template_type'] = 'confirmation';
-                            }
-                            MessageLog::create($logData);
-
                             Log::info("✉️ [STEP 4a] Confirmation SMS queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
                         }
 
@@ -162,19 +149,6 @@ class SendFirebaseNotificationListener
                                     $reminderQueueData['template_type'] = 'reminder';
                                 }
                                 $reminderQueue = MessageQueue::create($reminderQueueData);
-
-                                $reminderLogData = [
-                                    'barber_shop_id' => $booking->barber_shop_id,
-                                    'customer_id' => $booking->customer_id,
-                                    'channel' => 'sms',
-                                    'message' => $parsedReminder,
-                                    'status' => 'pending',
-                                    'sent_at' => null,
-                                ];
-                                if (Schema::hasColumn('message_logs', 'template_type')) {
-                                    $reminderLogData['template_type'] = 'reminder';
-                                }
-                                MessageLog::create($reminderLogData);
 
                                 Log::info("⏰ [STEP 4a] SMS Reminder Message scheduled for Booking #{$booking->id} at {$scheduledReminderTime} (Shop #{$booking->barber_shop_id})");
                             }
@@ -245,19 +219,6 @@ class SendFirebaseNotificationListener
                                 $updateQueueData['template_type'] = 'reschedule';
                             }
                             $updateQueue = MessageQueue::create($updateQueueData);
-
-                            $updateLogData = [
-                                'barber_shop_id' => $booking->barber_shop_id,
-                                'customer_id' => $booking->customer_id,
-                                'channel' => 'sms',
-                                'message' => $parsedUpdate,
-                                'status' => 'pending',
-                                'sent_at' => null,
-                            ];
-                            if (Schema::hasColumn('message_logs', 'template_type')) {
-                                $updateLogData['template_type'] = 'reschedule';
-                            }
-                            MessageLog::create($updateLogData);
 
                             Log::info("🔄 [STEP 4a-UPDATE] SMS Update Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
 
@@ -339,36 +300,36 @@ class SendFirebaseNotificationListener
 
     private function triggerGatewayDevice(int $shopId, int $smsId, string $phone, string $body): void
     {
-        $gatewayDevice = DeviceToken::where('is_sms_gateway', true)
-            ->where(function($q) use ($shopId) {
-                if ($shopId) {
-                    $q->where('barber_shop_id', $shopId);
-                }
-            })
-            ->orderByDesc('last_used_at')
-            ->first();
+        $query = DeviceToken::where('is_sms_gateway', true)
+            ->whereNotNull('fcm_token')
+            ->where('fcm_token', '!=', '')
+            ->where('fcm_token', '!=', 'inactive_token');
 
-        if (!$gatewayDevice) {
-            $gatewayDevice = DeviceToken::where('is_sms_gateway', true)
-                ->orderByDesc('last_used_at')
-                ->first();
+        if ($shopId) {
+            $shopDevices = (clone $query)->where('barber_shop_id', $shopId)->get();
+            $gatewayDevices = $shopDevices->isNotEmpty() ? $shopDevices : $query->get();
+        } else {
+            $gatewayDevices = $query->get();
         }
 
-        if ($gatewayDevice && $gatewayDevice->fcm_token) {
-            $data = [
-                'type' => 'SEND_SMS',
-                'action' => 'SEND_SMS',
-                'sms_id' => (string) $smsId,
-                'phone' => $phone,
-                'message' => $body,
-                'body' => $body,
-                'timestamp' => (string) now()->timestamp,
-            ];
+        if ($gatewayDevices->isEmpty()) {
+            Log::warning("⚠️ [TRIGGER GATEWAY] No active SMS Gateway Device Token found in DB!");
+            return;
+        }
 
-            $res = $this->firebaseService->sendDataMessage($gatewayDevice->fcm_token, $data);
-            Log::info("📲 [TRIGGER GATEWAY] Direct FCM Data Message trigger sent to Gateway Device token [{$gatewayDevice->fcm_token}] for SMS #{$smsId}. Status: " . ($res ? 'SUCCESS' : 'FAILED'));
-        } else {
-            Log::warning("⚠️ [TRIGGER GATEWAY] No active SMS Gateway Device Token found for Shop #{$shopId} or system!");
+        $data = [
+            'type' => 'SEND_SMS',
+            'action' => 'SEND_SMS',
+            'sms_id' => (string) $smsId,
+            'phone' => $phone,
+            'message' => $body,
+            'body' => $body,
+            'timestamp' => (string) now()->timestamp,
+        ];
+
+        foreach ($gatewayDevices as $device) {
+            $res = $this->firebaseService->sendDataMessage($device->fcm_token, $data);
+            Log::info("📲 [TRIGGER GATEWAY] Direct FCM Data Message trigger sent to Gateway Device [{$device->device_name}] (Shop #{$device->barber_shop_id}) for SMS #{$smsId}. Status: " . ($res ? 'SUCCESS' : 'FAILED'));
         }
     }
 
