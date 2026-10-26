@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_gateway/services/auth_service.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/core/branding/branding_cubit.dart';
 import 'package:mobile_gateway/core/widgets/app_scaffold.dart';
 import 'package:mobile_gateway/modules/dashboard/presentation/widgets/shop_switcher_widget.dart';
 import 'package:mobile_gateway/core/realtime/realtime_service.dart';
@@ -516,7 +517,7 @@ class _SubscriptionRenewalListViewState extends State<_SubscriptionRenewalListVi
                                     crossAxisAlignment: CrossAxisAlignment.baseline,
                                     textBaseline: TextBaseline.alphabetic,
                                     children: [
-                                      Text('${totalPrice.toStringAsFixed(2)} €', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: primaryColor)),
+                                      Text(context.formatCurrency(totalPrice), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: primaryColor)),
                                       const SizedBox(width: 4),
                                       Text(subscription_renewalTr(context, 'plan.per_month', {'months': _selectedDurationMonths.toString()}), style: const TextStyle(fontSize: 11, color: Colors.grey)),
                                     ],

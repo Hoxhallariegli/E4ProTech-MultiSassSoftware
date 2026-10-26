@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_gateway/services/api_service.dart';
 import 'package:mobile_gateway/services/auth_service.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/core/branding/branding_cubit.dart';
 import 'package:mobile_gateway/core/widgets/app_scaffold.dart';
 import 'package:mobile_gateway/modules/dashboard/presentation/widgets/shop_switcher_widget.dart';
 import 'package:mobile_gateway/l10n/report_localization.dart';
@@ -369,7 +370,7 @@ class _ReportListPageState extends State<ReportListPage> {
                     children: [
                       _StatCard(
                         title: reportTr(context, 'field.total_revenue'),
-                        value: '${totalRevenue.toStringAsFixed(2)} €',
+                        value: context.formatCurrency(totalRevenue),
                         icon: Icons.account_balance_wallet_rounded,
                         color: const Color(0xFF10B981),
                       ),
@@ -474,7 +475,7 @@ class _ReportListPageState extends State<ReportListPage> {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  Text('${price.toStringAsFixed(2)} €', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: primaryColor)),
+                                  Text(context.formatCurrency(price), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: primaryColor)),
                                   const SizedBox(height: 4),
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/core/branding/branding_cubit.dart';
 import 'package:mobile_gateway/l10n/booking_localization.dart';
 import '../cubit/booking_cubit.dart';
 import '../cubit/booking_state.dart';
@@ -636,7 +637,7 @@ class _BookingFormPageState extends State<BookingFormPage> {
       final curr = _barberShopOptions.first['currency']?.toString();
       if (curr != null && curr.isNotEmpty) return curr;
     }
-    return 'Lekë';
+    return context.branding.currency;
   }
 
   @override Widget build(BuildContext context) {

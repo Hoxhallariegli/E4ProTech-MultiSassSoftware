@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/core/branding/branding_cubit.dart';
 import 'package:mobile_gateway/l10n/service_localization.dart';
 
 class ServiceCard extends StatelessWidget {
@@ -19,9 +20,10 @@ class ServiceCard extends StatelessWidget {
     final name = (item['name'] ?? item['title'] ?? 'Shërbim').toString();
     final description = item['description']?.toString() ?? '';
     final rawPrice = item['price'];
+    final currSymbol = context.branding.currency;
     final priceStr = rawPrice != null && double.tryParse(rawPrice.toString()) != null
-        ? '${double.parse(rawAmountStr(rawPrice)).toStringAsFixed(2)} Lekë'
-        : '0.00 Lekë';
+        ? '${double.parse(rawAmountStr(rawPrice)).toStringAsFixed(2)} $currSymbol'
+        : '0.00 $currSymbol';
     final duration = item['duration_minutes']?.toString() ?? '30';
     final category = item['category']?.toString() ?? '';
     final bool active = item['active'] == true || item['active'] == 1 || item['active'] == '1' || item['active'] == null;

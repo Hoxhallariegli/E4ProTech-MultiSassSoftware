@@ -38,7 +38,7 @@ const Map<String, String> reportSq = {
   'field.period_type': 'Periudha e Raportit',
   'field.report_date': 'Data e Raportit',
   'field.total_bookings': 'Total Takime',
-  'field.total_revenue': 'Total Xhiro (€)',
+  'field.total_revenue': 'Total Xhiro',
   'field.total_completed': 'Kryera',
   'field.total_cancelled': 'Anuluara',
   'field.notes': 'Shënime & Analizë',

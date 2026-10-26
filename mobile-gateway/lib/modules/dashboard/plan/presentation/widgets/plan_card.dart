@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/core/branding/branding_cubit.dart';
 import 'package:mobile_gateway/l10n/plan_localization.dart';
 
 class PlanCard extends StatelessWidget {
@@ -16,8 +17,8 @@ class PlanCard extends StatelessWidget {
     final name = (item['name'] ?? item['title'] ?? 'Plan').toString();
     final rawPrice = item['price'];
     final priceStr = rawPrice != null && double.tryParse(rawPrice.toString()) != null
-        ? '${double.parse(rawPrice.toString()).toStringAsFixed(2)} Lekë'
-        : '0.00 Lekë';
+        ? '${double.parse(rawPrice.toString()).toStringAsFixed(2)} €'
+        : '0.00 €';
     final months = item['duration_months']?.toString() ?? '1';
 
     return PremiumCard(

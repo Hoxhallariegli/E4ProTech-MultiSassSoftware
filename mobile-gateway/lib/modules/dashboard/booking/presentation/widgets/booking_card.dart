@@ -124,7 +124,7 @@ class BookingCard extends StatelessWidget {
               if (totalPrice != null && totalPrice.isNotEmpty) ...[
                 const SizedBox(width: 8),
                 Text(
-                  '($totalPrice Lekë)',
+                  context.formatCurrency(totalPrice),
                   style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.bold),
                 ),
               ],

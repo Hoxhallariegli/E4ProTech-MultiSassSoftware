@@ -64,6 +64,7 @@ class BusinessSettingsController extends Controller
                 'app_name' => $shop->app_name ?: $shop->name,
                 'logo' => $shop->logo_url,
                 'color' => $shop->primary_color,
+                'currency' => $shop->currency ?: 'Lekë',
                 'sms_active' => (bool) $shop->sms_enabled,
                 'reminder_hours_before' => (float) $shop->reminder_hours_before,
                 'plan_name' => $shop->active_plan_name,

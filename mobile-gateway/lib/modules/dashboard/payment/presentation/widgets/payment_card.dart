@@ -46,8 +46,8 @@ class PaymentCard extends StatelessWidget {
 
     final rawAmount = item['amount'];
     final amountStr = rawAmount != null && double.tryParse(rawAmount.toString()) != null
-        ? '${double.parse(rawAmount.toString()).toStringAsFixed(2)} Lekë'
-        : '0.00 Lekë';
+        ? context.formatCurrency(rawAmount)
+        : context.formatCurrency(0);
     final method = (item['method'] ?? 'cash').toString().toLowerCase();
     final status = (item['status'] ?? 'paid').toString().toLowerCase();
 

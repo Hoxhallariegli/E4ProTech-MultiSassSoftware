@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/core/branding/branding_cubit.dart';
 import 'package:mobile_gateway/core/widgets/premium_image_picker.dart';
 import 'package:mobile_gateway/l10n/payment_localization.dart';
 import '../cubit/payment_cubit.dart';
@@ -217,7 +218,7 @@ class _PaymentFormPageState extends State<PaymentFormPage> {
       final servName = item['service']?['name'] ?? item['service_name'] ?? '';
       final price = item['total_price'] ?? item['amount'] ?? '';
       if (custName.isNotEmpty) {
-        return "Takimi #$id - $custName ${servName.isNotEmpty ? '($servName)' : ''} ${price.toString().isNotEmpty ? '- $price Lekë' : ''}".trim();
+        return "Takimi #$id - $custName ${servName.isNotEmpty ? '($servName)' : ''} ${price.toString().isNotEmpty ? '- ' + context.formatCurrency(price) : ''}".trim();
       }
       return "Takimi #$id";
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_gateway/services/api_service.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/core/branding/branding_cubit.dart';
 import 'package:mobile_gateway/l10n/subscription_renewal_localization.dart';
 
 class SubscriptionRenewalCard extends StatelessWidget {
@@ -162,7 +163,7 @@ class SubscriptionRenewalCard extends StatelessWidget {
             runSpacing: 6,
             children: [
               _InfoBadge(icon: Icons.payments_rounded, label: methodLabel, color: primaryColor),
-              _InfoBadge(icon: Icons.sell_rounded, label: '$amount Lekë', color: Colors.green.shade700),
+              _InfoBadge(icon: Icons.sell_rounded, label: '${double.tryParse(amount.toString())?.toStringAsFixed(2) ?? amount} €', color: Colors.green.shade700),
               if (createdAt.isNotEmpty)
                 _InfoBadge(icon: Icons.schedule_rounded, label: createdAt, color: Colors.grey.shade700),
             ],

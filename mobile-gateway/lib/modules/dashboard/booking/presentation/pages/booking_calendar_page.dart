@@ -885,7 +885,7 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
                     children: [
                       Text('${bookingTr(context, "list.title") == "Agenda & Bookings" ? "Booking" : "Takimi"} #$id • $customer', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
                       const SizedBox(height: 2),
-                      Text('$service • $totalPrice Lekë', style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
+                      Text('$service • ${context.formatCurrency(totalPrice)}', style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -914,7 +914,7 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
                 // 2. Mark Paid / Paguaj
                 _ActionTile(
                   icon: Icons.payments_rounded,
-                  label: bookingTr(context, 'action.pay').replaceAll('{price}', '$totalPrice Lekë'),
+                  label: bookingTr(context, 'action.pay').replaceAll('{price}', context.formatCurrency(totalPrice)),
                   color: Colors.blue,
                   onTap: () async {
                     Navigator.pop(sheetContext);
@@ -1139,7 +1139,7 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  '($totalPrice Lekë)',
+                  '(${context.formatCurrency(totalPrice)})',
                   style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.black87, fontSize: 11.5, fontWeight: FontWeight.bold),
                 ),
               ],

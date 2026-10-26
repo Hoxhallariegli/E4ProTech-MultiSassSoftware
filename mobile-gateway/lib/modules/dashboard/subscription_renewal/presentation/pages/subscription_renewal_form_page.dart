@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/core/branding/branding_cubit.dart';
 import 'package:mobile_gateway/core/widgets/premium_image_picker.dart';
 import 'package:mobile_gateway/l10n/subscription_renewal_localization.dart';
 import '../cubit/subscription_renewal_cubit.dart';
@@ -235,7 +236,7 @@ class _SubscriptionRenewalFormPageState extends State<SubscriptionRenewalFormPag
                               hintText: subscription_renewalTr(context, 'form.amount_hint'),
                               border: InputBorder.none,
                               isDense: true,
-                              suffixText: '€',
+                              suffixText: context.branding.currency,
                               suffixStyle: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                             validator: (v) {

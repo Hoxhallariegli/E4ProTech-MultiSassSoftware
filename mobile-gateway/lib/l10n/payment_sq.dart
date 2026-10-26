@@ -37,7 +37,7 @@ const Map<String, String> paymentSq = {
   'form.save_error': 'Regjistrimi nuk u ruajt. Kontrollo fushat e shënuara.',
   'field.barber_shop_id': 'Salloni',
   'field.booking_id': 'Takimi / Prenotimi',
-  'field.amount': 'Shuma (Lekë)',
+  'field.amount': 'Shuma',
   'field.method': 'Mënyra e Pagesës',
   'field.status': 'Statusi',
 };

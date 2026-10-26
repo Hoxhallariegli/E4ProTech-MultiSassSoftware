@@ -8,6 +8,7 @@ class BrandingState {
   final String appName;
   final String? logoUrl;
   final Color primaryColor;
+  final String currency;
   final bool smsEnabled;
   final double reminderHours;
   final int trialDaysLeft;
@@ -23,6 +24,7 @@ class BrandingState {
     required this.appName,
     this.logoUrl,
     required this.primaryColor,
+    this.currency = 'Lekë',
     this.smsEnabled = false,
     this.reminderHours = 2.0,
     this.trialDaysLeft = 0,
@@ -52,6 +54,7 @@ class BrandingState {
     return const BrandingState(
       appName: 'E4ProTech Engine',
       primaryColor: Color(0xFF7C5CFC),
+      currency: 'Lekë',
     );
   }
 
@@ -61,6 +64,7 @@ class BrandingState {
       'logoUrl': logoUrl,
       'reminderHours': reminderHours,
       'primaryColor': primaryColor.value,
+      'currency': currency,
       'smsEnabled': smsEnabled,
       'trialDaysLeft': trialDaysLeft,
       'planName': planName,
@@ -78,6 +82,7 @@ class BrandingState {
       appName: map['appName'] ?? 'E4ProTech Engine',
       logoUrl: map['logoUrl'],
       primaryColor: Color(map['primaryColor'] ?? 0xFF7C5CFC),
+      currency: (map['currency'] ?? 'Lekë').toString(),
       smsEnabled: map['smsEnabled'] ?? false,
       reminderHours: (double.tryParse(map['reminderHours']?.toString() ?? '2') ?? 2.0).toDouble(),
       trialDaysLeft: map['trialDaysLeft'] ?? 0,
@@ -118,10 +123,13 @@ class BrandingCubit extends Cubit<BrandingState> {
       color = Color(int.parse(hexStr.length == 6 ? 'FF$hexStr' : hexStr, radix: 16));
     }
 
+    final curr = (businessData['currency'] ?? businessData['currency_symbol'] ?? state.currency).toString();
+
     final newState = BrandingState(
       appName: businessData['app_name'] ?? businessData['name'] ?? businessData['appName'] ?? 'E4ProTech Engine',
       logoUrl: businessData['logo'] ?? businessData['logoUrl'],
       primaryColor: color,
+      currency: curr.isNotEmpty ? curr : 'Lekë',
       smsEnabled: businessData['sms_active'] ?? businessData['smsEnabled'] ?? false,
       reminderHours: (double.tryParse((businessData['reminder_hours_before'] ?? businessData['reminderHours'])?.toString() ?? '2') ?? 2.0).toDouble(),
       trialDaysLeft: businessData['trial_days_left'] ?? businessData['trialDaysLeft'] ?? 0,
@@ -156,6 +164,13 @@ class BrandingCubit extends Cubit<BrandingState> {
 
 extension BrandingContextExtension on BuildContext {
   BrandingState get branding => watch<BrandingCubit>().state;
+
+  String formatCurrency(dynamic amount) {
+    final state = watch<BrandingCubit>().state;
+    final curr = state.currency.isNotEmpty ? state.currency : 'Lekë';
+    final numVal = double.tryParse(amount?.toString() ?? '0') ?? 0.0;
+    return '${numVal.toStringAsFixed(2)} $curr';
+  }
 
   String get staffLabel {
     final isEn = Localizations.localeOf(this).languageCode == 'en';

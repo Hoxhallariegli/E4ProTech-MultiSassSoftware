@@ -38,7 +38,7 @@ const Map<String, String> reportEn = {
   'field.period_type': 'Period Type',
   'field.report_date': 'Report Date',
   'field.total_bookings': 'Total Bookings',
-  'field.total_revenue': 'Total Revenue (€)',
+  'field.total_revenue': 'Total Revenue',
   'field.total_completed': 'Completed',
   'field.total_cancelled': 'Cancelled',
   'field.notes': 'Notes & Analysis',
