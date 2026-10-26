@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Mobile;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\DeviceToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -29,6 +30,29 @@ class AuthController extends Controller
         if (is_null($user->email_verified_at) || !$user->is_active) {
             throw ValidationException::withMessages([
                 'email' => ['Llogaria juaj nuk është verifikuar ende. Ju lutemi kontrolloni e-mailin tuaj dhe klikoni lidhjen e konfirmimit për të aktivizuar llogarinë.'],
+            ]);
+        }
+
+        // Clean up old leftover Sanctum tokens for this device name
+        $user->tokens()->where('name', $request->device_name)->delete();
+
+        // Purge old leftover non-gateway device tokens for this user
+        DeviceToken::where('user_id', $user->id)
+            ->where('is_sms_gateway', false)
+            ->delete();
+
+        // If request passes fcm_token on login, register it immediately
+        if ($request->filled('fcm_token')) {
+            $fcmToken = $request->input('fcm_token');
+            DeviceToken::where('fcm_token', $fcmToken)->delete();
+            DeviceToken::create([
+                'fcm_token' => $fcmToken,
+                'barber_shop_id' => $user->barber_shop_id,
+                'user_id' => $user->id,
+                'platform' => $request->input('platform', 'android'),
+                'is_sms_gateway' => false,
+                'device_name' => 'Mobile Device (' . $user->name . ')',
+                'last_used_at' => now(),
             ]);
         }
 
@@ -87,7 +111,15 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+        if ($user) {
+            $user->currentAccessToken()?->delete();
+
+            // Clean up non-gateway device tokens on logout
+            DeviceToken::where('user_id', $user->id)
+                ->where('is_sms_gateway', false)
+                ->delete();
+        }
 
         return response()->json(['message' => 'Logged out successfully']);
     }

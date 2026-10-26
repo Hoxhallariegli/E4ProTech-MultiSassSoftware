@@ -43,10 +43,17 @@ class MessageQueueController extends Controller
             $item->update(['status' => $status]);
             \App\Models\AuditTrail::log($item, 'update', 'MessageQueues');
 
-            // Update matching MessageLog record to 'sent' or 'failed'
+            $templateType = $item->template_type ?? $item->resolved_template_type;
+
+            // Find matching MessageLog record strictly by template_type
             $log = \App\Models\MessageLog::where('barber_shop_id', $item->barber_shop_id)
                 ->where('channel', 'sms')
                 ->where('customer_id', $item->booking?->customer_id)
+                ->where(function($q) use ($templateType) {
+                    if ($templateType) {
+                        $q->where('template_type', $templateType);
+                    }
+                })
                 ->latest('id')
                 ->first();
 
@@ -56,6 +63,17 @@ class MessageQueueController extends Controller
                     'sent_at' => $status === 'sent' ? now() : null,
                 ]);
                 \App\Models\AuditTrail::log($log, 'update', 'MessageLogs');
+            } else {
+                $newLog = \App\Models\MessageLog::create([
+                    'barber_shop_id' => $item->barber_shop_id,
+                    'customer_id' => $item->booking?->customer_id ?? $item->barberShop?->owner_id ?? 1,
+                    'channel' => 'sms',
+                    'template_type' => $templateType ?: 'confirmation',
+                    'message' => $item->message_content,
+                    'status' => $status,
+                    'sent_at' => $status === 'sent' ? now() : null,
+                ]);
+                \App\Models\AuditTrail::log($newLog, 'create', 'MessageLogs');
             }
 
             return response()->json(['success' => true, 'message' => "SMS status updated to {$status}!"]);

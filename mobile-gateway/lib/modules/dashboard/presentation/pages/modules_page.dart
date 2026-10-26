@@ -51,9 +51,9 @@ class _ModulesPageState extends State<ModulesPage> {
         ? userModules
         : userModules.where((m) => m.getTitle(context).toLowerCase().contains(_searchQuery.toLowerCase())).toList();
 
-    final salonKeys = {'booking', 'barber', 'service', 'customer', 'working_hour', 'payment', 'review'};
-    final smsKeys = {'message_queue', 'message_log', 'message_template', 'event_setting', 'device_token', 'notification_channel'};
-    final saasKeys = {'shop_front_page_setting', 'barber_shop', 'subscription_renewal', 'plan', 'user'};
+    final salonKeys = {'booking', 'barber', 'service', 'customer', 'payment', 'review', 'working_hour', 'bulk_cancellation'};
+    final smsKeys = {'message_template', 'message_queue', 'message_log', 'event_setting', 'device_token', 'notification_channel'};
+    final saasKeys = {'barber_shop', 'subscription_renewal', 'shop_front_page_setting', 'user'};
 
     final salonModules = filteredModules.where((m) => salonKeys.contains(m.key)).toList();
     final smsModules = filteredModules.where((m) => smsKeys.contains(m.key)).toList();
@@ -219,7 +219,7 @@ class _ModuleGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     int crossAxisCount = screenWidth >= 900 ? 4 : (screenWidth >= 600 ? 3 : 2);
-    double aspectRatio = screenWidth >= 600 ? 3.0 : 2.6;
+    double aspectRatio = screenWidth >= 600 ? 3.0 : 2.4;
 
     return GridView.builder(
       shrinkWrap: true,
