@@ -36,6 +36,15 @@ class Reports extends Component
         }
     }
 
+    public function setPeriod($period)
+    {
+        if (in_array($period, ['daily', 'weekly', 'monthly'], true)) {
+            $this->period_type = $period;
+            $this->report_date = date('Y-m-d');
+            $this->resetPage();
+        }
+    }
+
     public function resetFilters()
     {
         $this->reset(['search', 'barber_id', 'period_type', 'report_date']);
@@ -95,7 +104,7 @@ class Reports extends Component
         $allPeriodBookings = (clone $periodQuery)->get();
 
         $totalBookings = $allPeriodBookings->count();
-        $totalRevenue = $allPeriodBookings->filter(function($b) {
+        $totalRevenue = (float) $allPeriodBookings->filter(function($b) {
             return $b->status !== 'cancelled' && (
                 in_array($b->status, ['completed', 'paid', 'confirmed'], true)
                 || ($b->payment_status ?? '') === 'paid'
@@ -104,6 +113,28 @@ class Reports extends Component
         })->sum('total_price');
         $totalCompleted = $allPeriodBookings->where('status', 'completed')->count();
         $totalCancelled = $allPeriodBookings->where('status', 'cancelled')->count();
+
+        // Staff Performance Breakdown for the selected period
+        $barberBreakdown = (clone $periodQuery)
+            ->with('barber')
+            ->get()
+            ->groupBy('barber_id')
+            ->map(function ($group) use ($totalRevenue) {
+                $barberName = $group->first()?->barber?->name ?? 'Staf i Papërcaktuar';
+                $completed = $group->where('status', 'completed');
+                $revenue = (float) $completed->sum('total_price');
+                $count = $group->count();
+                $share = $totalRevenue > 0 ? ($revenue / $totalRevenue) * 100 : 0;
+                return [
+                    'barber_name' => $barberName,
+                    'total_bookings' => $count,
+                    'completed_bookings' => $completed->count(),
+                    'revenue' => $revenue,
+                    'share' => round($share, 1),
+                ];
+            })
+            ->sortByDesc('revenue')
+            ->values();
 
         // Paginated list of bookings for the breakdown table
         $tableQuery = (clone $periodQuery)->with(['barber', 'service', 'customer', 'barberShop']);
@@ -124,6 +155,7 @@ class Reports extends Component
             'totalRevenue' => $totalRevenue,
             'totalCompleted' => $totalCompleted,
             'totalCancelled' => $totalCancelled,
+            'barberBreakdown' => $barberBreakdown,
             'bookings' => $bookingsList,
             'startDate' => $startDate,
             'endDate' => $endDate,

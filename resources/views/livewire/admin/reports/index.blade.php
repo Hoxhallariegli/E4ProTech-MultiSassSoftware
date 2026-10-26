@@ -1,12 +1,25 @@
 <div x-data="{ openFilter: @entangle('openFilter') }" class="space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <x-h1>{{ __('reports.Reports') }}</x-h1>
+            <x-h1>{{ __('reports.Reports & Analytics') }}</x-h1>
             <x-short-description class="dark:text-gray-400">
                 {{ __('reports.Automated calculation') }} ({{ $startDate->format('d/m/Y') }} - {{ $endDate->format('d/m/Y') }})
             </x-short-description>
         </div>
         <div class="flex items-center gap-3">
+            <!-- Quick Period Tabs -->
+            <div class="inline-flex p-1 bg-gray-100 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 text-xs font-extrabold">
+                <button wire:click="setPeriod('daily')" class="px-3.5 py-1.5 rounded-xl transition-all {{ $period_type === 'daily' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-xs font-black' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white' }}">
+                    {{ __('reports.Today') }}
+                </button>
+                <button wire:click="setPeriod('weekly')" class="px-3.5 py-1.5 rounded-xl transition-all {{ $period_type === 'weekly' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-xs font-black' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white' }}">
+                    {{ __('reports.This Week') }}
+                </button>
+                <button wire:click="setPeriod('monthly')" class="px-3.5 py-1.5 rounded-xl transition-all {{ $period_type === 'monthly' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-xs font-black' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white' }}">
+                    {{ __('reports.This Month') }}
+                </button>
+            </div>
+
             @if($search || $barber_id || $period_type !== 'daily' || $report_date !== date('Y-m-d') || $openFilter)
                 <button wire:click="resetFilters" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl transition-none shadow-none">
                     <span>{{ __('reports.Reset') }}</span>
@@ -47,67 +60,123 @@
 
     @include('errors.messages')
 
-    <div class="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 sm:p-8 border border-gray-100 dark:border-gray-700 shadow-sm space-y-6">
-        <!-- 4 KPI Stat Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 sm:p-8 border border-gray-100 dark:border-gray-700 shadow-sm space-y-8">
+        <!-- 4 KPI Stat Cards (Minimalist & Brand Oriented) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- Revenue Card -->
-            <div class="p-5 rounded-2xl bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                    <x-heroicon-o-banknotes class="w-6 h-6" />
-                </div>
+            <div class="p-5 rounded-3xl bg-white dark:bg-gray-800/80 border border-gray-200/80 dark:border-gray-700/80 flex items-center justify-between shadow-2xs">
                 <div>
-                    <span class="text-[10px] font-bold uppercase text-gray-400 tracking-widest">{{ __('reports.Total Revenue') }}</span>
-                    <h3 class="text-2xl font-black text-gray-900 dark:text-white mt-0.5">
-                        {{ number_format((float)$totalRevenue, 2) }} €
+                    <span class="text-[10px] font-bold uppercase text-gray-500 dark:text-gray-400 tracking-wider">{{ __('reports.Total Revenue') }}</span>
+                    <h3 class="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono mt-1">
+                        {{ format_currency($totalRevenue, auth()->user()?->barberShop) }}
                     </h3>
+                </div>
+                <div class="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 shrink-0">
+                    <x-heroicon-o-banknotes class="w-6 h-6" />
                 </div>
             </div>
 
             <!-- Total Bookings Card -->
-            <div class="p-5 rounded-2xl bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                    <x-heroicon-o-calendar class="w-6 h-6" />
-                </div>
+            <div class="p-5 rounded-3xl bg-white dark:bg-gray-800/80 border border-gray-200/80 dark:border-gray-700/80 flex items-center justify-between shadow-2xs">
                 <div>
-                    <span class="text-[10px] font-bold uppercase text-gray-400 tracking-widest">{{ __('reports.Total Bookings') }}</span>
-                    <h3 class="text-2xl font-black text-gray-900 dark:text-white mt-0.5">
+                    <span class="text-[10px] font-bold uppercase text-gray-500 dark:text-gray-400 tracking-wider">{{ __('reports.Total Bookings') }}</span>
+                    <h3 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white font-mono mt-1">
                         {{ $totalBookings }}
                     </h3>
+                </div>
+                <div class="p-3.5 rounded-2xl bg-gray-100 dark:bg-gray-700/60 text-gray-700 dark:text-gray-200 shrink-0">
+                    <x-heroicon-o-calendar-days class="w-6 h-6" />
                 </div>
             </div>
 
             <!-- Completed Card -->
-            <div class="p-5 rounded-2xl bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                    <x-heroicon-o-check-circle class="w-6 h-6" />
-                </div>
+            <div class="p-5 rounded-3xl bg-white dark:bg-gray-800/80 border border-gray-200/80 dark:border-gray-700/80 flex items-center justify-between shadow-2xs">
                 <div>
-                    <span class="text-[10px] font-bold uppercase text-gray-400 tracking-widest">{{ __('reports.Total Completed') }}</span>
-                    <h3 class="text-2xl font-black text-gray-900 dark:text-white mt-0.5">
+                    <span class="text-[10px] font-bold uppercase text-gray-500 dark:text-gray-400 tracking-wider">{{ __('reports.Total Completed') }}</span>
+                    <h3 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white font-mono mt-1">
                         {{ $totalCompleted }}
                     </h3>
+                </div>
+                <div class="p-3.5 rounded-2xl bg-gray-100 dark:bg-gray-700/60 text-gray-700 dark:text-gray-200 shrink-0">
+                    <x-heroicon-o-check-circle class="w-6 h-6" />
                 </div>
             </div>
 
             <!-- Cancelled Card -->
-            <div class="p-5 rounded-2xl bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-500 flex items-center justify-center shrink-0">
-                    <x-heroicon-o-x-circle class="w-6 h-6" />
-                </div>
+            <div class="p-5 rounded-3xl bg-white dark:bg-gray-800/80 border border-gray-200/80 dark:border-gray-700/80 flex items-center justify-between shadow-2xs">
                 <div>
-                    <span class="text-[10px] font-bold uppercase text-gray-400 tracking-widest">{{ __('reports.Total Cancelled') }}</span>
-                    <h3 class="text-2xl font-black text-red-500 mt-0.5">
+                    <span class="text-[10px] font-bold uppercase text-gray-500 dark:text-gray-400 tracking-wider">{{ __('reports.Total Cancelled') }}</span>
+                    <h3 class="text-2xl sm:text-3xl font-black text-red-500 font-mono mt-1">
                         {{ $totalCancelled }}
                     </h3>
+                </div>
+                <div class="p-3.5 rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-500 shrink-0">
+                    <x-heroicon-o-x-circle class="w-6 h-6" />
                 </div>
             </div>
         </div>
 
-        <!-- Table Section -->
-        <div class="space-y-4">
-            <div class="flex items-center justify-between gap-4">
+        <!-- Staff Performance Breakdown Table (Pro Analytics) -->
+        @if($barberBreakdown->isNotEmpty())
+            <div class="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                        <x-heroicon-o-user-group class="w-4 h-4 text-blue-500" />
+                        <span>{{ __('reports.Staff Performance Breakdown') }}</span>
+                    </h2>
+                    <span class="text-[11px] font-bold text-gray-400 font-mono">({{ $startDate->format('d/m/Y') }} - {{ $endDate->format('d/m/Y') }})</span>
+                </div>
+
+                <div class="overflow-x-auto rounded-2xl border border-gray-200 dark:border-gray-700/80">
+                    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                        <thead class="bg-gray-100/70 dark:bg-gray-700/70 border-b border-gray-200 dark:border-gray-700">
+                            <tr>
+                                <th class="px-6 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest">{{ __('reports.Staff') }}</th>
+                                <th class="px-6 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest">{{ __('reports.Total Bookings') }}</th>
+                                <th class="px-6 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest">{{ __('reports.Total Completed') }}</th>
+                                <th class="px-6 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest">{{ __('reports.Total Revenue') }}</th>
+                                <th class="px-6 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest">{{ __('reports.Revenue Share') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700/80">
+                            @foreach($barberBreakdown as $b)
+                                <tr class="hover:bg-gray-50/80 dark:hover:bg-gray-900/60 transition-colors">
+                                    <td class="px-6 py-4 font-black text-xs text-gray-900 dark:text-white flex items-center gap-2">
+                                        <div class="w-7 h-7 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 font-black text-[11px] flex items-center justify-center">
+                                            {{ mb_substr($b['barber_name'], 0, 1) }}
+                                        </div>
+                                        <span>{{ $b['barber_name'] }}</span>
+                                    </td>
+                                    <td class="px-6 py-4 font-extrabold text-xs text-gray-700 dark:text-gray-300 font-mono">
+                                        {{ $b['total_bookings'] }}
+                                    </td>
+                                    <td class="px-6 py-4 font-extrabold text-xs text-gray-700 dark:text-gray-300 font-mono">
+                                        {{ $b['completed_bookings'] }}
+                                    </td>
+                                    <td class="px-6 py-4 font-black text-emerald-600 dark:text-emerald-400 font-mono text-sm">
+                                        {{ format_currency($b['revenue'], auth()->user()?->barberShop) }}
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-24 bg-gray-100 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                                                <div class="bg-emerald-500 h-2 rounded-full" style="width: {{ min(100, $b['share']) }}%"></div>
+                                            </div>
+                                            <span class="text-xs font-black font-mono text-gray-700 dark:text-gray-300">{{ $b['share'] }}%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        @endif
+
+        <!-- Bookings Details Table Section -->
+        <div class="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <span class="text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-wider">{{ __('reports.Period Bookings Details') }}</span>
-                <input wire:model.live.debounce.300ms="search" type="text" placeholder="{{ __('reports.Search by customer, service...') }}" class="w-64 p-2.5 text-xs font-bold bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl dark:text-white">
+                <input wire:model.live.debounce.300ms="search" type="text" placeholder="{{ __('reports.Search by customer, service...') }}" class="w-full sm:w-64 p-2.5 text-xs font-bold bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl dark:text-white">
             </div>
 
             <div class="overflow-x-auto rounded-2xl border border-gray-200 dark:border-gray-700/80">
@@ -141,7 +210,7 @@
                                     {{ $b->barber?->name ?? __('reports.All Staff') }}
                                 </td>
                                 <td class="px-6 py-5 font-extrabold text-emerald-600 dark:text-emerald-400 font-mono whitespace-nowrap">
-                                    {{ number_format($b->total_price, 2) }} €
+                                    {{ format_currency($b->total_price, auth()->user()?->barberShop) }}
                                 </td>
                                 <td class="px-6 py-5 whitespace-nowrap">
                                     @if($b->status === 'completed')

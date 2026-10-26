@@ -83,26 +83,26 @@ class Bookings extends Component
             'customer_id' => $this->customer_id,
         ], $this->sortField, $this->sortAsc ? 'asc' : 'desc');
 
-        // Calculate Today's Stats Banner Data
-        $shopId = auth()->user()?->barber_shop_id;
+        // Calculate Today's Stats Banner Data using exact date string
+        $todayStr = now()->toDateString(); // "2026-10-26"
+
         $statsQuery = Booking::query();
 
+        // Scope by active shop if user is not global admin or if barber_shop_id filter is set
         if ($this->barber_shop_id) {
             $statsQuery->where('barber_shop_id', $this->barber_shop_id);
-        } elseif ($shopId) {
-            $statsQuery->where('barber_shop_id', $shopId);
+        } elseif (auth()->check() && !auth()->user()->is_global_admin && auth()->user()->barber_shop_id) {
+            $statsQuery->where('barber_shop_id', auth()->user()->barber_shop_id);
         }
 
         if ($this->barber_id) {
             $statsQuery->where('barber_id', $this->barber_id);
         }
 
-        $today = \Carbon\Carbon::today();
-
-        $todayBookingsCount = (clone $statsQuery)->whereDate('appointment_at', $today)->count();
-        $todayCompletedCount = (clone $statsQuery)->whereDate('appointment_at', $today)->where('status', 'completed')->count();
-        $todayPendingCount = (clone $statsQuery)->whereDate('appointment_at', $today)->whereIn('status', ['pending', 'confirmed'])->count();
-        $todayRevenue = (clone $statsQuery)->whereDate('appointment_at', $today)->where('status', 'completed')->sum('total_price');
+        $todayBookingsCount = (clone $statsQuery)->whereDate('appointment_at', $todayStr)->count();
+        $todayCompletedCount = (clone $statsQuery)->whereDate('appointment_at', $todayStr)->where('status', 'completed')->count();
+        $todayPendingCount = (clone $statsQuery)->whereDate('appointment_at', $todayStr)->whereIn('status', ['pending', 'confirmed'])->count();
+        $todayRevenue = (clone $statsQuery)->whereDate('appointment_at', $todayStr)->where('status', 'completed')->sum('total_price');
 
         return view('livewire.admin.bookings.index', [
             'items' => $query->paginate($this->paginate),
