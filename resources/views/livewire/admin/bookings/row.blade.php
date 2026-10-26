@@ -77,7 +77,7 @@
                                 </x-slot>
                                 <x-slot name="footer">
                                     <x-button variant="gray" @click="on = false">{{ __('admin.Cancel') }}</x-button>
-                                    <x-button variant="green" wire:click="$parent.payNow('{{ $item->id }}', payAmount, payMethod)" @click="on = false">
+                                    <x-button variant="green" wire:click="payNow(payAmount, payMethod)" @click="on = false">
                                         {{ __('bookings.Confirm Payment') }}
                                     </x-button>
                                 </x-slot>
