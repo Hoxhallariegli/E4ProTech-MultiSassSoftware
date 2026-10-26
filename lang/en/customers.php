@@ -36,6 +36,8 @@ return [
   'block_customer' => 'Block Customer',
   'block_customer_desc' => 'Blocked customers are not allowed to make online bookings.',
   'blocked_from_online_bookings' => 'Blocked from online bookings',
+  'Booking' => 'Booking',
+  'Bookings' => 'Bookings',
   'takime' => 'bookings',
   'herë' => 'times',
   'no_contact' => 'No contact info',

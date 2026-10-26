@@ -39,6 +39,8 @@ return [
   'block_customer' => 'Blloko Klientin',
   'block_customer_desc' => 'Klientët e bllokuar nuk lejohen të bëjnë rezervime online.',
   'blocked_from_online_bookings' => 'Bllokuar nga rezervimet online',
+  'Booking' => 'Takim',
+  'Bookings' => 'Takime',
   'takime' => 'takime',
   'herë' => 'herë',
   'no_contact' => 'Pa kontakt',

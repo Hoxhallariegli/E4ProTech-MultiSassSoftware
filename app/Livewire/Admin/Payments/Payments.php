@@ -14,36 +14,58 @@ use Livewire\Attributes\On;
 #[Title('Payments')]
 class Payments extends Component
 {
-        use WithPagination;
+    use WithPagination;
 
     public int $paginate = 10;
     #[Url(history: true)] public string $search = '';
     #[Url(history: true)] public $barber_shop_id = '';
     #[Url(history: true)] public $booking_id = '';
+    #[Url(history: true)] public $barber_id = '';
+    #[Url(history: true)] public string $payment_date = '';
     public bool $openFilter = false;
     public string $sortField = 'id';
     public bool $sortAsc = false;
 
-    public function resetFilters() { $this->reset(['search', 'openFilter', 'barber_shop_id', 'booking_id', ]); $this->resetPage(); }
+    public function resetFilters()
+    {
+        $this->reset(['search', 'openFilter', 'barber_shop_id', 'booking_id', 'barber_id', 'payment_date']);
+        $this->resetPage();
+    }
 
     #[On('echo-private:mobile.payments,.payments.changed')]
     public function onBroadcastCloudChange($event)
     {
-        // Realtime refresh when DB changes via APK or other sessions
         $this->render();
     }
 
     public function render()
     {
         abort_if_cannot('view_payments');
-        $query = (new PaymentListQuery())->handle(['search' => $this->search,             'barber_shop_id' => $this->barber_shop_id,
+        $query = (new PaymentListQuery())->handle([
+            'search' => $this->search,
+            'barber_shop_id' => $this->barber_shop_id,
             'booking_id' => $this->booking_id,
-], $this->sortField, $this->sortAsc ? 'asc' : 'desc');
+            'barber_id' => $this->barber_id,
+            'payment_date' => $this->payment_date,
+        ], $this->sortField, $this->sortAsc ? 'asc' : 'desc');
+
+        $paginatedItems = $query->paginate($this->paginate);
+
+        $pageSum = collect($paginatedItems->items())
+            ->filter(fn($p) => in_array($p->status, ['paid', 'completed'], true))
+            ->sum('amount');
+
+        $totalSum = (clone $query)->whereIn('status', ['paid', 'completed'])->sum('amount');
+        $totalCount = (clone $query)->count();
 
         return view('livewire.admin.payments.index', [
-            'items' => $query->paginate($this->paginate),
+            'items' => $paginatedItems,
+            'pageSum' => $pageSum,
+            'totalSum' => $totalSum,
+            'totalCount' => $totalCount,
             'sortableFields' => Payment::sortable(),
             'barberShops' => \App\Models\BarberShop::pluck('name', 'id')->toArray(),
+            'barbers' => \App\Models\Barber::pluck('name', 'id')->toArray(),
             'bookings' => \App\Models\Booking::with('customer')->get()->pluck('customer.name', 'id')->toArray(),
         ])->layout('components.layouts.app');
     }

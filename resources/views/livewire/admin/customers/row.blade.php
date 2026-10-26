@@ -18,7 +18,7 @@
 
             <div class="flex items-center gap-1.5 shrink-0">
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                    {{ $item->total_bookings }} Takime
+                    {{ $item->total_bookings }} {{ $item->total_bookings == 1 ? __('customers.Booking') : __('customers.Bookings') }}
                 </span>
                 @if($item->no_show_count > 0)
                     <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300">

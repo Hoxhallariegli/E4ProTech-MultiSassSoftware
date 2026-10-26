@@ -15,6 +15,63 @@
         </div>
     </div>
 
+    <!-- Today's Live Stats Banner (Brand Oriented & Minimalist) -->
+    @can('view_bookings')
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            <!-- 1. Today Total Bookings -->
+            <div class="p-4 sm:p-5 bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700/80 rounded-[2rem] shadow-2xs flex items-center justify-between">
+                <div>
+                    <p class="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">{{ __('bookings.Today Bookings') }}</p>
+                    <p class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white font-mono mt-1">
+                        {{ $todayBookingsCount }}
+                    </p>
+                </div>
+                <div class="p-3 bg-gray-100 dark:bg-gray-700/60 text-gray-700 dark:text-gray-200 rounded-2xl shrink-0">
+                    <x-heroicon-o-calendar-days class="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+            </div>
+
+            <!-- 2. Today Completed & Paid -->
+            <div class="p-4 sm:p-5 bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700/80 rounded-[2rem] shadow-2xs flex items-center justify-between">
+                <div>
+                    <p class="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">{{ __('bookings.Completed & Paid') }}</p>
+                    <p class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white font-mono mt-1">
+                        {{ $todayCompletedCount }}
+                    </p>
+                </div>
+                <div class="p-3 bg-gray-100 dark:bg-gray-700/60 text-gray-700 dark:text-gray-200 rounded-2xl shrink-0">
+                    <x-heroicon-o-check-circle class="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+            </div>
+
+            <!-- 3. Today Pending / Upcoming -->
+            <div class="p-4 sm:p-5 bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700/80 rounded-[2rem] shadow-2xs flex items-center justify-between">
+                <div>
+                    <p class="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">{{ __('bookings.Pending & Confirmed') }}</p>
+                    <p class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white font-mono mt-1">
+                        {{ $todayPendingCount }}
+                    </p>
+                </div>
+                <div class="p-3 bg-gray-100 dark:bg-gray-700/60 text-gray-700 dark:text-gray-200 rounded-2xl shrink-0">
+                    <x-heroicon-o-clock class="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+            </div>
+
+            <!-- 4. Today Revenue -->
+            <div class="p-4 sm:p-5 bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700/80 rounded-[2rem] shadow-2xs flex items-center justify-between">
+                <div>
+                    <p class="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">{{ __('bookings.Today Revenue') }}</p>
+                    <p class="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono mt-1">
+                        {{ format_currency($todayRevenue, auth()->user()?->barberShop) }}
+                    </p>
+                </div>
+                <div class="p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-2xl shrink-0">
+                    <x-heroicon-o-banknotes class="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+            </div>
+        </div>
+    @endcan
+
     <div x-show="openFilter" x-cloak class="p-6 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div>

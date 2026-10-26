@@ -34,9 +34,47 @@ class Bookings extends Component
         $this->render();
     }
 
+    public function payNow($bookingId, $amount = null, $method = 'cash')
+    {
+        abort_if_cannot('edit_bookings');
+
+        $booking = Booking::find($bookingId);
+        if (!$booking) {
+            $this->dispatch('toast', message: __('bookings.not_found'), type: 'error');
+            return;
+        }
+
+        try {
+            $payAmount = (float) ($amount !== null && is_numeric($amount) && (float)$amount >= 0 ? $amount : $booking->total_price);
+
+            // 1. Create or update Payment record
+            \App\Models\Payment::updateOrCreate(
+                ['booking_id' => $booking->id],
+                [
+                    'barber_shop_id' => $booking->barber_shop_id,
+                    'amount' => $payAmount,
+                    'method' => in_array($method, ['cash', 'card'], true) ? $method : 'cash',
+                    'status' => 'paid',
+                ]
+            );
+
+            // 2. Update booking status to completed and price to paid amount
+            $booking->update([
+                'status' => 'completed',
+                'total_price' => $payAmount,
+            ]);
+
+            $this->dispatch('toast', message: __('bookings.Payment recorded successfully!'), type: 'success');
+            $this->resetPage();
+        } catch (\Exception $e) {
+            $this->dispatch('toast', message: __('bookings.Payment error: ') . $e->getMessage(), type: 'error');
+        }
+    }
+
     public function render()
     {
         abort_if_cannot('view_bookings');
+
         $query = (new BookingListQuery())->handle([
             'search' => $this->search,
             'barber_shop_id' => $this->barber_shop_id,
@@ -45,8 +83,33 @@ class Bookings extends Component
             'customer_id' => $this->customer_id,
         ], $this->sortField, $this->sortAsc ? 'asc' : 'desc');
 
+        // Calculate Today's Stats Banner Data
+        $shopId = auth()->user()?->barber_shop_id;
+        $statsQuery = Booking::query();
+
+        if ($this->barber_shop_id) {
+            $statsQuery->where('barber_shop_id', $this->barber_shop_id);
+        } elseif ($shopId) {
+            $statsQuery->where('barber_shop_id', $shopId);
+        }
+
+        if ($this->barber_id) {
+            $statsQuery->where('barber_id', $this->barber_id);
+        }
+
+        $today = \Carbon\Carbon::today();
+
+        $todayBookingsCount = (clone $statsQuery)->whereDate('appointment_at', $today)->count();
+        $todayCompletedCount = (clone $statsQuery)->whereDate('appointment_at', $today)->where('status', 'completed')->count();
+        $todayPendingCount = (clone $statsQuery)->whereDate('appointment_at', $today)->whereIn('status', ['pending', 'confirmed'])->count();
+        $todayRevenue = (clone $statsQuery)->whereDate('appointment_at', $today)->where('status', 'completed')->sum('total_price');
+
         return view('livewire.admin.bookings.index', [
             'items' => $query->paginate($this->paginate),
+            'todayBookingsCount' => $todayBookingsCount,
+            'todayCompletedCount' => $todayCompletedCount,
+            'todayPendingCount' => $todayPendingCount,
+            'todayRevenue' => $todayRevenue,
             'sortableFields' => Booking::sortable(),
             'barberShops' => \App\Models\BarberShop::pluck('name', 'id')->toArray(),
             'barbers' => \App\Models\Barber::pluck('name', 'id')->toArray(),
