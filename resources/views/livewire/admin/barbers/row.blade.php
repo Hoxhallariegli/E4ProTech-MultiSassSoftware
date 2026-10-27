@@ -16,9 +16,14 @@
                 </div>
             </div>
 
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase shrink-0 {{ $item->active ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' }}">
-                {{ $item->active ? 'Aktiv' : 'Inaktiv' }}
-            </span>
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase {{ $wa_connected ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' }}">
+                    WA: {{ $wa_connected ? 'Lidhur' : 'Pa lidhur' }}
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase {{ $item->active ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' }}">
+                    {{ $item->active ? 'Aktiv' : 'Inaktiv' }}
+                </span>
+            </div>
         </div>
 
         @if($item->bio)
@@ -58,6 +63,12 @@
     <td class="hidden lg:table-cell px-6 py-5">
         <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase {{ $item->active ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' }}">
             {{ $item->active ? 'Aktiv' : 'Inaktiv' }}
+        </span>
+    </td>
+    <td class="hidden lg:table-cell px-6 py-5 whitespace-nowrap">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase {{ $wa_connected ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' }}">
+            <span class="w-2 h-2 rounded-full {{ $wa_connected ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400' }}"></span>
+            <span>{{ $wa_connected ? 'Lidhur' : 'Pa lidhur' }}</span>
         </span>
     </td>
     <td class="hidden lg:table-cell px-6 py-5 text-right !transition-none">

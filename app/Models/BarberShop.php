@@ -26,6 +26,7 @@ class BarberShop extends Model
         'expires_at',
         'active',
         'sms_enabled',
+        'whatsapp_enabled',
         'timezone',
         'max_no_show_before_block',
         'min_service_time',

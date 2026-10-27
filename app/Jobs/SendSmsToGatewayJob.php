@@ -10,6 +10,7 @@ use Illuminate\Queue\SerializesModels;
 use App\Models\MessageQueue;
 use App\Models\DeviceToken;
 use App\Services\FirebaseService;
+use App\Services\WhatsAppService;
 use Illuminate\Support\Facades\Log;
 
 class SendSmsToGatewayJob
@@ -42,8 +43,36 @@ class SendSmsToGatewayJob
         }
 
         $shopId = $queue->barber_shop_id;
+        $booking = $queue->booking;
+        $barberId = $booking?->barber_id;
+        $customerId = $booking?->customer_id;
+        $templateType = $queue->resolved_template_type;
 
-        // Strict lookup for active SMS Gateway device assigned to this shop or fallback to system gateway
+        // 1. TIER 1 & TIER 2: Try sending via WhatsApp (Barber WhatsApp -> Shop WhatsApp -> Default WhatsApp)
+        try {
+            $waSent = app(WhatsAppService::class)->send(
+                $queue->phone_number,
+                $queue->message_content,
+                $shopId,
+                $barberId,
+                $customerId,
+                $templateType
+            );
+
+            if ($waSent) {
+                $queue->update([
+                    'status' => 'sent',
+                    'sent_at' => now(),
+                    'channel' => 'whatsapp',
+                ]);
+                Log::info("💬 [SendSmsToGatewayJob] Scheduled reminder ID #{$queue->id} successfully sent via WhatsApp Gateway.");
+                return;
+            }
+        } catch (\Throwable $e) {
+            Log::warning("⚠️ [SendSmsToGatewayJob] WhatsApp Gateway attempt failed for Queue ID #{$queue->id}: " . $e->getMessage());
+        }
+
+        // 2. TIER 3: Fallback to SIM Card SMS Gateway device
         $gatewayDevice = DeviceToken::where('is_sms_gateway', true)
             ->where(function($q) use ($shopId) {
                 if ($shopId) {
@@ -66,7 +95,7 @@ class SendSmsToGatewayJob
         }
 
         if (!$gatewayDevice || !$gatewayDevice->fcm_token) {
-            Log::info("⚠️ [SMS Gateway Pending] No active SMS Gateway device found in DB for Shop #{$shopId}. Queue #{$queue->id} waiting.");
+            Log::info("⚠️ [SMS Gateway Pending] No active SIM Gateway or WhatsApp Gateway available for Shop #{$shopId}. Queue #{$queue->id} waiting.");
             return;
         }
 

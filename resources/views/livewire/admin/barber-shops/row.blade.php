@@ -16,13 +16,18 @@
                 </div>
             </div>
 
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase shrink-0 {{ $item->is_expired ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' }}">
-                {{ $item->active_plan_name }}
-            </span>
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase {{ $wa_connected ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' }}">
+                    WA: {{ $wa_connected ? 'Lidhur' : 'Pa lidhur' }}
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase {{ $item->is_expired ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' }}">
+                    {{ $item->active_plan_name }}
+                </span>
+            </div>
         </div>
 
         <div class="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-            <span>Slug: <strong class="font-mono text-blue-600 dark:text-blue-400">{{ $item->slug }}</strong></span>
+            <span>Aktiv: <strong class="font-bold {{ $item->active ? 'text-emerald-600' : 'text-red-500' }}">{{ $item->active ? 'Po' : 'Jo' }}</strong></span>
             <span class="font-mono font-bold {{ $item->is_expired ? 'text-red-500' : 'text-emerald-600' }}">{{ $item->days_left }} Ditë Mbetura</span>
         </div>
 
@@ -58,6 +63,12 @@
         </span>
     </td>
     <td class="hidden lg:table-cell px-6 py-5 whitespace-nowrap">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase {{ $wa_connected ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' }}">
+            <span class="w-2 h-2 rounded-full {{ $wa_connected ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400' }}"></span>
+            <span>{{ $wa_connected ? 'Lidhur' : 'Pa lidhur' }}</span>
+        </span>
+    </td>
+    <td class="hidden lg:table-cell px-6 py-5 whitespace-nowrap">
         @php
             $rHours = (float) ($item->reminder_hours_before ?? 2);
             $rLabel = $rHours >= 1 ? ($rHours == (int)$rHours ? (int)$rHours . ' h' : $rHours . ' h') : round($rHours * 60) . ' min';
@@ -67,11 +78,8 @@
         </span>
     </td>
     <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->app_name }}</td>
-    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300 font-mono text-xs">{{ $item->slug }}</td>
     <td class="hidden lg:table-cell px-6 py-3">@if($item->logo) <a href="{{ asset(ltrim($item->logo, '/')) }}" target="_blank" rel="noopener" class="inline-block group" title="View image"><img src="{{ asset(ltrim($item->logo, '/')) }}" alt="Logo" class="w-11 h-11 rounded-xl object-cover border border-gray-200 dark:border-gray-700 shadow-sm group-hover:scale-105 transition-transform duration-150" loading="lazy" /></a> @else <span class="text-gray-400">-</span> @endif</td>
     <td class="hidden lg:table-cell px-6 py-3">@if($item->banner) <a href="{{ asset(ltrim($item->banner, '/')) }}" target="_blank" rel="noopener" class="inline-block group" title="View image"><img src="{{ asset(ltrim($item->banner, '/')) }}" alt="Banner" class="w-11 h-11 rounded-xl object-cover border border-gray-200 dark:border-gray-700 shadow-sm group-hover:scale-105 transition-transform duration-150" loading="lazy" /></a> @else <span class="text-gray-400">-</span> @endif</td>
-    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300 font-mono text-xs">{{ $item->primary_color }}</td>
-    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300 font-mono text-xs">{{ $item->secondary_color }}</td>
     <td class="hidden lg:table-cell px-6 py-5 font-extrabold text-slate-800 dark:text-slate-200">{{ $item->resolved_currency }}</td>
     <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300 font-mono text-xs">{{ $item->trial_ends_at?->format('d/m/Y H:i') ?? '-' }}</td>
     <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300 font-mono text-xs">{{ $item->expires_at?->format('d/m/Y H:i') ?? '-' }}</td>

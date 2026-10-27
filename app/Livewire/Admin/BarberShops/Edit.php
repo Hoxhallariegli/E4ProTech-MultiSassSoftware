@@ -29,6 +29,7 @@ class Edit extends Component
     public $expires_at = '';
     public $active = false;
     public $sms_enabled = false;
+    public $whatsapp_enabled = true;
     public $reminder_hours_before = '2';
     public $timezone = '';
     public $max_no_show_before_block = '';
@@ -39,6 +40,11 @@ class Edit extends Component
     public $shop_label = '';
     public $service_label = '';
     public $currency = 'Lekë';
+
+    // WhatsApp Gateway Properties per Shop
+    public bool $wa_connected = false;
+    public ?string $wa_qr = null;
+    public ?string $wa_phone = null;
 
     #[On('user-created')]
     public function refreshOwners($id) { $this->owner_id = $id; $this->updatedOwnerId($id); }
@@ -54,6 +60,59 @@ class Edit extends Component
         $query = \App\Models\User::query();
         if (method_exists(\App\Models\User::class, 'scopeForActiveShop')) { $query->forActiveShop(); }
         return $query->pluck('name', 'id')->toArray();
+    }
+
+    public function checkWhatsAppStatus()
+    {
+        try {
+            $shopId = $this->item->id;
+            $res = \Illuminate\Support\Facades\Http::withHeaders([
+                'X-API-KEY' => 'E4ProTech_Secret_Key_2026_Secure'
+            ])->timeout(3)->get("http://127.0.0.1:3000/api/whatsapp/status?shop_id={$shopId}");
+
+            if ($res->successful()) {
+                $this->wa_connected = (bool) $res->json('connected');
+                $this->wa_phone = $res->json('phone');
+                if ($this->wa_connected) {
+                    $this->wa_qr = null;
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->wa_connected = false;
+        }
+    }
+
+    public function generateWhatsAppQr()
+    {
+        try {
+            $shopId = $this->item->id;
+
+            // Fetch QR up to 3 attempts if session is initializing
+            for ($i = 0; $i < 3; $i++) {
+                $res = \Illuminate\Support\Facades\Http::withHeaders([
+                    'X-API-KEY' => 'E4ProTech_Secret_Key_2026_Secure'
+                ])->timeout(10)->get("http://127.0.0.1:3000/api/whatsapp/qr?shop_id={$shopId}");
+
+                if ($res->successful()) {
+                    $this->wa_connected = (bool) $res->json('connected');
+                    $this->wa_qr = $res->json('qr');
+                    if ($this->wa_connected || $this->wa_qr) {
+                        break;
+                    }
+                }
+                sleep(1);
+            }
+
+            if ($this->wa_connected) {
+                $this->dispatch('toast', message: 'WhatsApp është tashmë i lidhur!', type: 'success');
+            } elseif ($this->wa_qr) {
+                $this->dispatch('toast', message: 'QR Code u gjenerua me sukses! Skanojeni me telefon.', type: 'success');
+            } else {
+                $this->dispatch('toast', message: 'Duke inicializuar QR Code-in... Klikoni përsëri pas disa sekondash.', type: 'info');
+            }
+        } catch (\Throwable $e) {
+            $this->dispatch('toast', message: 'WhatsApp Gateway nuk i përgjigjet te porta 3000.', type: 'error');
+        }
     }
 
     public function mount(?BarberShop $barberShop = null) {
@@ -92,6 +151,9 @@ class Edit extends Component
         $this->shop_label = $barberShop->shop_label ?? '';
         $this->service_label = $barberShop->service_label ?? '';
         $this->currency = $barberShop->currency ?? 'Lekë';
+        $this->whatsapp_enabled = (bool) ($barberShop->whatsapp_enabled ?? true);
+
+        $this->checkWhatsAppStatus();
     }
 
     public function render() {
@@ -129,6 +191,11 @@ class Edit extends Component
             'currency' => $this->currency,
         ]);
         $action->execute($this->item, $dto);
+
+        $this->item->update([
+            'whatsapp_enabled' => (bool) $this->whatsapp_enabled,
+        ]);
+
         session()->flash('success', __('barber-shops.updated'));
         return to_route('admin.barber-shops.index');
     }

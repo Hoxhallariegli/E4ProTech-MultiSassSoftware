@@ -9,11 +9,12 @@ class Barber extends Model
 {
     use HasFactory, \App\Models\Traits\BelongsToBarberShop;
 
-    protected $fillable = ['barber_shop_id', 'user_id', 'name', 'phone', 'photo', 'bio', 'active'];
+    protected $fillable = ['barber_shop_id', 'user_id', 'name', 'phone', 'photo', 'bio', 'active', 'whatsapp_enabled'];
 
     protected function casts(): array {
         return [
             'active' => 'boolean',
+            'whatsapp_enabled' => 'boolean',
         ];
     }
 

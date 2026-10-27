@@ -41,13 +41,11 @@
                         <x-table.th name="name" :label="__('barber-shops.Name')" :$sortField :$sortAsc :sortable="in_array('name', $sortableFields)" />
                         <th class="px-6 py-4 text-left text-[10px] font-black uppercase text-gray-400 tracking-widest">{{ __('barber-shops.Active Plan') }}</th>
                         <th class="px-6 py-4 text-left text-[10px] font-black uppercase text-gray-400 tracking-widest">{{ __('barber-shops.Days Left') }}</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-black uppercase text-gray-400 tracking-widest">WhatsApp</th>
                         <x-table.th name="reminder_hours_before" :label="__('barber-shops.Reminder Hours Before')" :$sortField :$sortAsc :sortable="in_array('reminder_hours_before', $sortableFields)" />
                         <x-table.th name="app_name" :label="__('barber-shops.App Name')" :$sortField :$sortAsc :sortable="in_array('app_name', $sortableFields)" />
-                        <x-table.th name="slug" :label="__('barber-shops.Slug')" :$sortField :$sortAsc :sortable="in_array('slug', $sortableFields)" />
                         <x-table.th name="logo" :label="__('barber-shops.Logo')" :$sortField :$sortAsc :sortable="in_array('logo', $sortableFields)" />
                         <x-table.th name="banner" :label="__('barber-shops.Banner')" :$sortField :$sortAsc :sortable="in_array('banner', $sortableFields)" />
-                        <x-table.th name="primary_color" :label="__('barber-shops.Primary Color')" :$sortField :$sortAsc :sortable="in_array('primary_color', $sortableFields)" />
-                        <x-table.th name="secondary_color" :label="__('barber-shops.Secondary Color')" :$sortField :$sortAsc :sortable="in_array('secondary_color', $sortableFields)" />
                         <x-table.th name="currency" :label="__('barber-shops.Currency')" :$sortField :$sortAsc :sortable="in_array('currency', $sortableFields)" />
                         <x-table.th name="trial_ends_at" :label="__('barber-shops.Trial Ends At')" :$sortField :$sortAsc :sortable="in_array('trial_ends_at', $sortableFields)" />
                         <x-table.th name="expires_at" :label="__('barber-shops.Expires At')" :$sortField :$sortAsc :sortable="in_array('expires_at', $sortableFields)" />

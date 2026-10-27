@@ -9,6 +9,7 @@ use App\Models\MessageLog;
 use App\Models\MessageTemplate;
 use App\Models\DeviceToken;
 use App\Services\FirebaseService;
+use App\Services\WhatsAppService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
@@ -73,8 +74,9 @@ class SendFirebaseNotificationListener
 
                 Log::info("📌 [SMS QUEUE CHECK] Booking #{$booking->id} (Source: {$source}) Action: {$action}, SendSMS Requested: " . ($sendSmsRequested ? 'YES' : 'NO') . ", Customer Phone: " . ($booking->customer?->phone ?? 'NONE'));
 
-                // Check if shop has SMS enabled
+                // Check if shop or barber has SMS / WhatsApp enabled
                 $shop = $booking->barberShop;
+                $barber = $booking->barber;
                 $shopSmsEnabled = $shop ? (bool)$shop->sms_enabled : true;
 
                 if (!$shopSmsEnabled) {
@@ -161,8 +163,8 @@ class SendFirebaseNotificationListener
                             }
                         }
 
-                        // Trigger SMS Gateway Device
-                        $this->triggerGatewayDevice($shopId, $queue?->id ?? 0, $booking->customer->phone, $parsedConfirmation);
+                        // Trigger SMS / WhatsApp Gateway
+                        $this->triggerGatewayDevice($shopId, $queue?->id ?? 0, $formattedPhone, $parsedConfirmation, $booking->barber_id, $booking->customer_id, 'confirmation');
                     }
 
                     // -------------------------------------------------------------
@@ -243,7 +245,7 @@ class SendFirebaseNotificationListener
                             Log::info("🔄 [STEP 4a-UPDATE] SMS Update Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
 
                             // Trigger Gateway Device
-                            $this->triggerGatewayDevice($shopId, $updateQueue->id, $booking->customer->phone, $parsedUpdate);
+                            $this->triggerGatewayDevice($shopId, $updateQueue->id, $formattedPhone, $parsedUpdate, $booking->barber_id, $booking->customer_id, 'reschedule');
                         } else {
                             Log::info("⏭️ [STEP 4a-UPDATE] Skipped duplicate/unnecessary SMS Update for Booking #{$booking->id}. Details changed: " . ($timeOrDetailsChanged ? 'YES' : 'NO') . ", Recent update SMS exists: " . ($recentUpdateSmsExists ? 'YES' : 'NO'));
                         }
@@ -278,7 +280,7 @@ class SendFirebaseNotificationListener
                         Log::info("❌ [STEP 4a-CANCEL] SMS Cancellation Message queued for Booking #{$booking->id}");
 
                         // Trigger Gateway Device
-                        $this->triggerGatewayDevice($shopId, $cancelQueue->id, $booking->customer->phone, $parsedCancel);
+                        $this->triggerGatewayDevice($shopId, $cancelQueue->id, $formattedPhone, $parsedCancel, $booking->barber_id, $booking->customer_id, 'cancellation');
                     }
                 }
 
@@ -300,8 +302,19 @@ class SendFirebaseNotificationListener
         }
     }
 
-    private function triggerGatewayDevice(int $shopId, int $smsId, string $phone, string $body): void
+    private function triggerGatewayDevice(int $shopId, int $smsId, string $phone, string $body, ?int $barberId = null, ?int $customerId = null, ?string $templateType = null): void
     {
+        // 1. Send via WhatsApp Gateway (Baileys) using parsed SMS Message Template!
+        try {
+            $waSent = app(WhatsAppService::class)->send($phone, $body, $shopId, $barberId, $customerId, $templateType);
+            if ($waSent) {
+                Log::info("💬 [WHATSAPP GATEWAY] Sent WhatsApp template message to {$phone} for Shop #{$shopId} (Barber #{$barberId}). Content: '{$body}'");
+            }
+        } catch (\Throwable $e) {
+            Log::warning("⚠️ [WHATSAPP GATEWAY] Error sending WhatsApp to {$phone}: " . $e->getMessage());
+        }
+
+        // 2. Trigger Android SIM Gateway Device if available
         $gatewayDevice = DeviceToken::where('barber_shop_id', $shopId)
             ->where('is_sms_gateway', true)
             ->whereNotNull('fcm_token')
@@ -332,8 +345,6 @@ class SendFirebaseNotificationListener
                 ]
             );
             Log::info("📱 [TRIGGER GATEWAY] SEND_SMS FCM data message sent to gateway device #{$gatewayDevice->id} [{$gatewayDevice->device_name}] for Shop #{$shopId}. FCM Status: " . ($fcmSent ? 'SUCCESS' : 'FAILED'));
-        } else {
-            Log::warning("⚠️ [TRIGGER GATEWAY] No active SMS Gateway device found in DB for Shop #{$shopId}. SMS queued as pending.");
         }
     }
 

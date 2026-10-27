@@ -45,6 +45,7 @@
                         <x-table.th name="photo" :label="__('barbers.Photo')" :$sortField :$sortAsc :sortable="in_array('photo', $sortableFields)" />
                         <x-table.th name="bio" :label="__('barbers.Bio')" :$sortField :$sortAsc :sortable="in_array('bio', $sortableFields)" />
                         <x-table.th name="active" :label="__('barbers.Active')" :$sortField :$sortAsc :sortable="in_array('active', $sortableFields)" />
+                        <th class="px-6 py-4 text-left text-[10px] font-black uppercase text-gray-400 tracking-widest">WhatsApp</th>
                         <th class="px-6 py-4 text-right text-[10px] font-black uppercase text-gray-400 tracking-widest">{{ __('barbers.Action') }}</th>
                     </tr>
                 </thead>
