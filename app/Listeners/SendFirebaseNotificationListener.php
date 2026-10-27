@@ -4,6 +4,8 @@ namespace App\Listeners;
 
 use App\Events\BookingChanged;
 use App\Models\Booking;
+use App\Models\BarberShop;
+use App\Models\Barber;
 use App\Models\MessageQueue;
 use App\Models\MessageLog;
 use App\Models\MessageTemplate;
@@ -77,27 +79,27 @@ class SendFirebaseNotificationListener
                 // Check if shop or barber has SMS / WhatsApp enabled
                 $shop = $booking->barberShop;
                 $barber = $booking->barber;
-                $shopSmsEnabled = $shop ? (bool)$shop->sms_enabled : true;
+                $shopSmsEnabled = $shop ? (bool)($shop->sms_enabled ?? true) : true;
 
-                if (!$shopSmsEnabled) {
-                    Log::info("⏸️ [STEP 4] SMS is disabled for Shop #{$shopId} (sms_enabled = false). Skipping SMS queue and trigger.");
+                if (!$shopSmsEnabled && !($shop?->whatsapp_enabled ?? true) && !($barber?->whatsapp_enabled ?? true)) {
+                    Log::info("⏸️ [STEP 4] Notifications are disabled for Shop #{$shopId}. Skipping queue and trigger.");
                     return;
                 }
 
                 if ($booking->customer && $booking->customer->phone && $sendSmsRequested) {
                     $formattedPhone = $this->formatPhone($booking->customer->phone);
-                    $preferredChannel = ($shop?->whatsapp_enabled ?? true) || ($barber?->whatsapp_enabled ?? true) ? 'whatsapp' : 'sms';
+                    $preferredChannel = ($barber?->whatsapp_enabled ?? true) || ($shop?->whatsapp_enabled ?? true) ? 'whatsapp' : 'sms';
 
                     // -------------------------------------------------------------
                     // ACTION A: CREATED -> Send Confirmation + Schedule Reminder
                     // -------------------------------------------------------------
                     if ($action === 'created') {
-                        $parsedConfirmation = MessageTemplate::parseForBooking($booking, 'confirmation');
+                        $parsedConfirmation = MessageTemplate::parseForBooking($booking, 'confirmation', null, $preferredChannel);
 
                         // Fetch existing SMS queue items for this booking
                         $existingSmsQueues = MessageQueue::where('booking_id', $booking->id)->get();
 
-                        // 1. Direct Confirmation SMS (Immediate)
+                        // 1. Direct Confirmation Message (Immediate)
                         $existingConfirmation = $existingSmsQueues->first(fn($q) => ($q->template_type ?? $q->resolved_template_type) === 'confirmation');
                         $queue = $existingConfirmation;
 
@@ -121,7 +123,7 @@ class SendFirebaseNotificationListener
                             Log::info("📝 [STEP 4a] Confirmation Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Channel: {$preferredChannel})");
                         }
 
-                        // 2. Scheduled Reminder SMS (Pending until reminder hours before appointment)
+                        // 2. Scheduled Reminder Message (Pending until reminder hours before appointment)
                         $shop = $booking->barberShop;
                         if ($booking->appointment_at) {
                             $rawVal = $shop?->reminder_hours_before;
@@ -138,7 +140,7 @@ class SendFirebaseNotificationListener
                                 $scheduledReminderTime = now();
                             }
 
-                            $parsedReminder = MessageTemplate::parseForBooking($booking, 'reminder');
+                            $parsedReminder = MessageTemplate::parseForBooking($booking, 'reminder', null, $preferredChannel);
                             $existingReminder = $existingSmsQueues->first(fn($q) => ($q->template_type ?? $q->resolved_template_type) === 'reminder');
 
                             if (!$existingReminder) {
@@ -162,7 +164,7 @@ class SendFirebaseNotificationListener
                             }
                         }
 
-                        // Trigger SMS / WhatsApp Gateway
+                        // Trigger Smart Gateway Device
                         $this->triggerGatewayDevice($shopId, $queue?->id ?? 0, $formattedPhone, $parsedConfirmation, $booking->barber_id, $booking->customer_id, 'confirmation');
                     }
 
@@ -187,7 +189,7 @@ class SendFirebaseNotificationListener
                                 $scheduledReminderTime = now();
                             }
 
-                            $parsedReminder = MessageTemplate::parseForBooking($booking, 'reminder');
+                            $parsedReminder = MessageTemplate::parseForBooking($booking, 'reminder', null, $preferredChannel);
 
                             // Find and update existing pending reminder in MessageQueue
                             $pendingReminder = MessageQueue::where('booking_id', $booking->id)
@@ -222,7 +224,7 @@ class SendFirebaseNotificationListener
                             ->exists();
 
                         if ($timeOrDetailsChanged && !$recentUpdateSmsExists) {
-                            $parsedUpdate = MessageTemplate::parseForBooking($booking, 'reschedule');
+                            $parsedUpdate = MessageTemplate::parseForBooking($booking, 'reschedule', null, $preferredChannel);
 
                             $updateQueueData = [
                                 'barber_shop_id' => $booking->barber_shop_id,
@@ -258,7 +260,7 @@ class SendFirebaseNotificationListener
                             ->where('status', 'pending')
                             ->delete();
 
-                        $parsedCancel = MessageTemplate::parseForBooking($booking, 'cancellation');
+                        $parsedCancel = MessageTemplate::parseForBooking($booking, 'cancellation', null, $preferredChannel);
 
                         $cancelQueueData = [
                             'barber_shop_id' => $booking->barber_shop_id,
@@ -302,17 +304,58 @@ class SendFirebaseNotificationListener
 
     private function triggerGatewayDevice(int $shopId, int $smsId, string $phone, string $body, ?int $barberId = null, ?int $customerId = null, ?string $templateType = null): void
     {
-        // 1. Send via WhatsApp Gateway (Baileys) using parsed SMS Message Template!
-        try {
-            $waSent = app(WhatsAppService::class)->send($phone, $body, $shopId, $barberId, $customerId, $templateType);
-            if ($waSent) {
-                Log::info("💬 [WHATSAPP GATEWAY] Sent WhatsApp template message to {$phone} for Shop #{$shopId} (Barber #{$barberId}). Content: '{$body}'");
+        $shop = BarberShop::find($shopId);
+        $barber = $barberId ? Barber::find($barberId) : null;
+
+        $shopWaEnabled = $shop ? (bool) ($shop->whatsapp_enabled ?? true) : true;
+        $barberWaEnabled = $barber ? (bool) ($barber->whatsapp_enabled ?? true) : true;
+
+        $waService = app(WhatsAppService::class);
+        $waSent = false;
+
+        // -------------------------------------------------------------
+        // TIER 1: Barber's Personal WhatsApp (Priority #1)
+        // -------------------------------------------------------------
+        if ($barberId && $barberWaEnabled) {
+            if ($waService->isConnected($shopId, $barberId)) {
+                $waSent = $waService->send($phone, $body, $shopId, $barberId, $customerId, $templateType);
+                if ($waSent) {
+                    Log::info("💬 [SMART ROUTE - TIER 1] Sent via Barber #{$barberId} Personal WhatsApp to {$phone}");
+                    return; // Successfully delivered via Barber WhatsApp!
+                }
+            } else {
+                Log::info("⏭️ [SMART ROUTE - TIER 1 SKIP] Barber #{$barberId} WhatsApp is enabled but not connected. Fallback to Tier 2.");
             }
-        } catch (\Throwable $e) {
-            Log::warning("⚠️ [WHATSAPP GATEWAY] Error sending WhatsApp to {$phone}: " . $e->getMessage());
+        } else {
+            Log::info("⏭️ [SMART ROUTE - TIER 1 SKIP] Barber WhatsApp disabled or no barber selected. Fallback to Tier 2.");
         }
 
-        // 2. Trigger Android SIM Gateway Device if available
+        // -------------------------------------------------------------
+        // TIER 2: Barber Shop's Central WhatsApp (Priority #2)
+        // -------------------------------------------------------------
+        if ($shopWaEnabled) {
+            if ($waService->isConnected($shopId, null)) {
+                $waSent = $waService->send($phone, $body, $shopId, null, $customerId, $templateType);
+                if ($waSent) {
+                    Log::info("💬 [SMART ROUTE - TIER 2] Sent via Shop #{$shopId} Central WhatsApp to {$phone}");
+                    return; // Successfully delivered via Shop WhatsApp!
+                }
+            } else {
+                Log::info("⏭️ [SMART ROUTE - TIER 2 SKIP] Shop #{$shopId} WhatsApp is enabled but not connected. Fallback to Tier 3.");
+            }
+        } else {
+            Log::info("⏭️ [SMART ROUTE - TIER 2 SKIP] Shop WhatsApp disabled. Fallback to Tier 3.");
+        }
+
+        // -------------------------------------------------------------
+        // TIER 3: SIM Card SMS Gateway (Priority #3)
+        // -------------------------------------------------------------
+        $shopSmsEnabled = $shop ? (bool) ($shop->sms_enabled ?? true) : true;
+        if (!$shopSmsEnabled) {
+            Log::info("⏸️ [SMART ROUTE - TIER 3 SKIP] SIM SMS is disabled for Shop #{$shopId}. All routes skipped cleanly.");
+            return;
+        }
+
         $gatewayDevice = DeviceToken::where('barber_shop_id', $shopId)
             ->where('is_sms_gateway', true)
             ->whereNotNull('fcm_token')
@@ -342,7 +385,9 @@ class SendFirebaseNotificationListener
                     'message' => (string) $body,
                 ]
             );
-            Log::info("📱 [TRIGGER GATEWAY] SEND_SMS FCM data message sent to gateway device #{$gatewayDevice->id} [{$gatewayDevice->device_name}] for Shop #{$shopId}. FCM Status: " . ($fcmSent ? 'SUCCESS' : 'FAILED'));
+            Log::info("📱 [SMART ROUTE - TIER 3] Sent via SIM SMS Gateway Device [{$gatewayDevice->device_name}] to {$phone}. Status: " . ($fcmSent ? 'SUCCESS' : 'FAILED'));
+        } else {
+            Log::info("⏭️ [SMART ROUTE - TIER 3 SKIP] No active SIM Gateway device found for Shop #{$shopId}. All routes skipped cleanly.");
         }
     }
 
