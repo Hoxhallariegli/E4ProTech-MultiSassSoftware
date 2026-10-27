@@ -86,6 +86,7 @@ class SendFirebaseNotificationListener
 
                 if ($booking->customer && $booking->customer->phone && $sendSmsRequested) {
                     $formattedPhone = $this->formatPhone($booking->customer->phone);
+                    $preferredChannel = ($shop?->whatsapp_enabled ?? true) || ($barber?->whatsapp_enabled ?? true) ? 'whatsapp' : 'sms';
 
                     // -------------------------------------------------------------
                     // ACTION A: CREATED -> Send Confirmation + Schedule Reminder
@@ -94,9 +95,7 @@ class SendFirebaseNotificationListener
                         $parsedConfirmation = MessageTemplate::parseForBooking($booking, 'confirmation');
 
                         // Fetch existing SMS queue items for this booking
-                        $existingSmsQueues = MessageQueue::where('booking_id', $booking->id)
-                            ->where('channel', 'sms')
-                            ->get();
+                        $existingSmsQueues = MessageQueue::where('booking_id', $booking->id)->get();
 
                         // 1. Direct Confirmation SMS (Immediate)
                         $existingConfirmation = $existingSmsQueues->first(fn($q) => ($q->template_type ?? $q->resolved_template_type) === 'confirmation');
@@ -106,7 +105,7 @@ class SendFirebaseNotificationListener
                             $queueData = [
                                 'barber_shop_id' => $booking->barber_shop_id,
                                 'booking_id' => $booking->id,
-                                'channel' => 'sms',
+                                'channel' => $preferredChannel,
                                 'phone_number' => $formattedPhone,
                                 'message_content' => $parsedConfirmation,
                                 'scheduled_at' => now(),
@@ -119,7 +118,7 @@ class SendFirebaseNotificationListener
                             $queue = MessageQueue::create($queueData);
                             \App\Models\AuditTrail::log($queue, 'create', 'MessageQueues');
 
-                            Log::info("📝 [STEP 4a] SMS Confirmation Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
+                            Log::info("📝 [STEP 4a] Confirmation Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Channel: {$preferredChannel})");
                         }
 
                         // 2. Scheduled Reminder SMS (Pending until reminder hours before appointment)
@@ -146,7 +145,7 @@ class SendFirebaseNotificationListener
                                 $reminderQueueData = [
                                     'barber_shop_id' => $booking->barber_shop_id,
                                     'booking_id' => $booking->id,
-                                    'channel' => 'sms',
+                                    'channel' => $preferredChannel,
                                     'phone_number' => $formattedPhone,
                                     'message_content' => $parsedReminder,
                                     'scheduled_at' => $scheduledReminderTime,
@@ -159,7 +158,7 @@ class SendFirebaseNotificationListener
                                 $reminderQueue = MessageQueue::create($reminderQueueData);
                                 \App\Models\AuditTrail::log($reminderQueue, 'create', 'MessageQueues');
 
-                                Log::info("⏰ [STEP 4a] SMS Reminder Message scheduled for Booking #{$booking->id} at {$scheduledReminderTime} (Shop #{$booking->barber_shop_id})");
+                                Log::info("⏰ [STEP 4a] Reminder Message scheduled for Booking #{$booking->id} at {$scheduledReminderTime} (Channel: {$preferredChannel})");
                             }
                         }
 
@@ -192,7 +191,6 @@ class SendFirebaseNotificationListener
 
                             // Find and update existing pending reminder in MessageQueue
                             $pendingReminder = MessageQueue::where('booking_id', $booking->id)
-                                ->where('channel', 'sms')
                                 ->where('status', 'pending')
                                 ->where(function($q) {
                                     $q->where('template_type', 'reminder')
@@ -203,18 +201,18 @@ class SendFirebaseNotificationListener
 
                             if ($pendingReminder) {
                                 $pendingReminder->update([
+                                    'channel' => $preferredChannel,
                                     'scheduled_at' => $scheduledReminderTime,
                                     'message_content' => $parsedReminder,
                                     'phone_number' => $formattedPhone,
                                 ]);
-                                Log::info("⏰ [RESCHEDULE] Pending SMS Reminder for Booking #{$booking->id} updated to {$scheduledReminderTime} with new content.");
+                                Log::info("⏰ [RESCHEDULE] Pending Reminder for Booking #{$booking->id} updated to {$scheduledReminderTime} with new content.");
                             }
                         }
 
                         // 2. Queue and Send Immediate Update / Reschedule SMS (ONLY IF APPOINTMENT DETAILS CHANGED AND NO RECENT DUPLICATE)
                         $timeOrDetailsChanged = $booking->wasChanged('appointment_at') || $booking->wasChanged('service_id') || $booking->wasChanged('barber_id');
                         $recentUpdateSmsExists = MessageQueue::where('booking_id', $booking->id)
-                            ->where('channel', 'sms')
                             ->where(function($q) {
                                 $q->where('template_type', 'reschedule')
                                   ->orWhere('message_content', 'like', '%updated%')
@@ -229,7 +227,7 @@ class SendFirebaseNotificationListener
                             $updateQueueData = [
                                 'barber_shop_id' => $booking->barber_shop_id,
                                 'booking_id' => $booking->id,
-                                'channel' => 'sms',
+                                'channel' => $preferredChannel,
                                 'phone_number' => $formattedPhone,
                                 'message_content' => $parsedUpdate,
                                 'scheduled_at' => now(),
@@ -242,12 +240,12 @@ class SendFirebaseNotificationListener
                             $updateQueue = MessageQueue::create($updateQueueData);
                             \App\Models\AuditTrail::log($updateQueue, 'create', 'MessageQueues');
 
-                            Log::info("🔄 [STEP 4a-UPDATE] SMS Update Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Shop #{$booking->barber_shop_id})");
+                            Log::info("🔄 [STEP 4a-UPDATE] Update Message queued for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Channel: {$preferredChannel})");
 
                             // Trigger Gateway Device
                             $this->triggerGatewayDevice($shopId, $updateQueue->id, $formattedPhone, $parsedUpdate, $booking->barber_id, $booking->customer_id, 'reschedule');
                         } else {
-                            Log::info("⏭️ [STEP 4a-UPDATE] Skipped duplicate/unnecessary SMS Update for Booking #{$booking->id}. Details changed: " . ($timeOrDetailsChanged ? 'YES' : 'NO') . ", Recent update SMS exists: " . ($recentUpdateSmsExists ? 'YES' : 'NO'));
+                            Log::info("⏭️ [STEP 4a-UPDATE] Skipped duplicate/unnecessary Update for Booking #{$booking->id}. Details changed: " . ($timeOrDetailsChanged ? 'YES' : 'NO') . ", Recent update SMS exists: " . ($recentUpdateSmsExists ? 'YES' : 'NO'));
                         }
                     }
 
@@ -265,7 +263,7 @@ class SendFirebaseNotificationListener
                         $cancelQueueData = [
                             'barber_shop_id' => $booking->barber_shop_id,
                             'booking_id' => $booking->id,
-                            'channel' => 'sms',
+                            'channel' => $preferredChannel,
                             'phone_number' => $formattedPhone,
                             'message_content' => $parsedCancel,
                             'scheduled_at' => now(),
@@ -277,7 +275,7 @@ class SendFirebaseNotificationListener
                         }
                         $cancelQueue = MessageQueue::create($cancelQueueData);
 
-                        Log::info("❌ [STEP 4a-CANCEL] SMS Cancellation Message queued for Booking #{$booking->id}");
+                        Log::info("❌ [STEP 4a-CANCEL] Cancellation Message queued for Booking #{$booking->id}");
 
                         // Trigger Gateway Device
                         $this->triggerGatewayDevice($shopId, $cancelQueue->id, $formattedPhone, $parsedCancel, $booking->barber_id, $booking->customer_id, 'cancellation');
