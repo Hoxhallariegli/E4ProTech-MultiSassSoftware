@@ -22,6 +22,11 @@
         <div class="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800 text-[10px]">
             <span class="text-gray-400 font-mono">{{ $item->scheduled_at?->format('d/m/Y H:i') ?? '-' }}</span>
             <div class="flex items-center gap-2">
+                @if($item->status === 'pending')
+                    <button type="button" wire:click="sendNow" wire:loading.attr="disabled" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase rounded-xl shadow-2xs">
+                        ⚡ Dërgo Tani
+                    </button>
+                @endif
                 @can('delete_message_queues')
                     <div x-data="{ confirmation: '' }" x-cloak class="inline-block">
                         <x-modal>
@@ -100,8 +105,13 @@
             </span>
         @endif
     </td>
-    <td class="hidden lg:table-cell px-6 py-5 text-right w-20 !transition-none">
-        <div class="flex justify-end gap-3 !transition-none">
+    <td class="hidden lg:table-cell px-6 py-5 text-right whitespace-nowrap !transition-none">
+        <div class="flex items-center justify-end gap-2 !transition-none">
+            @if($item->status === 'pending')
+                <button type="button" wire:click="sendNow" wire:loading.attr="disabled" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase rounded-xl shadow-2xs flex items-center gap-1 transition-all">
+                    ⚡ Dërgo Tani
+                </button>
+            @endif
             @can('delete_message_queues')
                 <div x-data="{ confirmation: '' }" x-cloak class="inline-block">
                     <x-modal>
