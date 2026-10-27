@@ -14,9 +14,12 @@ class Row extends Component
     {
         try {
             $shopId = $this->item->id;
+            $gatewayUrl = config('services.whatsapp.gateway_url', 'https://whatsapp-gateway-k6vv.onrender.com/api/whatsapp/send');
+            $baseUrl = str_replace('/send', '', $gatewayUrl);
+
             $res = \Illuminate\Support\Facades\Http::withHeaders([
-                'X-API-KEY' => 'E4ProTech_Secret_Key_2026_Secure'
-            ])->timeout(1.5)->get("http://127.0.0.1:3000/api/whatsapp/status?shop_id={$shopId}");
+                'X-API-KEY' => config('services.whatsapp.secret', 'E4ProTech_Secret_Key_2026_Secure')
+            ])->timeout(2.5)->get("{$baseUrl}/status?session_key=shop_{$shopId}");
 
             if ($res->successful()) {
                 $this->wa_connected = (bool) $res->json('connected');

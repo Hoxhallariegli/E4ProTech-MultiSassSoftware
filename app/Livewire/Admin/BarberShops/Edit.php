@@ -66,9 +66,12 @@ class Edit extends Component
     {
         try {
             $shopId = $this->item->id;
+            $gatewayUrl = config('services.whatsapp.gateway_url', 'https://whatsapp-gateway-k6vv.onrender.com/api/whatsapp/send');
+            $baseUrl = str_replace('/send', '', $gatewayUrl);
+
             $res = \Illuminate\Support\Facades\Http::withHeaders([
-                'X-API-KEY' => 'E4ProTech_Secret_Key_2026_Secure'
-            ])->timeout(3)->get("http://127.0.0.1:3000/api/whatsapp/status?shop_id={$shopId}");
+                'X-API-KEY' => config('services.whatsapp.secret', 'E4ProTech_Secret_Key_2026_Secure')
+            ])->timeout(5)->get("{$baseUrl}/status?session_key=shop_{$shopId}");
 
             if ($res->successful()) {
                 $this->wa_connected = (bool) $res->json('connected');
@@ -86,12 +89,13 @@ class Edit extends Component
     {
         try {
             $shopId = $this->item->id;
+            $gatewayUrl = config('services.whatsapp.gateway_url', 'https://whatsapp-gateway-k6vv.onrender.com/api/whatsapp/send');
+            $baseUrl = str_replace('/send', '', $gatewayUrl);
 
-            // Fetch QR up to 3 attempts if session is initializing
             for ($i = 0; $i < 3; $i++) {
                 $res = \Illuminate\Support\Facades\Http::withHeaders([
-                    'X-API-KEY' => 'E4ProTech_Secret_Key_2026_Secure'
-                ])->timeout(10)->get("http://127.0.0.1:3000/api/whatsapp/qr?shop_id={$shopId}");
+                    'X-API-KEY' => config('services.whatsapp.secret', 'E4ProTech_Secret_Key_2026_Secure')
+                ])->timeout(10)->get("{$baseUrl}/qr?session_key=shop_{$shopId}");
 
                 if ($res->successful()) {
                     $this->wa_connected = (bool) $res->json('connected');
@@ -111,7 +115,7 @@ class Edit extends Component
                 $this->dispatch('toast', message: 'Duke inicializuar QR Code-in... Klikoni përsëri pas disa sekondash.', type: 'info');
             }
         } catch (\Throwable $e) {
-            $this->dispatch('toast', message: 'WhatsApp Gateway nuk i përgjigjet te porta 3000.', type: 'error');
+            $this->dispatch('toast', message: 'WhatsApp Gateway nuk i përgjigjet në Cloud.', type: 'error');
         }
     }
 
