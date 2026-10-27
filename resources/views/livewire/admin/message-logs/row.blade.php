@@ -5,9 +5,14 @@
             <span class="font-extrabold text-gray-900 dark:text-white truncate">
                 {{ $item->customer?->name ?? 'Klient' }}
             </span>
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase shrink-0 {{ $item->status === 'sent' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' }}">
-                {{ $item->status === 'sent' ? 'Dërguar' : 'Dështoi' }}
-            </span>
+            <div class="flex items-center gap-1.5 shrink-0">
+                <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase {{ strtolower((string)$item->channel) === 'whatsapp' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' }}">
+                    {{ strtolower((string)$item->channel) === 'whatsapp' ? 'WhatsApp' : 'SIM SMS' }}
+                </span>
+                <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase {{ $item->status === 'sent' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' }}">
+                    {{ $item->status === 'sent' ? 'Dërguar' : 'Dështoi' }}
+                </span>
+            </div>
         </div>
 
         <div class="text-xs text-gray-700 dark:text-gray-200 font-medium bg-gray-50 dark:bg-gray-900/60 p-3 rounded-2xl border border-gray-100 dark:border-gray-800 break-words whitespace-pre-line leading-relaxed">
@@ -65,16 +70,19 @@
             </span>
         @endif
     </td>
+    <td class="hidden lg:table-cell px-6 py-5 whitespace-nowrap min-w-[120px]">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase {{ strtolower((string)$item->channel) === 'whatsapp' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' }}">
+            <span class="w-1.5 h-1.5 rounded-full {{ strtolower((string)$item->channel) === 'whatsapp' ? 'bg-emerald-500 animate-pulse' : 'bg-blue-500' }}"></span>
+            <span>{{ strtolower((string)$item->channel) === 'whatsapp' ? 'WhatsApp' : 'SIM SMS' }}</span>
+        </span>
+    </td>
     <td class="hidden lg:table-cell px-6 py-5 min-w-[280px] max-w-[340px]">
         <div class="text-xs font-medium text-gray-800 dark:text-gray-200 leading-relaxed bg-gray-50 dark:bg-gray-900/50 p-2.5 rounded-xl border border-gray-100 dark:border-gray-700 break-words whitespace-normal">
             {{ $item->message }}
         </div>
     </td>
-    <td class="hidden lg:table-cell px-6 py-5 text-xs text-gray-700 dark:text-gray-300 font-mono font-medium whitespace-nowrap min-w-[140px]">
-        {{ $item->created_at?->format('d/m/Y H:i') ?? '-' }}
-    </td>
     <td class="hidden lg:table-cell px-6 py-5 text-xs text-emerald-700 dark:text-emerald-400 font-mono font-bold whitespace-nowrap min-w-[140px]">
-        {{ $item->sent_at?->format('d/m/Y H:i') ?? '-' }}
+        {{ $item->sent_at?->format('d/m/Y H:i') ?? $item->created_at?->format('d/m/Y H:i') }}
     </td>
     <td class="hidden lg:table-cell px-6 py-5 whitespace-nowrap min-w-[120px]">
         @if($item->status === 'sent')

@@ -41,7 +41,8 @@
                             <x-table.th name="barber_shop_id" :label="__('message-queues.Barber Shop Id')" :$sortField :$sortAsc :sortable="in_array('barber_shop_id', $sortableFields)" />
                         @endif
                         <x-table.th name="booking_id" :label="__('message-queues.Booking Id')" :$sortField :$sortAsc :sortable="in_array('booking_id', $sortableFields)" />
-                        <x-table.th name="template_type" :label="__('message-queues.Channel')" :$sortField :$sortAsc :sortable="in_array('template_type', $sortableFields)" />
+                        <th class="px-6 py-4 text-left text-[10px] font-black uppercase text-gray-400 tracking-widest">Lloji</th>
+                        <x-table.th name="channel" :label="__('message-queues.Channel')" :$sortField :$sortAsc :sortable="in_array('channel', $sortableFields)" />
                         <x-table.th name="message_content" :label="__('message-queues.Message Content')" :$sortField :$sortAsc :sortable="in_array('message_content', $sortableFields)" />
                         <x-table.th name="scheduled_at" :label="__('message-queues.Scheduled At')" :$sortField :$sortAsc :sortable="in_array('scheduled_at', $sortableFields)" />
                         <x-table.th name="status" :label="__('message-queues.Status')" :$sortField :$sortAsc :sortable="in_array('status', $sortableFields)" />

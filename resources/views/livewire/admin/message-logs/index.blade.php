@@ -41,6 +41,7 @@
                             <x-table.th name="barber_shop_id" :label="__('message-logs.Barber Shop Id')" :$sortField :$sortAsc :sortable="in_array('barber_shop_id', $sortableFields)" />
                         @endif
                         <x-table.th name="customer_id" :label="__('message-logs.Customer Id')" :$sortField :$sortAsc :sortable="in_array('customer_id', $sortableFields)" />
+                        <th class="px-6 py-4 text-left text-[10px] font-black uppercase text-gray-400 tracking-widest">Lloji</th>
                         <x-table.th name="channel" :label="__('message-logs.Channel')" :$sortField :$sortAsc :sortable="in_array('channel', $sortableFields)" />
                         <x-table.th name="message" :label="__('message-logs.Message')" :$sortField :$sortAsc :sortable="in_array('message', $sortableFields)" />
                         <x-table.th name="sent_at" :label="__('message-logs.Sent At')" :$sortField :$sortAsc :sortable="in_array('sent_at', $sortableFields)" />
