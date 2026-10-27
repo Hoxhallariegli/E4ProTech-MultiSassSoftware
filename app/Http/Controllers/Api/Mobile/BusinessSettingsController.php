@@ -39,6 +39,36 @@ class BusinessSettingsController extends Controller
         ]);
     }
 
+    public function toggleWhatsapp(Request $request)
+    {
+        $request->validate([
+            'enabled' => 'required|boolean',
+        ]);
+
+        $user = Auth::user();
+        $shop = $user?->barberShop ?: ($user?->barber_shop_id ? BarberShop::find($user->barber_shop_id) : null);
+
+        if ($shop) {
+            $shop->update(['whatsapp_enabled' => (bool) $request->enabled]);
+        }
+
+        $isConnected = false;
+        if ($shop) {
+            try {
+                $isConnected = app(\App\Services\WhatsAppService::class)->isConnected($shop->id);
+            } catch (\Throwable $e) {
+                $isConnected = false;
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'whatsapp_enabled' => (bool) ($shop?->whatsapp_enabled ?? true),
+            'whatsapp_connected' => $isConnected,
+            'message' => $request->enabled ? 'WhatsApp Notifications are ENABLED' : 'WhatsApp Notifications are DISABLED',
+        ]);
+    }
+
     public function updateBranding(Request $request, UpdateBrandingAction $action)
     {
         $validated = $request->validate([
@@ -66,6 +96,7 @@ class BusinessSettingsController extends Controller
                 'color' => $shop->primary_color,
                 'currency' => $shop->currency ?: 'Lekë',
                 'sms_active' => (bool) $shop->sms_enabled,
+                'whatsapp_active' => (bool) ($shop->whatsapp_enabled ?? true),
                 'reminder_hours_before' => (float) $shop->reminder_hours_before,
                 'plan_name' => $shop->active_plan_name,
                 'trial_days_left' => $shop->days_left,

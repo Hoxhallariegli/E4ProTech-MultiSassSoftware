@@ -123,6 +123,7 @@ Route::prefix('mobile')->group(function () {
         // Business SaaS Settings
         Route::prefix('business')->group(function () {
             Route::post('toggle-sms', [\App\Http\Controllers\Api\Mobile\BusinessSettingsController::class, 'toggleSms']);
+            Route::post('toggle-whatsapp', [\App\Http\Controllers\Api\Mobile\BusinessSettingsController::class, 'toggleWhatsapp']);
             Route::post('update-branding', [\App\Http\Controllers\Api\Mobile\BusinessSettingsController::class, 'updateBranding']);
         });
 

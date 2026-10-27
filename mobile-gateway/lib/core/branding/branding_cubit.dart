@@ -10,6 +10,7 @@ class BrandingState {
   final Color primaryColor;
   final String currency;
   final bool smsEnabled;
+  final bool whatsappEnabled;
   final double reminderHours;
   final int trialDaysLeft;
   final String planName;
@@ -26,6 +27,7 @@ class BrandingState {
     required this.primaryColor,
     this.currency = 'Lekë',
     this.smsEnabled = false,
+    this.whatsappEnabled = true,
     this.reminderHours = 2.0,
     this.trialDaysLeft = 0,
     this.planName = 'Plani Pro',
@@ -55,6 +57,7 @@ class BrandingState {
       appName: 'E4ProTech Engine',
       primaryColor: Color(0xFF7C5CFC),
       currency: 'Lekë',
+      whatsappEnabled: true,
     );
   }
 
@@ -66,6 +69,7 @@ class BrandingState {
       'primaryColor': primaryColor.value,
       'currency': currency,
       'smsEnabled': smsEnabled,
+      'whatsappEnabled': whatsappEnabled,
       'trialDaysLeft': trialDaysLeft,
       'planName': planName,
       'subscriptionStatus': subscriptionStatus,
@@ -84,6 +88,7 @@ class BrandingState {
       primaryColor: Color(map['primaryColor'] ?? 0xFF7C5CFC),
       currency: (map['currency'] ?? 'Lekë').toString(),
       smsEnabled: map['smsEnabled'] ?? false,
+      whatsappEnabled: map['whatsappEnabled'] ?? true,
       reminderHours: (double.tryParse(map['reminderHours']?.toString() ?? '2') ?? 2.0).toDouble(),
       trialDaysLeft: map['trialDaysLeft'] ?? 0,
       planName: map['planName'] ?? 'Plani Pro',
@@ -131,6 +136,7 @@ class BrandingCubit extends Cubit<BrandingState> {
       primaryColor: color,
       currency: curr.isNotEmpty ? curr : 'Lekë',
       smsEnabled: businessData['sms_active'] ?? businessData['smsEnabled'] ?? false,
+      whatsappEnabled: businessData['whatsapp_active'] ?? businessData['whatsappEnabled'] ?? true,
       reminderHours: (double.tryParse((businessData['reminder_hours_before'] ?? businessData['reminderHours'])?.toString() ?? '2') ?? 2.0).toDouble(),
       trialDaysLeft: businessData['trial_days_left'] ?? businessData['trialDaysLeft'] ?? 0,
       planName: businessData['plan_name'] ?? businessData['planName'] ?? 'Plani Pro',

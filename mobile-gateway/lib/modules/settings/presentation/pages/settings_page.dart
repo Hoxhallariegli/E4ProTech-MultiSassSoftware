@@ -1768,6 +1768,41 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
     }
   }
 
+  bool _shopWaLoading = false;
+
+  Future<void> _toggleShopWhatsapp(bool enabled) async {
+    setState(() => _shopWaLoading = true);
+    try {
+      final res = await ApiService.post('/business/toggle-whatsapp', {'enabled': enabled});
+      if (res.statusCode == 200) {
+        context.read<BrandingCubit>().updateBranding({
+          ...context.read<BrandingCubit>().state.toMap(),
+          'whatsapp_active': enabled,
+          'whatsappEnabled': enabled,
+        });
+
+        await AuthService.instance.sync();
+        widget.onAuthChange();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(enabled ? 'Njoftimet në WhatsApp u aktivizuan!' : 'Njoftimet në WhatsApp u çaktivizuan.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gabim: $e'), behavior: SnackBarBehavior.floating),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _shopWaLoading = false);
+    }
+  }
+
   Future<void> _updateReminderHours(double hours) async {
     try {
       final res = await ApiService.post('/business/toggle-sms', {'reminder_hours': hours});
@@ -1947,6 +1982,58 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
                       ),
                     ),
                   ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // WHATSAPP NOTIFICATIONS SWITCH
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E212B) : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF3B4052) : theme.colorScheme.outlineVariant,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.chat_bubble_rounded, color: Color(0xFF10B981), size: 18),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Aktivizo WhatsApp Notifications',
+                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          widget.branding.whatsappEnabled
+                              ? 'Njoftimet automatike të takimeve dërgohen në WhatsApp.'
+                              : 'Njoftimet në WhatsApp janë të çaktivizuara.',
+                          style: const TextStyle(fontSize: 10.5, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _shopWaLoading
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator.adaptive(strokeWidth: 2))
+                      : Switch.adaptive(
+                          value: widget.branding.whatsappEnabled,
+                          onChanged: _toggleShopWhatsapp,
+                          activeColor: const Color(0xFF10B981),
+                        ),
                 ],
               ),
             ),
