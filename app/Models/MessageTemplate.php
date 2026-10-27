@@ -70,18 +70,15 @@ class MessageTemplate extends Model
     }
 
     /**
-     * Parses the message template for a booking based on the customer's preferred language.
-     * Falls back to default env language (sq/en) if not specified.
+     * Parses the message template for a booking based on the customer's preferred language & channel.
+     * Supports rich WhatsApp templates with {booking_link}!
      */
-    public static function parseForBooking(Booking $booking, string $type = 'confirmation', ?string $locale = null): string
+    public static function parseForBooking(Booking $booking, string $type = 'confirmation', ?string $locale = null, string $channel = 'sms'): string
     {
         $shopId = $booking->barber_shop_id;
 
         if (!$locale) {
-            // 1. Customer preferred language (safely fetch without MissingAttributeException in Eloquent strict mode)
             $lang = data_get($booking->customer, 'language') ?? data_get($booking->customer, 'locale');
-
-            // 2. Web session locale / API request locale / Accept-Language header
             if (!$lang) {
                 $lang = session('locale')
                     ?? request()->input('locale')
@@ -91,8 +88,6 @@ class MessageTemplate extends Model
             }
 
             $langStr = strtolower((string) $lang);
-
-            // Match primary language code
             if (preg_match('/^(en|english)/i', $langStr)) {
                 $locale = 'en';
             } elseif (preg_match('/^(sq|al|albanian|shqip)/i', $langStr)) {
@@ -105,21 +100,27 @@ class MessageTemplate extends Model
         }
         $locale = in_array(strtolower((string)$locale), ['en', 'sq'], true) ? strtolower((string)$locale) : 'sq';
 
-        // 1. Try shop-specific template for this exact type
+        // 1. Try shop-specific template for requested channel ('whatsapp' or 'sms') and type
         $templateRecord = static::where('barber_shop_id', $shopId)
-            ->where('channel', 'sms')
+            ->where('channel', $channel)
             ->where('type', $type)
             ->first();
 
-        // 2. Fallback to global template (where barber_shop_id is NULL or 0) or any template for this type
+        // Fallback to channel = 'sms' if 'whatsapp' template is not explicitly created
+        if (!$templateRecord && $channel === 'whatsapp') {
+            $templateRecord = static::where('barber_shop_id', $shopId)
+                ->where('channel', 'sms')
+                ->where('type', $type)
+                ->first();
+        }
+
+        // 2. Fallback to global template
         if (!$templateRecord) {
             $templateRecord = static::where(function($q) {
                     $q->whereNull('barber_shop_id')->orWhere('barber_shop_id', 0);
                 })
-                ->where('channel', 'sms')
                 ->where('type', $type)
-                ->first()
-                ?? static::where('channel', 'sms')->where('type', $type)->first();
+                ->first();
         }
 
         $contentRaw = $templateRecord?->content;
@@ -141,26 +142,29 @@ class MessageTemplate extends Model
         if (!$templateText) {
             if ($locale === 'en') {
                 if ($type === 'reminder') {
-                    $templateText = "Reminder: Hello {customer_name}! Your appointment is today at {time}. Thank you!";
+                    $templateText = "Reminder: Hello {customer_name}! Your appointment at {shop_name} is today at {time}. Book or manage: {booking_link}";
                 } elseif ($type === 'reschedule' || $type === 'update') {
-                    $templateText = "Hello {customer_name}! Your appointment at {shop_name} with {staff_name} is updated to {time} {date}. Thank you!";
+                    $templateText = "Hello {customer_name}! Your appointment at {shop_name} with {staff_name} is updated to {time} {date}. Book or manage: {booking_link}";
                 } elseif ($type === 'cancellation' || $type === 'cancelled') {
-                    $templateText = "Hello {customer_name}! Your appointment at {shop_name} for {time} {date} was cancelled. Thank you!";
+                    $templateText = "Hello {customer_name}! Your appointment at {shop_name} for {time} {date} was cancelled. Book again: {booking_link}";
                 } else {
-                    $templateText = "Hello {customer_name}! Your booking for {service_name} at {shop_name} is confirmed for {time} {date}. Thank you!";
+                    $templateText = "Hello {customer_name}! Your booking for {service_name} at {shop_name} is confirmed for {time} {date}. Book or manage: {booking_link}";
                 }
             } else {
                 if ($type === 'reminder') {
-                    $templateText = "Rikujtese: Pershendetje {customer_name}! Takimi juaj sot ne oren {time}. Faleminderit!";
+                    $templateText = "Rikujtese: Pershendetje {customer_name}! Takimi juaj te {shop_name} eshte sot ne oren {time}. Rezervo ose menaxho: {booking_link}";
                 } elseif ($type === 'reschedule' || $type === 'update') {
-                    $templateText = "Pershendetje {customer_name}! Takimi juaj ne {shop_name} me {staff_name} u ndryshua per ne oren {time} {date}. Faleminderit!";
+                    $templateText = "Pershendetje {customer_name}! Takimi juaj ne {shop_name} me {staff_name} u ndryshua per ne oren {time} {date}. Rezervo ose menaxho: {booking_link}";
                 } elseif ($type === 'cancellation' || $type === 'cancelled') {
-                    $templateText = "Pershendetje {customer_name}! Takimi juaj ne {shop_name} per ne oren {time} {date} u anulua. Faleminderit!";
+                    $templateText = "Pershendetje {customer_name}! Takimi juaj ne {shop_name} per ne oren {time} {date} u anulua. Rezervo perseri: {booking_link}";
                 } else {
-                    $templateText = "Pershendetje {customer_name}! Rezervimi {service_name} ne {shop_name} u konfirmua {time} {date}. Faleminderit!";
+                    $templateText = "Pershendetje {customer_name}! Rezervimi {service_name} ne {shop_name} u konfirmua per oren {time} me date {date}. Rezervo ose menaxho: {booking_link}";
                 }
             }
         }
+
+        $shopSlug = $booking->barberShop?->slug ?? 'salon';
+        $bookingLink = url("/b/{$shopSlug}");
 
         $replacements = [
             '{customer_name}' => $booking->customer?->name ?? 'Klient',
@@ -169,16 +173,22 @@ class MessageTemplate extends Model
             '{shop_name}' => $booking->barberShop?->name ?? 'Sallon',
             '{time}' => $booking->appointment_at ? $booking->appointment_at->format('H:i') : '10:00',
             '{date}' => $booking->appointment_at ? $booking->appointment_at->format('d/m/Y') : date('d/m/Y'),
+            '{booking_link}' => $bookingLink,
+            '{shop_url}' => $bookingLink,
+            '{link}' => $bookingLink,
         ];
 
         $parsed = strtr($templateText, $replacements);
 
-        // Convert special Albanian characters (ë -> e, ç -> c) for 1 GSM SMS segment
-        $parsed = strtr($parsed, [
-            'ë' => 'e', 'Ë' => 'E',
-            'ç' => 'c', 'Ç' => 'C',
-        ]);
+        if ($channel === 'sms') {
+            $parsed = strtr($parsed, [
+                'ë' => 'e', 'Ë' => 'E',
+                'ç' => 'c', 'Ç' => 'C',
+            ]);
+            return mb_substr($parsed, 0, 160);
+        }
 
-        return mb_substr($parsed, 0, 160);
+        // WhatsApp supports rich emojis, special characters, links & full length!
+        return $parsed;
     }
 }

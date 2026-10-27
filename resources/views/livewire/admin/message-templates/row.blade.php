@@ -5,7 +5,7 @@
             <span class="font-extrabold text-gray-900 dark:text-white uppercase tracking-wider">
                 Shablloni: {{ $item->type }}
             </span>
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 shrink-0">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase {{ strtolower((string)$item->channel) === 'whatsapp' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' }} shrink-0">
                 {{ $item->channel }}
             </span>
         </div>
@@ -57,7 +57,11 @@
     @if(auth()->user()->is_global_admin)
         <td class="hidden lg:table-cell px-6 py-5 font-bold text-gray-900 dark:text-white">{{ $item->barberShop?->name ?? '-' }}</td>
     @endif
-    <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300 font-extrabold uppercase text-xs">{{ $item->channel }}</td>
+    <td class="hidden lg:table-cell px-6 py-5 whitespace-nowrap">
+        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase {{ strtolower((string)$item->channel) === 'whatsapp' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' }}">
+            {{ $item->channel }}
+        </span>
+    </td>
     <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300 font-extrabold uppercase text-xs">{{ $item->type }}</td>
     <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300">
         @if($sq)
