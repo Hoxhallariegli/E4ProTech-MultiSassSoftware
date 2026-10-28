@@ -258,7 +258,7 @@ class SendFirebaseNotificationListener
                         // Cancel pending reminders for this booking
                         MessageQueue::where('booking_id', $booking->id)
                             ->where('status', 'pending')
-                            delete();
+                            ->delete();
 
                         $parsedCancel = MessageTemplate::parseForBooking($booking, 'cancellation', null, $preferredChannel);
 

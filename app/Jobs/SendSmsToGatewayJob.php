@@ -49,18 +49,18 @@ class SendSmsToGatewayJob
         $customerId = $booking?->customer_id;
         $templateType = $queue->resolved_template_type;
 
-        // DEDUPLICATION SAFETY SHIELD: Skip sending if a reminder was already sent to this customer in the last 10 minutes
-        if ($booking && $customerId && $templateType === 'reminder') {
-            $alreadySentRecently = MessageLog::where('barber_shop_id', $shopId)
+        // STRICT DEDUPLICATION: If a log record already exists for this booking_id and template_type, DO NOT SEND DUPLICATE!
+        if ($booking && $customerId) {
+            $alreadyLogged = MessageLog::where('barber_shop_id', $shopId)
                 ->where('customer_id', $customerId)
-                ->where('template_type', 'reminder')
+                ->where('template_type', $templateType)
                 ->where('status', 'sent')
-                ->where('created_at', '>=', now()->subMinutes(10))
+                ->where('created_at', '>=', $booking->created_at->subMinutes(5))
                 ->exists();
 
-            if ($alreadySentRecently) {
+            if ($alreadyLogged) {
                 $queue->delete();
-                Log::info("⏭️ [SendSmsToGatewayJob] Skipped duplicate reminder send for Booking #{$booking->id} and cleaned queue.");
+                Log::info("⏭️ [SendSmsToGatewayJob] Duplicate message already sent for Booking #{$booking->id}. Queue item deleted.");
                 return;
             }
         }

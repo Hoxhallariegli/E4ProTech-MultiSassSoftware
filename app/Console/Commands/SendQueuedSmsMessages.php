@@ -18,11 +18,6 @@ class SendQueuedSmsMessages extends Command
         $tz = config('app.timezone', 'Europe/Tirane');
         $now = Carbon::now($tz);
 
-        // Reset ONLY stale 'processing' items older than 10 minutes back to 'pending'
-        MessageQueue::where('status', 'processing')
-            ->where('updated_at', '<', now()->subMinutes(10))
-            ->update(['status' => 'pending']);
-
         // 1. Delete past appointment queue items
         $pastAppointmentQueues = MessageQueue::where('status', 'pending')
             ->whereHas('booking', function($bQuery) use ($now) {
@@ -50,7 +45,7 @@ class SendQueuedSmsMessages extends Command
 
         foreach ($pendingMessages as $index => $msg) {
             try {
-                // Immediately set status = 'processing' so no other cron run selects it
+                // Immediately mark as processing so no other cron run selects it
                 $msg->update(['status' => 'processing']);
 
                 SendSmsToGatewayJob::dispatch($msg->id);
