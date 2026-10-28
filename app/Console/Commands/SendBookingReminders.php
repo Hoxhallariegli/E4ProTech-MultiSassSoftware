@@ -24,7 +24,7 @@ class SendBookingReminders extends Command
      *
      * @var string
      */
-    protected $description = 'Generate SMS reminders for bookings X hours ahead based on shop settings.';
+    protected $description = 'Generate SMS & WhatsApp reminders for bookings X hours ahead based on shop settings.';
 
     /**
      * Execute the console command.
@@ -34,7 +34,7 @@ class SendBookingReminders extends Command
         $now = Carbon::now();
         $this->info("Checking for upcoming bookings at {$now}...");
 
-        // We fetch active bookings that haven't had a reminder queued yet
+        // We fetch active bookings
         $bookings = Booking::with(['barberShop', 'customer', 'service', 'barber'])
             ->whereIn('status', ['confirmed', 'pending'])
             ->whereNotNull('appointment_at')
@@ -45,8 +45,40 @@ class SendBookingReminders extends Command
 
         foreach ($bookings as $booking) {
             $shop = $booking->barberShop;
+            $barber = $booking->barber;
 
-            if (!$shop || !$shop->sms_enabled || !$booking->customer || !$booking->customer->phone) {
+            if (!$shop || !$booking->customer || !$booking->customer->phone) {
+                continue;
+            }
+
+            // Check if shop or barber has SMS / WhatsApp enabled
+            $shopSmsEnabled = (bool) ($shop->sms_enabled ?? true);
+            $shopWaEnabled = (bool) ($shop->whatsapp_enabled ?? true);
+            $barberWaEnabled = (bool) ($barber->whatsapp_enabled ?? true);
+
+            if (!$shopSmsEnabled && !$shopWaEnabled && !$barberWaEnabled) {
+                continue;
+            }
+
+            // STRICT CHECK: Check if ANY reminder or queue item was ALREADY created or sent for this booking!
+            $alreadyHandled = MessageQueue::where('booking_id', $booking->id)
+                ->where(function($q) {
+                    $q->where('template_type', 'reminder')
+                      ->orWhere('message_content', 'like', '%Rikujtes%')
+                      ->orWhere('message_content', 'like', '%Reminder%');
+                })
+                ->exists()
+                || MessageLog::where('barber_shop_id', $shop->id)
+                ->where('customer_id', $booking->customer_id)
+                ->where(function($q) {
+                    $q->where('template_type', 'reminder')
+                      ->orWhere('message', 'like', '%Rikujtes%')
+                      ->orWhere('message', 'like', '%Reminder%');
+                })
+                ->where('created_at', '>=', $booking->created_at)
+                ->exists();
+
+            if ($alreadyHandled) {
                 continue;
             }
 
@@ -67,39 +99,26 @@ class SendBookingReminders extends Command
 
             // If the time to send the reminder is now or has passed
             if ($now->greaterThanOrEqualTo($reminderTime)) {
-
-                $alreadyQueued = MessageQueue::where('booking_id', $booking->id)
-                    ->where('channel', 'sms')
-                    ->where('message_content', 'like', '%Rikujtesë%')
-                    ->exists();
-
-                if ($alreadyQueued) {
-                    continue;
-                }
-
-                $parsedMessage = MessageTemplate::parseForBooking($booking, 'reminder');
-
-                // Add explicit indicator it's a reminder so we don't re-queue it again
-                if(!str_contains($parsedMessage, 'Rikujtesë')) {
-                   $parsedMessage = "Rikujtesë: " . $parsedMessage;
-                }
+                $preferredChannel = ($barberWaEnabled || $shopWaEnabled) ? 'whatsapp' : 'sms';
+                $parsedMessage = MessageTemplate::parseForBooking($booking, 'reminder', null, $preferredChannel);
 
                 MessageQueue::create([
                     'barber_shop_id' => $shop->id,
                     'booking_id' => $booking->id,
-                    'channel' => 'sms',
+                    'channel' => $preferredChannel,
+                    'template_type' => 'reminder',
                     'phone_number' => $booking->customer->phone,
                     'message_content' => $parsedMessage,
-                    'scheduled_at' => now(), // Queue it to go out immediately
+                    'scheduled_at' => now(), // Queue it to go out
                     'status' => 'pending',
                     'retry_count' => 0,
                 ]);
 
                 $count++;
-                $this->line("Queued reminder for Booking #{$booking->id} (Shop #{$shop->id})");
+                $this->line("Queued reminder for Booking #{$booking->id} (Shop #{$shop->id}, Channel: {$preferredChannel})");
             }
         }
 
-        $this->info("Queued {$count} SMS reminders.");
+        $this->info("Queued {$count} reminders.");
     }
 }

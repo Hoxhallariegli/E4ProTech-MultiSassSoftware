@@ -47,6 +47,9 @@ class SendQueuedSmsMessages extends Command
 
         foreach ($pendingMessages as $index => $msg) {
             try {
+                // Mark as processing to prevent re-dispatching in concurrent cron runs
+                $msg->update(['status' => 'processing']);
+
                 SendSmsToGatewayJob::dispatch($msg->id);
                 $this->line("Dispatched Job for Queue ID: {$msg->id} (Channel: {$msg->channel})");
 
@@ -54,6 +57,7 @@ class SendQueuedSmsMessages extends Command
                     sleep(2);
                 }
             } catch (\Exception $e) {
+                $msg->update(['status' => 'failed']);
                 Log::error("Failed to dispatch message job {$msg->id}: " . $e->getMessage());
             }
         }
