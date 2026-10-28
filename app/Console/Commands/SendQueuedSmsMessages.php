@@ -18,8 +18,13 @@ class SendQueuedSmsMessages extends Command
         $tz = config('app.timezone', 'Europe/Tirane');
         $now = Carbon::now($tz);
 
+        // Reset stale 'processing' rows older than 1 minute back to 'pending'
+        MessageQueue::where('status', 'processing')
+            ->where('updated_at', '<', now()->subMinute())
+            ->update(['status' => 'pending']);
+
         // 1. Delete past appointment queue items whose appointment time has already passed
-        $pastAppointmentQueues = MessageQueue::whereIn('status', ['pending', 'queued', 'Në Pritje'])
+        $pastAppointmentQueues = MessageQueue::whereIn('status', ['pending', 'queued', 'Në Pritje', 'processing'])
             ->whereHas('booking', function($bQuery) use ($now, $tz) {
                 $bQuery->whereRaw("appointment_at < ?", [$now->format('Y-m-d H:i:s')]);
             })
@@ -30,8 +35,8 @@ class SendQueuedSmsMessages extends Command
             Log::info("🧹 [SendQueuedSmsMessages] Deleted past appointment Queue ID #{$past->id}");
         }
 
-        // 2. Retrieve ALL pending messages scheduled for NOW or EARLIER (without shop restrictions)
-        $pendingMessages = MessageQueue::whereIn('status', ['pending', 'queued', 'Në Pritje'])
+        // 2. Retrieve ALL pending & processing messages scheduled for NOW or EARLIER
+        $pendingMessages = MessageQueue::whereIn('status', ['pending', 'queued', 'Në Pritje', 'processing'])
             ->whereRaw("scheduled_at <= ?", [$now->format('Y-m-d H:i:s')])
             ->orderBy('scheduled_at', 'asc')
             ->get();

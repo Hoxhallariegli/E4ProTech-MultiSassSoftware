@@ -31,7 +31,7 @@ class SendSmsToGatewayJob
     {
         $queue = MessageQueue::find($this->messageQueueId);
 
-        if (!$queue || $queue->status !== 'pending') {
+        if (!$queue || in_array($queue->status, ['sent', 'failed', 'deleted'])) {
             return;
         }
 
