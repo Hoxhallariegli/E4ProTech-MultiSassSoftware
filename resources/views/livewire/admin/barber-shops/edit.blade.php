@@ -154,10 +154,22 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                         <div>
-                            <x-form.input name="primary_color" type="text" wire:model.live="primary_color" :label="__('barber-shops.Primary Hex')" placeholder="#2563EB" class="dark:bg-gray-900 font-mono" />
+                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">{{ __('barber-shops.Primary Hex') }}</label>
+                            <div class="flex items-center gap-3">
+                                <input type="color" wire:model.live="primary_color" class="w-12 h-12 p-1 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl cursor-pointer shadow-sm shrink-0" />
+                                <div class="flex-1">
+                                    <x-form.input name="primary_color" type="text" wire:model.live="primary_color" label="" placeholder="#2563EB" class="dark:bg-gray-900 font-mono font-bold" />
+                                </div>
+                            </div>
                         </div>
                         <div>
-                            <x-form.input name="secondary_color" type="text" wire:model.live="secondary_color" :label="__('barber-shops.Secondary Hex')" placeholder="#F59E0B" class="dark:bg-gray-900 font-mono" />
+                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">{{ __('barber-shops.Secondary Hex') }}</label>
+                            <div class="flex items-center gap-3">
+                                <input type="color" wire:model.live="secondary_color" class="w-12 h-12 p-1 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl cursor-pointer shadow-sm shrink-0" />
+                                <div class="flex-1">
+                                    <x-form.input name="secondary_color" type="text" wire:model.live="secondary_color" label="" placeholder="#F59E0B" class="dark:bg-gray-900 font-mono font-bold" />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
