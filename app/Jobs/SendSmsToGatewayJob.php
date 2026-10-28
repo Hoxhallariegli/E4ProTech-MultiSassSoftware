@@ -8,6 +8,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Models\MessageQueue;
+use App\Models\MessageLog;
 use App\Models\DeviceToken;
 use App\Services\FirebaseService;
 use App\Services\WhatsAppService;
@@ -47,6 +48,26 @@ class SendSmsToGatewayJob
         $barberId = $booking?->barber_id;
         $customerId = $booking?->customer_id;
         $templateType = $queue->resolved_template_type;
+
+        // DEDUPLICATION SAFETY SHIELD: Skip sending if a reminder was already sent to this customer in the last 10 minutes
+        if ($booking && $customerId && $templateType === 'reminder') {
+            $alreadySentRecently = MessageLog::where('barber_shop_id', $shopId)
+                ->where('customer_id', $customerId)
+                ->where('template_type', 'reminder')
+                ->where('status', 'sent')
+                ->where('created_at', '>=', now()->subMinutes(10))
+                ->exists();
+
+            if ($alreadySentRecently) {
+                $queue->update([
+                    'status' => 'sent',
+                    'sent_at' => now(),
+                    'channel' => 'whatsapp',
+                ]);
+                Log::info("⏭️ [SendSmsToGatewayJob] Skipped duplicate reminder send for Booking #{$booking->id}");
+                return;
+            }
+        }
 
         // 1. TIER 1 & TIER 2: Try sending via WhatsApp (Barber WhatsApp -> Shop WhatsApp -> Default WhatsApp)
         try {

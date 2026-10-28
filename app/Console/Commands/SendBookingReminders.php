@@ -12,28 +12,27 @@ use Illuminate\Support\Facades\Log;
 
 class SendBookingReminders extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'sms:send-reminders';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
     protected $description = 'Generate SMS & WhatsApp reminders for bookings X hours ahead based on shop settings.';
 
-    /**
-     * Execute the console command.
-     */
     public function handle()
     {
         $tz = config('app.timezone', 'Europe/Tirane');
         $now = Carbon::now($tz);
         $this->info("Checking for upcoming bookings at {$now->format('Y-m-d H:i:s')} ({$tz})...");
+
+        // Purge any duplicate pending queue rows for the same booking_id to prevent duplicate dispatches
+        $allPending = MessageQueue::whereIn('status', ['pending', 'queued', 'processing'])->get();
+        $seenBookings = [];
+        foreach ($allPending as $pItem) {
+            $key = "{$pItem->booking_id}:{$pItem->template_type}";
+            if (isset($seenBookings[$key])) {
+                $pItem->delete();
+                Log::info("🧹 Purged duplicate queue row ID #{$pItem->id} for key {$key}");
+            } else {
+                $seenBookings[$key] = true;
+            }
+        }
 
         // We fetch active bookings
         $bookings = Booking::with(['barberShop', 'customer', 'service', 'barber'])
@@ -61,25 +60,20 @@ class SendBookingReminders extends Command
                 continue;
             }
 
-            // STRICT CHECK: Check if ANY reminder or queue item was ALREADY created or sent for this booking!
-            $alreadyHandled = MessageQueue::where('booking_id', $booking->id)
+            // STRICT DEDUPLICATION: If ANY queue or log record already exists for this booking_id, DO NOT CREATE ANOTHER!
+            $alreadyExists = MessageQueue::where('booking_id', $booking->id)
                 ->where(function($q) {
                     $q->where('template_type', 'reminder')
-                      ->orWhere('message_content', 'like', '%Rikujtes%')
-                      ->orWhere('message_content', 'like', '%Reminder%');
+                      ->orWhere('channel', 'whatsapp')
+                      ->orWhere('channel', 'sms');
                 })
                 ->exists()
                 || MessageLog::where('barber_shop_id', $shop->id)
                 ->where('customer_id', $booking->customer_id)
-                ->where(function($q) {
-                    $q->where('template_type', 'reminder')
-                      ->orWhere('message', 'like', '%Rikujtes%')
-                      ->orWhere('message', 'like', '%Reminder%');
-                })
                 ->where('created_at', '>=', $booking->created_at)
                 ->exists();
 
-            if ($alreadyHandled) {
+            if ($alreadyExists) {
                 continue;
             }
 
@@ -110,7 +104,7 @@ class SendBookingReminders extends Command
                     'template_type' => 'reminder',
                     'phone_number' => $booking->customer->phone,
                     'message_content' => $parsedMessage,
-                    'scheduled_at' => now(), // Queue it to go out
+                    'scheduled_at' => now(),
                     'status' => 'pending',
                     'retry_count' => 0,
                 ]);
