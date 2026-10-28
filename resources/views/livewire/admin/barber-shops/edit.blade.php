@@ -16,13 +16,13 @@
                 </div>
                 <div><x-form.input name="name" type="text" wire:model.live="name" :label="__('barber-shops.Name')" class="dark:bg-gray-900" /></div>
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Lloji i Biznesit (Business Type)</label>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('barber-shops.Business Type') }}</label>
                     <select wire:model.live="business_type" class="w-full px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                        <option value="barbershop">Berberanë (Barbershop)</option>
-                        <option value="beauty_salon">Sallon Bukurie / Parukeri (Beauty Salon)</option>
-                        <option value="nail_studio">Studio Thonjsh (Nail Studio)</option>
-                        <option value="spa">Qendër Estetike & Spa (Aesthetic Center)</option>
-                        <option value="general">Biznes Përgjithshëm (General Staff)</option>
+                        <option value="barbershop">{{ __('barber-shops.Barbershop') }}</option>
+                        <option value="beauty_salon">{{ __('barber-shops.Beauty Salon') }}</option>
+                        <option value="nail_studio">{{ __('barber-shops.Nail Studio') }}</option>
+                        <option value="spa">{{ __('barber-shops.Aesthetic Center') }}</option>
+                        <option value="general">{{ __('barber-shops.General Business') }}</option>
                     </select>
                 </div>
                 <div><x-form.input name="app_name" type="text" wire:model.live="app_name" :label="__('barber-shops.App Name')" class="dark:bg-gray-900" /></div>
@@ -36,17 +36,17 @@
                         <div>
                             <h3 class="font-black text-gray-900 dark:text-white text-base flex items-center gap-2">
                                 <x-heroicon-o-chat-bubble-left-right class="w-5 h-5 text-emerald-500" />
-                                <span>Lidhja e WhatsApp-it me QR Code për {{ $name }}</span>
+                                <span>{{ __('barber-shops.WhatsApp Integration', ['name' => $name]) }}</span>
                             </h3>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Skanoni QR Code-in me telefonin e sallonit për të dërguar automatikisht konfirmimet e takimeve te klientët në WhatsApp.</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ __('barber-shops.WhatsApp Subtitle') }}</p>
                         </div>
                         <div class="flex items-center gap-2">
                             <button type="button" wire:click="checkWhatsAppStatus" class="px-3.5 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold rounded-xl shadow-2xs hover:bg-gray-50">
-                                🔄 Rifresko Statusin
+                                {{ __('barber-shops.Refresh Status') }}
                             </button>
                             <button type="button" wire:click="generateWhatsAppQr" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl shadow-sm flex items-center gap-1.5">
                                 <x-heroicon-o-qr-code class="w-4 h-4" />
-                                <span>📱 Gjenero QR Code</span>
+                                <span>{{ __('barber-shops.Generate QR Code') }}</span>
                             </button>
                         </div>
                     </div>
@@ -56,16 +56,16 @@
                             <div class="flex items-center gap-3">
                                 <div class="w-3.5 h-3.5 rounded-full bg-emerald-500 animate-pulse"></div>
                                 <div>
-                                    <span class="text-xs font-black text-emerald-900 dark:text-emerald-200 uppercase tracking-wider block">WhatsApp i këtij Salloni është 100% i Lidhur e Aktiv!</span>
+                                    <span class="text-xs font-black text-emerald-900 dark:text-emerald-200 uppercase tracking-wider block">{{ __('barber-shops.WhatsApp Connected') }}</span>
                                     @if($wa_phone)
-                                        <span class="text-xs font-bold text-emerald-700 dark:text-emerald-400 font-mono">Numri i Lidhur: +{{ $wa_phone }}</span>
+                                        <span class="text-xs font-bold text-emerald-700 dark:text-emerald-400 font-mono">{{ __('barber-shops.Connected Phone', ['phone' => $wa_phone]) }}</span>
                                     @endif
                                 </div>
                             </div>
                         </div>
                     @elseif($wa_qr)
                         <div wire:poll.3s="checkWhatsAppStatus" class="p-6 bg-white dark:bg-gray-900 border border-emerald-200 dark:border-emerald-800 rounded-2xl text-center space-y-4 shadow-sm">
-                            <p class="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider">Hapni WhatsApp te telefoni i sallonit ➔ Linked Devices ➔ Link a Device dhe Skanoni këtë QR Code:</p>
+                            <p class="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider">{{ __('barber-shops.Scan QR Prompt') }}</p>
                             <div class="flex justify-center py-2">
                                 @if(str_starts_with($wa_qr, 'data:image'))
                                     <img src="{{ $wa_qr }}" alt="WhatsApp QR Code" class="p-3 bg-white border-2 border-emerald-500/30 rounded-2xl shadow-md w-60 h-60" />
@@ -73,11 +73,11 @@
                                     <img src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data={{ urlencode($wa_qr) }}" alt="WhatsApp QR Code" class="p-3 bg-white border-2 border-emerald-500/30 rounded-2xl shadow-md w-60 h-60" />
                                 @endif
                             </div>
-                            <p class="text-[11px] font-semibold text-gray-400">Skanoni foton me WhatsApp. Sapo ta skanoni, faqja e detekton automatikisht lidhjen!</p>
+                            <p class="text-[11px] font-semibold text-gray-400">{{ __('barber-shops.Scan Notice') }}</p>
                         </div>
                     @else
                         <div class="p-4 bg-white/80 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-700 rounded-2xl text-xs font-bold text-gray-500 dark:text-gray-400">
-                            Statusi: Pa lidhur. Klikoni butonin <strong class="text-emerald-600 dark:text-emerald-400">"📱 Gjenero QR Code"</strong> më sipër për të shfaqur foton e QR Code-it te ekrani!
+                            {{ __('barber-shops.WhatsApp Disconnected') }}
                         </div>
                     @endif
                 </div>
@@ -85,36 +85,36 @@
                 <!-- Konfigurimi i Njoftimeve Automatike Card -->
                 <div class="col-span-1 md:col-span-2 bg-slate-50 dark:bg-gray-900/60 p-6 rounded-3xl border border-gray-200 dark:border-gray-800 space-y-4">
                     <div>
-                        <h3 class="font-black text-gray-900 dark:text-white text-sm uppercase tracking-wider">Kanalet e Njoftimeve te Klientët (Notification Channels)</h3>
-                        <p class="text-xs text-gray-500 mt-1">Ndessni ose fikni kanalet me të cilat dëshironi t'u dërgohen mesazhet automatike klientëve tuaj.</p>
+                        <h3 class="font-black text-gray-900 dark:text-white text-sm uppercase tracking-wider">{{ __('barber-shops.Notification Channels') }}</h3>
+                        <p class="text-xs text-gray-500 mt-1">{{ __('barber-shops.Notification Channels Subtitle') }}</p>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                         <div class="p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 flex items-center justify-between">
                             <div>
-                                <span class="text-xs font-black text-gray-900 dark:text-white block">Aktivizo Njoftimet në WhatsApp</span>
-                                <span class="text-[11px] text-gray-400">Dërgon konfirmimet përmes WhatsApp Gateway.</span>
+                                <span class="text-xs font-black text-gray-900 dark:text-white block">{{ __('barber-shops.Enable WhatsApp Notifications') }}</span>
+                                <span class="text-[11px] text-gray-400">{{ __('barber-shops.Enable WhatsApp Subtitle') }}</span>
                             </div>
                             <x-form.checkbox name="whatsapp_enabled" wire:model="whatsapp_enabled" label="" />
                         </div>
 
                         <div class="p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 flex items-center justify-between">
                             <div>
-                                <span class="text-xs font-black text-gray-900 dark:text-white block">Aktivizo SMS SIM Card Gateway</span>
-                                <span class="text-[11px] text-gray-400">Dërgon mesazhet nga telefoni SIM Gateway.</span>
+                                <span class="text-xs font-black text-gray-900 dark:text-white block">{{ __('barber-shops.Enable SMS Gateway') }}</span>
+                                <span class="text-[11px] text-gray-400">{{ __('barber-shops.Enable SMS Subtitle') }}</span>
                             </div>
                             <x-form.checkbox name="sms_enabled" wire:model="sms_enabled" label="" />
                         </div>
                     </div>
 
                     <div class="pt-2">
-                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Orari i Dërgimit të Rikujtesës para Takimit (Reminder Time)</label>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">{{ __('barber-shops.Reminder Time Label') }}</label>
                         <select wire:model.live="reminder_hours_before" class="w-full px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold focus:ring-2 focus:ring-blue-500">
-                            <option value="0.5">30 Minuta para Takimit</option>
-                            <option value="1">1 Orë para Takimit</option>
-                            <option value="2">2 Orë para Takimit</option>
-                            <option value="4">4 Orë para Takimit</option>
-                            <option value="24">24 Orë (1 Ditë) para Takimit</option>
+                            <option value="0.5">{{ __('barber-shops.30 Minutes Before') }}</option>
+                            <option value="1">{{ __('barber-shops.1 Hour Before') }}</option>
+                            <option value="2">{{ __('barber-shops.2 Hours Before') }}</option>
+                            <option value="4">{{ __('barber-shops.4 Hours Before') }}</option>
+                            <option value="24">{{ __('barber-shops.24 Hours Before') }}</option>
                         </select>
                     </div>
                 </div>
@@ -122,8 +122,8 @@
                 <!-- 10 Color Presets Card -->
                 <div class="col-span-1 md:col-span-2 bg-slate-50 dark:bg-gray-900/60 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 space-y-4">
                     <div>
-                        <h3 class="font-bold text-gray-900 dark:text-gray-100 text-sm">Zgjidhni Ngjyrën e Temës së Biznesit (Primary & Secondary Color)</h3>
-                        <p class="text-xs text-gray-500">10 ngjyrat më të përshtatshme që shkojnë në mënyrë të përsosur si në Dritë (Light) ashtu edhe në Errët (Dark Mode).</p>
+                        <h3 class="font-bold text-gray-900 dark:text-gray-100 text-sm">{{ __('barber-shops.Color Presets') }}</h3>
+                        <p class="text-xs text-gray-500">{{ __('barber-shops.Color Presets Subtitle') }}</p>
                     </div>
 
                     <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2">
@@ -154,23 +154,23 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                         <div>
-                            <x-form.input name="primary_color" type="text" wire:model.live="primary_color" label="Ngjyra Kryesore (Primary Hex)" placeholder="#2563EB" class="dark:bg-gray-900 font-mono" />
+                            <x-form.input name="primary_color" type="text" wire:model.live="primary_color" :label="__('barber-shops.Primary Hex')" placeholder="#2563EB" class="dark:bg-gray-900 font-mono" />
                         </div>
                         <div>
-                            <x-form.input name="secondary_color" type="text" wire:model.live="secondary_color" label="Ngjyra Dytësore (Secondary Hex)" placeholder="#F59E0B" class="dark:bg-gray-900 font-mono" />
+                            <x-form.input name="secondary_color" type="text" wire:model.live="secondary_color" :label="__('barber-shops.Secondary Hex')" placeholder="#F59E0B" class="dark:bg-gray-900 font-mono" />
                         </div>
                     </div>
                 </div>
 
                 <div class="col-span-1 md:col-span-2 bg-gray-50 dark:bg-gray-900/50 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 space-y-4">
-                    <h3 class="font-bold text-gray-800 dark:text-gray-200">Etiketat e Personalizuara (Custom Labels Override)</h3>
-                    <p class="text-xs text-gray-500">Lërini bosh nëse dëshironi të përdoren emërtimet automatike të llojit të biznesit.</p>
+                    <h3 class="font-bold text-gray-800 dark:text-gray-200">{{ __('barber-shops.Custom Labels') }}</h3>
+                    <p class="text-xs text-gray-500">{{ __('barber-shops.Custom Labels Subtitle') }}</p>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><x-form.input name="staff_label" type="text" wire:model.live="staff_label" label="Emri i Stafit (Tëskës, p.sh: Parukier, Berber, Specialist)" class="dark:bg-gray-900" /></div>
-                        <div><x-form.input name="staff_label_plural" type="text" wire:model.live="staff_label_plural" label="Emri i Stafit (Shumës, p.sh: Parukierët, Berberët, Stafi)" class="dark:bg-gray-900" /></div>
-                        <div><x-form.input name="shop_label" type="text" wire:model.live="shop_label" label="Emri i Sallonit (p.sh: Salloni, Berberana, Studio)" class="dark:bg-gray-900" /></div>
-                        <div><x-form.input name="service_label" type="text" wire:model.live="service_label" label="Emri i Shërbimit (p.sh: Shërbimi, Trajtimi)" class="dark:bg-gray-900" /></div>
-                        <div><x-form.input name="currency" type="text" wire:model.live="currency" label="Monedha Zyrtare (p.sh: Lekë, €, $, CHF, £)" placeholder="Lekë" class="dark:bg-gray-900 font-bold" /></div>
+                        <div><x-form.input name="staff_label" type="text" wire:model.live="staff_label" :label="__('barber-shops.Staff Label Singular')" class="dark:bg-gray-900" /></div>
+                        <div><x-form.input name="staff_label_plural" type="text" wire:model.live="staff_label_plural" :label="__('barber-shops.Staff Label Plural')" class="dark:bg-gray-900" /></div>
+                        <div><x-form.input name="shop_label" type="text" wire:model.live="shop_label" :label="__('barber-shops.Shop Label')" class="dark:bg-gray-900" /></div>
+                        <div><x-form.input name="service_label" type="text" wire:model.live="service_label" :label="__('barber-shops.Service Label')" class="dark:bg-gray-900" /></div>
+                        <div><x-form.input name="currency" type="text" wire:model.live="currency" :label="__('barber-shops.Currency Official')" placeholder="Lekë" class="dark:bg-gray-900 font-bold" /></div>
                     </div>
                 </div>
 
@@ -179,7 +179,7 @@
                 <div><x-form.checkbox name="active" wire:model="active" :label="__('barber-shops.Active')" /></div>
                 <div><x-form.input name="timezone" type="text" wire:model.live="timezone" :label="__('barber-shops.Timezone')" class="dark:bg-gray-900" /></div>
                 <div><x-form.input name="max_no_show_before_block" type="number" step="1" wire:model.live="max_no_show_before_block" :label="__('barber-shops.Max No Show Before Block')" class="dark:bg-gray-900" /></div>
-                <div><x-form.input name="min_service_time" type="number" step="1" wire:model.live="min_service_time" label="Koha Minimale e Shërbimit / Hapi i Orareve (Minuta)" placeholder="Automatik nga shërbimet nëse lihet bosh" class="dark:bg-gray-900" /></div>
+                <div><x-form.input name="min_service_time" type="number" step="1" wire:model.live="min_service_time" :label="__('barber-shops.Min Service Time')" :placeholder="__('barber-shops.Min Service Time Placeholder')" class="dark:bg-gray-900" /></div>
             </div>
             <div class="mt-10 flex justify-end">
                 <x-button type="submit" variant="blue" class="w-full sm:w-auto !px-12 !py-4 !rounded-2xl">{{ __('barber-shops.Update') }}</x-button>
