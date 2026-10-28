@@ -19,7 +19,7 @@ class SendQueuedSmsMessages extends Command
         $now = Carbon::now($tz);
 
         // 1. Delete past appointment queue items whose appointment time has already passed
-        $pastAppointmentQueues = MessageQueue::where('status', 'pending')
+        $pastAppointmentQueues = MessageQueue::whereIn('status', ['pending', 'queued', 'Në Pritje'])
             ->whereHas('booking', function($bQuery) use ($now, $tz) {
                 $bQuery->whereRaw("appointment_at < ?", [$now->format('Y-m-d H:i:s')]);
             })
@@ -30,16 +30,9 @@ class SendQueuedSmsMessages extends Command
             Log::info("🧹 [SendQueuedSmsMessages] Deleted past appointment Queue ID #{$past->id}");
         }
 
-        // 2. Retrieve valid pending messages scheduled for NOW or EARLIER (in app timezone)
-        $pendingMessages = MessageQueue::whereIn('status', ['pending', 'queued'])
+        // 2. Retrieve ALL pending messages scheduled for NOW or EARLIER (without shop restrictions)
+        $pendingMessages = MessageQueue::whereIn('status', ['pending', 'queued', 'Në Pritje'])
             ->whereRaw("scheduled_at <= ?", [$now->format('Y-m-d H:i:s')])
-            ->where(function($q) {
-                $q->whereNull('barber_shop_id')
-                  ->orWhere('barber_shop_id', 0)
-                  ->orWhereHas('barberShop', function($sq) {
-                      $sq->where('active', true);
-                  });
-            })
             ->orderBy('scheduled_at', 'asc')
             ->get();
 
