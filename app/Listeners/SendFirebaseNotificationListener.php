@@ -311,7 +311,6 @@ class SendFirebaseNotificationListener
         $barberWaEnabled = $barber ? (bool) ($barber->whatsapp_enabled ?? true) : true;
 
         $waService = app(WhatsAppService::class);
-        $waSent = false;
 
         // Helper to update MessageQueue row status to 'sent'
         $markQueueSent = function() use ($smsId) {
@@ -332,36 +331,32 @@ class SendFirebaseNotificationListener
         // TIER 1: Barber's Personal WhatsApp (Priority #1)
         // -------------------------------------------------------------
         if ($barberId && $barberWaEnabled) {
-            if ($waService->isConnected($shopId, $barberId)) {
+            try {
                 $waSent = $waService->send($phone, $body, $shopId, $barberId, $customerId, $templateType);
                 if ($waSent) {
                     $markQueueSent();
                     Log::info("💬 [SMART ROUTE - TIER 1] Sent via Barber #{$barberId} Personal WhatsApp to {$phone}");
                     return; // Successfully delivered via Barber WhatsApp!
                 }
-            } else {
-                Log::info("⏭️ [SMART ROUTE - TIER 1 SKIP] Barber #{$barberId} WhatsApp is enabled but not connected. Fallback to Tier 2.");
+            } catch (\Throwable $e) {
+                Log::warning("⚠️ [SMART ROUTE - TIER 1 FAIL] Barber WhatsApp failed: " . $e->getMessage());
             }
-        } else {
-            Log::info("⏭️ [SMART ROUTE - TIER 1 SKIP] Barber WhatsApp disabled or no barber selected. Fallback to Tier 2.");
         }
 
         // -------------------------------------------------------------
         // TIER 2: Barber Shop's Central WhatsApp (Priority #2)
         // -------------------------------------------------------------
         if ($shopWaEnabled) {
-            if ($waService->isConnected($shopId, null)) {
+            try {
                 $waSent = $waService->send($phone, $body, $shopId, null, $customerId, $templateType);
                 if ($waSent) {
                     $markQueueSent();
                     Log::info("💬 [SMART ROUTE - TIER 2] Sent via Shop #{$shopId} Central WhatsApp to {$phone}");
                     return; // Successfully delivered via Shop WhatsApp!
                 }
-            } else {
-                Log::info("⏭️ [SMART ROUTE - TIER 2 SKIP] Shop #{$shopId} WhatsApp is enabled but not connected. Fallback to Tier 3.");
+            } catch (\Throwable $e) {
+                Log::warning("⚠️ [SMART ROUTE - TIER 2 FAIL] Shop WhatsApp failed: " . $e->getMessage());
             }
-        } else {
-            Log::info("⏭️ [SMART ROUTE - TIER 2 SKIP] Shop WhatsApp disabled. Fallback to Tier 3.");
         }
 
         // -------------------------------------------------------------
