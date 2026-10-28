@@ -3,6 +3,8 @@ import pino from 'pino';
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
+import http from 'http';
+import https from 'https';
 import { fileURLToPath } from 'url';
 import qrcodeTerminal from 'qrcode-terminal';
 import QRCode from 'qrcode';
@@ -17,6 +19,7 @@ const logger = pino({ level: 'silent' });
 
 // Security Middleware: Protect API endpoints with X-API-KEY
 const API_SECRET = process.env.WHATSAPP_API_SECRET || 'E4ProTech_Secret_Key_2026_Secure';
+const LARAVEL_API_HOST = process.env.LARAVEL_API_HOST || 'https://app.e4protech.com';
 
 app.use((req, res, next) => {
     const clientKey = req.headers['x-api-key'] || req.query.api_key;
@@ -26,26 +29,113 @@ app.use((req, res, next) => {
     next();
 });
 
-// Auto-migrate legacy whatsapp_session folder to shop_1 if shop_1 doesn't exist yet
-const legacySessionDir = path.join(__dirname, 'whatsapp_session');
-const shop1SessionDir = path.join(__dirname, 'whatsapp_sessions', 'shop_1');
+// Helper for HTTP/HTTPS requests to Laravel Cloud API
+function fetchCloudApi(endpoint, method = 'GET', data = null) {
+    return new Promise((resolve) => {
+        try {
+            const urlObj = new URL(`${LARAVEL_API_HOST}/api/whatsapp-cloud-sessions/${endpoint}`);
+            const client = urlObj.protocol === 'https:' ? https : http;
+            const bodyStr = data ? JSON.stringify(data) : null;
 
-if (fs.existsSync(legacySessionDir) && !fs.existsSync(shop1SessionDir)) {
+            const req = client.request(urlObj, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-KEY': API_SECRET,
+                    ...(bodyStr ? { 'Content-Length': Buffer.byteLength(bodyStr) } : {})
+                },
+                timeout: 8000
+            }, (res) => {
+                let resData = '';
+                res.on('data', chunk => resData += chunk);
+                res.on('end', () => {
+                    try {
+                        resolve(JSON.parse(resData));
+                    } catch (_) {
+                        resolve(null);
+                    }
+                });
+            });
+
+            req.on('error', () => resolve(null));
+            req.on('timeout', () => { req.destroy(); resolve(null); });
+
+            if (bodyStr) req.write(bodyStr);
+            req.end();
+        } catch (_) {
+            resolve(null);
+        }
+    });
+}
+
+// Sync session folder files to Laravel Database Cloud
+async function syncSessionToCloud(cleanKey) {
     try {
-        fs.mkdirSync(path.dirname(shop1SessionDir), { recursive: true });
-        fs.cpSync(legacySessionDir, shop1SessionDir, { recursive: true });
-        console.log('📦 Auto-migrated legacy WhatsApp session to shop_1');
-    } catch (err) {
-        console.warn('Migration warning:', err.message);
+        const sessionDir = path.join(__dirname, 'whatsapp_sessions', cleanKey);
+        if (!fs.existsSync(sessionDir)) return;
+
+        const files = {};
+        const fileNames = fs.readdirSync(sessionDir);
+        for (const name of fileNames) {
+            const filePath = path.join(sessionDir, name);
+            if (fs.statSync(filePath).isFile()) {
+                files[name] = fs.readFileSync(filePath, 'base64');
+            }
+        }
+
+        if (Object.keys(files).length > 0) {
+            await fetchCloudApi('save', 'POST', {
+                session_key: cleanKey,
+                files: files
+            });
+            console.log(`☁️ [CLOUD SYNC] Seanca ${cleanKey} u ruajt në bazën e të dhënave të Hostinger!`);
+        }
+    } catch (e) {
+        console.warn('Sync error:', e.message);
     }
 }
 
-// Store active WhatsApp sockets & status per session key (shop_1 or barber_5)
+// Delete session from Laravel Database Cloud
+async function deleteSessionFromCloud(cleanKey) {
+    try {
+        await fetchCloudApi('delete', 'POST', { session_key: cleanKey });
+        console.log(`☁️ [CLOUD DELETE] Seanca ${cleanKey} u fshi nga baza e të dhënave të Hostinger.`);
+    } catch (_) {}
+}
+
+// Restore saved sessions from Laravel Database Cloud on server startup
+async function restoreSessionsFromCloud() {
+    try {
+        const res = await fetchCloudApi('load', 'GET');
+        if (res && res.success && res.sessions) {
+            const parentDir = path.join(__dirname, 'whatsapp_sessions');
+            if (!fs.existsSync(parentDir)) fs.mkdirSync(parentDir, { recursive: true });
+
+            for (const [key, files] of Object.entries(res.sessions)) {
+                if (typeof files === 'object' && files !== null) {
+                    const sessionDir = path.join(parentDir, key);
+                    if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
+
+                    for (const [fileName, base64Content] of Object.entries(files)) {
+                        const filePath = path.join(sessionDir, fileName);
+                        fs.writeFileSync(filePath, Buffer.from(base64Content, 'base64'));
+                    }
+                    console.log(`📦 [CLOUD RESTORE] Seanca ${key} u rikthye automatikisht nga baza e të dhënave!`);
+                    getOrStartSession(key);
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('Cloud restore warning:', e.message);
+    }
+}
+
+// Store active WhatsApp sockets & status per session key
 const sessions = new Map();
 const sessionStatus = new Map();
 
 /**
- * Initialize or get WhatsApp session for a specific session key (shop_1 or barber_5)
+ * Initialize or get WhatsApp session for a specific session key
  */
 async function getOrStartSession(sessionKey = 'default') {
     const cleanKey = sessionKey.toString().trim();
@@ -59,8 +149,6 @@ async function getOrStartSession(sessionKey = 'default') {
         fs.mkdirSync(sessionDir, { recursive: true });
     }
 
-    const hasCreds = fs.existsSync(path.join(sessionDir, 'creds.json'));
-
     const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
 
     const sock = makeWASocket({
@@ -71,7 +159,11 @@ async function getOrStartSession(sessionKey = 'default') {
     sessions.set(cleanKey, sock);
     sessionStatus.set(cleanKey, { connected: false, qr: null, qrImage: null, phone: null });
 
-    sock.ev.on('creds.update', saveCreds);
+    sock.ev.on('creds.update', async () => {
+        await saveCreds();
+        // Backup updated credentials to Laravel DB in background!
+        syncSessionToCloud(cleanKey);
+    });
 
     sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
@@ -98,8 +190,8 @@ async function getOrStartSession(sessionKey = 'default') {
                     console.warn('Error clearing session dir:', e.message);
                 }
                 sessions.delete(cleanKey);
+                deleteSessionFromCloud(cleanKey);
             } else {
-                // Auto-reconnect ONLY if creds exist (authenticated session)
                 const credsExistNow = fs.existsSync(path.join(sessionDir, 'creds.json'));
                 if (credsExistNow) {
                     console.log(`🔄 [SESSION ${cleanKey}] Lidhja u mbyll përkohësisht. Po ri-lidhet automatikisht...`);
@@ -113,34 +205,17 @@ async function getOrStartSession(sessionKey = 'default') {
             const userPhone = sock.user?.id ? sock.user.id.split(':')[0] : null;
             sessionStatus.set(cleanKey, { connected: true, qr: null, qrImage: null, phone: userPhone });
             console.log(`✅ [SESSION ${cleanKey}] WhatsApp Gateway është 100% i Lidhur e Aktiv (${userPhone ?? 'Connected'})!`);
+            syncSessionToCloud(cleanKey);
         }
     });
 
     return sock;
 }
 
-// Auto-start ONLY authenticated sessions on boot
-function autoStartSavedSessions() {
-    const parentDir = path.join(__dirname, 'whatsapp_sessions');
-    if (!fs.existsSync(parentDir)) return;
+// On Render Cloud Startup: Restore all saved sessions from Laravel DB
+restoreSessionsFromCloud();
 
-    try {
-        const folders = fs.readdirSync(parentDir);
-        for (const folder of folders) {
-            const credsPath = path.join(parentDir, folder, 'creds.json');
-            if (fs.existsSync(credsPath)) {
-                console.log(`📦 Po ngarkohet seanca e ruajtur: ${folder}`);
-                getOrStartSession(folder);
-            }
-        }
-    } catch (e) {
-        console.warn('Error scanning saved sessions:', e.message);
-    }
-}
-
-autoStartSavedSessions();
-
-// Health check status SPECIFIC per session key (shop_1 or barber_5)
+// Health check status SPECIFIC per session key
 app.get('/api/whatsapp/status', async (req, res) => {
     let key = (req.query.session_key || req.query.shop_id || '1').toString().trim();
     if (!key.startsWith('shop_') && !key.startsWith('barber_')) {
@@ -194,7 +269,7 @@ app.get('/api/whatsapp/qr', async (req, res) => {
     });
 });
 
-// Send WhatsApp Message Endpoint (Supports Shop-level & Barber-level Routing)
+// Send WhatsApp Message Endpoint
 app.post('/api/whatsapp/send', async (req, res) => {
     try {
         const { phone, message, shop_id, barber_id } = req.body;
@@ -208,7 +283,7 @@ app.post('/api/whatsapp/send', async (req, res) => {
         let sock = null;
         let status = null;
 
-        // 1. Try Barber-specific WhatsApp session if provided
+        // 1. Try Barber-specific WhatsApp session
         if (targetBarberKey) {
             sock = sessions.get(targetBarberKey);
             status = sessionStatus.get(targetBarberKey);
@@ -219,7 +294,7 @@ app.post('/api/whatsapp/send', async (req, res) => {
             }
         }
 
-        // 2. Try Shop-specific WhatsApp session if Barber session is not connected
+        // 2. Try Shop-specific WhatsApp session
         if (!status?.connected) {
             sock = sessions.get(targetShopKey);
             status = sessionStatus.get(targetShopKey);

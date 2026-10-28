@@ -127,6 +127,11 @@ Route::prefix('mobile')->group(function () {
             Route::post('update-branding', [\App\Http\Controllers\Api\Mobile\BusinessSettingsController::class, 'updateBranding']);
         });
 
+// Render Cloud Gateway - Session Persistence APIs
+Route::post('whatsapp-cloud-sessions/save', [\App\Http\Controllers\Api\WhatsappSessionCloudController::class, 'saveSession']);
+Route::get('whatsapp-cloud-sessions/load', [\App\Http\Controllers\Api\WhatsappSessionCloudController::class, 'loadSessions']);
+Route::post('whatsapp-cloud-sessions/delete', [\App\Http\Controllers\Api\WhatsappSessionCloudController::class, 'deleteSession']);
+
         // Calendar & Booking Helpers
         Route::get('bookings/calendar', [\App\Http\Controllers\Api\Mobile\BookingController::class, 'calendar']);
         Route::get('bookings/day-schedule', [\App\Http\Controllers\Api\Mobile\BookingController::class, 'daySchedule']);
