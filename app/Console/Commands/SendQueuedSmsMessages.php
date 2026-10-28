@@ -18,14 +18,14 @@ class SendQueuedSmsMessages extends Command
         $tz = config('app.timezone', 'Europe/Tirane');
         $now = Carbon::now($tz);
 
-        // Reset stale 'processing' rows older than 1 minute back to 'pending'
+        // Reset ONLY stale 'processing' items older than 10 minutes back to 'pending'
         MessageQueue::where('status', 'processing')
-            ->where('updated_at', '<', now()->subMinute())
+            ->where('updated_at', '<', now()->subMinutes(10))
             ->update(['status' => 'pending']);
 
-        // 1. Delete past appointment queue items whose appointment time has already passed
-        $pastAppointmentQueues = MessageQueue::whereIn('status', ['pending', 'queued', 'Në Pritje', 'processing'])
-            ->whereHas('booking', function($bQuery) use ($now, $tz) {
+        // 1. Delete past appointment queue items
+        $pastAppointmentQueues = MessageQueue::where('status', 'pending')
+            ->whereHas('booking', function($bQuery) use ($now) {
                 $bQuery->whereRaw("appointment_at < ?", [$now->format('Y-m-d H:i:s')]);
             })
             ->get();
@@ -35,8 +35,8 @@ class SendQueuedSmsMessages extends Command
             Log::info("🧹 [SendQueuedSmsMessages] Deleted past appointment Queue ID #{$past->id}");
         }
 
-        // 2. Retrieve ALL pending & processing messages scheduled for NOW or EARLIER
-        $pendingMessages = MessageQueue::whereIn('status', ['pending', 'queued', 'Në Pritje', 'processing'])
+        // 2. Retrieve ONLY status = 'pending' messages scheduled for NOW or EARLIER
+        $pendingMessages = MessageQueue::where('status', 'pending')
             ->whereRaw("scheduled_at <= ?", [$now->format('Y-m-d H:i:s')])
             ->orderBy('scheduled_at', 'asc')
             ->get();
@@ -50,7 +50,7 @@ class SendQueuedSmsMessages extends Command
 
         foreach ($pendingMessages as $index => $msg) {
             try {
-                // Mark as processing to prevent re-dispatching in concurrent cron runs
+                // Immediately set status = 'processing' so no other cron run selects it
                 $msg->update(['status' => 'processing']);
 
                 SendSmsToGatewayJob::dispatch($msg->id);

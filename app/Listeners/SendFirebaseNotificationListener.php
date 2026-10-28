@@ -258,7 +258,7 @@ class SendFirebaseNotificationListener
                         // Cancel pending reminders for this booking
                         MessageQueue::where('booking_id', $booking->id)
                             ->where('status', 'pending')
-                            ->delete();
+                            delete();
 
                         $parsedCancel = MessageTemplate::parseForBooking($booking, 'cancellation', null, $preferredChannel);
 
@@ -312,17 +312,13 @@ class SendFirebaseNotificationListener
 
         $waService = app(WhatsAppService::class);
 
-        // Helper to update MessageQueue row status to 'sent'
+        // Helper to delete MessageQueue row on success so queue stays 100% clean
         $markQueueSent = function() use ($smsId) {
             if ($smsId > 0) {
                 try {
-                    MessageQueue::where('id', $smsId)->update([
-                        'status' => 'sent',
-                        'sent_at' => now(),
-                        'channel' => 'whatsapp',
-                    ]);
+                    MessageQueue::where('id', $smsId)->delete();
                 } catch (\Throwable $e) {
-                    Log::warning("Could not update queue status to sent: " . $e->getMessage());
+                    Log::warning("Could not delete processed queue item: " . $e->getMessage());
                 }
             }
         };

@@ -59,12 +59,8 @@ class SendSmsToGatewayJob
                 ->exists();
 
             if ($alreadySentRecently) {
-                $queue->update([
-                    'status' => 'sent',
-                    'sent_at' => now(),
-                    'channel' => 'whatsapp',
-                ]);
-                Log::info("⏭️ [SendSmsToGatewayJob] Skipped duplicate reminder send for Booking #{$booking->id}");
+                $queue->delete();
+                Log::info("⏭️ [SendSmsToGatewayJob] Skipped duplicate reminder send for Booking #{$booking->id} and cleaned queue.");
                 return;
             }
         }
@@ -81,12 +77,9 @@ class SendSmsToGatewayJob
             );
 
             if ($waSent) {
-                $queue->update([
-                    'status' => 'sent',
-                    'sent_at' => now(),
-                    'channel' => 'whatsapp',
-                ]);
-                Log::info("💬 [SendSmsToGatewayJob] Scheduled reminder ID #{$queue->id} successfully sent via WhatsApp Gateway.");
+                // Delete from queue table immediately on success so queue stays 100% clean!
+                $queue->delete();
+                Log::info("💬 [SendSmsToGatewayJob] Scheduled reminder ID #{$queue->id} successfully sent via WhatsApp Gateway and deleted from queue.");
                 return;
             }
         } catch (\Throwable $e) {
