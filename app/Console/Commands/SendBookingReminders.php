@@ -31,14 +31,15 @@ class SendBookingReminders extends Command
      */
     public function handle()
     {
-        $now = Carbon::now();
-        $this->info("Checking for upcoming bookings at {$now}...");
+        $tz = config('app.timezone', 'Europe/Tirane');
+        $now = Carbon::now($tz);
+        $this->info("Checking for upcoming bookings at {$now->format('Y-m-d H:i:s')} ({$tz})...");
 
         // We fetch active bookings
         $bookings = Booking::with(['barberShop', 'customer', 'service', 'barber'])
             ->whereIn('status', ['confirmed', 'pending'])
             ->whereNotNull('appointment_at')
-            ->where('appointment_at', '>', $now)
+            ->whereRaw("appointment_at > ?", [$now->format('Y-m-d H:i:s')])
             ->get();
 
         $count = 0;
@@ -87,8 +88,8 @@ class SendBookingReminders extends Command
             $reminderMins = (int) round($hours * 60);
             $reminderMins = max(10, $reminderMins);
 
-            $appointmentTime = Carbon::parse($booking->appointment_at);
-            $createdAtTime = Carbon::parse($booking->created_at);
+            $appointmentTime = Carbon::parse($booking->appointment_at, $tz);
+            $createdAtTime = Carbon::parse($booking->created_at, $tz);
 
             // Do not send separate reminder if appointment was booked last-minute
             if ($appointmentTime->diffInMinutes($now) < 10 || $appointmentTime->diffInMinutes($createdAtTime) < 30) {

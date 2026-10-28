@@ -15,6 +15,17 @@ app.use(express.json());
 
 const logger = pino({ level: 'silent' });
 
+// Security Middleware: Protect API endpoints with X-API-KEY
+const API_SECRET = process.env.WHATSAPP_API_SECRET || 'E4ProTech_Secret_Key_2026_Secure';
+
+app.use((req, res, next) => {
+    const clientKey = req.headers['x-api-key'] || req.query.api_key;
+    if (clientKey !== API_SECRET) {
+        return res.status(401).json({ success: false, error: 'Unauthorized: Invalid API Key' });
+    }
+    next();
+});
+
 // Auto-migrate legacy whatsapp_session folder to shop_1 if shop_1 doesn't exist yet
 const legacySessionDir = path.join(__dirname, 'whatsapp_session');
 const shop1SessionDir = path.join(__dirname, 'whatsapp_sessions', 'shop_1');
@@ -48,6 +59,8 @@ async function getOrStartSession(sessionKey = 'default') {
         fs.mkdirSync(sessionDir, { recursive: true });
     }
 
+    const hasCreds = fs.existsSync(path.join(sessionDir, 'creds.json'));
+
     const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
 
     const sock = makeWASocket({
@@ -70,8 +83,7 @@ async function getOrStartSession(sessionKey = 'default') {
             } catch (e) {
                 sessionStatus.set(cleanKey, { connected: false, qr: qr, qrImage: null, phone: null });
             }
-            console.log(`\n📱 [SESSION ${cleanKey}] QR Code i ri u gjenerua te kjo seancë.\n`);
-            qrcodeTerminal.generate(qr, { small: true });
+            console.log(`📱 [SESSION ${cleanKey}] QR Code i ri u gjenerua te kjo seancë.`);
         }
 
         if (connection === 'close') {
@@ -79,31 +91,54 @@ async function getOrStartSession(sessionKey = 'default') {
             const isLoggedOut = (lastDisconnect?.error?.output?.statusCode === DisconnectReason.loggedOut);
 
             if (isLoggedOut) {
-                console.log(`⚠️ [SESSION ${cleanKey}] Përdoruesi bëri Logout nga telefoni. Po pastrohet seanca e vjetër...`);
+                console.log(`⚠️ [SESSION ${cleanKey}] Përdoruesi bëri Logout. Po fshihen çelësat e vjetër...`);
                 try {
                     fs.rmSync(sessionDir, { recursive: true, force: true });
                 } catch (e) {
                     console.warn('Error clearing session dir:', e.message);
                 }
                 sessions.delete(cleanKey);
-                setTimeout(() => getOrStartSession(cleanKey), 1500);
             } else {
-                console.log(`🔄 [SESSION ${cleanKey}] Lidhja u mbyll përkohësisht. Po ri-lidhet...`);
-                setTimeout(() => getOrStartSession(cleanKey), 4000);
+                // Auto-reconnect ONLY if creds exist (authenticated session)
+                const credsExistNow = fs.existsSync(path.join(sessionDir, 'creds.json'));
+                if (credsExistNow) {
+                    console.log(`🔄 [SESSION ${cleanKey}] Lidhja u mbyll përkohësisht. Po ri-lidhet automatikisht...`);
+                    setTimeout(() => getOrStartSession(cleanKey), 5000);
+                } else {
+                    console.log(`⏸️ [SESSION ${cleanKey}] Seancë e palidhur. Po pret kërkesën për QR Code...`);
+                    sessions.delete(cleanKey);
+                }
             }
         } else if (connection === 'open') {
             const userPhone = sock.user?.id ? sock.user.id.split(':')[0] : null;
             sessionStatus.set(cleanKey, { connected: true, qr: null, qrImage: null, phone: userPhone });
-            console.log(`\n✅ [SESSION ${cleanKey}] WhatsApp Gateway është 100% i Lidhur e Aktiv (${userPhone ?? 'Connected'})!\n`);
+            console.log(`✅ [SESSION ${cleanKey}] WhatsApp Gateway është 100% i Lidhur e Aktiv (${userPhone ?? 'Connected'})!`);
         }
     });
 
     return sock;
 }
 
-// Start default session & shop_1 on boot
-getOrStartSession('default');
-getOrStartSession('shop_1');
+// Auto-start ONLY authenticated sessions on boot
+function autoStartSavedSessions() {
+    const parentDir = path.join(__dirname, 'whatsapp_sessions');
+    if (!fs.existsSync(parentDir)) return;
+
+    try {
+        const folders = fs.readdirSync(parentDir);
+        for (const folder of folders) {
+            const credsPath = path.join(parentDir, folder, 'creds.json');
+            if (fs.existsSync(credsPath)) {
+                console.log(`📦 Po ngarkohet seanca e ruajtur: ${folder}`);
+                getOrStartSession(folder);
+            }
+        }
+    } catch (e) {
+        console.warn('Error scanning saved sessions:', e.message);
+    }
+}
+
+autoStartSavedSessions();
 
 // Health check status SPECIFIC per session key (shop_1 or barber_5)
 app.get('/api/whatsapp/status', async (req, res) => {
@@ -133,7 +168,7 @@ app.get('/api/whatsapp/status', async (req, res) => {
     });
 });
 
-// Get QR Code SPECIFIC per session key (shop_1 or barber_5)
+// Get QR Code SPECIFIC per session key (Generates QR ON DEMAND)
 app.get('/api/whatsapp/qr', async (req, res) => {
     let key = (req.query.session_key || req.query.shop_id || '1').toString().trim();
     if (!key.startsWith('shop_') && !key.startsWith('barber_')) {

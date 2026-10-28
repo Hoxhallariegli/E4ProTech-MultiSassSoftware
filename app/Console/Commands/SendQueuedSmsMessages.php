@@ -15,12 +15,13 @@ class SendQueuedSmsMessages extends Command
 
     public function handle()
     {
-        $now = Carbon::now();
+        $tz = config('app.timezone', 'Europe/Tirane');
+        $now = Carbon::now($tz);
 
         // 1. Delete past appointment queue items whose appointment time has already passed
         $pastAppointmentQueues = MessageQueue::where('status', 'pending')
-            ->whereHas('booking', function($bQuery) use ($now) {
-                $bQuery->where('appointment_at', '<', $now);
+            ->whereHas('booking', function($bQuery) use ($now, $tz) {
+                $bQuery->whereRaw("appointment_at < ?", [$now->format('Y-m-d H:i:s')]);
             })
             ->get();
 
@@ -29,9 +30,9 @@ class SendQueuedSmsMessages extends Command
             Log::info("🧹 [SendQueuedSmsMessages] Deleted past appointment Queue ID #{$past->id}");
         }
 
-        // 2. Retrieve valid pending messages scheduled for NOW or EARLIER (flexible shop check)
+        // 2. Retrieve valid pending messages scheduled for NOW or EARLIER (in app timezone)
         $pendingMessages = MessageQueue::whereIn('status', ['pending', 'queued'])
-            ->where('scheduled_at', '<=', $now)
+            ->whereRaw("scheduled_at <= ?", [$now->format('Y-m-d H:i:s')])
             ->where(function($q) {
                 $q->whereNull('barber_shop_id')
                   ->orWhere('barber_shop_id', 0)
@@ -43,11 +44,11 @@ class SendQueuedSmsMessages extends Command
             ->get();
 
         if ($pendingMessages->isEmpty()) {
-            $this->info("No pending messages to send at {$now}.");
+            $this->info("No pending messages to send at {$now->format('Y-m-d H:i:s')} ({$tz}).");
             return;
         }
 
-        $this->info("Found {$pendingMessages->count()} valid pending messages.");
+        $this->info("Found {$pendingMessages->count()} valid pending messages at {$now->format('Y-m-d H:i:s')} ({$tz}).");
 
         foreach ($pendingMessages as $index => $msg) {
             try {
