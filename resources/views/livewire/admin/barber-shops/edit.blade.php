@@ -17,12 +17,12 @@
                 <div><x-form.input name="name" type="text" wire:model.live="name" :label="__('barber-shops.Name')" class="dark:bg-gray-900" /></div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('barber-shops.Business Type') }}</label>
-                    <select wire:model.live="business_type" class="w-full px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                        <option value="barbershop">{{ __('barber-shops.Barbershop') }}</option>
-                        <option value="beauty_salon">{{ __('barber-shops.Beauty Salon') }}</option>
-                        <option value="nail_studio">{{ __('barber-shops.Nail Studio') }}</option>
-                        <option value="spa">{{ __('barber-shops.Aesthetic Center') }}</option>
-                        <option value="general">{{ __('barber-shops.General Business') }}</option>
+                    <select wire:model.live="business_type" class="w-full px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold focus:ring-2 focus:ring-blue-500">
+                        <option value="barbershop" class="bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold">{{ __('barber-shops.Barbershop') }}</option>
+                        <option value="beauty_salon" class="bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold">{{ __('barber-shops.Beauty Salon') }}</option>
+                        <option value="nail_studio" class="bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold">{{ __('barber-shops.Nail Studio') }}</option>
+                        <option value="spa" class="bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold">{{ __('barber-shops.Aesthetic Center') }}</option>
+                        <option value="general" class="bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold">{{ __('barber-shops.General Business') }}</option>
                     </select>
                 </div>
                 <div><x-form.input name="app_name" type="text" wire:model.live="app_name" :label="__('barber-shops.App Name')" class="dark:bg-gray-900" /></div>
@@ -110,11 +110,11 @@
                     <div class="pt-2">
                         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">{{ __('barber-shops.Reminder Time Label') }}</label>
                         <select wire:model.live="reminder_hours_before" class="w-full px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold focus:ring-2 focus:ring-blue-500">
-                            <option value="0.5">{{ __('barber-shops.30 Minutes Before') }}</option>
-                            <option value="1">{{ __('barber-shops.1 Hour Before') }}</option>
-                            <option value="2">{{ __('barber-shops.2 Hours Before') }}</option>
-                            <option value="4">{{ __('barber-shops.4 Hours Before') }}</option>
-                            <option value="24">{{ __('barber-shops.24 Hours Before') }}</option>
+                            <option value="0.5" class="bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold">{{ __('barber-shops.30 Minutes Before') }}</option>
+                            <option value="1" class="bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold">{{ __('barber-shops.1 Hour Before') }}</option>
+                            <option value="2" class="bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold">{{ __('barber-shops.2 Hours Before') }}</option>
+                            <option value="4" class="bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold">{{ __('barber-shops.4 Hours Before') }}</option>
+                            <option value="24" class="bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold">{{ __('barber-shops.24 Hours Before') }}</option>
                         </select>
                     </div>
                 </div>
