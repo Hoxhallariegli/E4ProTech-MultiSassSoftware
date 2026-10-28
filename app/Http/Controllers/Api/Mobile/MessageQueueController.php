@@ -40,12 +40,10 @@ class MessageQueueController extends Controller
         $item = MessageQueue::find($id);
         if ($item) {
             $status = in_array($request->input('status'), ['sent', 'failed']) ? $request->input('status') : 'sent';
-            $item->update(['status' => $status]);
-            \App\Models\AuditTrail::log($item, 'update', 'MessageQueues');
 
             $templateType = $item->template_type ?? $item->resolved_template_type;
 
-            // Find matching MessageLog record strictly by template_type
+            // Find or create matching MessageLog record strictly with channel = 'sms'
             $log = \App\Models\MessageLog::where('barber_shop_id', $item->barber_shop_id)
                 ->where('channel', 'sms')
                 ->where('customer_id', $item->booking?->customer_id)
@@ -60,6 +58,7 @@ class MessageQueueController extends Controller
             if ($log) {
                 $log->update([
                     'status' => $status,
+                    'channel' => 'sms',
                     'sent_at' => $status === 'sent' ? now() : null,
                 ]);
                 \App\Models\AuditTrail::log($log, 'update', 'MessageLogs');
@@ -76,7 +75,10 @@ class MessageQueueController extends Controller
                 \App\Models\AuditTrail::log($newLog, 'create', 'MessageLogs');
             }
 
-            return response()->json(['success' => true, 'message' => "SMS status updated to {$status}!"]);
+            // Delete queue item from message_queues table when processed so queue stays clean!
+            $item->delete();
+
+            return response()->json(['success' => true, 'message' => "SMS status updated to {$status} and logged!"]);
         }
 
         return response()->json(['success' => false, 'message' => 'Nuk u gjet mesazhi.'], 404);
