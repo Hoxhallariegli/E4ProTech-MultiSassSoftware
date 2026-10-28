@@ -196,7 +196,7 @@ class SendFirebaseNotificationListener
                                 ->where('status', 'pending')
                                 ->where(function($q) {
                                     $q->where('template_type', 'reminder')
-                                      ->orWhere('message_content', 'like', '%Rikujtese%')
+                                      ->orWhere('message_content', 'like', '%Rikujtes%')
                                       ->orWhere('message_content', 'like', '%Reminder%');
                                 })
                                 ->first();
@@ -313,6 +313,21 @@ class SendFirebaseNotificationListener
         $waService = app(WhatsAppService::class);
         $waSent = false;
 
+        // Helper to update MessageQueue row status to 'sent'
+        $markQueueSent = function() use ($smsId) {
+            if ($smsId > 0) {
+                try {
+                    MessageQueue::where('id', $smsId)->update([
+                        'status' => 'sent',
+                        'sent_at' => now(),
+                        'channel' => 'whatsapp',
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::warning("Could not update queue status to sent: " . $e->getMessage());
+                }
+            }
+        };
+
         // -------------------------------------------------------------
         // TIER 1: Barber's Personal WhatsApp (Priority #1)
         // -------------------------------------------------------------
@@ -320,6 +335,7 @@ class SendFirebaseNotificationListener
             if ($waService->isConnected($shopId, $barberId)) {
                 $waSent = $waService->send($phone, $body, $shopId, $barberId, $customerId, $templateType);
                 if ($waSent) {
+                    $markQueueSent();
                     Log::info("💬 [SMART ROUTE - TIER 1] Sent via Barber #{$barberId} Personal WhatsApp to {$phone}");
                     return; // Successfully delivered via Barber WhatsApp!
                 }
@@ -337,6 +353,7 @@ class SendFirebaseNotificationListener
             if ($waService->isConnected($shopId, null)) {
                 $waSent = $waService->send($phone, $body, $shopId, null, $customerId, $templateType);
                 if ($waSent) {
+                    $markQueueSent();
                     Log::info("💬 [SMART ROUTE - TIER 2] Sent via Shop #{$shopId} Central WhatsApp to {$phone}");
                     return; // Successfully delivered via Shop WhatsApp!
                 }
