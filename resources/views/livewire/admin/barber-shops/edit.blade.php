@@ -82,6 +82,43 @@
                     @endif
                 </div>
 
+                <!-- Konfigurimi i Njoftimeve Automatike Card -->
+                <div class="col-span-1 md:col-span-2 bg-slate-50 dark:bg-gray-900/60 p-6 rounded-3xl border border-gray-200 dark:border-gray-800 space-y-4">
+                    <div>
+                        <h3 class="font-black text-gray-900 dark:text-white text-sm uppercase tracking-wider">Kanalet e Njoftimeve te Klientët (Notification Channels)</h3>
+                        <p class="text-xs text-gray-500 mt-1">Ndessni ose fikni kanalet me të cilat dëshironi t'u dërgohen mesazhet automatike klientëve tuaj.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                        <div class="p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-black text-gray-900 dark:text-white block">Aktivizo Njoftimet në WhatsApp</span>
+                                <span class="text-[11px] text-gray-400">Dërgon konfirmimet përmes WhatsApp Gateway.</span>
+                            </div>
+                            <x-form.checkbox name="whatsapp_enabled" wire:model="whatsapp_enabled" label="" />
+                        </div>
+
+                        <div class="p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-black text-gray-900 dark:text-white block">Aktivizo SMS SIM Card Gateway</span>
+                                <span class="text-[11px] text-gray-400">Dërgon mesazhet nga telefoni SIM Gateway.</span>
+                            </div>
+                            <x-form.checkbox name="sms_enabled" wire:model="sms_enabled" label="" />
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Orari i Dërgimit të Rikujtesës para Takimit (Reminder Time)</label>
+                        <select wire:model.live="reminder_hours_before" class="w-full px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold focus:ring-2 focus:ring-blue-500">
+                            <option value="0.5">30 Minuta para Takimit</option>
+                            <option value="1">1 Orë para Takimit</option>
+                            <option value="2">2 Orë para Takimit</option>
+                            <option value="4">4 Orë para Takimit</option>
+                            <option value="24">24 Orë (1 Ditë) para Takimit</option>
+                        </select>
+                    </div>
+                </div>
+
                 <!-- 10 Color Presets Card -->
                 <div class="col-span-1 md:col-span-2 bg-slate-50 dark:bg-gray-900/60 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 space-y-4">
                     <div>
@@ -140,18 +177,6 @@
                 <div><x-form.input name="trial_ends_at" type="datetime-local" wire:model.live="trial_ends_at" :label="__('barber-shops.Trial Ends At')" class="dark:bg-gray-900" /></div>
                 <div><x-form.input name="expires_at" type="datetime-local" wire:model.live="expires_at" :label="__('barber-shops.Expires At')" class="dark:bg-gray-900" /></div>
                 <div><x-form.checkbox name="active" wire:model="active" :label="__('barber-shops.Active')" /></div>
-                <div><x-form.checkbox name="sms_enabled" wire:model="sms_enabled" :label="__('barber-shops.Sms Enabled')" /></div>
-                <div><x-form.checkbox name="whatsapp_enabled" wire:model="whatsapp_enabled" label="Dërgo Njoftime Automatike në WhatsApp" /></div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('barber-shops.SMS Reminder Time') }}</label>
-                    <select wire:model.live="reminder_hours_before" class="w-full px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-bold focus:ring-2 focus:ring-blue-500">
-                        <option value="0.5">{{ __('barber-shops.30 Minutes Before') }}</option>
-                        <option value="1">{{ __('barber-shops.1 Hour Before') }}</option>
-                        <option value="2">{{ __('barber-shops.2 Hours Before') }}</option>
-                        <option value="4">{{ __('barber-shops.4 Hours Before') }}</option>
-                        <option value="24">{{ __('barber-shops.24 Hours Before') }}</option>
-                    </select>
-                </div>
                 <div><x-form.input name="timezone" type="text" wire:model.live="timezone" :label="__('barber-shops.Timezone')" class="dark:bg-gray-900" /></div>
                 <div><x-form.input name="max_no_show_before_block" type="number" step="1" wire:model.live="max_no_show_before_block" :label="__('barber-shops.Max No Show Before Block')" class="dark:bg-gray-900" /></div>
                 <div><x-form.input name="min_service_time" type="number" step="1" wire:model.live="min_service_time" label="Koha Minimale e Shërbimit / Hapi i Orareve (Minuta)" placeholder="Automatik nga shërbimet nëse lihet bosh" class="dark:bg-gray-900" /></div>
