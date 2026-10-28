@@ -29,11 +29,15 @@ class SendQueuedSmsMessages extends Command
             Log::info("🧹 [SendQueuedSmsMessages] Deleted past appointment Queue ID #{$past->id}");
         }
 
-        // 2. Retrieve valid pending messages scheduled for NOW or EARLIER
-        $pendingMessages = MessageQueue::where('status', 'pending')
+        // 2. Retrieve valid pending messages scheduled for NOW or EARLIER (flexible shop check)
+        $pendingMessages = MessageQueue::whereIn('status', ['pending', 'queued'])
             ->where('scheduled_at', '<=', $now)
-            ->whereHas('barberShop', function($q) {
-                $q->where('active', true);
+            ->where(function($q) {
+                $q->whereNull('barber_shop_id')
+                  ->orWhere('barber_shop_id', 0)
+                  ->orWhereHas('barberShop', function($sq) {
+                      $sq->where('active', true);
+                  });
             })
             ->orderBy('scheduled_at', 'asc')
             ->get();
