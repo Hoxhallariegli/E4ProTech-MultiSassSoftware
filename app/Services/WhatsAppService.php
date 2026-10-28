@@ -36,9 +36,10 @@ class WhatsAppService
                 $payload['barber_id'] = (string) $barberId;
             }
 
+            // Retry up to 2 times with 25s timeout to handle Render Free Tier wake-up delay
             $response = Http::withHeaders([
                 'X-API-KEY' => $this->secretKey,
-            ])->timeout(8)->post($this->gatewayUrl, $payload);
+            ])->retry(2, 1000)->timeout(25)->post($this->gatewayUrl, $payload);
 
             $isSuccess = $response->successful() && $response->json('success') === true;
 
@@ -80,7 +81,7 @@ class WhatsAppService
             $statusUrl = str_replace('/send', '/status', $this->gatewayUrl) . '?session_key=' . $key;
             $response = Http::withHeaders([
                 'X-API-KEY' => $this->secretKey,
-            ])->timeout(3)->get($statusUrl);
+            ])->timeout(8)->get($statusUrl);
 
             return $response->successful() && $response->json('connected') === true;
         } catch (\Exception $e) {
