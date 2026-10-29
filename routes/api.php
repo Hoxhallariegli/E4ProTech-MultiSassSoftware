@@ -15,6 +15,11 @@ use App\Http\Controllers\Api\Mobile\AuthController;
 Route::get('/health', fn () => response()->json(['ok' => true]))->withoutMiddleware(['auth:sanctum']);
 Route::get('app-version', [\App\Http\Controllers\Api\Mobile\AppVersionController::class, 'check']);
 
+// Render Cloud Gateway - Session Persistence Public APIs (Protected by X-API-KEY header)
+Route::post('whatsapp-cloud-sessions/save', [\App\Http\Controllers\Api\WhatsappSessionCloudController::class, 'saveSession']);
+Route::get('whatsapp-cloud-sessions/load', [\App\Http\Controllers\Api\WhatsappSessionCloudController::class, 'loadSessions']);
+Route::post('whatsapp-cloud-sessions/delete', [\App\Http\Controllers\Api\WhatsappSessionCloudController::class, 'deleteSession']);
+
 Route::prefix('mobile')->group(function () {
     // Public Mobile Routes
     Route::get('status', fn () => response()->json(['status' => 'online', 'timestamp' => now()->toIso8601String()]));
@@ -34,84 +39,6 @@ Route::prefix('mobile')->group(function () {
         Route::get('sms-gateway/pending-messages', [\App\Http\Controllers\Api\Mobile\MessageQueueController::class, 'pendingMessages']);
         Route::post('sms-gateway/mark-sent', [\App\Http\Controllers\Api\Mobile\MessageQueueController::class, 'markSent']);
 
-        // Search Dropdown Routes for Livewire Admin & Mobile
-        Route::get('barber-shops', function (\Illuminate\Http\Request $request) {
-            $search = trim((string) $request->input('search', ''));
-            $query = \App\Models\BarberShop::query();
-            if ($search !== '') { $query->where('name', 'like', '%' . $search . '%'); }
-            $items = $query->limit(50)->get()->map(fn ($item) => ['id' => $item->getKey(), 'name' => $item->name])->values();
-            return response()->json(['data' => $items]);
-        });
-
-        Route::get('barbers', function (\Illuminate\Http\Request $request) {
-            $search = trim((string) $request->input('search', ''));
-            $query = \App\Models\Barber::forActiveShop();
-            if ($search !== '') { $query->where('name', 'like', '%' . $search . '%'); }
-            $items = $query->limit(50)->get()->map(fn ($item) => ['id' => $item->getKey(), 'name' => $item->name])->values();
-            return response()->json(['data' => $items]);
-        });
-
-        Route::get('ba-barbers', function (\Illuminate\Http\Request $request) {
-            $search = trim((string) $request->input('search', ''));
-            $query = \App\Models\Barber::forActiveShop();
-            if ($search !== '') { $query->where('name', 'like', '%' . $search . '%'); }
-            $items = $query->limit(50)->get()->map(fn ($item) => ['id' => $item->getKey(), 'name' => $item->name])->values();
-            return response()->json(['data' => $items]);
-        });
-
-        Route::get('services', function (\Illuminate\Http\Request $request) {
-            $search = trim((string) $request->input('search', ''));
-            $query = \App\Models\Service::forActiveShop();
-            if ($search !== '') { $query->where('name', 'like', '%' . $search . '%'); }
-            $items = $query->limit(50)->get()->map(fn ($item) => ['id' => $item->getKey(), 'name' => $item->name, 'price' => $item->price, 'duration_minutes' => $item->duration_minutes])->values();
-            return response()->json(['data' => $items]);
-        });
-
-        Route::get('ba-services', function (\Illuminate\Http\Request $request) {
-            $search = trim((string) $request->input('search', ''));
-            $query = \App\Models\Service::forActiveShop();
-            if ($search !== '') { $query->where('name', 'like', '%' . $search . '%'); }
-            $items = $query->limit(50)->get()->map(fn ($item) => ['id' => $item->getKey(), 'name' => $item->name, 'price' => $item->price, 'duration_minutes' => $item->duration_minutes])->values();
-            return response()->json(['data' => $items]);
-        });
-
-        Route::get('customers', function (\Illuminate\Http\Request $request) {
-            $search = trim((string) $request->input('search', ''));
-            $query = \App\Models\Customer::forActiveShop();
-            if ($search !== '') { $query->where('name', 'like', '%' . $search . '%'); }
-            $items = $query->limit(50)->get()->map(fn ($item) => ['id' => $item->getKey(), 'name' => $item->name])->values();
-            return response()->json(['data' => $items]);
-        });
-
-        Route::get('bookings', function (\Illuminate\Http\Request $request) {
-            $search = trim((string) $request->input('search', ''));
-            $query = \App\Models\Booking::query()->with('customer');
-            if ($search !== '') { $query->whereHas('customer', fn($q) => $q->where('name', 'like', "%{$search}%")); }
-            $items = $query->latest('id')->limit(50)->get()->map(fn ($item) => [
-                'id' => $item->getKey(),
-                'name' => 'Takimi #' . $item->id . ' - ' . ($item->customer?->name ?? 'Klient') . ' (' . ($item->appointment_at?->format('d/m H:i') ?? '') . ')'
-            ])->values();
-            return response()->json(['data' => $items]);
-        });
-
-        Route::get('users', function (\Illuminate\Http\Request $request) {
-            $search = trim((string) $request->input('search', ''));
-            $query = \App\Models\User::forActiveShop();
-            if ($search !== '') { $query->where('name', 'like', '%' . $search . '%'); }
-            $items = $query->limit(50)->get()->map(fn ($item) => ['id' => $item->getKey(), 'name' => $item->name])->values();
-            return response()->json(['data' => $items]);
-        });
-
-        Route::get('realtime-events', function (\Illuminate\Http\Request $request) {
-            $search = trim((string) $request->input('search', ''));
-            $query = \App\Models\RealtimeEvent::query();
-            if ($search !== '') { $query->where('event', 'like', '%' . $search . '%'); }
-            $items = $query->limit(50)->get()->map(fn ($item) => ['id' => $item->getKey(), 'name' => $item->event])->values();
-            return response()->json(['data' => $items]);
-        });
-
-        // Notification Settings
-        Route::get('notifications/settings', [\App\Http\Controllers\Api\Mobile\NotificationSettingsController::class, 'index']);
         Route::post('notifications/toggle-module', [\App\Http\Controllers\Api\Mobile\NotificationSettingsController::class, 'toggleModule']);
         Route::post('notifications/toggle-event', [\App\Http\Controllers\Api\Mobile\NotificationSettingsController::class, 'toggleEvent']);
 
@@ -127,11 +54,6 @@ Route::prefix('mobile')->group(function () {
             Route::post('update-branding', [\App\Http\Controllers\Api\Mobile\BusinessSettingsController::class, 'updateBranding']);
         });
 
-// Render Cloud Gateway - Session Persistence APIs
-Route::post('whatsapp-cloud-sessions/save', [\App\Http\Controllers\Api\WhatsappSessionCloudController::class, 'saveSession']);
-Route::get('whatsapp-cloud-sessions/load', [\App\Http\Controllers\Api\WhatsappSessionCloudController::class, 'loadSessions']);
-Route::post('whatsapp-cloud-sessions/delete', [\App\Http\Controllers\Api\WhatsappSessionCloudController::class, 'deleteSession']);
-
         // Calendar & Booking Helpers
         Route::get('bookings/calendar', [\App\Http\Controllers\Api\Mobile\BookingController::class, 'calendar']);
         Route::get('bookings/day-schedule', [\App\Http\Controllers\Api\Mobile\BookingController::class, 'daySchedule']);
@@ -139,28 +61,21 @@ Route::post('whatsapp-cloud-sessions/delete', [\App\Http\Controllers\Api\Whatsap
         // Standard Module Resources
         Route::apiResource('barber-shops', \App\Http\Controllers\Api\Mobile\BarberShopController::class);
         Route::apiResource('barbers', \App\Http\Controllers\Api\Mobile\BarberController::class);
-        Route::apiResource('services', \App\Http\Controllers\Api\Mobile\ServiceController::class);
         Route::apiResource('customers', \App\Http\Controllers\Api\Mobile\CustomerController::class);
+        Route::apiResource('services', \App\Http\Controllers\Api\Mobile\ServiceController::class);
         Route::apiResource('bookings', \App\Http\Controllers\Api\Mobile\BookingController::class);
-        Route::apiResource('payments', \App\Http\Controllers\Api\Mobile\PaymentController::class);
+        Route::apiResource('reports', \App\Http\Controllers\Api\Mobile\ReportController::class);
+        Route::apiResource('reviews', \App\Http\Controllers\Api\Mobile\ReviewController::class);
+        Route::apiResource('working-hours', \App\Http\Controllers\Api\Mobile\WorkingHourController::class);
+        Route::apiResource('subscriptions', \App\Http\Controllers\Api\Mobile\SubscriptionController::class);
+        Route::apiResource('subscription-renewals', \App\Http\Controllers\Api\Mobile\SubscriptionRenewalController::class);
+        Route::apiResource('shop-front-page-settings', \App\Http\Controllers\Api\Mobile\ShopFrontPageSettingController::class);
         Route::apiResource('message-templates', \App\Http\Controllers\Api\Mobile\MessageTemplateController::class);
         Route::apiResource('message-queues', \App\Http\Controllers\Api\Mobile\MessageQueueController::class);
         Route::apiResource('message-logs', \App\Http\Controllers\Api\Mobile\MessageLogController::class);
-        Route::apiResource('device-tokens', \App\Http\Controllers\Api\Mobile\DeviceTokenController::class);
-        Route::apiResource('event-settings', \App\Http\Controllers\Api\Mobile\EventSettingController::class);
         Route::apiResource('notification-channels', \App\Http\Controllers\Api\Mobile\NotificationChannelController::class);
-        Route::apiResource('plans', \App\Http\Controllers\Api\Mobile\PlanController::class);
-        Route::apiResource('subscriptions', \App\Http\Controllers\Api\Mobile\SubscriptionController::class);
-        Route::apiResource('reviews', \App\Http\Controllers\Api\Mobile\ReviewController::class);
-        Route::apiResource('working-hours', \App\Http\Controllers\Api\Mobile\WorkingHourController::class);
+        Route::apiResource('event-settings', \App\Http\Controllers\Api\Mobile\EventSettingController::class);
+        Route::apiResource('bulk-cancellations', \App\Http\Controllers\Api\Mobile\BulkCancellationController::class);
+        Route::apiResource('device-tokens', \App\Http\Controllers\Api\Mobile\DeviceTokenController::class);
     });
-});
-
-Route::middleware('auth:sanctum')->prefix('mobile')->group(function () {
-    Route::apiResource('bulk-cancellations', \App\Http\Controllers\Api\Mobile\BulkCancellationController::class);
-    Route::get('reports/generate', [\App\Http\Controllers\Api\Mobile\ReportController::class, 'generate']);
-    Route::apiResource('reports', \App\Http\Controllers\Api\Mobile\ReportController::class);
-    Route::post('subscription-renewals/website-offer', [\App\Http\Controllers\Api\Mobile\SubscriptionRenewalController::class, 'websiteOffer']);
-    Route::apiResource('subscription-renewals', \App\Http\Controllers\Api\Mobile\SubscriptionRenewalController::class);
-    Route::apiResource('shop-front-page-settings', \App\Http\Controllers\Api\Mobile\ShopFrontPageSettingController::class);
 });

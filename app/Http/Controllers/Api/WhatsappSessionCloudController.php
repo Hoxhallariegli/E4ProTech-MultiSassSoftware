@@ -9,11 +9,22 @@ use Illuminate\Http\JsonResponse;
 
 class WhatsappSessionCloudController extends Controller
 {
+    private function validateApiKey(Request $request): bool
+    {
+        $key = $request->header('X-API-KEY') ?? $request->input('api_key');
+        $secret = config('services.whatsapp.secret', 'E4ProTech_Secret_Key_2026_Secure');
+        return $key === $secret;
+    }
+
     /**
      * Save/Sync WhatsApp session JSON files from Render Cloud Gateway to Laravel DB
      */
     public function saveSession(Request $request): JsonResponse
     {
+        if (!$this->validateApiKey($request)) {
+            return response()->json(['success' => false, 'error' => 'Unauthorized API Key'], 401);
+        }
+
         $key = (string) $request->input('session_key');
         $files = $request->input('files');
 
@@ -34,6 +45,10 @@ class WhatsappSessionCloudController extends Controller
      */
     public function loadSessions(Request $request): JsonResponse
     {
+        if (!$this->validateApiKey($request)) {
+            return response()->json(['success' => false, 'error' => 'Unauthorized API Key'], 401);
+        }
+
         $sessions = WhatsappSession::all();
         $data = [];
 
@@ -49,6 +64,10 @@ class WhatsappSessionCloudController extends Controller
      */
     public function deleteSession(Request $request): JsonResponse
     {
+        if (!$this->validateApiKey($request)) {
+            return response()->json(['success' => false, 'error' => 'Unauthorized API Key'], 401);
+        }
+
         $key = (string) $request->input('session_key');
         if ($key) {
             WhatsappSession::where('session_key', $key)->delete();
