@@ -13,7 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 const logger = pino({ level: 'silent' });
 
@@ -37,6 +37,8 @@ function fetchCloudApi(endpoint, method = 'GET', data = null) {
             const client = urlObj.protocol === 'https:' ? https : http;
             const bodyStr = data ? JSON.stringify(data) : null;
 
+            console.log(`🌐 [CLOUD API REQ] ${method} ${urlObj.toString()}`);
+
             const req = client.request(urlObj, {
                 method: method,
                 headers: {
@@ -44,11 +46,12 @@ function fetchCloudApi(endpoint, method = 'GET', data = null) {
                     'X-API-KEY': API_SECRET,
                     ...(bodyStr ? { 'Content-Length': Buffer.byteLength(bodyStr) } : {})
                 },
-                timeout: 8000
+                timeout: 10000
             }, (res) => {
                 let resData = '';
                 res.on('data', chunk => resData += chunk);
                 res.on('end', () => {
+                    console.log(`🌐 [CLOUD API RES] ${method} ${endpoint} Status: ${res.statusCode} Body: ${resData}`);
                     try {
                         resolve(JSON.parse(resData));
                     } catch (_) {
@@ -57,12 +60,20 @@ function fetchCloudApi(endpoint, method = 'GET', data = null) {
                 });
             });
 
-            req.on('error', () => resolve(null));
-            req.on('timeout', () => { req.destroy(); resolve(null); });
+            req.on('error', (e) => {
+                console.error(`❌ [CLOUD API ERROR] ${method} ${endpoint}:`, e.message);
+                resolve(null);
+            });
+            req.on('timeout', () => {
+                console.error(`❌ [CLOUD API TIMEOUT] ${method} ${endpoint}`);
+                req.destroy();
+                resolve(null);
+            });
 
             if (bodyStr) req.write(bodyStr);
             req.end();
-        } catch (_) {
+        } catch (e) {
+            console.error(`❌ [CLOUD API CATCH] ${method} ${endpoint}:`, e.message);
             resolve(null);
         }
     });
@@ -71,8 +82,13 @@ function fetchCloudApi(endpoint, method = 'GET', data = null) {
 // Sync session folder files to Laravel Database Cloud
 async function syncSessionToCloud(cleanKey) {
     try {
-        const sessionDir = path.join(__dirname, 'whatsapp_sessions', cleanKey);
-        if (!fs.existsSync(sessionDir)) return;
+        const fullKey = cleanKey.startsWith('shop_') || cleanKey.startsWith('barber_') ? cleanKey : `shop_${cleanKey}`;
+        const sessionDir = path.join(__dirname, 'whatsapp_sessions', fullKey);
+
+        if (!fs.existsSync(sessionDir)) {
+            console.warn(`⚠️ [SYNC CHECK] Session directory does not exist yet: ${sessionDir}`);
+            return;
+        }
 
         const files = {};
         const fileNames = fs.readdirSync(sessionDir);
@@ -84,28 +100,31 @@ async function syncSessionToCloud(cleanKey) {
         }
 
         if (Object.keys(files).length > 0) {
-            await fetchCloudApi('save', 'POST', {
-                session_key: cleanKey,
+            console.log(`📤 [CLOUD SYNC START] Syncing ${Object.keys(files).length} files for ${fullKey}...`);
+            const res = await fetchCloudApi('save', 'POST', {
+                session_key: fullKey,
                 files: files
             });
-            console.log(`☁️ [CLOUD SYNC] Seanca ${cleanKey} u ruajt në bazën e të dhënave të Hostinger!`);
+            console.log(`☁️ [CLOUD SYNC RESULT] ${fullKey}:`, JSON.stringify(res));
         }
     } catch (e) {
-        console.warn('Sync error:', e.message);
+        console.error('❌ [CLOUD SYNC ERROR]:', e.message);
     }
 }
 
 // Delete session from Laravel Database Cloud
 async function deleteSessionFromCloud(cleanKey) {
     try {
-        await fetchCloudApi('delete', 'POST', { session_key: cleanKey });
-        console.log(`☁️ [CLOUD DELETE] Seanca ${cleanKey} u fshi nga baza e të dhënave të Hostinger.`);
+        const fullKey = cleanKey.startsWith('shop_') || cleanKey.startsWith('barber_') ? cleanKey : `shop_${cleanKey}`;
+        await fetchCloudApi('delete', 'POST', { session_key: fullKey });
+        console.log(`☁️ [CLOUD DELETE] Seanca ${fullKey} u fshi nga baza e të dhënave të Hostinger.`);
     } catch (_) {}
 }
 
 // Restore saved sessions from Laravel Database Cloud on server startup
 async function restoreSessionsFromCloud() {
     try {
+        console.log('📦 [CLOUD RESTORE START] Fetching saved sessions from Hostinger DB...');
         const res = await fetchCloudApi('load', 'GET');
         if (res && res.success && res.sessions) {
             const parentDir = path.join(__dirname, 'whatsapp_sessions');

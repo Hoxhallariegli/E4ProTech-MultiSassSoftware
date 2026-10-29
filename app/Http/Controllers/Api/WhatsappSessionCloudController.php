@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http/Controllers/Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\WhatsappSession;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 class WhatsappSessionCloudController extends Controller
 {
@@ -22,6 +23,7 @@ class WhatsappSessionCloudController extends Controller
     public function saveSession(Request $request): JsonResponse
     {
         if (!$this->validateApiKey($request)) {
+            Log::warning("❌ [CLOUD SESSION REJECTED] Invalid API Key received");
             return response()->json(['success' => false, 'error' => 'Unauthorized API Key'], 401);
         }
 
@@ -29,15 +31,22 @@ class WhatsappSessionCloudController extends Controller
         $files = $request->input('files');
 
         if (empty($key) || !is_array($files)) {
+            Log::warning("❌ [CLOUD SESSION INVALID] Empty session_key or files payload for {$key}");
             return response()->json(['success' => false, 'error' => 'Invalid session payload'], 400);
         }
 
-        WhatsappSession::updateOrCreate(
-            ['session_key' => $key],
-            ['session_data' => $files]
-        );
+        try {
+            $record = WhatsappSession::updateOrCreate(
+                ['session_key' => $key],
+                ['session_data' => $files]
+            );
 
-        return response()->json(['success' => true, 'message' => "Session {$key} synced to cloud database!"]);
+            Log::info("✅ [CLOUD SESSION SAVED] Session {$key} saved in DB with " . count($files) . " files!");
+            return response()->json(['success' => true, 'message' => "Session {$key} synced to cloud database!"]);
+        } catch (\Throwable $e) {
+            Log::error("❌ [CLOUD SESSION DB ERROR] " . $e->getMessage());
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -46,17 +55,24 @@ class WhatsappSessionCloudController extends Controller
     public function loadSessions(Request $request): JsonResponse
     {
         if (!$this->validateApiKey($request)) {
+            Log::warning("❌ [CLOUD SESSION LOAD REJECTED] Invalid API Key");
             return response()->json(['success' => false, 'error' => 'Unauthorized API Key'], 401);
         }
 
-        $sessions = WhatsappSession::all();
-        $data = [];
+        try {
+            $sessions = WhatsappSession::all();
+            $data = [];
 
-        foreach ($sessions as $s) {
-            $data[$s->session_key] = $s->session_data;
+            foreach ($sessions as $s) {
+                $data[$s->session_key] = $s->session_data;
+            }
+
+            Log::info("📦 [CLOUD SESSIONS LOADED] Loaded " . count($data) . " sessions from DB");
+            return response()->json(['success' => true, 'sessions' => $data]);
+        } catch (\Throwable $e) {
+            Log::error("❌ [CLOUD SESSIONS LOAD ERROR] " . $e->getMessage());
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
-
-        return response()->json(['success' => true, 'sessions' => $data]);
     }
 
     /**
@@ -71,6 +87,7 @@ class WhatsappSessionCloudController extends Controller
         $key = (string) $request->input('session_key');
         if ($key) {
             WhatsappSession::where('session_key', $key)->delete();
+            Log::info("🗑️ [CLOUD SESSION DELETED] Session {$key} deleted from DB");
         }
         return response()->json(['success' => true, 'message' => "Session {$key} deleted from cloud DB."]);
     }
