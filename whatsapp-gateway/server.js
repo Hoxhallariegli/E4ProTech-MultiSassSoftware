@@ -37,8 +37,6 @@ function fetchCloudApi(endpoint, method = 'GET', data = null) {
             const client = urlObj.protocol === 'https:' ? https : http;
             const bodyStr = data ? JSON.stringify(data) : null;
 
-            console.log(`🌐 [CLOUD API REQ] ${method} ${urlObj.toString()}`);
-
             const req = client.request(urlObj, {
                 method: method,
                 headers: {
@@ -51,10 +49,18 @@ function fetchCloudApi(endpoint, method = 'GET', data = null) {
                 let resData = '';
                 res.on('data', chunk => resData += chunk);
                 res.on('end', () => {
-                    console.log(`🌐 [CLOUD API RES] ${method} ${endpoint} Status: ${res.statusCode} Body: ${resData}`);
-                    try {
-                        resolve(JSON.parse(resData));
-                    } catch (_) {
+                    if (res.statusCode >= 200 && res.statusCode < 300) {
+                        try {
+                            const parsed = JSON.parse(resData);
+                            console.log(`🌐 [CLOUD API SUCCESS] ${method} ${endpoint} Status: ${res.statusCode}`);
+                            resolve(parsed);
+                        } catch (e) {
+                            console.warn(`⚠️ [CLOUD API PARSE ERROR] ${method} ${endpoint}: Not valid JSON`);
+                            resolve(null);
+                        }
+                    } else {
+                        const shortBody = resData.substring(0, 150).replace(/\s+/g, ' ');
+                        console.warn(`⚠️ [CLOUD API FAIL] ${method} ${endpoint} Status: ${res.statusCode} Body: ${shortBody}...`);
                         resolve(null);
                     }
                 });
@@ -85,10 +91,7 @@ async function syncSessionToCloud(cleanKey) {
         const fullKey = cleanKey.startsWith('shop_') || cleanKey.startsWith('barber_') ? cleanKey : `shop_${cleanKey}`;
         const sessionDir = path.join(__dirname, 'whatsapp_sessions', fullKey);
 
-        if (!fs.existsSync(sessionDir)) {
-            console.warn(`⚠️ [SYNC CHECK] Session directory does not exist yet: ${sessionDir}`);
-            return;
-        }
+        if (!fs.existsSync(sessionDir)) return;
 
         const files = {};
         const fileNames = fs.readdirSync(sessionDir);
