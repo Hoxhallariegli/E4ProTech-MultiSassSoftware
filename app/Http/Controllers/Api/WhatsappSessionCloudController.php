@@ -7,6 +7,7 @@ use App\Models\WhatsappSession;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class WhatsappSessionCloudController extends Controller
 {
@@ -36,10 +37,13 @@ class WhatsappSessionCloudController extends Controller
         }
 
         try {
-            $record = WhatsappSession::updateOrCreate(
-                ['session_key' => $key],
-                ['session_data' => $files]
-            );
+            // Delete raw unencrypted legacy row for this session key if exists
+            DB::table('whatsapp_sessions')->where('session_key', $key)->delete();
+
+            $record = WhatsappSession::create([
+                'session_key' => $key,
+                'session_data' => $files,
+            ]);
 
             Log::info("✅ [CLOUD SESSION SAVED] Session {$key} saved in DB with " . count($files) . " files!");
             return response()->json(['success' => true, 'message' => "Session {$key} synced to cloud database!"]);
@@ -60,11 +64,29 @@ class WhatsappSessionCloudController extends Controller
         }
 
         try {
-            $sessions = WhatsappSession::all();
+            $rawRows = DB::table('whatsapp_sessions')->get();
             $data = [];
 
-            foreach ($sessions as $s) {
-                $data[$s->session_key] = $s->session_data;
+            foreach ($rawRows as $row) {
+                try {
+                    $model = WhatsappSession::find($row->id);
+                    $sessionData = $model ? $model->session_data : null;
+
+                    if (is_array($sessionData)) {
+                        $data[$row->session_key] = $sessionData;
+                        continue;
+                    }
+                } catch (\Throwable $e) {
+                    // Fallback for unencrypted raw JSON legacy row
+                    $rawContent = $row->session_data;
+                    if (is_string($rawContent)) {
+                        $decoded = json_decode($rawContent, true);
+                        if (is_array($decoded)) {
+                            $data[$row->session_key] = $decoded;
+                            continue;
+                        }
+                    }
+                }
             }
 
             Log::info("📦 [CLOUD SESSIONS LOADED] Loaded " . count($data) . " sessions from DB");
@@ -86,7 +108,7 @@ class WhatsappSessionCloudController extends Controller
 
         $key = (string) $request->input('session_key');
         if ($key) {
-            WhatsappSession::where('session_key', $key)->delete();
+            DB::table('whatsapp_sessions')->where('session_key', $key)->delete();
             Log::info("🗑️ [CLOUD SESSION DELETED] Session {$key} deleted from DB");
         }
         return response()->json(['success' => true, 'message' => "Session {$key} deleted from cloud DB."]);
