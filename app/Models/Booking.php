@@ -47,11 +47,6 @@ class Booking extends Model
         return ['id', 'barber_id', 'service_id', 'customer_id', 'appointment_at', 'status', 'total_price', 'notes', 'source'];
     }
 
-    protected static function booted(): void
-    {
-        static::observe(\App\Observers\BookingObserver::class);
-    }
-
     public function barberShop(): \Illuminate\Database\Eloquent\Relations\BelongsTo {
         return $this->belongsTo(\App\Models\BarberShop::class, 'barber_shop_id');
     }
