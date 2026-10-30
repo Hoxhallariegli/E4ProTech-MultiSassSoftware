@@ -14,7 +14,7 @@ class WhatsappSession extends Model
     protected function casts(): array
     {
         return [
-            'session_data' => 'array',
+            'session_data' => 'encrypted:array',
         ];
     }
 }

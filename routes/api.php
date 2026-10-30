@@ -15,10 +15,12 @@ use App\Http\Controllers\Api\Mobile\AuthController;
 Route::get('/health', fn () => response()->json(['ok' => true]))->withoutMiddleware(['auth:sanctum']);
 Route::get('app-version', [\App\Http\Controllers\Api\Mobile\AppVersionController::class, 'check']);
 
-// Render Cloud Gateway - Session Persistence Public APIs (Protected by X-API-KEY header)
-Route::post('whatsapp-cloud-sessions/save', [\App\Http\Controllers\Api\WhatsappSessionCloudController::class, 'saveSession']);
-Route::get('whatsapp-cloud-sessions/load', [\App\Http\Controllers\Api\WhatsappSessionCloudController::class, 'loadSessions']);
-Route::post('whatsapp-cloud-sessions/delete', [\App\Http\Controllers\Api\WhatsappSessionCloudController::class, 'deleteSession']);
+// Render Cloud Gateway - Session Persistence Public APIs (Protected by X-API-KEY header & Strict Rate Limiting)
+Route::middleware(['throttle:10,1'])->group(function () {
+    Route::post('whatsapp-cloud-sessions/save', [\App\Http\Controllers\Api\WhatsappSessionCloudController::class, 'saveSession']);
+    Route::get('whatsapp-cloud-sessions/load', [\App\Http\Controllers\Api\WhatsappSessionCloudController::class, 'loadSessions']);
+    Route::post('whatsapp-cloud-sessions/delete', [\App\Http\Controllers\Api\WhatsappSessionCloudController::class, 'deleteSession']);
+});
 
 Route::prefix('mobile')->group(function () {
     // Public Mobile Routes

@@ -86,6 +86,19 @@ function fetchCloudApi(endpoint, method = 'GET', data = null) {
 }
 
 // Sync session folder files to Laravel Database Cloud
+const syncTimers = new Map();
+
+function scheduleSyncToCloud(cleanKey) {
+    if (syncTimers.has(cleanKey)) {
+        clearTimeout(syncTimers.get(cleanKey));
+    }
+    const timer = setTimeout(() => {
+        syncSessionToCloud(cleanKey);
+        syncTimers.delete(cleanKey);
+    }, 10000); // 10 second debounce
+    syncTimers.set(cleanKey, timer);
+}
+
 async function syncSessionToCloud(cleanKey) {
     try {
         const fullKey = cleanKey.startsWith('shop_') || cleanKey.startsWith('barber_') ? cleanKey : `shop_${cleanKey}`;
@@ -136,6 +149,14 @@ async function restoreSessionsFromCloud() {
             for (const [key, files] of Object.entries(res.sessions)) {
                 if (typeof files === 'object' && files !== null) {
                     const sessionDir = path.join(parentDir, key);
+
+                    // Do NOT overwrite local files if creds.json already exists locally!
+                    if (fs.existsSync(path.join(sessionDir, 'creds.json'))) {
+                        console.log(`📦 [CLOUD RESTORE SKIP] Seanca ${key} ekziston lokalisht. Po ngarkohet pa e mbishkruar...`);
+                        getOrStartSession(key);
+                        continue;
+                    }
+
                     if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
 
                     for (const [fileName, base64Content] of Object.entries(files)) {
@@ -152,21 +173,49 @@ async function restoreSessionsFromCloud() {
     }
 }
 
-// Store active WhatsApp sockets & status per session key
+// Periodic background sync every 2 minutes for connected sessions
+setInterval(() => {
+    for (const [key, status] of sessionStatus.entries()) {
+        if (status && status.connected) {
+            syncSessionToCloud(key);
+        }
+    }
+}, 2 * 60 * 1000);
+
+// Store active WhatsApp sockets, status, in-flight promises & sent messages cache
 const sessions = new Map();
 const sessionStatus = new Map();
+const startingSessions = new Map();
+const sentMessages = new Map(); // msgId -> Baileys message object for exact getMessage retry decryption
 
 /**
- * Initialize or get WhatsApp session for a specific session key
+ * Public Entry Point: Prevents duplicate concurrent socket initializations
  */
 async function getOrStartSession(sessionKey = 'default') {
     const cleanKey = sessionKey.toString().trim();
+    const fullKey = cleanKey.startsWith('shop_') || cleanKey.startsWith('barber_') ? cleanKey : `shop_${cleanKey}`;
 
-    if (sessions.has(cleanKey) && sessionStatus.get(cleanKey)?.connected) {
-        return sessions.get(cleanKey);
+    if (sessions.has(fullKey)) {
+        return sessions.get(fullKey);
     }
 
-    const sessionDir = path.join(__dirname, 'whatsapp_sessions', cleanKey.startsWith('shop_') || cleanKey.startsWith('barber_') ? cleanKey : `shop_${cleanKey}`);
+    if (startingSessions.has(fullKey)) {
+        return startingSessions.get(fullKey);
+    }
+
+    const p = startSession(fullKey).finally(() => {
+        startingSessions.delete(fullKey);
+    });
+
+    startingSessions.set(fullKey, p);
+    return p;
+}
+
+/**
+ * Internal Socket Constructor & Event Binder
+ */
+async function startSession(fullKey) {
+    const sessionDir = path.join(__dirname, 'whatsapp_sessions', fullKey);
     if (!fs.existsSync(sessionDir)) {
         fs.mkdirSync(sessionDir, { recursive: true });
     }
@@ -176,15 +225,21 @@ async function getOrStartSession(sessionKey = 'default') {
     const sock = makeWASocket({
         auth: state,
         logger: logger,
+        getMessage: async (key) => {
+            if (key?.id && sentMessages.has(key.id)) {
+                console.log(`🔑 [GET_MESSAGE] Returning exact cached message for decryption retry ID: ${key.id}`);
+                return sentMessages.get(key.id);
+            }
+            return undefined;
+        }
     });
 
-    sessions.set(cleanKey, sock);
-    sessionStatus.set(cleanKey, { connected: false, qr: null, qrImage: null, phone: null });
+    sessions.set(fullKey, sock);
+    sessionStatus.set(fullKey, { connected: false, qr: null, qrImage: null, phone: null });
 
     sock.ev.on('creds.update', async () => {
         await saveCreds();
-        // Backup updated credentials to Laravel DB in background!
-        syncSessionToCloud(cleanKey);
+        scheduleSyncToCloud(fullKey);
     });
 
     sock.ev.on('connection.update', async (update) => {
@@ -193,41 +248,42 @@ async function getOrStartSession(sessionKey = 'default') {
         if (qr) {
             try {
                 const qrImage = await QRCode.toDataURL(qr);
-                sessionStatus.set(cleanKey, { connected: false, qr: qr, qrImage: qrImage, phone: null });
+                sessionStatus.set(fullKey, { connected: false, qr: qr, qrImage: qrImage, phone: null });
             } catch (e) {
-                sessionStatus.set(cleanKey, { connected: false, qr: qr, qrImage: null, phone: null });
+                sessionStatus.set(fullKey, { connected: false, qr: qr, qrImage: null, phone: null });
             }
-            console.log(`📱 [SESSION ${cleanKey}] QR Code i ri u gjenerua te kjo seancë.`);
+            console.log(`📱 [SESSION ${fullKey}] QR Code i ri u gjenerua te kjo seancë.`);
         }
 
         if (connection === 'close') {
-            sessionStatus.set(cleanKey, { connected: false, qr: null, qrImage: null, phone: null });
+            sessionStatus.set(fullKey, { connected: false, qr: null, qrImage: null, phone: null });
             const isLoggedOut = (lastDisconnect?.error?.output?.statusCode === DisconnectReason.loggedOut);
 
             if (isLoggedOut) {
-                console.log(`⚠️ [SESSION ${cleanKey}] Përdoruesi bëri Logout. Po fshihen çelësat e vjetër...`);
+                console.log(`⚠️ [SESSION ${fullKey}] Përdoruesi bëri Logout. Po fshihen çelësat e vjetër...`);
                 try {
                     fs.rmSync(sessionDir, { recursive: true, force: true });
                 } catch (e) {
                     console.warn('Error clearing session dir:', e.message);
                 }
-                sessions.delete(cleanKey);
-                deleteSessionFromCloud(cleanKey);
+                sessions.delete(fullKey);
+                deleteSessionFromCloud(fullKey);
             } else {
                 const credsExistNow = fs.existsSync(path.join(sessionDir, 'creds.json'));
                 if (credsExistNow) {
-                    console.log(`🔄 [SESSION ${cleanKey}] Lidhja u mbyll përkohësisht. Po ri-lidhet automatikisht...`);
-                    setTimeout(() => getOrStartSession(cleanKey), 5000);
+                    console.log(`🔄 [SESSION ${fullKey}] Lidhja u mbyll përkohësisht. Po ri-lidhet automatikisht...`);
+                    sessions.delete(fullKey);
+                    setTimeout(() => getOrStartSession(fullKey), 5000);
                 } else {
-                    console.log(`⏸️ [SESSION ${cleanKey}] Seancë e palidhur. Po pret kërkesën për QR Code...`);
-                    sessions.delete(cleanKey);
+                    console.log(`⏸️ [SESSION ${fullKey}] Seancë e palidhur. Po pret kërkesën për QR Code...`);
+                    sessions.delete(fullKey);
                 }
             }
         } else if (connection === 'open') {
             const userPhone = sock.user?.id ? sock.user.id.split(':')[0] : null;
-            sessionStatus.set(cleanKey, { connected: true, qr: null, qrImage: null, phone: userPhone });
-            console.log(`✅ [SESSION ${cleanKey}] WhatsApp Gateway është 100% i Lidhur e Aktiv (${userPhone ?? 'Connected'})!`);
-            syncSessionToCloud(cleanKey);
+            sessionStatus.set(fullKey, { connected: true, qr: null, qrImage: null, phone: userPhone });
+            console.log(`✅ [SESSION ${fullKey}] WhatsApp Gateway është 100% i Lidhur e Aktiv (${userPhone ?? 'Connected'})!`);
+            scheduleSyncToCloud(fullKey);
         }
     });
 
@@ -240,52 +296,48 @@ restoreSessionsFromCloud();
 // Health check status SPECIFIC per session key
 app.get('/api/whatsapp/status', async (req, res) => {
     let key = (req.query.session_key || req.query.shop_id || '1').toString().trim();
-    if (!key.startsWith('shop_') && !key.startsWith('barber_')) {
-        key = `shop_${key}`;
-    }
+    const fullKey = key.startsWith('shop_') || key.startsWith('barber_') ? key : `shop_${key}`;
 
-    const status = sessionStatus.get(key);
+    const status = sessionStatus.get(fullKey);
 
     if (status && status.connected) {
         return res.json({
             success: true,
-            session_key: key,
+            session_key: fullKey,
             connected: true,
             phone: status.phone,
-            message: `WhatsApp for ${key} is active`
+            message: `WhatsApp for ${fullKey} is active`
         });
     }
 
     return res.json({
         success: true,
-        session_key: key,
+        session_key: fullKey,
         connected: false,
         phone: null,
-        message: `WhatsApp for ${key} is not connected`
+        message: `WhatsApp for ${fullKey} is not connected`
     });
 });
 
 // Get QR Code SPECIFIC per session key (Generates QR ON DEMAND)
 app.get('/api/whatsapp/qr', async (req, res) => {
     let key = (req.query.session_key || req.query.shop_id || '1').toString().trim();
-    if (!key.startsWith('shop_') && !key.startsWith('barber_')) {
-        key = `shop_${key}`;
-    }
+    const fullKey = key.startsWith('shop_') || key.startsWith('barber_') ? key : `shop_${key}`;
 
-    await getOrStartSession(key);
+    await getOrStartSession(fullKey);
 
-    let status = sessionStatus.get(key);
+    let status = sessionStatus.get(fullKey);
     let attempts = 0;
 
     while (!status?.connected && !status?.qrImage && attempts < 10) {
         await new Promise(r => setTimeout(r, 500));
-        status = sessionStatus.get(key);
+        status = sessionStatus.get(fullKey);
         attempts++;
     }
 
     return res.json({
         success: true,
-        session_key: key,
+        session_key: fullKey,
         connected: status?.connected ?? false,
         qr: status?.qrImage || status?.qr || null,
     });
@@ -329,8 +381,8 @@ app.post('/api/whatsapp/send', async (req, res) => {
 
         // 3. Fallback to default central session
         if (!status?.connected) {
-            sock = sessions.get('default');
-            status = sessionStatus.get('default');
+            sock = sessions.get('shop_default');
+            status = sessionStatus.get('shop_default');
         }
 
         if (!status?.connected || !sock) {
@@ -358,9 +410,18 @@ app.post('/api/whatsapp/send', async (req, res) => {
             console.warn('⚠️ Verification check warning:', e.message);
         }
 
-        await sock.sendMessage(targetJid, { text: message });
+        const sent = await sock.sendMessage(targetJid, { text: message });
 
-        console.log(`📩 [WHATSAPP SENT SUCCESS] Session ${targetBarberKey && sessionStatus.get(targetBarberKey)?.connected ? targetBarberKey : targetShopKey} sent message to ${targetJid}`);
+        // Store sent message in sentMessages cache for exact Baileys getMessage retry decryption
+        if (sent?.key?.id && sent?.message) {
+            sentMessages.set(sent.key.id, sent.message);
+            setTimeout(() => sentMessages.delete(sent.key.id), 30 * 60 * 1000); // 30 min cache
+        }
+
+        const currentActiveKey = targetBarberKey && sessionStatus.get(targetBarberKey)?.connected ? targetBarberKey : targetShopKey;
+        scheduleSyncToCloud(currentActiveKey);
+
+        console.log(`📩 [WHATSAPP SENT SUCCESS] Session ${currentActiveKey} sent message to ${targetJid}`);
         return res.json({ success: true, shop_id: shop_id, barber_id: barber_id, message: 'Mesazhi u dërgua me sukses në WhatsApp!' });
     } catch (err) {
         console.error('❌ [WHATSAPP ERROR]:', err);
