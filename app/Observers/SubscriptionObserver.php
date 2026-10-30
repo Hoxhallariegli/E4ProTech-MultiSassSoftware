@@ -11,6 +11,12 @@ class SubscriptionObserver
     public function created(Subscription $item): void
     {
         try {
+            if ($item->ends_at && $item->barberShop) {
+                $item->barberShop->updateQuietly([
+                    'expires_at' => $item->ends_at,
+                    'trial_ends_at' => $item->ends_at,
+                ]);
+            }
             event(new SubscriptionChanged($item, 'created'));
             app(NotificationRouter::class)->maybeNotify('subscriptions.created', $item, 'created');
         } catch (\Throwable $e) {
@@ -23,7 +29,8 @@ class SubscriptionObserver
         try {
             if ($item->isDirty('ends_at') && $item->ends_at && $item->barberShop) {
                 $item->barberShop->updateQuietly([
-                    'expires_at' => $item->ends_at
+                    'expires_at' => $item->ends_at,
+                    'trial_ends_at' => $item->ends_at,
                 ]);
             }
             event(new SubscriptionChanged($item, 'updated'));

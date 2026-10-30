@@ -186,9 +186,9 @@
 
     <!-- Bottom Sidebar Subscription Status Card -->
     @php
-        $sidebarShop = auth()->user()?->barberShop;
+        $sidebarShop = auth()->user()?->barberShop?->fresh();
         $sidebarPlanName = $sidebarShop?->active_plan_name ?? __('admin.Free Trial (30 Days)');
-        $sidebarDaysLeft = $sidebarShop?->days_left ?? 30;
+        $sidebarDaysLeft = $sidebarShop?->days_left ?? 0;
         $sidebarIsExpired = $sidebarShop?->is_expired ?? false;
     @endphp
 

@@ -106,8 +106,8 @@ class BarberShop extends Model
     public function getActivePlanNameAttribute(): string
     {
         $sub = $this->subscriptions()->with('plan')->latest('ends_at')->first();
-        if ($sub) {
-            if ($sub->ends_at < now()) {
+        if ($sub && $sub->ends_at) {
+            if ($sub->ends_at->isPast()) {
                 return __('admin.Subscription Expired');
             }
             return $sub->plan?->name ?? __('admin.Active Plan');
@@ -126,24 +126,20 @@ class BarberShop extends Model
     public function getDaysLeftAttribute(): int
     {
         $sub = $this->subscriptions()->latest('ends_at')->first();
-        if ($sub) {
+        if ($sub && $sub->ends_at) {
             if ($sub->ends_at->isPast()) {
                 return 0; // Expired!
             }
             return (int) max(0, (int) ceil(now()->diffInDays($sub->ends_at, false)));
         }
 
-        if ($this->expires_at && $this->expires_at->isPast()) {
-            return 0;
-        }
-        if ($this->trial_ends_at && $this->trial_ends_at->isPast()) {
-            return 0;
-        }
-
         if ($this->expires_at) {
+            if ($this->expires_at->isPast()) return 0;
             return (int) max(0, (int) ceil(now()->diffInDays($this->expires_at, false)));
         }
+
         if ($this->trial_ends_at) {
+            if ($this->trial_ends_at->isPast()) return 0;
             return (int) max(0, (int) ceil(now()->diffInDays($this->trial_ends_at, false)));
         }
 
