@@ -97,10 +97,13 @@ class BarberShopObserver
     public function updated(BarberShop $item): void
     {
         try {
-            if ($item->isDirty('expires_at') && $item->expires_at) {
-                $item->subscriptions()->where('status', 'active')->update([
-                    'ends_at' => $item->expires_at
-                ]);
+            if ($item->isDirty('expires_at') || $item->isDirty('trial_ends_at')) {
+                $newEnd = $item->expires_at ?? $item->trial_ends_at;
+                if ($newEnd) {
+                    $item->subscriptions()->update([
+                        'ends_at' => $newEnd
+                    ]);
+                }
             }
             event(new BarberShopChanged($item, 'updated'));
             app(NotificationRouter::class)->maybeNotify('barber-shops.updated', $item, 'updated');
