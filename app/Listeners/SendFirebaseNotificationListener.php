@@ -94,6 +94,18 @@ class SendFirebaseNotificationListener
                     // ACTION A: CREATED -> Send Confirmation + Schedule Reminder
                     // -------------------------------------------------------------
                     if ($action === 'created') {
+                        // Deduplication safeguard: check if a confirmation message for this booking was ALREADY sent in the last 2 minutes
+                        $recentConfirmationSent = MessageLog::where('barber_shop_id', $shopId)
+                            ->where('customer_id', $booking->customer_id)
+                            ->where('template_type', 'confirmation')
+                            ->where('created_at', '>=', now()->subMinutes(2))
+                            ->exists();
+
+                        if ($recentConfirmationSent) {
+                            Log::info("⏭️ [STEP 4a SKIP] Skipped duplicate confirmation for Booking #{$booking->id}");
+                            return;
+                        }
+
                         $parsedConfirmation = MessageTemplate::parseForBooking($booking, 'confirmation', null, $preferredChannel);
 
                         // Fetch existing SMS queue items for this booking
