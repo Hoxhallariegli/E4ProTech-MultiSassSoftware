@@ -50,7 +50,9 @@
 
     <!-- Desktop Table Cells (>= lg) -->
     <td class="hidden lg:table-cell px-6 py-5 font-bold text-blue-600 dark:text-blue-400">#{{ $item->id }}</td>
-    <td class="hidden lg:table-cell px-6 py-5 font-bold text-gray-900 dark:text-white">{{ $item->owner?->name ?? '-' }}</td>
+    @if(auth()->check() && auth()->user()->is_global_admin)
+        <td class="hidden lg:table-cell px-6 py-5 font-bold text-gray-900 dark:text-white">{{ $item->owner?->name ?? '-' }}</td>
+    @endif
     <td class="hidden lg:table-cell px-6 py-5 font-extrabold text-gray-900 dark:text-white">{{ $item->name }}</td>
     <td class="hidden lg:table-cell px-6 py-5 whitespace-nowrap">
         <span class="px-3 py-1 rounded-full text-xs font-black {{ $item->is_expired ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' }}">
