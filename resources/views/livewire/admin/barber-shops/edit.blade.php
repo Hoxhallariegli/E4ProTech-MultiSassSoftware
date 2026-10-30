@@ -4,16 +4,18 @@
     <div class="bg-white dark:bg-gray-800 p-8 sm:p-12 rounded-[2.5rem] shadow-sm border border-gray-50 dark:border-gray-700">
         <form wire:submit.prevent="update" class="space-y-8">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                <div>
-                    <div class="flex items-end gap-2">
-                        <div class="flex-1"><x-form.dropdown-search name="owner_id" wire:model.live="owner_id" :label="__('barber-shops.Owner Id')" :data="$owners" /></div>
-                        <x-modal>
-                            <x-slot name="trigger"><button type="button" @click="on = true" class="mb-6 p-3 bg-blue-50 dark:bg-zinc-900/30 text-blue-600 dark:text-blue-400 rounded-2xl hover:scale-105 transition-transform"><x-heroicon-o-plus class="w-5 h-5" /></button></x-slot>
-                            <x-slot name="modalTitle"><div class="dark:text-white px-6 pt-6">Add New User</div></x-slot>
-                            <x-slot name="content"><livewire:admin.users.quick-create /></x-slot>
-                        </x-modal>
+                @if(auth()->check() && auth()->user()->is_global_admin)
+                    <div>
+                        <div class="flex items-end gap-2">
+                            <div class="flex-1"><x-form.dropdown-search name="owner_id" wire:model.live="owner_id" :label="__('barber-shops.Owner Id')" :data="$owners" /></div>
+                            <x-modal>
+                                <x-slot name="trigger"><button type="button" @click="on = true" class="mb-6 p-3 bg-blue-50 dark:bg-zinc-900/30 text-blue-600 dark:text-blue-400 rounded-2xl hover:scale-105 transition-transform"><x-heroicon-o-plus class="w-5 h-5" /></button></x-slot>
+                                <x-slot name="modalTitle"><div class="dark:text-white px-6 pt-6">Add New User</div></x-slot>
+                                <x-slot name="content"><livewire:admin.users.quick-create /></x-slot>
+                            </x-modal>
+                        </div>
                     </div>
-                </div>
+                @endif
                 <div><x-form.input name="name" type="text" wire:model.live="name" :label="__('barber-shops.Name')" class="dark:bg-gray-900" /></div>
                 <div>
                     @php
@@ -200,9 +202,25 @@
                     </div>
                 </div>
 
-                <div><x-form.input name="trial_ends_at" type="datetime-local" wire:model.live="trial_ends_at" :label="__('barber-shops.Trial Ends At')" class="dark:bg-gray-900" /></div>
-                <div><x-form.input name="expires_at" type="datetime-local" wire:model.live="expires_at" :label="__('barber-shops.Expires At')" class="dark:bg-gray-900" /></div>
-                <div><x-form.checkbox name="active" wire:model="active" :label="__('barber-shops.Active')" /></div>
+                @if(auth()->check() && auth()->user()->is_global_admin)
+                    <div><x-form.input name="trial_ends_at" type="datetime-local" wire:model.live="trial_ends_at" :label="__('barber-shops.Trial Ends At')" class="dark:bg-gray-900" /></div>
+                    <div><x-form.input name="expires_at" type="datetime-local" wire:model.live="expires_at" :label="__('barber-shops.Expires At')" class="dark:bg-gray-900" /></div>
+                    <div><x-form.checkbox name="active" wire:model="active" :label="__('barber-shops.Active')" /></div>
+                @else
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1.5">{{ __('barber-shops.Trial Ends At') }}</label>
+                        <div class="px-4 py-3 bg-gray-100 dark:bg-gray-900 rounded-2xl text-xs font-bold font-mono text-gray-700 dark:text-gray-300">
+                            {{ $trial_ends_at ? \Carbon\Carbon::parse($trial_ends_at)->format('d/m/Y H:i') : '-' }}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1.5">{{ __('barber-shops.Expires At') }}</label>
+                        <div class="px-4 py-3 bg-gray-100 dark:bg-gray-900 rounded-2xl text-xs font-bold font-mono text-gray-700 dark:text-gray-300">
+                            {{ $expires_at ? \Carbon\Carbon::parse($expires_at)->format('d/m/Y H:i') : '-' }}
+                        </div>
+                    </div>
+                @endif
+
                 <div><x-form.input name="timezone" type="text" wire:model.live="timezone" :label="__('barber-shops.Timezone')" class="dark:bg-gray-900" /></div>
                 <div><x-form.input name="max_no_show_before_block" type="number" step="1" wire:model.live="max_no_show_before_block" :label="__('barber-shops.Max No Show Before Block')" class="dark:bg-gray-900" /></div>
                 <div><x-form.input name="min_service_time" type="number" step="1" wire:model.live="min_service_time" :label="__('barber-shops.Min Service Time')" :placeholder="__('barber-shops.Min Service Time Placeholder')" class="dark:bg-gray-900" /></div>

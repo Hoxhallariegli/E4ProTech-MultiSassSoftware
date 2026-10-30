@@ -168,6 +168,15 @@ class Edit extends Component
 
     public function update(UpdateBarberShopAction $action) {
         $this->validate();
+
+        // Security Lock: Only Global Admin can modify owner_id, dates, and active status
+        if (!auth()->user()->is_global_admin) {
+            $this->owner_id = $this->item->owner_id;
+            $this->trial_ends_at = $this->item->trial_ends_at?->format('Y-m-d\TH:i');
+            $this->expires_at = $this->item->expires_at?->format('Y-m-d\TH:i');
+            $this->active = $this->item->active;
+        }
+
         if ($this->logo && !is_string($this->logo)) { $this->logo = app(\App\Services\ImageUploadService::class)->upload($this->logo, 'uploads/barber-shops'); }
         if ($this->banner && !is_string($this->banner)) { $this->banner = app(\App\Services\ImageUploadService::class)->upload($this->banner, 'uploads/barber-shops'); }
         $dto = BarberShopDTO::fromArray([
