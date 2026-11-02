@@ -28,8 +28,14 @@ class BookingResource extends JsonResource
                 ? $this->total_price
                 : ($this->service?->price ?? 0));
 
-        // 1. Fetch Sent / Delivered Logs from MessageLog (WhatsApp & SMS)
+        // 1. Fetch Sent / Delivered Logs from MessageLog (by booking_id or customer_id fallback)
         $messageLogs = \App\Models\MessageLog::where('booking_id', $this->id)
+            ->orWhere(function($q) {
+                if ($this->customer_id) {
+                    $q->where('customer_id', $this->customer_id)
+                      ->where('created_at', '>=', $this->created_at?->subMinutes(10) ?? now()->subDays(1));
+                }
+            })
             ->latest()
             ->get()
             ->map(function ($log) {

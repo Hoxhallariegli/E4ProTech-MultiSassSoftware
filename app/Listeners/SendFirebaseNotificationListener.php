@@ -97,7 +97,7 @@ class SendFirebaseNotificationListener
                         $parsedConfirmation = MessageTemplate::parseForBooking($booking, 'confirmation', null, $preferredChannel);
 
                         // 1. Direct Confirmation Message (Immediate, NO row created in message_queues table!)
-                        $this->triggerGatewayDevice($shopId, 0, $formattedPhone, $parsedConfirmation, $booking->barber_id, $booking->customer_id, 'confirmation');
+                        $this->triggerGatewayDevice($shopId, 0, $formattedPhone, $parsedConfirmation, $booking->barber_id, $booking->customer_id, 'confirmation', $booking->id);
                         Log::info("📝 [STEP 4a] Direct Confirmation Message sent for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Channel: {$preferredChannel})");
 
                         // 2. Scheduled Reminder Message ONLY inserted into message_queues
@@ -195,7 +195,7 @@ class SendFirebaseNotificationListener
                         $timeOrDetailsChanged = $booking->wasChanged('appointment_at') || $booking->wasChanged('service_id') || $booking->wasChanged('barber_id');
                         if ($timeOrDetailsChanged) {
                             $parsedUpdate = MessageTemplate::parseForBooking($booking, 'reschedule', null, $preferredChannel);
-                            $this->triggerGatewayDevice($shopId, 0, $formattedPhone, $parsedUpdate, $booking->barber_id, $booking->customer_id, 'reschedule');
+                            $this->triggerGatewayDevice($shopId, 0, $formattedPhone, $parsedUpdate, $booking->barber_id, $booking->customer_id, 'reschedule', $booking->id);
                         }
                     }
 
@@ -209,7 +209,7 @@ class SendFirebaseNotificationListener
                             ->delete();
 
                         $parsedCancel = MessageTemplate::parseForBooking($booking, 'cancellation', null, $preferredChannel);
-                        $this->triggerGatewayDevice($shopId, 0, $formattedPhone, $parsedCancel, $booking->barber_id, $booking->customer_id, 'cancellation');
+                        $this->triggerGatewayDevice($shopId, 0, $formattedPhone, $parsedCancel, $booking->barber_id, $booking->customer_id, 'cancellation', $booking->id);
                     }
                 }
 
@@ -231,10 +231,10 @@ class SendFirebaseNotificationListener
         }
     }
 
-    private function triggerGatewayDevice(int $shopId, int $smsId, string $phone, string $body, ?int $barberId = null, ?int $customerId = null, ?string $templateType = null): void
+    private function triggerGatewayDevice(int $shopId, int $smsId, string $phone, string $body, ?int $barberId = null, ?int $customerId = null, ?string $templateType = null, ?int $bookingId = null): void
     {
         // Asynchronous Background Dispatch for 10ms Lightning Fast UI Speed!
-        dispatch(function () use ($shopId, $smsId, $phone, $body, $barberId, $customerId, $templateType) {
+        dispatch(function () use ($shopId, $smsId, $phone, $body, $barberId, $customerId, $templateType, $bookingId) {
             $shop = BarberShop::find($shopId);
             $barber = $barberId ? Barber::find($barberId) : null;
 
@@ -256,7 +256,7 @@ class SendFirebaseNotificationListener
             // 1. TIER 1: Barber's Personal WhatsApp (Priority #1)
             if ($barberId && $barberWaEnabled) {
                 try {
-                    $waSent = $waService->send($phone, $body, $shopId, $barberId, $customerId, $templateType);
+                    $waSent = $waService->send($phone, $body, $shopId, $barberId, $customerId, $templateType, $bookingId);
                     if ($waSent) {
                         $markQueueSent();
                         Log::info("💬 [SMART ROUTE - TIER 1] Sent via Barber #{$barberId} Personal WhatsApp to {$phone}");
@@ -270,7 +270,7 @@ class SendFirebaseNotificationListener
             // 2. TIER 2: Barber Shop's Central WhatsApp (Priority #2)
             if ($shopWaEnabled) {
                 try {
-                    $waSent = $waService->send($phone, $body, $shopId, null, $customerId, $templateType);
+                    $waSent = $waService->send($phone, $body, $shopId, null, $customerId, $templateType, $bookingId);
                     if ($waSent) {
                         $markQueueSent();
                         Log::info("💬 [SMART ROUTE - TIER 2] Sent via Shop #{$shopId} Central WhatsApp to {$phone}");
