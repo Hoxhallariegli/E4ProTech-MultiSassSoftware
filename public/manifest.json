@@ -1,0 +1,24 @@
+{
+  "name": "E4ProTech Engine",
+  "short_name": "E4ProTech",
+  "description": "E4ProTech SaaS Management Platform & Admin Portal",
+  "start_url": "/admin",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0A4D44",
+  "theme_color": "#0A4D44",
+  "icons": [
+    {
+      "src": "/E4ProTech.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/E4ProTech.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

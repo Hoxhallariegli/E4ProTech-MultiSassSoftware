@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title') {{ $title ?? null }} - {{ config('app.name', 'Laravel') }}</title>
+    <link rel="icon" type="image/webp" href="/E4ProTech.webp">
+    <link rel="shortcut icon" type="image/webp" href="/E4ProTech.webp">
+    <link rel="apple-touch-icon" href="/E4ProTech.webp">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0A4D44">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="E4ProTech">
     @stack('scripts')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
@@ -320,7 +329,75 @@
   </footer>
 </div>
 
+<!-- PWA Install Prompt Banner -->
+<div id="pwa-install-banner" class="hidden fixed bottom-6 right-6 left-6 sm:left-auto sm:w-96 z-[9999] bg-[#0A4D44] text-white p-4 rounded-3xl shadow-2xl border border-white/20 backdrop-blur-lg antialiased">
+    <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <img src="/E4ProTech.webp" alt="E4ProTech" class="w-12 h-12 rounded-2xl object-cover border border-white/30 shadow-md">
+            <div>
+                <h4 class="font-black text-sm text-white leading-tight">E4ProTech Engine</h4>
+                <p class="text-[11px] text-emerald-100 font-medium">Instalo si aplikacion në ekran 📱</p>
+            </div>
+        </div>
+        <button id="pwa-install-close" type="button" class="text-white/60 hover:text-white p-1 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+    </div>
+    <div class="mt-3 flex items-center gap-2">
+        <button id="pwa-install-btn" type="button" class="w-full py-2.5 px-4 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-xl shadow-lg transition active:scale-95 flex items-center justify-center gap-2">
+            <span>Instalo Tani 📥</span>
+        </button>
+    </div>
+</div>
+
 <script>
+    // PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').then((reg) => {
+                console.log('PWA Service Worker registered successfully:', reg.scope);
+            }).catch((err) => {
+                console.log('PWA Service Worker registration failed:', err);
+            });
+        });
+    }
+
+    // PWA BeforeInstallPrompt Event Handler
+    let deferredPwaPrompt;
+    const pwaBanner = document.getElementById('pwa-install-banner');
+    const pwaBtn = document.getElementById('pwa-install-btn');
+    const pwaClose = document.getElementById('pwa-install-close');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPwaPrompt = e;
+        if (!localStorage.getItem('pwa_banner_closed')) {
+            pwaBanner?.classList.remove('hidden');
+        }
+    });
+
+    pwaBtn?.addEventListener('click', async () => {
+        if (deferredPwaPrompt) {
+            deferredPwaPrompt.prompt();
+            const { outcome } = await deferredPwaPrompt.userChoice;
+            if (outcome === 'accepted') {
+                console.log('User installed the PWA');
+            }
+            deferredPwaPrompt = null;
+            pwaBanner?.classList.add('hidden');
+        }
+    });
+
+    pwaClose?.addEventListener('click', () => {
+        pwaBanner?.classList.add('hidden');
+        localStorage.setItem('pwa_banner_closed', '1');
+    });
+
+    window.addEventListener('appinstalled', () => {
+        pwaBanner?.classList.add('hidden');
+        console.log('E4ProTech PWA Installed');
+    });
+
     @if(session()->has('success'))
         window.addEventListener('DOMContentLoaded', () => {
             window.dispatchEvent(new CustomEvent('toast', { detail: { message: "{{ session('success') }}", type: 'success' } }));

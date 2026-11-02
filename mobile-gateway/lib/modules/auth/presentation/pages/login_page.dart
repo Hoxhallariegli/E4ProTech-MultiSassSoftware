@@ -205,33 +205,7 @@ class _LoginPageState extends State<LoginPage> {
                     textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 13, color: Colors.grey, fontWeight: FontWeight.w500),
                   ),
-                  const SizedBox(height: 12),
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.dns_outlined, size: 14, color: theme.colorScheme.primary),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Server: $_currentServer',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 24),
                   PremiumTextField(
                     controller: _emailController,
                     label: coreTr(context, 'auth.email'),
@@ -267,23 +241,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Zgjidh Llogari Testuese (Auto-Fill):',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _buildQuickChip('Elegance Salon', 'owner.salon@test.com', 'password', Icons.content_cut_rounded, const Color(0xFFEC4899)),
-                      _buildQuickChip('Gentlemen Barber', 'owner.barber@test.com', 'password', Icons.storefront_rounded, const Color(0xFF2563EB)),
-                      _buildQuickChip('Glamour Nails', 'owner.nails@test.com', 'password', Icons.back_hand_rounded, const Color(0xFF10B981)),
-                      _buildQuickChip('Klara Staff', 'staff.salon@test.com', 'password', Icons.person_rounded, const Color(0xFF8B5CF6)),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                   PremiumButton(
                     onPressed: _handleLogin,
                     label: _loading ? coreTr(context, 'auth.authenticating') : coreTr(context, 'auth.sign_in'),

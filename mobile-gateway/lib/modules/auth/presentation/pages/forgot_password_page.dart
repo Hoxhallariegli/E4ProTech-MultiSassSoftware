@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/widgets/premium_widgets.dart';
 import '../../../../core/branding/branding_cubit.dart';
+import '../../../../l10n/core_localization.dart';
 import '../../../../services/api_service.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
@@ -127,7 +128,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Rivendos Fjalëkalimin', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+        title: Text(
+          _showTokenReset ? coreTr(context, 'auth.reset_password_title') : coreTr(context, 'auth.forgot_title'),
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+        ),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -149,16 +153,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  'Keni Harruar Fjalëkalimin?',
+                Text(
+                  _showTokenReset ? coreTr(context, 'auth.reset_password_title') : coreTr(context, 'auth.forgot_title'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   _showTokenReset
-                      ? 'Vendosni kodin e rivendosjes që keni marrë në email dhe fjalëkalimin e ri.'
-                      : 'Vendosni adresën tuaj të email-it dhe ne do t\'ju dërgojmë lidhjen për rivendosjen e fjalëkalimit.',
+                      ? coreTr(context, 'auth.reset_password_subtitle')
+                      : coreTr(context, 'auth.forgot_subtitle'),
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 13, color: Colors.grey, height: 1.4),
                 ),
@@ -171,11 +175,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       children: [
                         PremiumTextField(
                           controller: _emailController,
-                          label: 'Adresa e Email-it',
-                          hint: 'emri@shembull.com',
+                          label: coreTr(context, 'auth.email'),
+                          hint: coreTr(context, 'auth.email_hint'),
                           keyboardType: TextInputType.emailAddress,
                           validator: (v) {
-                            if (v == null || v.trim().isEmpty) return 'Ju lutemi shkruani email-in tuaj.';
+                            if (v == null || v.trim().isEmpty) return coreTr(context, 'auth.email_required');
                             if (!v.contains('@')) return 'Shkruani një email të vlefshëm.';
                             return null;
                           },
@@ -183,7 +187,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         const SizedBox(height: 24),
                         PremiumButton(
                           onPressed: _handleSendResetLink,
-                          label: _loading ? 'Dërgimi...' : 'Dërgo Lidhjen te Email-i',
+                          label: _loading ? coreTr(context, 'auth.authenticating') : coreTr(context, 'auth.send_reset_link'),
                           icon: Icons.send_rounded,
                           loading: _loading,
                           expand: true,
@@ -217,7 +221,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           const SizedBox(height: 10),
                           TextButton(
                             onPressed: () => setState(() => _showTokenReset = true),
-                            child: const Text('Keni Kodin/Token-in? Klikoni këtu për të vendosur fjalëkalimin e ri 🔑', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            child: Text(
+                              coreTr(context, 'auth.have_token_prompt'),
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
                           )
                         ],
                       ),
@@ -229,26 +236,26 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       children: [
                         PremiumTextField(
                           controller: _resetEmailController,
-                          label: 'Email-i Juaj',
-                          hint: 'emri@shembull.com',
+                          label: coreTr(context, 'auth.email'),
+                          hint: coreTr(context, 'auth.email_hint'),
                           keyboardType: TextInputType.emailAddress,
-                          validator: (v) => (v == null || v.trim().isEmpty) ? 'Ju lutemi shkruani email-in.' : null,
+                          validator: (v) => (v == null || v.trim().isEmpty) ? coreTr(context, 'auth.email_required') : null,
                         ),
                         const SizedBox(height: 14),
                         PremiumTextField(
                           controller: _tokenController,
-                          label: 'Kodi / Token-i i Rivendosjes',
-                          hint: 'Kodi nga email-i (p.sh. token)',
+                          label: coreTr(context, 'auth.token_label'),
+                          hint: 'Kodi nga email-i (token)',
                           validator: (v) => (v == null || v.trim().isEmpty) ? 'Ju lutemi shkruani kodin e rivendosjes.' : null,
                         ),
                         const SizedBox(height: 14),
                         PremiumTextField(
                           controller: _passwordController,
-                          label: 'Fjalëkalimi i Ri',
+                          label: coreTr(context, 'auth.new_password_label'),
                           hint: 'At least 8 characters',
                           obscureText: _obscurePassword,
                           validator: (v) {
-                            if (v == null || v.isEmpty) return 'Shkruani fjalëkalimin e ri.';
+                            if (v == null || v.isEmpty) return coreTr(context, 'auth.password_required');
                             if (v.length < 8) return 'Fjalëkalimi duhet të jetë të paktën 8 karaktere.';
                             return null;
                           },
@@ -260,7 +267,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         const SizedBox(height: 14),
                         PremiumTextField(
                           controller: _confirmPasswordController,
-                          label: 'Konfirmo Fjalëkalimin e Ri',
+                          label: coreTr(context, 'auth.confirm_password_label'),
                           hint: 'Përsëritni fjalëkalimin e ri',
                           obscureText: _obscureConfirmPassword,
                           validator: (v) {
@@ -276,7 +283,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         const SizedBox(height: 24),
                         PremiumButton(
                           onPressed: _handleResetPassword,
-                          label: _resetLoading ? 'Duke rivendosur...' : 'Rivendos Fjalëkalimin',
+                          label: _resetLoading ? coreTr(context, 'auth.authenticating') : coreTr(context, 'auth.reset_password_title'),
                           icon: Icons.check_circle_rounded,
                           loading: _resetLoading,
                           expand: true,
@@ -284,7 +291,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         const SizedBox(height: 12),
                         TextButton(
                           onPressed: () => setState(() => _showTokenReset = false),
-                          child: const Text('Kthehu te dërgimi i email-it', style: TextStyle(fontSize: 12)),
+                          child: Text(coreTr(context, 'common.back'), style: const TextStyle(fontSize: 12)),
                         )
                       ],
                     ),

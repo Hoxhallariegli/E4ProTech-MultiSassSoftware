@@ -13,6 +13,10 @@
         })();
     </script>
     <title>E4ProTech Engine — {{ __('Multi-SaaS Salon Management Engine & SIM SMS Gateway') }}</title>
+    <link rel="icon" type="image/webp" href="/E4ProTech.webp">
+    <link rel="shortcut icon" type="image/webp" href="/E4ProTech.webp">
+    <link rel="apple-touch-icon" href="/E4ProTech.webp">
+    <link rel="manifest" href="/manifest.json">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
