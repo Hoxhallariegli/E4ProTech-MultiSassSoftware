@@ -517,28 +517,63 @@ class BookingController extends Controller
                         $timeKey = $bStart->format('H:i');
 
                         if (!isset($slotTimes[$timeKey])) {
-                            $smsMessages = !$isBreak ? \App\Models\MessageQueue::where('booking_id', $booking->id)
+                            $messageQueues = !$isBreak ? \App\Models\MessageQueue::where('booking_id', $booking->id)
                                 ->get()
                                 ->map(function ($queue) {
-                                    $type = $queue->resolved_template_type;
+                                    $channel = strtolower($queue->channel ?? 'whatsapp');
+                                    $channelLabel = $channel === 'whatsapp' ? 'WhatsApp' : 'SMS';
+                                    $type = $queue->resolved_template_type ?? $queue->template_type ?? 'reminder';
                                     $typeLabel = match($type) {
-                                        'reminder' => 'Rikujtesë SMS',
-                                        'reschedule', 'update' => 'Ndryshim SMS',
-                                        'cancellation', 'cancelled' => 'Anulim SMS',
-                                        'welcome' => 'Mirëseardhje SMS',
-                                        default => 'Konfirmim SMS',
+                                        'reminder' => "Rikujtesë {$channelLabel}",
+                                        'reschedule', 'update' => "Ndryshim {$channelLabel}",
+                                        'cancellation', 'cancelled' => "Anulim {$channelLabel}",
+                                        'welcome' => "Mirëseardhje {$channelLabel}",
+                                        default => "Konfirmim {$channelLabel}",
                                     };
                                     return [
                                         'id' => $queue->id,
                                         'type' => $type,
                                         'type_label' => $typeLabel,
-                                        'message_content' => $queue->message_content,
-                                        'status' => $queue->status,
+                                        'message_content' => $queue->message_content ?? '',
+                                        'status' => strtolower($queue->status ?? 'pending'),
                                         'scheduled_at' => $queue->scheduled_at?->toIso8601String(),
                                         'created_at' => $queue->created_at?->toIso8601String(),
-                                        'updated_at' => $queue->updated_at?->toIso8601String(),
                                     ];
                                 })->values()->toArray() : [];
+
+                            $messageLogs = (!$isBreak && ($booking->id || $booking->customer_id)) ? \App\Models\MessageLog::where(function($q) use ($booking) {
+                                    if (\Illuminate\Support\Facades\Schema::hasColumn('message_logs', 'booking_id')) {
+                                        $q->where('booking_id', $booking->id);
+                                    }
+                                    if ($booking->customer_id) {
+                                        $q->orWhere('customer_id', $booking->customer_id);
+                                    }
+                                })
+                                ->latest()
+                                ->get()
+                                ->map(function ($log) {
+                                    $channel = strtolower($log->channel ?? 'whatsapp');
+                                    $channelLabel = $channel === 'whatsapp' ? 'WhatsApp' : 'SMS';
+                                    $type = $log->template_type ?? 'confirmation';
+                                    $typeLabel = match($type) {
+                                        'reminder' => "Rikujtesë {$channelLabel}",
+                                        'reschedule', 'update' => "Ndryshim {$channelLabel}",
+                                        'cancellation', 'cancelled' => "Anulim {$channelLabel}",
+                                        'welcome' => "Mirëseardhje {$channelLabel}",
+                                        default => "Konfirmim {$channelLabel}",
+                                    };
+                                    return [
+                                        'id' => $log->id,
+                                        'type' => $type,
+                                        'type_label' => $typeLabel,
+                                        'message_content' => $log->message_content ?? $log->message ?? '',
+                                        'status' => 'sent',
+                                        'scheduled_at' => $log->created_at?->toIso8601String(),
+                                        'created_at' => $log->created_at?->toIso8601String(),
+                                    ];
+                                })->values()->toArray() : [];
+
+                            $smsMessages = array_merge($messageLogs, $messageQueues);
 
                             $slots[] = [
                                 'time' => $timeKey,
