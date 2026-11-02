@@ -47,6 +47,7 @@ class SendSmsToGatewayJob
         $booking = $queue->booking;
         $barberId = $booking?->barber_id;
         $customerId = $booking?->customer_id;
+        $bookingId = $queue->booking_id ?? $booking?->id;
         $templateType = $queue->resolved_template_type;
 
         // STRICT DEDUPLICATION: If a log record already exists for this booking_id and template_type, DO NOT SEND DUPLICATE!
@@ -73,13 +74,14 @@ class SendSmsToGatewayJob
                 $shopId,
                 $barberId,
                 $customerId,
-                $templateType
+                $templateType,
+                $bookingId
             );
 
             if ($waSent) {
                 // Delete from queue table immediately on success so queue stays 100% clean!
                 $queue->delete();
-                Log::info("💬 [SendSmsToGatewayJob] Scheduled reminder ID #{$queue->id} successfully sent via WhatsApp Gateway and deleted from queue.");
+                Log::info("💬 [SendSmsToGatewayJob] Scheduled reminder ID #{$queue->id} (Booking #{$bookingId}) successfully sent via WhatsApp Gateway and deleted from queue.");
                 return;
             }
         } catch (\Throwable $e) {
