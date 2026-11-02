@@ -28,68 +28,31 @@ class BookingResource extends JsonResource
                 ? $this->total_price
                 : ($this->service?->price ?? 0));
 
-        // 1. Fetch Sent / Delivered Logs from MessageLog (by booking_id or customer_id fallback)
-        $messageLogs = \App\Models\MessageLog::where('booking_id', $this->id)
-            ->orWhere(function($q) {
-                if ($this->customer_id) {
-                    $q->where('customer_id', $this->customer_id);
-                }
-            })
-            ->latest()
-            ->get()
-            ->map(function ($log) {
-                $channel = strtolower($log->channel ?? 'whatsapp');
-                $channelLabel = $channel === 'whatsapp' ? 'WhatsApp' : 'SMS';
-                $type = $log->template_type ?? 'confirmation';
-                $typeLabel = match($type) {
-                    'reminder' => "Rikujtesë {$channelLabel}",
-                    'reschedule', 'update' => "Ndryshim {$channelLabel}",
-                    'cancellation', 'cancelled' => "Anulim {$channelLabel}",
-                    'welcome' => "Mirëseardhje {$channelLabel}",
-                    default => "Konfirmim {$channelLabel}",
-                };
-                return [
-                    'id' => $log->id,
-                    'type' => $type,
-                    'type_label' => $typeLabel,
-                    'channel' => $channel,
-                    'message_content' => $log->message_content ?? $log->message ?? '',
-                    'phone_number' => $log->phone_number ?? $log->recipient ?? '',
-                    'status' => 'sent',
-                    'scheduled_at' => $log->created_at?->toIso8601String(),
-                    'created_at' => $log->created_at?->toIso8601String(),
-                ];
-            });
-
-        // 2. Fetch Pending Queue Items from MessageQueue (WhatsApp & SMS)
-        $messageQueues = \App\Models\MessageQueue::where('booking_id', $this->id)
+        $smsMessages = \App\Models\MessageQueue::where('booking_id', $this->id)
             ->get()
             ->map(function ($queue) {
-                $channel = strtolower($queue->channel ?? 'whatsapp');
-                $channelLabel = $channel === 'whatsapp' ? 'WhatsApp' : 'SMS';
-                $type = $queue->resolved_template_type ?? $queue->template_type ?? 'reminder';
+                $type = $queue->resolved_template_type;
                 $typeLabel = match($type) {
-                    'reminder' => "Rikujtesë {$channelLabel}",
-                    'reschedule', 'update' => "Ndryshim {$channelLabel}",
-                    'cancellation', 'cancelled' => "Anulim {$channelLabel}",
-                    'welcome' => "Mirëseardhje {$channelLabel}",
-                    default => "Konfirmim {$channelLabel}",
+                    'reminder' => 'Rikujtesë SMS',
+                    'reschedule', 'update' => 'Ndryshim SMS',
+                    'cancellation', 'cancelled' => 'Anulim SMS',
+                    'welcome' => 'Mirëseardhje SMS',
+                    default => 'Konfirmim SMS',
                 };
                 return [
                     'id' => $queue->id,
                     'type' => $type,
                     'type_label' => $typeLabel,
-                    'channel' => $channel,
-                    'message_content' => $queue->message_content ?? '',
-                    'phone_number' => $queue->phone_number ?? '',
-                    'status' => strtolower($queue->status ?? 'pending'),
+                    'message_content' => $queue->message_content,
+                    'phone_number' => $queue->phone_number,
+                    'status' => $queue->status,
                     'scheduled_at' => $queue->scheduled_at?->toIso8601String(),
                     'created_at' => $queue->created_at?->toIso8601String(),
+                    'updated_at' => $queue->updated_at?->toIso8601String(),
                 ];
-            });
-
-        // Combine sent logs and pending queue into unified notification list
-        $combinedMessages = $messageLogs->concat($messageQueues)->values()->toArray();
+            })
+            ->values()
+            ->toArray();
 
         return [
             'id' => $this->id,
@@ -105,8 +68,7 @@ class BookingResource extends JsonResource
             'notes' => $this->notes,
             'source' => $this->source,
             'service_name' => $serviceName,
-            'sms_messages' => $combinedMessages,
-            'notification_messages' => $combinedMessages,
+            'sms_messages' => $smsMessages,
             'barberShop' => $this->whenLoaded('barberShop'),
             'barber' => $this->whenLoaded('barber'),
             'service' => $this->whenLoaded('service'),
