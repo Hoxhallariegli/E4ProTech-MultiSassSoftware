@@ -32,8 +32,7 @@ class BookingResource extends JsonResource
         $messageLogs = \App\Models\MessageLog::where('booking_id', $this->id)
             ->orWhere(function($q) {
                 if ($this->customer_id) {
-                    $q->where('customer_id', $this->customer_id)
-                      ->where('created_at', '>=', $this->created_at?->subMinutes(10) ?? now()->subDays(1));
+                    $q->where('customer_id', $this->customer_id);
                 }
             })
             ->latest()
