@@ -103,10 +103,6 @@ class _SettingsPageState extends State<SettingsPage> {
       debugPrint('Logout error: $e');
     }
 
-    if (mounted) {
-      context.read<BrandingCubit>().reset();
-    }
-
     await AuthService.instance.logout();
 
     if (mounted) {
