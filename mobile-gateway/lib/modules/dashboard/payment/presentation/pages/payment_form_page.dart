@@ -264,7 +264,7 @@ class _PaymentFormPageState extends State<PaymentFormPage> {
                 }
               },
             ),
-            title: Text(widget.item == null ? paymentTr(context, 'form.create_title') : paymentTr(context, 'form.edit_title'), style: const TextStyle(fontWeight: FontWeight.w800)),
+            title: Text(widget.item?['id'] == null ? paymentTr(context, 'form.create_title') : paymentTr(context, 'form.edit_title'), style: const TextStyle(fontWeight: FontWeight.w800)),
           ),
           body: _loading ? const Center(child: CircularProgressIndicator.adaptive()) : Form(key: _formKey, child: Builder(builder: (formContext) => ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 120), children: [
             const SizedBox(height: 12),

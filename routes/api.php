@@ -66,6 +66,8 @@ Route::prefix('mobile')->group(function () {
         Route::apiResource('customers', \App\Http\Controllers\Api\Mobile\CustomerController::class);
         Route::apiResource('services', \App\Http\Controllers\Api\Mobile\ServiceController::class);
         Route::apiResource('bookings', \App\Http\Controllers\Api\Mobile\BookingController::class);
+        Route::apiResource('payments', \App\Http\Controllers\Api\Mobile\PaymentController::class);
+        Route::apiResource('plans', \App\Http\Controllers\Api\Mobile\PlanController::class);
         Route::apiResource('reports', \App\Http\Controllers\Api\Mobile\ReportController::class);
         Route::apiResource('reviews', \App\Http\Controllers\Api\Mobile\ReviewController::class);
         Route::apiResource('working-hours', \App\Http\Controllers\Api\Mobile\WorkingHourController::class);
