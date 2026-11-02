@@ -11,6 +11,7 @@ import '../../../../core/branding/branding_cubit.dart';
 import '../../../../l10n/core_localization.dart';
 import '../../../../core/notifications/push_service.dart';
 import '../../../dashboard/presentation/pages/app_shell.dart';
+import 'forgot_password_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -254,7 +255,12 @@ class _LoginPageState extends State<LoginPage> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ForgotPasswordPage()),
+                        );
+                      },
                       child: Text(
                         coreTr(context, 'auth.forgot'),
                         style: TextStyle(fontSize: 13, color: theme.colorScheme.primary, fontWeight: FontWeight.bold),

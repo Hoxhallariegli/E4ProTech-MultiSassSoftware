@@ -224,4 +224,67 @@ class AuthController extends Controller
             ]
         ]);
     }
+
+    public function forgotPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+        ], [
+            'email.required' => 'Ju lutemi shkruani adresën tuaj të email-it.',
+            'email.email' => 'Adresa e email-it nuk është e vlefshme.',
+            'email.exists' => 'Nuk u gjet asnjë përdorues me këtë adresë email-i.',
+        ]);
+
+        $status = \Illuminate\Support\Facades\Password::sendResetLink(
+            $request->only('email')
+        );
+
+        if ($status === \Illuminate\Support\Facades\Password::RESET_LINK_SENT) {
+            return response()->json([
+                'message' => 'Lidhja për rivendosjen e fjalëkalimit u dërgua me sukses në email-in tuaj.',
+                'status' => 'success',
+            ]);
+        }
+
+        return response()->json([
+            'message' => __($status),
+            'status' => 'error',
+        ], 400);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'token' => 'required|string',
+            'email' => 'required|email|exists:users,email',
+            'password' => 'required|string|min:8|confirmed',
+        ], [
+            'password.required' => 'Ju lutemi shkruani fjalëkalimin e ri.',
+            'password.min' => 'Fjalëkalimi i ri duhet të jetë të paktën 8 karaktere.',
+            'password.confirmed' => 'Konfirmimi i fjalëkalimit nuk përputhet.',
+        ]);
+
+        $status = \Illuminate\Support\Facades\Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function ($user, $password) {
+                $user->password = \Illuminate\Support\Facades\Hash::make($password);
+                $user->setRememberToken(\Illuminate\Support\Str::random(60));
+                $user->save();
+
+                event(new \Illuminate\Auth\Events\PasswordReset($user));
+            }
+        );
+
+        if ($status === \Illuminate\Support\Facades\Password::PASSWORD_RESET) {
+            return response()->json([
+                'message' => 'Fjalëkalimi u ndryshua me sukses! Tani mund të kyçeni me fjalëkalimin e ri.',
+                'status' => 'success',
+            ]);
+        }
+
+        return response()->json([
+            'message' => __($status),
+            'status' => 'error',
+        ], 400);
+    }
 }

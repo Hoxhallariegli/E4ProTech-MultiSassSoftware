@@ -27,6 +27,8 @@ Route::prefix('mobile')->group(function () {
     Route::get('status', fn () => response()->json(['status' => 'online', 'timestamp' => now()->toIso8601String()]));
     Route::get('app-version', [\App\Http\Controllers\Api\Mobile\AppVersionController::class, 'check']);
     Route::post('login', [AuthController::class, 'login']);
+    Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('reset-password', [AuthController::class, 'resetPassword']);
     Route::get('languages', [\App\Http\Controllers\Api\Mobile\LanguageController::class, 'index']);
 
     // Device Token Web Registration (Supports Web Session & Sanctum Auth)
