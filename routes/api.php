@@ -22,6 +22,9 @@ Route::middleware(['throttle:10,1'])->group(function () {
     Route::post('whatsapp-cloud-sessions/delete', [\App\Http\Controllers\Api\WhatsappSessionCloudController::class, 'deleteSession']);
 });
 
+Route::post('mobile/forgot-password', [\App\Http\Controllers\Api\Mobile\AuthController::class, 'forgotPassword']);
+Route::post('mobile/reset-password', [\App\Http\Controllers\Api\Mobile\AuthController::class, 'resetPassword']);
+
 Route::prefix('mobile')->group(function () {
     // Public Mobile Routes
     Route::get('status', fn () => response()->json(['status' => 'online', 'timestamp' => now()->toIso8601String()]));
