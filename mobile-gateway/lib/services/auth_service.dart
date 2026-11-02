@@ -97,6 +97,7 @@ class AuthService extends ChangeNotifier {
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_data', jsonEncode(_userData));
+      ApiService.clearAllCaches();
       PushService.registerTokenWithBackend();
       notifyListeners();
     } else {
@@ -110,6 +111,7 @@ class AuthService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
     await prefs.remove('user_data');
+    ApiService.clearAllCaches();
     notifyListeners();
   }
 }

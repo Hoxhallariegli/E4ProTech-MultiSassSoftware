@@ -15,11 +15,11 @@ class ShopSwitcher extends Component
     {
         $user = Auth::user();
 
-        if ($user->hasRole(['admin', 'qqq'])) {
+        if ($user->is_global_admin) {
             $this->shops = BarberShop::all();
         } else {
-            // Include both owned shops and shops joined via pivot
             $this->shops = BarberShop::where('owner_id', $user->id)
+                ->orWhere('id', $user->barber_shop_id)
                 ->orWhereHas('users', function($q) use ($user) {
                     $q->where('users.id', $user->id);
                 })->get();
@@ -32,14 +32,14 @@ class ShopSwitcher extends Component
     {
         $user = Auth::user();
 
-        // Security check: Verify if the user has access to this shop
         $hasAccess = false;
-        if ($user->hasRole(['admin', 'qqq'])) {
+        if ($user->is_global_admin) {
             $hasAccess = true;
         } else {
             $hasAccess = BarberShop::where('id', $shopId)
                 ->where(function($q) use ($user) {
                     $q->where('owner_id', $user->id)
+                      ->orWhere('id', $user->barber_shop_id)
                       ->orWhereHas('users', function($qu) use ($user) {
                           $qu->where('users.id', $user->id);
                       });

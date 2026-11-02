@@ -23,15 +23,24 @@ class EnforceSubscriptionMiddleware
                 if ($shop && $shop->is_expired) {
                     // Block write actions (POST, PUT, PATCH, DELETE) for expired subscriptions
                     if (in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
-                        // Allow renewal and logout routes
-                        $allowedRoutes = ['admin.subscriptions', 'admin.subscription-renewals', 'logout', 'verification', 'language'];
+                        // Allow renewal and logout/login routes
+                        $allowedRoutes = ['admin.subscriptions', 'admin.subscription-renewals', 'logout', 'login', 'verification', 'language'];
                         $currentRoute = $request->route()?->getName() ?? '';
+                        $uri = strtolower($request->getRequestUri());
+                        $path = strtolower($request->path());
 
-                        $isAllowed = false;
-                        foreach ($allowedRoutes as $allowed) {
-                            if (str_contains($currentRoute, $allowed)) {
-                                $isAllowed = true;
-                                break;
+                        $isAllowed = str_contains($uri, 'logout') ||
+                                     str_contains($path, 'logout') ||
+                                     str_contains($currentRoute, 'logout') ||
+                                     str_contains($uri, 'login') ||
+                                     str_contains($path, 'login');
+
+                        if (!$isAllowed) {
+                            foreach ($allowedRoutes as $allowed) {
+                                if (str_contains($currentRoute, $allowed)) {
+                                    $isAllowed = true;
+                                    break;
+                                }
                             }
                         }
 

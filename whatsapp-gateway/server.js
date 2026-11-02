@@ -21,7 +21,7 @@ const logger = pino({ level: 'warn' });
 // Auto-Heal Unhandled Signal Session Rejections in Real-Time
 process.on('unhandledRejection', (reason) => {
     const errStr = String(reason?.stack || reason?.message || reason);
-    if (errStr.includes('SessionError') || errStr.includes('Bad MAC') || errStr.includes('failed to decrypt')) {
+    if (errStr.includes('SessionError') || errStr.includes('Bad MAC') || errStr.includes('failed to decrypt') || errStr.includes('error in handling message')) {
         console.warn('⚠️ [AUTO-HEAL] Intercepted Signal session warning:', errStr.substring(0, 120));
     }
 });
@@ -30,7 +30,7 @@ process.on('unhandledRejection', (reason) => {
 const originalConsoleError = console.error;
 console.error = function(...args) {
     const msg = args.map(a => String(a)).join(' ');
-    if (msg.includes('failed to decrypt message') || msg.includes('Failed to decrypt message') || msg.includes('Session error:')) {
+    if (msg.includes('failed to decrypt message') || msg.includes('Failed to decrypt message') || msg.includes('Session error:') || msg.includes('error in handling message')) {
         return; // Suppress non-fatal Baileys internal background sync noise
     }
     originalConsoleError.apply(console, args);
@@ -405,25 +405,23 @@ async function startSession(fullKey) {
             if (sessions.get(fullKey) !== sock) return;
 
             sessionStatus.set(fullKey, { connected: false, qr: null, qrImage: null, phone: null });
-            const isLoggedOut = (lastDisconnect?.error?.output?.statusCode === DisconnectReason.loggedOut);
 
-            if (isLoggedOut) {
-                console.log(`⚠️ [SESSION ${fullKey}] Përdoruesi bëri Logout. Po fshihen çelësat e vjetër...`);
+            const statusCode = lastDisconnect?.error?.output?.statusCode;
+            const errorMsg = String(lastDisconnect?.error?.output?.payload?.message || lastDisconnect?.error?.message || '');
+
+            // STRICT GUARD: Only purge session if user explicitly performed a phone logout (statusCode 401 AND explicit Logged Out payload)
+            const isExplicitLogout = (statusCode === DisconnectReason.loggedOut) && (errorMsg.includes('Logged Out') || errorMsg.includes('logged out'));
+
+            if (isExplicitLogout) {
+                console.log(`⚠️ [SESSION ${fullKey}] Përdoruesi bëri Logout zyrtar. Po fshihen çelësat e vjetër...`);
                 purgeSessionDir(fullKey);
                 sessions.delete(fullKey);
                 deleteSessionFromCloud(fullKey);
             } else {
-                const credsExistNow = fs.existsSync(path.join(sessionDir, 'creds.json'));
-                if (credsExistNow) {
-                    console.log(`🔄 [SESSION ${fullKey}] Lidhja u mbyll përkohësisht. Po ri-lidhet automatikisht...`);
-                    try { sock.end(undefined); } catch (_) {}
-                    sessions.delete(fullKey);
-                    setTimeout(() => getOrStartSession(fullKey), 5000);
-                } else {
-                    console.log(`⏸️ [SESSION ${fullKey}] Seancë e palidhur. Po pret kërkesën për QR Code...`);
-                    try { sock.end(undefined); } catch (_) {}
-                    sessions.delete(fullKey);
-                }
+                console.log(`🔄 [SESSION ${fullKey}] Shkëputje e përkohshme rrjeti (Code: ${statusCode ?? 'Unknown'}). Po ri-lidhet automatikisht...`);
+                try { sock.end(undefined); } catch (_) {}
+                sessions.delete(fullKey);
+                setTimeout(() => getOrStartSession(fullKey), 5000);
             }
         } else if (connection === 'open') {
             const userPhone = sock.user?.id ? sock.user.id.split(':')[0] : null;
@@ -560,6 +558,9 @@ app.post('/api/whatsapp/send', async (req, res) => {
             console.warn('⚠️ Verification check warning:', e.message);
         }
 
+        // Auto-heal Signal session keys if stale session files detected for this contact
+        purgeContactSignalKeys(currentActiveKey, cleanPhone);
+
         // Instant Pre-Key Session Handshake: Assert sessions and send composing presence to force Meta pre-key exchange before text!
         try {
             if (typeof sock.assertSessions === 'function') {
@@ -567,7 +568,7 @@ app.post('/api/whatsapp/send', async (req, res) => {
             }
             await sock.presenceSubscribe(targetJid);
             await sock.sendPresenceUpdate('composing', targetJid);
-            await new Promise(r => setTimeout(r, 200));
+            await new Promise(r => setTimeout(r, 250));
             await sock.sendPresenceUpdate('paused', targetJid);
         } catch (_) {}
 
