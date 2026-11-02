@@ -25,9 +25,19 @@ class BarberShopController extends Controller
         $sortField = in_array($sortField, $allowedSorts, true) ? $sortField : 'id';
         $direction = in_array($direction, ['asc', 'desc'], true) ? $direction : 'desc';
 
-        $query = BarberShop::query()->with(array (
-  0 => 'owner',
-));
+        $user = auth()->user();
+        $query = BarberShop::query()->with(['owner']);
+
+        // Multi-Tenant Security Scope: Non-global admins see strictly only their authorized shops
+        if ($user && !$user->is_global_admin) {
+            $query->where(function($q) use ($user) {
+                $q->where('owner_id', $user->id)
+                  ->orWhere('id', $user->barber_shop_id)
+                  ->orWhereHas('users', function($qu) use ($user) {
+                      $qu->where('users.id', $user->id);
+                  });
+            });
+        }
 
         $search = trim((string) $request->input('search', ''));
         if ($search !== '') {
@@ -66,17 +76,28 @@ class BarberShopController extends Controller
     public function show($id)
     {
         abort_if_cannot('view_barber_shops');
-        $item = BarberShop::with(array (
-  0 => 'owner',
-))->findOrFail($id);
+        $user = auth()->user();
+
+        $query = BarberShop::with(['owner']);
+        if ($user && !$user->is_global_admin) {
+            $query->where(function($q) use ($user) {
+                $q->where('owner_id', $user->id)
+                  ->orWhere('id', $user->barber_shop_id)
+                  ->orWhereHas('users', function($qu) use ($user) {
+                      $qu->where('users.id', $user->id);
+                  });
+            });
+        }
+
+        $item = $query->findOrFail($id);
         return new BarberShopResource($item);
     }
 
     public function store(Request $request)
     {
         abort_if_cannot('add_barber_shops');
-                $data = $this->prepareData($request);
-        
+        $data = $this->prepareData($request);
+
         $validated = validator($data, BarberShop::rules())->validate();
         $item = app(\App\Domain\BarberShop\Actions\CreateBarberShopAction::class)->execute(\App\Domain\BarberShop\DTOs\BarberShopDTO::fromArray($validated));
         return (new BarberShopResource($item->loadMissing(array (
@@ -87,8 +108,30 @@ class BarberShopController extends Controller
     public function update(Request $request, $id)
     {
         abort_if_cannot('edit_barber_shops');
-                $item = BarberShop::findOrFail($id);
+        $user = auth()->user();
+
+        $query = BarberShop::query();
+        if ($user && !$user->is_global_admin) {
+            $query->where(function($q) use ($user) {
+                $q->where('owner_id', $user->id)
+                  ->orWhere('id', $user->barber_shop_id)
+                  ->orWhereHas('users', function($qu) use ($user) {
+                      $qu->where('users.id', $user->id);
+                  });
+            });
+        }
+
+        $item = $query->findOrFail($id);
         $data = $this->prepareData($request);
+
+        // Security Lock: Only Global Admin can modify owner_id, dates, and active status
+        if ($user && !$user->is_global_admin) {
+            $data['owner_id'] = $item->owner_id;
+            $data['trial_ends_at'] = $item->trial_ends_at?->format('Y-m-d H:i:s');
+            $data['expires_at'] = $item->expires_at?->format('Y-m-d H:i:s');
+            $data['active'] = $item->active;
+        }
+
         $validated = validator($data, BarberShop::rules($id))->validate();
         $item = app(\App\Domain\BarberShop\Actions\UpdateBarberShopAction::class)->execute($item, \App\Domain\BarberShop\DTOs\BarberShopDTO::fromArray($validated));
         return new BarberShopResource($item->loadMissing(array (
@@ -99,9 +142,21 @@ class BarberShopController extends Controller
     public function destroy($id): JsonResponse
     {
         abort_if_cannot('delete_barber_shops');
+        $user = auth()->user();
 
         try {
-            $item = BarberShop::findOrFail($id);
+            $query = BarberShop::query();
+            if ($user && !$user->is_global_admin) {
+                $query->where(function($q) use ($user) {
+                    $q->where('owner_id', $user->id)
+                      ->orWhere('id', $user->barber_shop_id)
+                      ->orWhereHas('users', function($qu) use ($user) {
+                          $qu->where('users.id', $user->id);
+                      });
+                });
+            }
+
+            $item = $query->findOrFail($id);
             $item->delete();
             return response()->json(['success' => true, 'message' => 'BarberShop deleted.']);
         } catch (\Throwable $e) {
