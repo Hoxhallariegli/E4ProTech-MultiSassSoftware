@@ -4,7 +4,6 @@ namespace App\Http\Resources\Mobile;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Schema;
 
 class BookingResource extends JsonResource
 {
@@ -29,15 +28,8 @@ class BookingResource extends JsonResource
                 ? $this->total_price
                 : ($this->service?->price ?? 0));
 
-        // 1. Fetch Sent / Delivered Logs from MessageLog (safely checking booking_id column or customer_id)
-        $messageLogs = \App\Models\MessageLog::where(function($q) {
-                if (Schema::hasColumn('message_logs', 'booking_id')) {
-                    $q->where('booking_id', $this->id);
-                }
-                if ($this->customer_id) {
-                    $q->orWhere('customer_id', $this->customer_id);
-                }
-            })
+        // 1. Fetch Sent / Delivered Logs from MessageLog (STRICTLY by booking_id)
+        $messageLogs = \App\Models\MessageLog::where('booking_id', $this->id)
             ->latest()
             ->get()
             ->map(function ($log) {

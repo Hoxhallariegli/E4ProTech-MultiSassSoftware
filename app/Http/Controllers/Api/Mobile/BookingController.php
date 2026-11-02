@@ -541,14 +541,7 @@ class BookingController extends Controller
                                     ];
                                 })->values()->toArray() : [];
 
-                            $messageLogs = (!$isBreak && ($booking->id || $booking->customer_id)) ? \App\Models\MessageLog::where(function($q) use ($booking) {
-                                    if (\Illuminate\Support\Facades\Schema::hasColumn('message_logs', 'booking_id')) {
-                                        $q->where('booking_id', $booking->id);
-                                    }
-                                    if ($booking->customer_id) {
-                                        $q->orWhere('customer_id', $booking->customer_id);
-                                    }
-                                })
+                            $messageLogs = (!$isBreak && $booking->id) ? \App\Models\MessageLog::where('booking_id', $booking->id)
                                 ->latest()
                                 ->get()
                                 ->map(function ($log) {
