@@ -972,12 +972,13 @@ class _BookingFormPageState extends State<BookingFormPage> {
               ),
             ),
 
-            // 🌟 DETAILED SMS MESSAGES STATUS SECTION FOR THIS BOOKING
-            if (widget.item?['sms_messages'] != null && (widget.item!['sms_messages'] as List).isNotEmpty) ...[
+            // 🌟 DETAILED SMS / WHATSAPP MESSAGES STATUS SECTION FOR THIS BOOKING
+            final statusMessages = (widget.item?['sms_messages'] as List? ?? widget.item?['notification_messages'] as List? ?? []);
+            if (statusMessages.isNotEmpty) ...[
               _FieldShell(
-                label: '📱 STATUSI I MESAZHEVE SMS',
+                label: '📱 STATUSI I MESAZHEVE (WHATSAPP & SMS)',
                 child: Column(
-                  children: (widget.item!['sms_messages'] as List).map((msg) {
+                  children: statusMessages.map((msg) {
                     final typeLabel = (msg['type_label'] ?? 'SMS').toString();
                     final status = (msg['status'] ?? 'pending').toString().toLowerCase();
                     final content = (msg['message_content'] ?? '').toString();

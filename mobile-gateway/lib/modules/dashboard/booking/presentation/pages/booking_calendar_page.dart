@@ -1155,13 +1155,16 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
                 ),
               ],
             ),
-            if ((booking['sms_messages'] as List? ?? []).isNotEmpty) ...[
+            final smsList = (booking['sms_messages'] as List? ?? booking['notification_messages'] as List? ?? []);
+            if (smsList.isNotEmpty) ...[
               Builder(builder: (context) {
-                final rawSmsList = (booking['sms_messages'] as List? ?? []);
                 final Map<String, Map<String, dynamic>> uniqueSmsMap = {};
-                for (final msg in rawSmsList) {
+                for (final msg in smsList) {
+                  final id = (msg['id'] ?? '').toString();
                   final type = (msg['type'] ?? 'confirmation').toString();
-                  uniqueSmsMap[type] = Map<String, dynamic>.from(msg);
+                  final channel = (msg['channel'] ?? 'whatsapp').toString();
+                  final keyStr = '${type}_${channel}_${id}';
+                  uniqueSmsMap[keyStr] = Map<String, dynamic>.from(msg);
                 }
                 final displaySms = uniqueSmsMap.values.toList();
 
