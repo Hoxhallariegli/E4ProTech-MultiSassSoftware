@@ -9,7 +9,7 @@ class MessageLog extends Model
 {
     use HasFactory, \App\Models\Traits\BelongsToBarberShop;
 
-    protected $fillable = ['barber_shop_id', 'customer_id', 'channel', 'template_type', 'message', 'status', 'sent_at'];
+    protected $fillable = ['barber_shop_id', 'customer_id', 'booking_id', 'channel', 'template_type', 'message', 'status', 'sent_at'];
 
     protected function casts(): array {
         return [
@@ -21,6 +21,7 @@ class MessageLog extends Model
         return [
             'barber_shop_id' => ['required', 'integer'],
             'customer_id' => ['required', 'integer'],
+            'booking_id' => ['nullable', 'integer'],
             'channel' => ['required', \Illuminate\Validation\Rule::in(['sms', 'whatsapp'])],
             'template_type' => ['nullable', 'string'],
             'message' => ['required', 'string'],
@@ -30,7 +31,7 @@ class MessageLog extends Model
     }
 
     public static function sortable(): array {
-        return ['id', 'customer_id', 'channel', 'template_type', 'message', 'status', 'sent_at'];
+        return ['id', 'customer_id', 'booking_id', 'channel', 'template_type', 'message', 'status', 'sent_at'];
     }
 
     public function getResolvedTemplateTypeAttribute(): string
@@ -67,5 +68,9 @@ class MessageLog extends Model
 
     public function customer(): \Illuminate\Database\Eloquent\Relations\BelongsTo {
         return $this->belongsTo(\App\Models\Customer::class, 'customer_id');
+    }
+
+    public function booking(): \Illuminate\Database\Eloquent\Relations\BelongsTo {
+        return $this->belongsTo(\App\Models\Booking::class, 'booking_id');
     }
 }
