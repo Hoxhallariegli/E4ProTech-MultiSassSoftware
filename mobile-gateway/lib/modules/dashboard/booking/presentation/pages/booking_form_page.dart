@@ -973,9 +973,11 @@ class _BookingFormPageState extends State<BookingFormPage> {
             ),
 
             // 🌟 DETAILED SMS / WHATSAPP MESSAGES STATUS SECTION FOR THIS BOOKING
-            final statusMessages = (widget.item?['sms_messages'] as List? ?? widget.item?['notification_messages'] as List? ?? []);
-            if (statusMessages.isNotEmpty) ...[
-              _FieldShell(
+            Builder(builder: (context) {
+              final statusMessages = (widget.item?['sms_messages'] as List? ?? widget.item?['notification_messages'] as List? ?? []);
+              if (statusMessages.isEmpty) return const SizedBox.shrink();
+
+              return _FieldShell(
                 label: '📱 STATUSI I MESAZHEVE (WHATSAPP & SMS)',
                 child: Column(
                   children: statusMessages.map((msg) {
@@ -1028,8 +1030,8 @@ class _BookingFormPageState extends State<BookingFormPage> {
                     );
                   }).toList(),
                 ),
-              ),
-            ],
+              );
+            }),
 
             const SizedBox(height: 14),
             BlocBuilder<BookingCubit, BookingState>(

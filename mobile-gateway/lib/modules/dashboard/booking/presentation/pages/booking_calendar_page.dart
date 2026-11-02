@@ -1155,52 +1155,62 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
                 ),
               ],
             ),
+          Builder(builder: (context) {
             final smsList = (booking['sms_messages'] as List? ?? booking['notification_messages'] as List? ?? []);
-            if (smsList.isNotEmpty) ...[
-              Builder(builder: (context) {
-                final Map<String, Map<String, dynamic>> uniqueSmsMap = {};
-                for (final msg in smsList) {
-                  final id = (msg['id'] ?? '').toString();
-                  final type = (msg['type'] ?? 'confirmation').toString();
-                  final channel = (msg['channel'] ?? 'whatsapp').toString();
-                  final keyStr = '${type}_${channel}_${id}';
-                  uniqueSmsMap[keyStr] = Map<String, dynamic>.from(msg);
-                }
-                final displaySms = uniqueSmsMap.values.toList();
+            if (smsList.isEmpty) return const SizedBox.shrink();
 
-                return Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: displaySms.map((msg) {
-                      final typeLabel = (msg['type_label'] ?? 'SMS').toString();
-                      final status = (msg['status'] ?? 'pending').toString().toLowerCase();
+            final Map<String, Map<String, dynamic>> uniqueSmsMap = {};
+            for (final msg in smsList) {
+              final id = (msg['id'] ?? '').toString();
+              final type = (msg['type'] ?? 'confirmation').toString();
+              final channel = (msg['channel'] ?? 'whatsapp').toString();
+              final keyStr = '${type}_${channel}_${id}';
+              uniqueSmsMap[keyStr] = Map<String, dynamic>.from(msg);
+            }
+            final displaySms = uniqueSmsMap.values.toList();
 
-                      Color color = Colors.amber.shade700;
-                      IconData icon = Icons.access_time_rounded;
-                      if (status == 'sent') {
-                        color = Colors.green.shade600;
-                        icon = Icons.check_circle_rounded;
-                      } else if (status == 'failed') {
-                        color = Colors.red.shade600;
-                        icon = Icons.cancel_rounded;
-                      }
+            return Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: displaySms.map((msg) {
+                  final typeLabel = (msg['type_label'] ?? 'SMS').toString();
+                  final status = (msg['status'] ?? 'pending').toString().toLowerCase();
 
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: color.withOpacity(0.3), width: 1),
+                  Color color = Colors.amber.shade700;
+                  IconData icon = Icons.access_time_rounded;
+                  if (status == 'sent') {
+                    color = Colors.green.shade600;
+                    icon = Icons.check_circle_rounded;
+                  } else if (status == 'failed') {
+                    color = Colors.red.shade600;
+                    icon = Icons.cancel_rounded;
+                  }
+
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: color.withOpacity(0.3), width: 1),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(icon, size: 10, color: color),
+                        const SizedBox(width: 3),
+                        Text(
+                          '$typeLabel: ${status.toUpperCase()}',
+                          style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: color),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(icon, size: 10, color: color),
-                            const SizedBox(width: 3),
-                            Text(
-                              '$typeLabel: ${status.toUpperCase()}',
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            );
+          }),
                               style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: color),
                             ),
                           ],
