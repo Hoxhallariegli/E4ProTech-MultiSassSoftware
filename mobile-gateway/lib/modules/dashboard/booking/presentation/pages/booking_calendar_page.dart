@@ -1211,16 +1211,6 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
               ),
             );
           }),
-                              style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: color),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                );
-              }),
-            ],
             if (paymentStatus != 'paid' && status != 'cancelled') ...[
               const SizedBox(height: 8),
               SizedBox(
