@@ -37,8 +37,8 @@ class SalonRegisteredNotification extends Notification
         );
 
         $shopLandingUrl = url("s/{$this->shop->slug}");
-        $fromAddress = config('mail.from.address') ?: env('MAIL_USERNAME', env('MAIL_FROM_ADDRESS', 'evtech@e4protech.com'));
-        $fromName = config('mail.from.name') ?: env('APP_NAME', 'E4ProTech Engine');
+        $fromAddress = config('mail.from.address', 'evtech@e4protech.com');
+        $fromName = config('mail.from.name', 'E4ProTech Engine');
 
         return (new MailMessage)
             ->from($fromAddress, $fromName)
