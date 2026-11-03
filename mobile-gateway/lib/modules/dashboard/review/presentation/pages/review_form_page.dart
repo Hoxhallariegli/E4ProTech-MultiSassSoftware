@@ -37,10 +37,14 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
   int? _bookingId;
 
 
-  @override void initState() { super.initState(); _init(); }
+  @override void initState() {
+    super.initState();
+    _ratingController.text = widget.item?['rating']?.toString() ?? '5'; // Default 5 stars
+    _init();
+  }
 
   Future<void> _init() async {
-    _ratingController.text = widget.item?['rating']?.toString() ?? '';
+    _ratingController.text = widget.item?['rating']?.toString() ?? '5';
     _commentController.text = widget.item?['comment']?.toString() ?? '';
 
     try {
@@ -97,12 +101,39 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
         if (selected['barber_shop_id'] != null) {
           _barberShopId = int.tryParse(selected['barber_shop_id'].toString());
         }
+
+        // Reset Customer & Booking if they don't belong to selected barber
+        if (_customerId != null) {
+          final validCustomerIds = _bookingOptions
+              .where((b) => b['barber_id']?.toString() == _barberId.toString())
+              .map((b) => b['customer_id']?.toString())
+              .whereType<String>()
+              .toSet();
+          if (!validCustomerIds.contains(_customerId.toString())) {
+            _customerId = null;
+            _bookingId = null;
+          }
+        }
       });
     }
   }
 
   Future<void> _pickcustomerId() async {
     var filtered = List<Map<String, dynamic>>.from(_customerOptions);
+
+    // Smart Cascade Filter: If a Barber is selected, show only customers with bookings for that barber
+    if (_barberId != null) {
+      final barberBookingCustomerIds = _bookingOptions
+          .where((b) => b['barber_id']?.toString() == _barberId.toString())
+          .map((b) => b['customer_id']?.toString())
+          .whereType<String>()
+          .toSet();
+
+      if (barberBookingCustomerIds.isNotEmpty) {
+        filtered = filtered.where((c) => barberBookingCustomerIds.contains(c['id']?.toString())).toList();
+      }
+    }
+
     final selected = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
@@ -121,6 +152,17 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
         _customerId = int.tryParse(selected['id'].toString());
         if (selected['barber_shop_id'] != null) {
           _barberShopId = int.tryParse(selected['barber_shop_id'].toString());
+        }
+
+        // Reset Booking if it doesn't match selected customer
+        if (_bookingId != null) {
+          final currentBooking = _bookingOptions.firstWhere(
+            (b) => b['id']?.toString() == _bookingId.toString(),
+            orElse: () => {},
+          );
+          if (currentBooking['customer_id']?.toString() != _customerId.toString()) {
+            _bookingId = null;
+          }
         }
       });
     }
@@ -167,59 +209,55 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
     }
   }
 
-  Future<void> _pickDate(TextEditingController controller) async {
-    final initial = _parseDisplayDate(controller.text) ?? DateTime.now();
-    final picked = await showDatePicker(context: context, initialDate: initial, firstDate: DateTime(1900), lastDate: DateTime(2200));
-    if (picked != null && mounted) setState(() => controller.text = _formatDisplayDate(picked, includeTime: false));
-  }
+  Widget _buildStarRatingPicker() {
+    int currentRating = int.tryParse(_ratingController.text) ?? 5;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-  Future<void> _pickDateTime(TextEditingController controller) async {
-    final initial = _parseDisplayDate(controller.text) ?? DateTime.now();
-    final date = await showDatePicker(context: context, initialDate: initial, firstDate: DateTime(1900), lastDate: DateTime(2200));
-    if (date == null || !mounted) return;
-    final time = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(initial));
-    if (time == null || !mounted) return;
-    final value = DateTime(date.year, date.month, date.day, time.hour, time.minute);
-    setState(() => controller.text = _formatDisplayDate(value, includeTime: true));
-  }
+    return _FieldShell(
+      label: 'VLERËSIMI ME YJE (RATING)',
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(5, (index) {
+                final starNumber = index + 1;
+                final isFilled = starNumber <= currentRating;
 
-  DateTime? _parseDisplayDate(String value) {
-    final text = value.trim();
-    if (text.isEmpty) return null;
-    final display = RegExp(r'^(\d{2})/(\d{2})/(\d{4})(?: (\d{2}):(\d{2}))?$').firstMatch(text);
-    if (display != null) {
-      return DateTime(
-        int.parse(display.group(3)!),
-        int.parse(display.group(2)!),
-        int.parse(display.group(1)!),
-        int.tryParse(display.group(4) ?? '0') ?? 0,
-        int.tryParse(display.group(5) ?? '0') ?? 0,
-      );
-    }
-    return DateTime.tryParse(text)?.toLocal();
-  }
-
-  String _formatDisplayDate(DateTime value, {required bool includeTime}) {
-    final date = '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
-    if (!includeTime) return date;
-    return '$date ${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
-  }
-
-  String _displayDateTime(dynamic value, {required bool includeTime}) {
-    if (value == null || value.toString().trim().isEmpty) return '';
-    final parsed = DateTime.tryParse(value.toString())?.toLocal();
-    return parsed == null ? value.toString() : _formatDisplayDate(parsed, includeTime: includeTime);
-  }
-
-  String? _apiDateValue(String value) {
-    final parsed = _parseDisplayDate(value);
-    if (parsed == null) return null;
-    return '${parsed.year.toString().padLeft(4, '0')}-${parsed.month.toString().padLeft(2, '0')}-${parsed.day.toString().padLeft(2, '0')}';
-  }
-
-  String? _apiDateTimeValue(String value) {
-    final parsed = _parseDisplayDate(value);
-    return parsed?.toIso8601String();
+                return InkWell(
+                  onTap: () {
+                    setState(() {
+                      _ratingController.text = starNumber.toString();
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.all(6),
+                    child: Icon(
+                      isFilled ? Icons.star_rounded : Icons.star_outline_rounded,
+                      size: 38,
+                      color: isFilled ? Colors.amber.shade600 : (isDark ? Colors.grey.shade600 : Colors.grey.shade400),
+                    ),
+                  ),
+                );
+              }),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '$currentRating / 5 Yje',
+              style: TextStyle(
+                fontWeight: FontWeight.extrabold,
+                fontSize: 13,
+                color: Colors.amber.shade700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   String _displayName(Map<String, dynamic> item) {
@@ -248,10 +286,8 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
     payload['barber_id'] = _barberId;
     payload['customer_id'] = _customerId;
     payload['booking_id'] = _bookingId;
-    payload['rating'] = int.tryParse(_ratingController.text);
+    payload['rating'] = int.tryParse(_ratingController.text) ?? 5;
     payload['comment'] = _commentController.text;
-
-    final files = <String, String>{};
 
     context.read<ReviewCubit>().save(payload, id: widget.item?['id']);
   }
@@ -286,8 +322,8 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
             _FieldShell(label: reviewTr(context, 'field.barber_id'), child: InkWell(onTap: _pickbarberId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_barberOptions.firstWhere((e) => e['id'].toString() == _barberId?.toString(), orElse: () => {'id': '', 'name': reviewTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)])))),
             _FieldShell(label: reviewTr(context, 'field.customer_id'), child: InkWell(onTap: _pickcustomerId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_customerOptions.firstWhere((e) => e['id'].toString() == _customerId?.toString(), orElse: () => {'id': '', 'name': reviewTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)])))),
             _FieldShell(label: reviewTr(context, 'field.booking_id'), child: InkWell(onTap: _pickbookingId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_bookingOptions.firstWhere((e) => e['id'].toString() == _bookingId?.toString(), orElse: () => {'id': '', 'name': reviewTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)])))),
-            _FieldShell(label: reviewTr(context, 'field.rating'), child: TextFormField(controller: _ratingController, keyboardType: const TextInputType.numberWithOptions(decimal: false), inputFormatters: [FilteringTextInputFormatter.digitsOnly],  decoration: InputDecoration(hintText: reviewTr(context, 'field.rating'), border: InputBorder.none, isDense: true), validator: (v) { if (v == null || v.trim().isEmpty) return reviewTr(context, 'form.required'); if (v != null && v.isNotEmpty && int.tryParse(v) == null) return reviewTr(context, 'form.invalid_integer');  return null; })),
-            _FieldShell(label: reviewTr(context, 'field.comment'), child: TextFormField(controller: _commentController,  decoration: InputDecoration(hintText: reviewTr(context, 'field.comment'), border: InputBorder.none, isDense: true), validator: (v) {  return null; })),
+            _buildStarRatingPicker(),
+            _FieldShell(label: reviewTr(context, 'field.comment'), child: TextFormField(controller: _commentController, decoration: InputDecoration(hintText: reviewTr(context, 'field.comment'), border: InputBorder.none, isDense: true), validator: (v) {  return null; })),
 
             const SizedBox(height: 14),
             BlocBuilder<ReviewCubit, ReviewState>(builder: (context, state) => PremiumButton(onPressed: () => _save(context), label: state is ReviewSaving ? reviewTr(context, 'form.saving') : reviewTr(context, 'form.save'), icon: Icons.check_rounded, loading: state is ReviewSaving, expand: true)),
