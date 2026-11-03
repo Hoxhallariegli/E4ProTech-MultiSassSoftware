@@ -16,7 +16,25 @@ const SESSIONS_ROOT = path.join(__dirname, 'whatsapp_sessions');
 const app = express();
 app.use(express.json({ limit: '10mb' }));
 
-const logger = pino({ level: 'warn' });
+const logger = pino({
+    level: 'warn',
+    hooks: {
+        logMethod(inputArgs, method) {
+            const msg = inputArgs.map((a) => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ');
+            if (
+                msg.includes('failed to decrypt') ||
+                msg.includes('Closing session') ||
+                msg.includes('Removing old closed session') ||
+                msg.includes('Session error') ||
+                msg.includes('Bad MAC')
+            ) {
+                return;
+            }
+            return method.apply(this, inputArgs);
+        }
+    }
+});
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ------------------------------------------------------------------ *
@@ -30,7 +48,10 @@ const NOISY_PREFIXES = [
     'Opening session',
     'Migrating session',
     'Session already closed',
-    'Session already open'
+    'Session already open',
+    'Closing open session',
+    'failed to decrypt message',
+    'Failed to decrypt message'
 ];
 for (const method of ['log', 'info', 'warn']) {
     const orig = console[method].bind(console);
@@ -95,10 +116,14 @@ app.use((req, res, next) => {
 /* ------------------------------------------------------------------ *
  *  LARAVEL CLOUD API
  * ------------------------------------------------------------------ */
-function fetchCloudApi(endpoint, method = 'GET', data = null) {
+function fetchCloudApi(endpoint, method = 'GET', data = null, isFallback = false) {
     return new Promise((resolve) => {
         try {
-            const urlObj = new URL(`${LARAVEL_API_HOST}/api/whatsapp-cloud-sessions/${endpoint}`);
+            const basePath = (isFallback && endpoint === 'webhook')
+                ? `${LARAVEL_API_HOST}/api/whatsapp/${endpoint}`
+                : `${LARAVEL_API_HOST}/api/whatsapp-cloud-sessions/${endpoint}`;
+
+            const urlObj = new URL(basePath);
             const client = urlObj.protocol === 'https:' ? https : http;
             const bodyStr = data ? JSON.stringify(data) : null;
 
@@ -126,9 +151,15 @@ function fetchCloudApi(endpoint, method = 'GET', data = null) {
                                 console.warn(`⚠️ [CLOUD API PARSE ERROR] ${method} ${endpoint}: Not valid JSON`);
                                 resolve(null);
                             }
+                        } else if (res.statusCode === 404 && !isFallback && endpoint === 'webhook') {
+                            console.warn(`⚠️ [CLOUD API RE-TRY] ${endpoint} returned 404. Trying fallback /api/whatsapp/webhook...`);
+                            resolve(fetchCloudApi(endpoint, method, data, true));
                         } else {
                             const shortBody = resData.substring(0, 150).replace(/\s+/g, ' ');
                             console.warn(`⚠️ [CLOUD API FAIL] ${method} ${endpoint} Status: ${res.statusCode} Body: ${shortBody}...`);
+                            if (res.statusCode === 404) {
+                                console.warn(`💡 [DEPLOYMENT TIP] Status 404 means Hostinger production server needs 'git pull' and 'php artisan route:clear'!`);
+                            }
                             resolve(null);
                         }
                     });
