@@ -19,7 +19,7 @@ class BookingResource extends JsonResource
             }
         }
 
-        $paymentRecord = \App\Models\Payment::where('booking_id', $this->id)->latest()->first();
+        $paymentRecord = $this->relationLoaded('payments') ? $this->payments->last() : \App\Models\Payment::where('booking_id', $this->id)->latest()->first();
         $paymentStatus = $paymentRecord?->status ?? $this->payment_status ?? 'unpaid';
 
         $displayPrice = ($paymentRecord && (float) $paymentRecord->amount > 0)
@@ -29,10 +29,11 @@ class BookingResource extends JsonResource
                 : ($this->service?->price ?? 0));
 
         // 1. Fetch Sent / Delivered Logs from MessageLog (STRICTLY by booking_id)
-        $messageLogs = \App\Models\MessageLog::where('booking_id', $this->id)
-            ->latest()
-            ->get()
-            ->map(function ($log) {
+        $messageLogsCollection = $this->relationLoaded('messageLogs')
+            ? $this->messageLogs
+            : \App\Models\MessageLog::where('booking_id', $this->id)->latest()->get();
+
+        $messageLogs = $messageLogsCollection->map(function ($log) {
                 $channel = strtolower($log->channel ?? 'whatsapp');
                 $channelLabel = $channel === 'whatsapp' ? 'WhatsApp' : 'SMS';
                 $type = $log->template_type ?? 'confirmation';
@@ -57,9 +58,11 @@ class BookingResource extends JsonResource
             });
 
         // 2. Fetch Pending Queue Items from MessageQueue (WhatsApp & SMS)
-        $messageQueues = \App\Models\MessageQueue::where('booking_id', $this->id)
-            ->get()
-            ->map(function ($queue) {
+        $messageQueuesCollection = $this->relationLoaded('messageQueues')
+            ? $this->messageQueues
+            : \App\Models\MessageQueue::where('booking_id', $this->id)->get();
+
+        $messageQueues = $messageQueuesCollection->map(function ($queue) {
                 $channel = strtolower($queue->channel ?? 'whatsapp');
                 $channelLabel = $channel === 'whatsapp' ? 'WhatsApp' : 'SMS';
                 $type = $queue->resolved_template_type ?? $queue->template_type ?? 'reminder';
