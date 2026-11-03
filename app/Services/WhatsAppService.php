@@ -19,7 +19,7 @@ class WhatsAppService
     /**
      * Send a WhatsApp message via the Baileys Gateway microservice (Multi-Shop & Multi-Barber Aware).
      */
-    public function send(string $phone, string $message, int|string|null $shopId = null, int|string|null $barberId = null, int|string|null $customerId = null, ?string $templateType = null, ?int $bookingId = null): bool
+    public function send(string $phone, string $message, int|string|null $shopId = null, int|string|null $barberId = null, int|string|null $customerId = null, ?string $templateType = null, ?int $bookingId = null, ?array $buttons = null): bool
     {
         if (empty($phone) || empty($message)) {
             return false;
@@ -34,6 +34,10 @@ class WhatsAppService
 
             if ($barberId) {
                 $payload['barber_id'] = (string) $barberId;
+            }
+
+            if (!empty($buttons)) {
+                $payload['buttons'] = $buttons;
             }
 
             // Retry up to 2 times with 25s timeout to handle Render Free Tier wake-up delay

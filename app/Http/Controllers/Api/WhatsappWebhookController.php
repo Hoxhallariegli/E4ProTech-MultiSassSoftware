@@ -1,0 +1,142 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\Booking;
+use App\Models\Customer;
+use App\Models\AuditTrail;
+use App\Services\WhatsAppService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+
+class WhatsappWebhookController extends Controller
+{
+    public function handle(Request $request): JsonResponse
+    {
+        // 1. Verify Secret X-API-KEY Header
+        $apiKey = $request->header('X-API-KEY') ?: $request->input('api_key');
+        $expectedKey = config('services.whatsapp.secret', 'E4ProTech_Secret_Key_2026_Secure');
+
+        if ($apiKey !== $expectedKey) {
+            return response()->json(['success' => false, 'error' => 'Unauthorized'], 401);
+        }
+
+        $shopId = (int) ($request->input('shop_id') ?: 1);
+        $phone = trim((string) $request->input('phone'));
+        $buttonId = (string) $request->input('button_id');
+        $text = strtolower(trim((string) $request->input('text')));
+
+        if (empty($phone)) {
+            return response()->json(['success' => false, 'message' => 'No phone provided'], 400);
+        }
+
+        Log::info("💬 [WhatsApp Webhook] Incoming message from {$phone} (Shop #{$shopId}): Button='{$buttonId}', Text='{$text}'");
+
+        // 2. Resolve Intent (Confirm vs Cancel)
+        $action = null;
+
+        if (str_contains($buttonId, 'confirm_') || in_array($text, ['po', 'konfirmo', 'konfirmoj', '1', 'yes', 'confirm', '✅ po, do të vij', 'po, do te vij'], true)) {
+            $action = 'confirm';
+        } elseif (str_contains($buttonId, 'cancel_') || in_array($text, ['anulo', 'anuloj', 'jo', '2', 'no', 'cancel', '❌ anulo takimin', 'anulo takimin'], true)) {
+            $action = 'cancel';
+        }
+
+        if (!$action) {
+            return response()->json(['success' => true, 'message' => 'Message received, no interactive action needed.']);
+        }
+
+        // 3. Resolve Target Booking ID
+        $bookingId = null;
+        if (preg_match('/(confirm|cancel)_(\d+)/', $buttonId, $matches)) {
+            $bookingId = (int) $matches[2];
+        }
+
+        $booking = null;
+        if ($bookingId) {
+            $booking = Booking::withoutGlobalScope('barber_shop_access')
+                ->where('id', $bookingId)
+                ->where('barber_shop_id', $shopId)
+                ->first();
+        }
+
+        // Fallback: If no booking_id in button, find latest active booking for this phone
+        if (!$booking) {
+            $lastDigits = strlen($phone) > 8 ? substr($phone, -8) : $phone;
+            $customerIds = Customer::withoutGlobalScope('barber_shop_access')
+                ->where('barber_shop_id', $shopId)
+                ->where(function ($q) use ($phone, $lastDigits) {
+                    $q->where('phone', 'like', "%{$phone}%")
+                      ->orWhere('phone', 'like', "%{$lastDigits}%");
+                })
+                ->pluck('id');
+
+            if ($customerIds->isNotEmpty()) {
+                $booking = Booking::withoutGlobalScope('barber_shop_access')
+                    ->where('barber_shop_id', $shopId)
+                    ->whereIn('customer_id', $customerIds)
+                    ->where('status', '!=', 'cancelled')
+                    ->where('appointment_at', '>=', now()->subHours(12))
+                    ->orderBy('appointment_at', 'asc')
+                    ->first();
+            }
+        }
+
+        if (!$booking) {
+            Log::warning("⚠️ [WhatsApp Webhook] No matching active booking found for phone {$phone} in Shop #{$shopId}");
+            return response()->json(['success' => true, 'message' => 'No active booking found for customer.']);
+        }
+
+        $shop = $booking->barberShop;
+        $shopName = $shop?->name ?? 'Salloni';
+
+        // 4. Process Action
+        if ($action === 'confirm') {
+            if ($booking->status !== 'confirmed' && $booking->status !== 'completed') {
+                $booking->update(['status' => 'confirmed']);
+                AuditTrail::logCustom($booking, 'update', 'Bookings', "Konfirmuar nga klienti në WhatsApp (#{$booking->id})");
+
+                Log::info("✅ [WhatsApp Webhook] Booking #{$booking->id} confirmed via WhatsApp reply!");
+
+                // Send Confirmation Ack Message to Customer
+                app(WhatsAppService::class)->send(
+                    $phone,
+                    "✅ Faleminderit! Takimi juaj #{$booking->id} u konfirmua me sukses. Ju mirëpresim te {$shopName}!",
+                    $shopId,
+                    $booking->barber_id,
+                    $booking->customer_id,
+                    'confirmation',
+                    $booking->id
+                );
+            }
+        } elseif ($action === 'cancel') {
+            if ($booking->status !== 'cancelled') {
+                $booking->update(['status' => 'cancelled']);
+                AuditTrail::logCustom($booking, 'update', 'Bookings', "Anuluar nga klienti në WhatsApp (#{$booking->id})");
+
+                Log::info("❌ [WhatsApp Webhook] Booking #{$booking->id} cancelled via WhatsApp reply!");
+
+                // Send Cancellation Ack Message to Customer
+                app(WhatsAppService::class)->send(
+                    $phone,
+                    "❌ Takimi juaj #{$booking->id} u anulua me sukses te {$shopName}. Faleminderit që na njoftuat!",
+                    $shopId,
+                    $booking->barber_id,
+                    $booking->customer_id,
+                    'cancellation',
+                    $booking->id
+                );
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'booking_id' => $booking->id,
+            'status' => $booking->status,
+            'action' => $action,
+        ]);
+    }
+}

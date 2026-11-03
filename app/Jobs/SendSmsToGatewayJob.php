@@ -68,6 +68,15 @@ class SendSmsToGatewayJob
 
         // 1. TIER 1 & TIER 2: Try sending via WhatsApp (Barber WhatsApp -> Shop WhatsApp -> Default WhatsApp)
         try {
+            // Auto-generate interactive buttons for reminders and confirmations
+            $buttons = null;
+            if ($bookingId && in_array($templateType, ['reminder', 'confirmation', 'reschedule', 'update'])) {
+                $buttons = [
+                    ['id' => "confirm_{$bookingId}", 'text' => "✅ Po, do të vij"],
+                    ['id' => "cancel_{$bookingId}", 'text' => "❌ Anulo takimin"],
+                ];
+            }
+
             $waSent = app(WhatsAppService::class)->send(
                 $queue->phone_number,
                 $queue->message_content,
@@ -75,7 +84,8 @@ class SendSmsToGatewayJob
                 $barberId,
                 $customerId,
                 $templateType,
-                $bookingId
+                $bookingId,
+                $buttons
             );
 
             if ($waSent) {

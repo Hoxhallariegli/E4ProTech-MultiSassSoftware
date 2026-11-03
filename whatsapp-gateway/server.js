@@ -173,7 +173,7 @@ const sentLoaded = new Set();        // fullKey whose disk cache was loaded
  * ------------------------------------------------------------------ */
 function isRegisteredFile(filePath) {
     try {
-        return JSON.parse(fs.readFileSync(filePath, 'utf-8'))?.registered === true;
+        return !!JSON.parse(fs.readFileSync(filePath, 'utf-8'))?.me; // 'me' vendoset pas çiftimit me QR
     } catch (_) {
         return false;
     }
@@ -182,7 +182,7 @@ function isRegisteredFile(filePath) {
 function isRegisteredBase64(b64) {
     try {
         if (!b64) return false;
-        return JSON.parse(Buffer.from(b64, 'base64').toString('utf-8'))?.registered === true;
+        return !!JSON.parse(Buffer.from(b64, 'base64').toString('utf-8'))?.me;
     } catch (_) {
         return false;
     }
@@ -502,7 +502,7 @@ async function startSession(fullKey) {
             }
 
             // Seancë e paçiftuar (QR i skaduar): mos u ri-lidh pafund. Rikrijohet kur kërkohet /qr.
-            if (!state.creds.registered && statusCode !== DisconnectReason.restartRequired) {
+            if (!state.creds.me && statusCode !== DisconnectReason.restartRequired) {
                 console.log(`🧹 [SESSION ${fullKey}] QR skadoi pa u çiftuar. Seanca u mbyll deri në kërkesën e radhës.`);
                 dropSock();
                 try { watchers.get(fullKey)?.close(); } catch (_) {}
@@ -525,6 +525,49 @@ async function startSession(fullKey) {
             sessionStatus.set(fullKey, { connected: true, qr: null, qrImage: null, phone: userPhone });
             console.log(`✅ [SESSION ${fullKey}] WhatsApp Gateway është 100% i Lidhur e Aktiv (${userPhone ?? 'Connected'})!`);
             scheduleSyncToCloud(fullKey);
+        }
+    });
+
+    // Handle Incoming Interactive Button Responses & Text Replies
+    sock.ev.on('messages.upsert', async (m) => {
+        try {
+            if (m.type !== 'notify') return;
+            for (const msg of m.messages) {
+                if (msg.key.fromMe) continue;
+
+                const senderJid = msg.key.remoteJid;
+                if (!senderJid || senderJid.endsWith('@g.us')) continue;
+
+                const cleanPhone = senderJid.split('@')[0].split(':')[0].replace(/[^\d]/g, '');
+
+                const buttonId = msg.message?.buttonsResponseMessage?.selectedButtonId
+                    || msg.message?.templateButtonReplyMessage?.selectedId
+                    || msg.message?.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson
+                    || null;
+
+                const textContent = msg.message?.conversation
+                    || msg.message?.extendedTextMessage?.text
+                    || msg.message?.buttonsResponseMessage?.selectedDisplayText
+                    || '';
+
+                if (!buttonId && !textContent) continue;
+
+                console.log(`📩 [INCOMING WA REPLY] Session: ${fullKey}, Phone: ${cleanPhone}, Button: ${buttonId}, Text: "${textContent}"`);
+
+                const shopIdMatch = fullKey.match(/\d+/);
+                const shopId = shopIdMatch ? shopIdMatch[0] : '1';
+
+                fetchCloudApi('webhook', 'POST', {
+                    shop_id: shopId,
+                    session_key: fullKey,
+                    phone: cleanPhone,
+                    button_id: buttonId,
+                    text: textContent,
+                    timestamp: msg.messageTimestamp
+                });
+            }
+        } catch (err) {
+            console.warn('Error handling incoming WhatsApp message:', err.message);
         }
     });
 
@@ -599,9 +642,9 @@ app.get('/api/whatsapp/qr', async (req, res) => {
     });
 });
 
-app.post('/api/whatsapp/send', async (req, res) => {
+        app.post('/api/whatsapp/send', async (req, res) => {
     try {
-        const { phone, message, shop_id, barber_id } = req.body;
+        const { phone, message, shop_id, barber_id, buttons } = req.body;
 
         if (!phone || !message) {
             return res.status(400).json({ success: false, error: 'Phone and message are required' });
@@ -664,7 +707,25 @@ app.post('/api/whatsapp/send', async (req, res) => {
             await sock.sendPresenceUpdate('paused', targetJid);
         } catch (_) {}
 
-        const sent = await sock.sendMessage(targetJid, { text: message });
+        // Prepare message content (Text or Interactive Buttons)
+        let messagePayload = { text: message };
+
+        if (Array.isArray(buttons) && buttons.length > 0) {
+            const formattedButtons = buttons.map((b, i) => ({
+                buttonId: b.id || `btn_${i}`,
+                buttonText: { displayText: b.text || b.label || 'Zgjidh' },
+                type: 1
+            }));
+
+            messagePayload = {
+                text: message,
+                footer: 'E4ProTech Sallon Management',
+                buttons: formattedButtons,
+                headerType: 1
+            };
+        }
+
+        const sent = await sock.sendMessage(targetJid, messagePayload);
 
         if (sent?.key?.id && sent?.message) {
             saveSentMessageToDisk(activeKey, sent.key.id, sent.message);

@@ -16,10 +16,12 @@ Route::get('/health', fn () => response()->json(['ok' => true]))->withoutMiddlew
 Route::get('app-version', [\App\Http\Controllers\Api\Mobile\AppVersionController::class, 'check']);
 
 // Render Cloud Gateway - Session Persistence Public APIs (Protected by X-API-KEY header & Strict Rate Limiting)
-Route::middleware(['throttle:10,1'])->group(function () {
+Route::middleware(['throttle:30,1'])->group(function () {
     Route::post('whatsapp-cloud-sessions/save', [\App\Http\Controllers\Api\WhatsappSessionCloudController::class, 'saveSession']);
     Route::get('whatsapp-cloud-sessions/load', [\App\Http\Controllers\Api\WhatsappSessionCloudController::class, 'loadSessions']);
     Route::post('whatsapp-cloud-sessions/delete', [\App\Http\Controllers\Api\WhatsappSessionCloudController::class, 'deleteSession']);
+    Route::post('whatsapp-cloud-sessions/webhook', [\App\Http\Controllers\Api\WhatsappWebhookController::class, 'handle']);
+    Route::post('whatsapp/webhook', [\App\Http\Controllers\Api\WhatsappWebhookController::class, 'handle']);
 });
 
 Route::post('mobile/forgot-password', [\App\Http\Controllers\Api\Mobile\AuthController::class, 'forgotPassword']);
