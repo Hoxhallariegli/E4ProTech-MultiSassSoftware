@@ -40,12 +40,11 @@ class UserController extends Controller
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%");
+                  ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
-        $users = $query->orderBy('name', 'asc')->get(['id', 'name', 'email', 'phone', 'barber_shop_id']);
+        $users = $query->orderBy('name', 'asc')->get(['id', 'name', 'email', 'barber_shop_id']);
 
         return response()->json([
             'data' => $users,
