@@ -1,4 +1,4 @@
-import makeWASocket, { useMultiFileAuthState, DisconnectReason, BufferJSON } from '@whiskeysockets/baileys';
+import makeWASocket, { useMultiFileAuthState, DisconnectReason, BufferJSON, generateWAMessageFromContent, proto } from '@whiskeysockets/baileys';
 import pino from 'pino';
 import express from 'express';
 import path from 'path';

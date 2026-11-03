@@ -95,7 +95,7 @@ class Edit extends Component
             for ($i = 0; $i < 3; $i++) {
                 $res = \Illuminate\Support\Facades\Http::withHeaders([
                     'X-API-KEY' => config('services.whatsapp.secret', 'E4ProTech_Secret_Key_2026_Secure')
-                ])->timeout(12)->get("{$baseUrl}/qr?session_key=shop_{$shopId}&fresh=1");
+                ])->timeout(10)->get("{$baseUrl}/qr?session_key=shop_{$shopId}");
 
                 if ($res->successful()) {
                     $this->wa_connected = (bool) $res->json('connected');
