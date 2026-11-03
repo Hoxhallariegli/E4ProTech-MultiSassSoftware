@@ -183,7 +183,7 @@ class _BarberShopFormPageState extends State<BarberShopFormPage> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(_trialEndsAtController.text.isEmpty ? 'Mungon' : _trialEndsAtController.text, style: const TextStyle(fontWeight: FontWeight.extrabold, fontSize: 13.5)),
+                        Text(_trialEndsAtController.text.isEmpty ? 'Mungon' : _trialEndsAtController.text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
                         const Icon(Icons.lock_outline_rounded, size: 16, color: Colors.grey),
                       ],
                     ),
@@ -206,7 +206,7 @@ class _BarberShopFormPageState extends State<BarberShopFormPage> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(_expiresAtController.text.isEmpty ? 'Mungon' : _expiresAtController.text, style: const TextStyle(fontWeight: FontWeight.extrabold, fontSize: 13.5)),
+                        Text(_expiresAtController.text.isEmpty ? 'Mungon' : _expiresAtController.text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
                         const Icon(Icons.lock_outline_rounded, size: 16, color: Colors.grey),
                       ],
                     ),
