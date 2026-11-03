@@ -114,7 +114,7 @@ class SubscriptionRenewalController extends Controller
 
         try {
             $item = $query->findOrFail($id);
-            $item->delete();
+            app(\App\Domain\SubscriptionRenewal\Actions\DeleteSubscriptionRenewalAction::class)->execute($item);
             return response()->json(['success' => true, 'message' => 'Subscription Renewal request deleted.']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Delete Error: " . $e->getMessage());

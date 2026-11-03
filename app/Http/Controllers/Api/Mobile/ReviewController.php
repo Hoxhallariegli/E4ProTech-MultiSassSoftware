@@ -77,7 +77,7 @@ class ReviewController extends Controller
     {
         abort_if_cannot('add_reviews');
                 $data = $this->prepareData($request);
-        
+
         $validated = validator($data, Review::rules())->validate();
         $item = app(\App\Domain\Review\Actions\CreateReviewAction::class)->execute(\App\Domain\Review\DTOs\ReviewDTO::fromArray($validated));
         return (new ReviewResource($item->loadMissing(array (
@@ -109,7 +109,7 @@ class ReviewController extends Controller
 
         try {
             $item = Review::findOrFail($id);
-            $item->delete();
+            app(\App\Domain\Review\Actions\DeleteReviewAction::class)->execute($item);
             return response()->json(['success' => true, 'message' => 'Review deleted.']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Delete Error: " . $e->getMessage());

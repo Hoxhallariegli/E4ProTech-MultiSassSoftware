@@ -139,7 +139,7 @@ class BookingController extends Controller
 
         try {
             $item = Booking::findOrFail($id);
-            $item->delete();
+            app(\App\Domain\Booking\Actions\DeleteBookingAction::class)->execute($item);
             return response()->json(['success' => true, 'message' => 'Booking deleted.']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Delete Error: " . $e->getMessage());

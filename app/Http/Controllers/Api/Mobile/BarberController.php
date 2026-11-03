@@ -75,7 +75,7 @@ class BarberController extends Controller
     {
         abort_if_cannot('add_barbers');
                 $data = $this->prepareData($request);
-        
+
         $shopId = $request->input('barber_shop_id', $request->user()->barber_shop_id);
         $shop = \App\Models\BarberShop::find($shopId);
         if ($shop && !$request->user()->is_global_admin) {
@@ -111,7 +111,7 @@ class BarberController extends Controller
 
         try {
             $item = Barber::findOrFail($id);
-            $item->delete();
+            app(\App\Domain\Barber\Actions\DeleteBarberAction::class)->execute($item);
             return response()->json(['success' => true, 'message' => 'Barber deleted.']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Delete Error: " . $e->getMessage());

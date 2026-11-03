@@ -70,7 +70,7 @@ class NotificationChannelController extends Controller
     {
         abort_if_cannot('add_notification_channels');
                 $data = $this->prepareData($request);
-        
+
         $validated = validator($data, NotificationChannel::rules())->validate();
         $item = app(\App\Domain\NotificationChannel\Actions\CreateNotificationChannelAction::class)->execute(\App\Domain\NotificationChannel\DTOs\NotificationChannelDTO::fromArray($validated));
         return (new NotificationChannelResource($item->loadMissing(array (
@@ -96,7 +96,7 @@ class NotificationChannelController extends Controller
 
         try {
             $item = NotificationChannel::findOrFail($id);
-            $item->delete();
+            app(\App\Domain\NotificationChannel\Actions\DeleteNotificationChannelAction::class)->execute($item);
             return response()->json(['success' => true, 'message' => 'NotificationChannel deleted.']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Delete Error: " . $e->getMessage());

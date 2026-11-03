@@ -116,7 +116,7 @@ class ServiceController extends Controller
 
         try {
             $item = Service::findOrFail($id);
-            $item->delete();
+            app(\App\Domain\Service\Actions\DeleteServiceAction::class)->execute($item);
             return response()->json(['success' => true, 'message' => 'Service deleted.']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Delete Error: " . $e->getMessage());

@@ -73,7 +73,7 @@ class MessageLogController extends Controller
     {
         abort_if_cannot('add_message_logs');
                 $data = $this->prepareData($request);
-        
+
         $validated = validator($data, MessageLog::rules())->validate();
         $item = app(\App\Domain\MessageLog\Actions\CreateMessageLogAction::class)->execute(\App\Domain\MessageLog\DTOs\MessageLogDTO::fromArray($validated));
         return (new MessageLogResource($item->loadMissing(array (
@@ -101,7 +101,7 @@ class MessageLogController extends Controller
 
         try {
             $item = MessageLog::findOrFail($id);
-            $item->delete();
+            app(\App\Domain\MessageLog\Actions\DeleteMessageLogAction::class)->execute($item);
             return response()->json(['success' => true, 'message' => 'MessageLog deleted.']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Delete Error: " . $e->getMessage());

@@ -73,7 +73,7 @@ class BulkCancellationController extends Controller
     {
         abort_if_cannot('add_bulk_cancellations');
                 $data = $this->prepareData($request);
-        
+
         $validated = validator($data, BulkCancellation::rules())->validate();
         $item = app(\App\Domain\BulkCancellation\Actions\CreateBulkCancellationAction::class)->execute(\App\Domain\BulkCancellation\DTOs\BulkCancellationDTO::fromArray($validated));
         return (new BulkCancellationResource($item->loadMissing(array (
@@ -101,7 +101,7 @@ class BulkCancellationController extends Controller
 
         try {
             $item = BulkCancellation::findOrFail($id);
-            $item->delete();
+            app(\App\Domain\BulkCancellation\Actions\DeleteBulkCancellationAction::class)->execute($item);
             return response()->json(['success' => true, 'message' => 'BulkCancellation deleted.']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Delete Error: " . $e->getMessage());

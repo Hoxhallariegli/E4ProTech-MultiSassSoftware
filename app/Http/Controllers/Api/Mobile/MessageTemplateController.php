@@ -124,7 +124,7 @@ class MessageTemplateController extends Controller
 
         try {
             $item = MessageTemplate::findOrFail($id);
-            $item->delete();
+            app(\App\Domain\MessageTemplate\Actions\DeleteMessageTemplateAction::class)->execute($item);
             return response()->json(['success' => true, 'message' => 'Template deleted.']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Delete Error: " . $e->getMessage());

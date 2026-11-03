@@ -81,7 +81,7 @@ class PlanController extends Controller
 
         try {
             $item = Plan::findOrFail($id);
-            $item->delete();
+            app(\App\Domain\Plan\Actions\DeletePlanAction::class)->execute($item);
             return response()->json(['success' => true, 'message' => 'Plan deleted.']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Delete Error: " . $e->getMessage());

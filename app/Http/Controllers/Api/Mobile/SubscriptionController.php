@@ -72,7 +72,7 @@ class SubscriptionController extends Controller
     {
         abort_if_cannot('add_subscriptions');
                 $data = $this->prepareData($request);
-        
+
         $validated = validator($data, Subscription::rules())->validate();
         $item = app(\App\Domain\Subscription\Actions\CreateSubscriptionAction::class)->execute(\App\Domain\Subscription\DTOs\SubscriptionDTO::fromArray($validated));
         return (new SubscriptionResource($item->loadMissing(array (
@@ -100,7 +100,7 @@ class SubscriptionController extends Controller
 
         try {
             $item = Subscription::findOrFail($id);
-            $item->delete();
+            app(\App\Domain\Subscription\Actions\DeleteSubscriptionAction::class)->execute($item);
             return response()->json(['success' => true, 'message' => 'Subscription deleted.']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Delete Error: " . $e->getMessage());

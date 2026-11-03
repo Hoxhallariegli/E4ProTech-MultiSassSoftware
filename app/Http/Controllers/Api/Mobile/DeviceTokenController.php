@@ -278,7 +278,7 @@ class DeviceTokenController extends Controller
 
         try {
             $item = DeviceToken::findOrFail($id);
-            $item->delete();
+            app(\App\Domain\DeviceToken\Actions\DeleteDeviceTokenAction::class)->execute($item);
             return response()->json(['success' => true, 'message' => 'DeviceToken deleted.']);
         } catch (\Throwable $e) {
             Log::error("Delete Error: " . $e->getMessage());

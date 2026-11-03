@@ -157,7 +157,7 @@ class BarberShopController extends Controller
             }
 
             $item = $query->findOrFail($id);
-            $item->delete();
+            app(\App\Domain\BarberShop\Actions\DeleteBarberShopAction::class)->execute($item);
             return response()->json(['success' => true, 'message' => 'BarberShop deleted.']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Delete Error: " . $e->getMessage());

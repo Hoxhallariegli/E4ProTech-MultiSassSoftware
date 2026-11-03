@@ -82,7 +82,7 @@ class ShopFrontPageSettingController extends Controller
     {
         abort_if_cannot('add_shop_front_page_settings');
                 $data = $this->prepareData($request);
-        
+
         $validated = validator($data, ShopFrontPageSetting::rules())->validate();
         $item = app(\App\Domain\ShopFrontPageSetting\Actions\CreateShopFrontPageSettingAction::class)->execute(\App\Domain\ShopFrontPageSetting\DTOs\ShopFrontPageSettingDTO::fromArray($validated));
         return (new ShopFrontPageSettingResource($item->loadMissing(array (
@@ -108,7 +108,7 @@ class ShopFrontPageSettingController extends Controller
 
         try {
             $item = ShopFrontPageSetting::findOrFail($id);
-            $item->delete();
+            app(\App\Domain\ShopFrontPageSetting\Actions\DeleteShopFrontPageSettingAction::class)->execute($item);
             return response()->json(['success' => true, 'message' => 'ShopFrontPageSetting deleted.']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Delete Error: " . $e->getMessage());

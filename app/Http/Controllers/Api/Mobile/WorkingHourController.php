@@ -128,7 +128,7 @@ class WorkingHourController extends Controller
     {
         abort_if_cannot('delete_working_hours');
         $item = WorkingHour::findOrFail($id);
-        $item->delete();
+        app(\App\Domain\WorkingHour\Actions\DeleteWorkingHourAction::class)->execute($item);
         return response()->json(['success' => true, 'message' => 'WorkingHour deleted.']);
     }
 }

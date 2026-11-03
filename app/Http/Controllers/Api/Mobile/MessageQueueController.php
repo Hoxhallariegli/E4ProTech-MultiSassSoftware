@@ -172,7 +172,7 @@ class MessageQueueController extends Controller
 
         try {
             $item = MessageQueue::findOrFail($id);
-            $item->delete();
+            app(\App\Domain\MessageQueue\Actions\DeleteMessageQueueAction::class)->execute($item);
             return response()->json(['success' => true, 'message' => 'MessageQueue deleted.']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Delete Error: " . $e->getMessage());

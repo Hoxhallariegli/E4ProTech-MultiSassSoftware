@@ -72,7 +72,7 @@ class EventSettingController extends Controller
     {
         abort_if_cannot('add_event_settings');
                 $data = $this->prepareData($request);
-        
+
         $validated = validator($data, EventSetting::rules())->validate();
         $item = app(\App\Domain\EventSetting\Actions\CreateEventSettingAction::class)->execute(\App\Domain\EventSetting\DTOs\EventSettingDTO::fromArray($validated));
         return (new EventSettingResource($item->loadMissing(array (
@@ -100,7 +100,7 @@ class EventSettingController extends Controller
 
         try {
             $item = EventSetting::findOrFail($id);
-            $item->delete();
+            app(\App\Domain\EventSetting\Actions\DeleteEventSettingAction::class)->execute($item);
             return response()->json(['success' => true, 'message' => 'EventSetting deleted.']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Delete Error: " . $e->getMessage());

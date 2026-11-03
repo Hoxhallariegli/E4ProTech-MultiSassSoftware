@@ -111,7 +111,7 @@ class CustomerController extends Controller
 
         try {
             $item = Customer::findOrFail($id);
-            $item->delete();
+            app(\App\Domain\Customer\Actions\DeleteCustomerAction::class)->execute($item);
             return response()->json(['success' => true, 'message' => 'Customer deleted.']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Delete Error: " . $e->getMessage());

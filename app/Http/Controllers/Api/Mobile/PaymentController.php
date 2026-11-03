@@ -117,7 +117,7 @@ class PaymentController extends Controller
 
         try {
             $item = Payment::findOrFail($id);
-            $item->delete();
+            app(\App\Domain\Payment\Actions\DeletePaymentAction::class)->execute($item);
             return response()->json(['success' => true, 'message' => 'Payment deleted.']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Delete Error: " . $e->getMessage());
