@@ -21,8 +21,8 @@ const logger = pino({ level: 'warn' });
 // Auto-Heal Unhandled Signal Session Rejections in Real-Time
 process.on('unhandledRejection', (reason) => {
     const errStr = String(reason?.stack || reason?.message || reason);
-    if (errStr.includes('SessionError') || errStr.includes('Bad MAC') || errStr.includes('failed to decrypt') || errStr.includes('error in handling message')) {
-        console.warn('⚠️ [AUTO-HEAL] Intercepted Signal session warning:', errStr.substring(0, 120));
+    if (errStr.includes('SessionError') || errStr.includes('Bad MAC') || errStr.includes('failed to decrypt') || errStr.includes('error in handling message') || errStr.includes('init queries') || errStr.includes('AwaitingInitialSync')) {
+        console.warn('⚠️ [AUTO-HEAL] Intercepted Signal/Init session warning:', errStr.substring(0, 120));
     }
 });
 
@@ -30,7 +30,7 @@ process.on('unhandledRejection', (reason) => {
 const originalConsoleError = console.error;
 console.error = function(...args) {
     const msg = args.map(a => String(a)).join(' ');
-    if (msg.includes('failed to decrypt message') || msg.includes('Failed to decrypt message') || msg.includes('Session error:') || msg.includes('error in handling message')) {
+    if (msg.includes('failed to decrypt message') || msg.includes('Failed to decrypt message') || msg.includes('Session error:') || msg.includes('error in handling message') || msg.includes('init queries')) {
         return; // Suppress non-fatal Baileys internal background sync noise
     }
     originalConsoleError.apply(console, args);
@@ -178,7 +178,7 @@ function purgeSessionDir(fullKey) {
     }
 }
 
-// Purge ONLY corrupted per-contact Signal session keys so Baileys negotiates a fresh Signal handshake without unlinking WhatsApp!
+// Purge ONLY corrupted per-contact Signal session keys if explicit retry is needed
 function purgeContactSignalKeys(fullKey, cleanPhone) {
     try {
         const sessionDir = path.join(__dirname, 'whatsapp_sessions', fullKey);
@@ -187,8 +187,8 @@ function purgeContactSignalKeys(fullKey, cleanPhone) {
         const files = fs.readdirSync(sessionDir);
         let deletedCount = 0;
         for (const file of files) {
-            // Delete only session-<phone>.*.json and sender-key-* files, preserving creds.json!
-            if ((file.startsWith(`session-${cleanPhone}`) || file.startsWith('sender-key-')) && file !== 'creds.json') {
+            // Delete only session-<phone>.*.json files, preserving creds.json and sender keys!
+            if (file.startsWith(`session-${cleanPhone}`) && file !== 'creds.json') {
                 try {
                     fs.rmSync(path.join(sessionDir, file), { force: true });
                     deletedCount++;
@@ -367,9 +367,9 @@ async function startSession(fullKey) {
     const sock = makeWASocket({
         auth: state,
         logger: logger,
-        syncFullHistory: true,
+        syncFullHistory: false,
         markOnlineOnConnect: true,
-        fireInitQueries: true,
+        fireInitQueries: false,
         getMessage: async (key) => {
             if (key?.id && sentMessages.has(key.id)) {
                 console.log(`🔑 [GET_MESSAGE] Returning exact cached message for decryption retry ID: ${key.id}`);
@@ -557,9 +557,6 @@ app.post('/api/whatsapp/send', async (req, res) => {
         } catch (e) {
             console.warn('⚠️ Verification check warning:', e.message);
         }
-
-        // Auto-heal Signal session keys if stale session files detected for this contact
-        purgeContactSignalKeys(currentActiveKey, cleanPhone);
 
         // Instant Pre-Key Session Handshake: Assert sessions and send composing presence to force Meta pre-key exchange before text!
         try {

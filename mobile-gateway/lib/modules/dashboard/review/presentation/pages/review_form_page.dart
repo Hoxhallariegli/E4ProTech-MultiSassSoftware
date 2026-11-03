@@ -44,22 +44,22 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
     _commentController.text = widget.item?['comment']?.toString() ?? '';
 
     try {
-    _barberShopOptions = await repository.lookup('barber-shops');
-    if (widget.item?['barber_shop_id'] != null) _barberShopId = int.tryParse(widget.item!['barber_shop_id'].toString());
-    if (_barberShopId == null && AuthService.instance.user?['is_admin'] != true) _barberShopId = AuthService.instance.user?['barber_shop_id'] as int?;
-    _barberOptions = await repository.lookup('barbers');
-    if (widget.item?['barber_id'] != null) _barberId = int.tryParse(widget.item!['barber_id'].toString());
-    _customerOptions = await repository.lookup('customers');
-    if (widget.item?['customer_id'] != null) _customerId = int.tryParse(widget.item!['customer_id'].toString());
-    _bookingOptions = await repository.lookup('bookings');
-    if (widget.item?['booking_id'] != null) _bookingId = int.tryParse(widget.item!['booking_id'].toString());
+      _barberShopOptions = await repository.lookup('barber-shops');
+      if (widget.item?['barber_shop_id'] != null) _barberShopId = int.tryParse(widget.item!['barber_shop_id'].toString());
+      if (_barberShopId == null && AuthService.instance.user?['is_admin'] != true) _barberShopId = AuthService.instance.user?['barber_shop_id'] as int?;
+      _barberOptions = await repository.lookup('barbers');
+      if (widget.item?['barber_id'] != null) _barberId = int.tryParse(widget.item!['barber_id'].toString());
+      _customerOptions = await repository.lookup('customers');
+      if (widget.item?['customer_id'] != null) _customerId = int.tryParse(widget.item!['customer_id'].toString());
+      _bookingOptions = await repository.lookup('bookings');
+      if (widget.item?['booking_id'] != null) _bookingId = int.tryParse(widget.item!['booking_id'].toString());
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(reviewTr(context, 'form.could_not_load')), behavior: SnackBarBehavior.floating));
     } finally { if (mounted) setState(() => _loading = false); }
   }
 
   Future<void> _pickbarberShopId() async {
-    if ("barber_shop_id" == "barber_shop_id" && AuthService.instance.user?['is_admin'] != true) return;
+    if (AuthService.instance.user?['is_admin'] != true) return;
     var filtered = List<Map<String, dynamic>>.from(_barberShopOptions);
     final selected = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -74,8 +74,9 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
       ])))),
     );
     if (selected != null) setState(() => _barberShopId = int.tryParse(selected['id'].toString()));
-  }  Future<void> _pickbarberId() async {
-    if ("barber_id" == "barber_shop_id" && AuthService.instance.user?['is_admin'] != true) return;
+  }
+
+  Future<void> _pickbarberId() async {
     var filtered = List<Map<String, dynamic>>.from(_barberOptions);
     final selected = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -89,9 +90,18 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
         const SizedBox(height: 12), Expanded(child: ListView.separated(itemCount: filtered.length, separatorBuilder: (_, __) => const Divider(height: 1), itemBuilder: (_, i) { final option = filtered[i]; return ListTile(title: Text(_displayName(option), style: const TextStyle(fontWeight: FontWeight.w700)), trailing: option['id'].toString() == _barberId?.toString() ? const Icon(Icons.check_circle_rounded) : null, onTap: () => Navigator.pop(sheetContext, option)); })),
       ])))),
     );
-    if (selected != null) setState(() => _barberId = int.tryParse(selected['id'].toString()));
-  }  Future<void> _pickcustomerId() async {
-    if ("customer_id" == "barber_shop_id" && AuthService.instance.user?['is_admin'] != true) return;
+
+    if (selected != null) {
+      setState(() {
+        _barberId = int.tryParse(selected['id'].toString());
+        if (selected['barber_shop_id'] != null) {
+          _barberShopId = int.tryParse(selected['barber_shop_id'].toString());
+        }
+      });
+    }
+  }
+
+  Future<void> _pickcustomerId() async {
     var filtered = List<Map<String, dynamic>>.from(_customerOptions);
     final selected = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -105,10 +115,27 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
         const SizedBox(height: 12), Expanded(child: ListView.separated(itemCount: filtered.length, separatorBuilder: (_, __) => const Divider(height: 1), itemBuilder: (_, i) { final option = filtered[i]; return ListTile(title: Text(_displayName(option), style: const TextStyle(fontWeight: FontWeight.w700)), trailing: option['id'].toString() == _customerId?.toString() ? const Icon(Icons.check_circle_rounded) : null, onTap: () => Navigator.pop(sheetContext, option)); })),
       ])))),
     );
-    if (selected != null) setState(() => _customerId = int.tryParse(selected['id'].toString()));
-  }  Future<void> _pickbookingId() async {
-    if ("booking_id" == "barber_shop_id" && AuthService.instance.user?['is_admin'] != true) return;
+
+    if (selected != null) {
+      setState(() {
+        _customerId = int.tryParse(selected['id'].toString());
+        if (selected['barber_shop_id'] != null) {
+          _barberShopId = int.tryParse(selected['barber_shop_id'].toString());
+        }
+      });
+    }
+  }
+
+  Future<void> _pickbookingId() async {
+    // Smart Filter: Filter booking options if a barber or customer is already selected
     var filtered = List<Map<String, dynamic>>.from(_bookingOptions);
+    if (_barberId != null) {
+      filtered = filtered.where((b) => b['barber_id']?.toString() == _barberId.toString()).toList();
+    }
+    if (_customerId != null) {
+      filtered = filtered.where((b) => b['customer_id']?.toString() == _customerId.toString()).toList();
+    }
+
     final selected = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
@@ -121,8 +148,25 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
         const SizedBox(height: 12), Expanded(child: ListView.separated(itemCount: filtered.length, separatorBuilder: (_, __) => const Divider(height: 1), itemBuilder: (_, i) { final option = filtered[i]; return ListTile(title: Text(_displayName(option), style: const TextStyle(fontWeight: FontWeight.w700)), trailing: option['id'].toString() == _bookingId?.toString() ? const Icon(Icons.check_circle_rounded) : null, onTap: () => Navigator.pop(sheetContext, option)); })),
       ])))),
     );
-    if (selected != null) setState(() => _bookingId = int.tryParse(selected['id'].toString()));
+
+    if (selected != null) {
+      setState(() {
+        _bookingId = int.tryParse(selected['id'].toString());
+
+        // Smart Relationship Auto-Fill: Auto-select Staff Member, Customer, and Shop from selected Booking!
+        if (selected['barber_id'] != null) {
+          _barberId = int.tryParse(selected['barber_id'].toString());
+        }
+        if (selected['customer_id'] != null) {
+          _customerId = int.tryParse(selected['customer_id'].toString());
+        }
+        if (selected['barber_shop_id'] != null) {
+          _barberShopId = int.tryParse(selected['barber_shop_id'].toString());
+        }
+      });
+    }
   }
+
   Future<void> _pickDate(TextEditingController controller) async {
     final initial = _parseDisplayDate(controller.text) ?? DateTime.now();
     final picked = await showDatePicker(context: context, initialDate: initial, firstDate: DateTime(1900), lastDate: DateTime(2200));
@@ -179,7 +223,22 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
   }
 
   String _displayName(Map<String, dynamic> item) {
-    return (item['name'] ?? item['title'] ?? 'ID: ' + item['id'].toString()).toString();
+    if (item['name'] != null && item['name'].toString().trim().isNotEmpty) {
+      return item['name'].toString();
+    }
+    if (item['title'] != null && item['title'].toString().trim().isNotEmpty) {
+      return item['title'].toString();
+    }
+    final id = item['id'];
+    if (id != null && id.toString().isNotEmpty) {
+      final custName = item['customer']?['name'] ?? item['customer_name'] ?? '';
+      final servName = item['service']?['name'] ?? item['service_name'] ?? '';
+      if (custName.isNotEmpty) {
+        return "Takimi #$id - $custName ${servName.isNotEmpty ? '($servName)' : ''}".trim();
+      }
+      return "Takimi #$id";
+    }
+    return reviewTr(context, 'form.select');
   }
 
   Future<void> _save(BuildContext context) async {
@@ -221,7 +280,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
           body: _loading ? const Center(child: CircularProgressIndicator.adaptive()) : Form(key: _formKey, child: Builder(builder: (formContext) => ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 120), children: [
             _FormHeader(isEdit: widget.item != null),
             const SizedBox(height: 22),
-            (AuthService.instance.user?['is_admin'] == true) 
+            (AuthService.instance.user?['is_admin'] == true)
               ? _FieldShell(label: reviewTr(context, 'field.barber_shop_id'), child: InkWell(onTap: _pickbarberShopId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_barberShopOptions.firstWhere((e) => e['id'].toString() == _barberShopId?.toString(), orElse: () => {'id': '', 'name': reviewTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)]))))
               : _FieldShell(label: reviewTr(context, 'field.barber_shop_id'), child: Container(padding: const EdgeInsets.all(16), width: double.infinity, decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5), border: Border.all(color: theme.colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Text(AuthService.instance.user?['business']?['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)))),
             _FieldShell(label: reviewTr(context, 'field.barber_id'), child: InkWell(onTap: _pickbarberId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_barberOptions.firstWhere((e) => e['id'].toString() == _barberId?.toString(), orElse: () => {'id': '', 'name': reviewTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)])))),
