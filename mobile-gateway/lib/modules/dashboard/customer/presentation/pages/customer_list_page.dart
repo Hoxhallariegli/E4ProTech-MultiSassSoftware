@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_gateway/services/auth_service.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/core/widgets/app_toast.dart';
 import 'package:mobile_gateway/core/widgets/app_scaffold.dart';
 import 'package:mobile_gateway/modules/dashboard/presentation/widgets/shop_switcher_widget.dart';
 import 'package:mobile_gateway/core/realtime/realtime_service.dart';
@@ -135,7 +136,7 @@ class _CustomerListViewState extends State<_CustomerListView> {
         )),
         Expanded(child: BlocConsumer<CustomerCubit, CustomerState>(
           listener: (context, state) {
-            if (state is CustomerFailure) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), behavior: SnackBarBehavior.floating));
+            if (state is CustomerFailure) AppToast.showError(context, state.message);
             if (state is CustomerSaved) Navigator.of(context).pop(true);
           },
           builder: (context, state) {
@@ -174,7 +175,12 @@ class _CustomerListViewState extends State<_CustomerListView> {
       confirmLabel: customerTr(context, 'list.delete'),
       destructive: true,
     );
-    if (ok == true && context.mounted) context.read<CustomerCubit>().delete(item['id']);
+    if (ok == true && context.mounted) {
+      await context.read<CustomerCubit>().delete(item['id']);
+      if (context.mounted) {
+        AppToast.showSuccess(context, 'Klienti u fshi me sukses!');
+      }
+    }
   }
 }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_gateway/services/auth_service.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/core/widgets/app_toast.dart';
 import 'package:mobile_gateway/core/widgets/app_scaffold.dart';
 import 'package:mobile_gateway/modules/dashboard/presentation/widgets/shop_switcher_widget.dart';
 import 'package:mobile_gateway/core/realtime/realtime_service.dart';
@@ -135,7 +136,7 @@ class _ServiceListViewState extends State<_ServiceListView> {
         )),
         Expanded(child: BlocConsumer<ServiceCubit, ServiceState>(
           listener: (context, state) {
-            if (state is ServiceFailure) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), behavior: SnackBarBehavior.floating));
+            if (state is ServiceFailure) AppToast.showError(context, state.message);
             if (state is ServiceSaved) Navigator.of(context).pop(true);
           },
           builder: (context, state) {
@@ -174,7 +175,12 @@ class _ServiceListViewState extends State<_ServiceListView> {
       confirmLabel: serviceTr(context, 'list.delete'),
       destructive: true,
     );
-    if (ok == true && context.mounted) context.read<ServiceCubit>().delete(item['id']);
+    if (ok == true && context.mounted) {
+      await context.read<ServiceCubit>().delete(item['id']);
+      if (context.mounted) {
+        AppToast.showSuccess(context, 'Shërbimi u fshi me sukses!');
+      }
+    }
   }
 }
 

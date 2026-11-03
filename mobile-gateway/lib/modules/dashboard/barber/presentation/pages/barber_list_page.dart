@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_gateway/services/auth_service.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/core/widgets/app_toast.dart';
 import 'package:mobile_gateway/core/widgets/app_scaffold.dart';
 import 'package:mobile_gateway/modules/dashboard/presentation/widgets/shop_switcher_widget.dart';
 import 'package:mobile_gateway/core/realtime/realtime_service.dart';
@@ -139,7 +140,7 @@ SwitchListTile.adaptive(contentPadding: EdgeInsets.zero, title: Text(barberTr(co
         )),
         Expanded(child: BlocConsumer<BarberCubit, BarberState>(
           listener: (context, state) {
-            if (state is BarberFailure) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), behavior: SnackBarBehavior.floating));
+            if (state is BarberFailure) AppToast.showError(context, state.message);
             if (state is BarberSaved) Navigator.of(context).pop(true);
           },
           builder: (context, state) {
@@ -178,7 +179,12 @@ SwitchListTile.adaptive(contentPadding: EdgeInsets.zero, title: Text(barberTr(co
       confirmLabel: barberTr(context, 'list.delete'),
       destructive: true,
     );
-    if (ok == true && context.mounted) context.read<BarberCubit>().delete(item['id']);
+    if (ok == true && context.mounted) {
+      await context.read<BarberCubit>().delete(item['id']);
+      if (context.mounted) {
+        AppToast.showSuccess(context, 'Pjesëtari i stafit u fshi me sukses!');
+      }
+    }
   }
 }
 

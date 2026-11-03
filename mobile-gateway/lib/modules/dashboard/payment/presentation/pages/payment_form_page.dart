@@ -81,19 +81,21 @@ class _PaymentFormPageState extends State<PaymentFormPage> {
       if (index != -1) {
         _bookingOptions[index]['name'] = formattedTitle;
         if (price != null) {
+          _bookingOptions[index]['total_price'] = price;
           _bookingOptions[index]['amount'] = price;
         }
       } else {
         _bookingOptions.insert(0, {
           'id': _bookingId,
           'name': formattedTitle,
+          'total_price': price,
           'amount': price,
           'barber_shop_id': _barberShopId,
         });
       }
 
       if (_amountController.text.isEmpty || _amountController.text == '0' || _amountController.text == '0.00') {
-        final foundAmt = price ?? _bookingOptions.firstWhere((b) => b['id'].toString() == _bookingId.toString(), orElse: () => {})['amount'];
+        final foundAmt = price ?? _bookingOptions.firstWhere((b) => b['id'].toString() == _bookingId.toString(), orElse: () => {})['total_price'] ?? _bookingOptions.firstWhere((b) => b['id'].toString() == _bookingId.toString(), orElse: () => {})['amount'];
         if (foundAmt != null) {
           final parsed = double.tryParse(foundAmt.toString());
           if (parsed != null && parsed > 0) {
@@ -122,7 +124,9 @@ class _PaymentFormPageState extends State<PaymentFormPage> {
       ])))),
     );
     if (selected != null) setState(() => _barberShopId = int.tryParse(selected['id'].toString()));
-  }  Future<void> _pickbookingId() async {
+  }
+
+  Future<void> _pickbookingId() async {
     var filtered = List<Map<String, dynamic>>.from(_bookingOptions);
     final selected = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -136,21 +140,39 @@ class _PaymentFormPageState extends State<PaymentFormPage> {
         const SizedBox(height: 12), Expanded(child: ListView.separated(itemCount: filtered.length, separatorBuilder: (_, __) => const Divider(height: 1), itemBuilder: (_, i) { final option = filtered[i]; return ListTile(title: Text(_displayName(option), style: const TextStyle(fontWeight: FontWeight.w700)), trailing: option['id'].toString() == _bookingId?.toString() ? const Icon(Icons.check_circle_rounded) : null, onTap: () => Navigator.pop(sheetContext, option)); })),
       ])))),
     );
+
     if (selected != null) {
       setState(() {
         _bookingId = int.tryParse(selected['id'].toString());
-        if (selected['amount'] != null) {
-          final amt = double.tryParse(selected['amount'].toString());
-          if (amt != null) {
-            _amountController.text = amt.toStringAsFixed(2);
+
+        // Extract amount from total_price, amount, or service price
+        final rawAmount = selected['total_price'] ?? selected['amount'] ?? selected['service']?['price'];
+        double? parsedAmt;
+
+        if (rawAmount != null) {
+          parsedAmt = double.tryParse(rawAmount.toString());
+        }
+
+        // Fallback: extract price number from _displayName string (e.g., "1500.00 Lekë")
+        if (parsedAmt == null || parsedAmt <= 0) {
+          final titleStr = _displayName(selected);
+          final match = RegExp(r'(\d+(?:\.\d{1,2})?)').firstMatch(titleStr.split('-').last);
+          if (match != null) {
+            parsedAmt = double.tryParse(match.group(1)!);
           }
         }
+
+        if (parsedAmt != null && parsedAmt > 0) {
+          _amountController.text = parsedAmt.toStringAsFixed(2);
+        }
+
         if (selected['barber_shop_id'] != null) {
           _barberShopId = int.tryParse(selected['barber_shop_id'].toString());
         }
       });
     }
   }
+
   Future<void> _pickDate(TextEditingController controller) async {
     final initial = _parseDisplayDate(controller.text) ?? DateTime.now();
     final picked = await showDatePicker(context: context, initialDate: initial, firstDate: DateTime(1900), lastDate: DateTime(2200));

@@ -63,6 +63,18 @@ class Booking extends Model
         return $this->belongsTo(\App\Models\Customer::class, 'customer_id');
     }
 
+    public function payments(): \Illuminate\Database\Eloquent\Relations\HasMany {
+        return $this->hasMany(\App\Models\Payment::class, 'booking_id');
+    }
+
+    public function messageLogs(): \Illuminate\Database\Eloquent\Relations\HasMany {
+        return $this->hasMany(\App\Models\MessageLog::class, 'booking_id');
+    }
+
+    public function messageQueues(): \Illuminate\Database\Eloquent\Relations\HasMany {
+        return $this->hasMany(\App\Models\MessageQueue::class, 'booking_id');
+    }
+
     public static function checkOverlap(?int $barberId, $appointmentAt, ?int $serviceId, $ignoreId = null, bool $allowLunchOverride = true): void
     {
         if (!$barberId || !$appointmentAt) {

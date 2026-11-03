@@ -25,12 +25,15 @@ class BookingController extends Controller
         $sortField = in_array($sortField, $allowedSorts, true) ? $sortField : 'id';
         $direction = in_array($direction, ['asc', 'desc'], true) ? $direction : 'desc';
 
-        $query = Booking::query()->with(array (
-  0 => 'barberShop',
-  1 => 'barber',
-  2 => 'service',
-  3 => 'customer',
-));
+        $query = Booking::query()->with([
+            'barberShop',
+            'barber',
+            'service',
+            'customer',
+            'payments',
+            'messageLogs',
+            'messageQueues',
+        ]);
 
         $search = trim((string) $request->input('search', ''));
         if ($search !== '') {

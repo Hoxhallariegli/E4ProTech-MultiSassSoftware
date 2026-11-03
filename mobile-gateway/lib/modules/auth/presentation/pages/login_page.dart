@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/widgets/premium_widgets.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../services/api_service.dart';
 import '../../../../services/auth_service.dart';
@@ -93,16 +94,12 @@ class _LoginPageState extends State<LoginPage> {
       } else {
         final error = ApiService.extractErrorMessage(response);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(error), backgroundColor: Colors.redAccent),
-          );
+          AppToast.showError(context, error);
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gabim lidhjeje: $e'), backgroundColor: Colors.redAccent),
-        );
+        AppToast.showError(context, 'Gabim lidhjeje: $e');
       }
     } finally {
       if (mounted) setState(() => _loading = false);
