@@ -29,7 +29,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $tz = config('app.timezone', env('APP_TIMEZONE', 'Europe/Tirane'));
+        $tz = config('app.timezone', 'Europe/Tirane');
         date_default_timezone_set($tz);
         config(['app.timezone' => $tz]);
         if (class_exists(\App\Models\BarberShop::class)) {
