@@ -142,17 +142,26 @@ class MessageTemplate extends Model
         if (!$templateText) {
             if ($locale === 'en') {
                 if ($type === 'reminder') {
-                    $templateText = "Reminder: Hello {customer_name}! Your appointment at {shop_name} is today at {time}. Book or manage: {booking_link}";
+                    $templateText = "Reminder: Hello {customer_name}! Your appointment at {shop_name} is today at {time}. Please confirm or cancel using the buttons below:";
                 } elseif ($type === 'reschedule' || $type === 'update') {
-                    $templateText = "Hello {customer_name}! Your appointment at {shop_name} with {staff_name} is updated to {time} {date}. Book or manage: {booking_link}";
+                    $templateText = "Hello {customer_name}! Your appointment at {shop_name} with {staff_name} is updated to {time} {date}. Please confirm or cancel using the buttons below:";
                 } elseif ($type === 'cancellation' || $type === 'cancelled') {
-                    $templateText = "Hello {customer_name}! Your appointment at {shop_name} for {time} {date} was cancelled. Book again: {booking_link}";
+                    $templateText = "Hello {customer_name}! Your appointment at {shop_name} for {time} {date} was cancelled.";
                 } else {
-                    $templateText = "Hello {customer_name}! Your booking for {service_name} at {shop_name} is confirmed for {time} {date}. Book or manage: {booking_link}";
+                    $templateText = "Hello {customer_name}! Your booking for {service_name} at {shop_name} for {time} {date} has been received. Please confirm or cancel using the buttons below:";
                 }
             } else {
                 if ($type === 'reminder') {
-                    $templateText = "Rikujtese: Pershendetje {customer_name}! Takimi juaj te {shop_name} eshte sot ne oren {time}. Rezervo ose menaxho: {booking_link}";
+                    $templateText = "Rikujtesë: Përshëndetje {customer_name}! Takimi juaj te {shop_name} është sot në orën {time}. Ju lutem konfirmoni ose anuloni me butonat më poshtë:";
+                } elseif ($type === 'reschedule' || $type === 'update') {
+                    $templateText = "Përshëndetje {customer_name}! Takimi juaj në {shop_name} me {staff_name} u ndryshua për në orën {time} {date}. Ju lutem konfirmoni ose anuloni me butonat më poshtë:";
+                } elseif ($type === 'cancellation' || $type === 'cancelled') {
+                    $templateText = "Përshëndetje {customer_name}! Takimi juaj në {shop_name} për në orën {time} {date} u anulua.";
+                } else {
+                    $templateText = "Përshëndetje {customer_name}! Rezervimi juaj për {service_name} në {shop_name} u regjistrua për orën {time} më datë {date}. Ju lutem konfirmoni ose anuloni me butonat më poshtë:";
+                }
+            }
+        }
                 } elseif ($type === 'reschedule' || $type === 'update') {
                     $templateText = "Pershendetje {customer_name}! Takimi juaj ne {shop_name} me {staff_name} u ndryshua per ne oren {time} {date}. Rezervo ose menaxho: {booking_link}";
                 } elseif ($type === 'cancellation' || $type === 'cancelled') {
@@ -189,6 +198,15 @@ class MessageTemplate extends Model
         }
 
         // WhatsApp supports rich emojis, special characters, links & full length!
+        if ($channel === 'whatsapp' && in_array($type, ['confirmation', 'reminder', 'reschedule', 'update'], true)) {
+            if (!str_contains(strtolower($parsed), 'buton') && !str_contains(strtolower($parsed), 'button')) {
+                $suffix = ($locale === 'en')
+                    ? "\n\n📌 Please press the buttons below or reply '1' to Confirm, '2' to Cancel."
+                    : "\n\n📌 Ju lutem shtypni butonat më poshtë ose ktheni përgjigje '1' për Konfirmim, '2' për Anulim.";
+                $parsed .= $suffix;
+            }
+        }
+
         return $parsed;
     }
 }
