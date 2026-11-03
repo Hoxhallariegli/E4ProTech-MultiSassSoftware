@@ -644,10 +644,10 @@ app.get('/api/whatsapp/qr', async (req, res) => {
 
         app.post('/api/whatsapp/send', async (req, res) => {
     try {
-        const { phone, message, shop_id, barber_id, buttons } = req.body;
+        const { phone, message, shop_id, barber_id, buttons, image_url, document_url, audio_url, file_name } = req.body;
 
-        if (!phone || !message) {
-            return res.status(400).json({ success: false, error: 'Phone and message are required' });
+        if (!phone || (!message && !image_url && !document_url && !audio_url)) {
+            return res.status(400).json({ success: false, error: 'Phone and message or media payload are required' });
         }
 
         const targetShopKey = `shop_${(shop_id || '1').toString().trim()}`;
@@ -696,21 +696,34 @@ app.get('/api/whatsapp/qr', async (req, res) => {
             console.warn('⚠️ Verification check warning:', e.message);
         }
 
-        // Pre-key handshake para tekstit
+        // Anti-Ban Humanizer Presence Delay (Dynamic scaling based on text length)
         try {
             if (typeof sock.assertSessions === 'function') {
                 await sock.assertSessions([targetJid]);
             }
             await sock.presenceSubscribe(targetJid);
-            await sock.sendPresenceUpdate('composing', targetJid);
-            await sleep(250);
+            const isAudio = Boolean(audio_url);
+            await sock.sendPresenceUpdate(isAudio ? 'recording' : 'composing', targetJid);
+            const humanDelay = Math.min(2500, Math.max(500, (message || '').length * 15));
+            await sleep(humanDelay);
             await sock.sendPresenceUpdate('paused', targetJid);
         } catch (_) {}
 
-        // Prepare message content (Text or Interactive Buttons)
-        let messagePayload = { text: message };
+        // Prepare message content (Text, Images, Documents, Audio, or Interactive Buttons)
+        let messagePayload = { text: message || '' };
 
-        if (Array.isArray(buttons) && buttons.length > 0) {
+        if (image_url) {
+            messagePayload = { image: { url: image_url }, caption: message || '' };
+        } else if (document_url) {
+            messagePayload = {
+                document: { url: document_url },
+                fileName: file_name || 'Dokument.pdf',
+                mimetype: 'application/pdf',
+                caption: message || ''
+            };
+        } else if (audio_url) {
+            messagePayload = { audio: { url: audio_url }, ptt: true, mimetype: 'audio/ogg; codecs=opus' };
+        } else if (Array.isArray(buttons) && buttons.length > 0) {
             const formattedButtons = buttons.map((b, i) => ({
                 buttonId: b.id || `btn_${i}`,
                 buttonText: { displayText: b.text || b.label || 'Zgjidh' },
