@@ -231,7 +231,7 @@ function scheduleSyncToCloud(cleanKey) {
     const timer = setTimeout(() => {
         syncTimers.delete(fullKey);
         syncSessionToCloud(fullKey);
-    }, 5000);
+    }, 15000);
     syncTimers.set(fullKey, timer);
 }
 
