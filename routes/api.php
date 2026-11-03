@@ -65,6 +65,9 @@ Route::prefix('mobile')->group(function () {
         Route::get('bookings/calendar', [\App\Http\Controllers\Api\Mobile\BookingController::class, 'calendar']);
         Route::get('bookings/day-schedule', [\App\Http\Controllers\Api\Mobile\BookingController::class, 'daySchedule']);
 
+        // Users List per Shop Endpoint
+        Route::get('users', [\App\Http\Controllers\Api\Mobile\UserController::class, 'index']);
+
         // Standard Module Resources
         Route::apiResource('barber-shops', \App\Http\Controllers\Api\Mobile\BarberShopController::class);
         Route::apiResource('barbers', \App\Http\Controllers\Api\Mobile\BarberController::class);
