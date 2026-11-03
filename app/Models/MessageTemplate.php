@@ -142,23 +142,23 @@ class MessageTemplate extends Model
         if (!$templateText) {
             if ($locale === 'en') {
                 if ($type === 'reminder') {
-                    $templateText = "Reminder: Hello {customer_name}! Your appointment at {shop_name} is today at {time}. Please confirm or cancel using the buttons below:";
+                    $templateText = "Reminder: Hello {customer_name}! Your appointment at {shop_name} is today at {time}. Please reply '1' to Confirm, or '2' to Cancel:";
                 } elseif ($type === 'reschedule' || $type === 'update') {
-                    $templateText = "Hello {customer_name}! Your appointment at {shop_name} with {staff_name} is updated to {time} {date}. Please confirm or cancel using the buttons below:";
+                    $templateText = "Hello {customer_name}! Your appointment at {shop_name} with {staff_name} is updated to {time} {date}. Please reply '1' to Confirm, or '2' to Cancel:";
                 } elseif ($type === 'cancellation' || $type === 'cancelled') {
                     $templateText = "Hello {customer_name}! Your appointment at {shop_name} for {time} {date} was cancelled.";
                 } else {
-                    $templateText = "Hello {customer_name}! Your booking for {service_name} at {shop_name} for {time} {date} has been received. Please confirm or cancel using the buttons below:";
+                    $templateText = "Hello {customer_name}! Your booking for {service_name} at {shop_name} for {time} {date} has been received. Please reply '1' to Confirm, or '2' to Cancel:";
                 }
             } else {
                 if ($type === 'reminder') {
-                    $templateText = "Rikujtesë: Përshëndetje {customer_name}! Takimi juaj te {shop_name} është sot në orën {time}. Ju lutem konfirmoni ose anuloni me butonat më poshtë:";
+                    $templateText = "Rikujtesë: Përshëndetje {customer_name}! Takimi juaj te {shop_name} është sot në orën {time}. Ktheni përgjigje '1' për Konfirmim, ose '2' për Anulim:";
                 } elseif ($type === 'reschedule' || $type === 'update') {
-                    $templateText = "Përshëndetje {customer_name}! Takimi juaj në {shop_name} me {staff_name} u ndryshua për në orën {time} {date}. Ju lutem konfirmoni ose anuloni me butonat më poshtë:";
+                    $templateText = "Përshëndetje {customer_name}! Takimi juaj në {shop_name} me {staff_name} u ndryshua për në orën {time} {date}. Ktheni përgjigje '1' për Konfirmim, ose '2' për Anulim:";
                 } elseif ($type === 'cancellation' || $type === 'cancelled') {
                     $templateText = "Përshëndetje {customer_name}! Takimi juaj në {shop_name} për në orën {time} {date} u anulua.";
                 } else {
-                    $templateText = "Përshëndetje {customer_name}! Rezervimi juaj për {service_name} në {shop_name} u regjistrua për orën {time} më datë {date}. Ju lutem konfirmoni ose anuloni me butonat më poshtë:";
+                    $templateText = "Përshëndetje {customer_name}! Rezervimi juaj për {service_name} në {shop_name} u regjistrua për orën {time} më datë {date}. Ktheni përgjigje '1' për Konfirmim, ose '2' për Anulim:";
                 }
             }
         }
@@ -190,13 +190,15 @@ class MessageTemplate extends Model
 
         // WhatsApp supports rich emojis, special characters, links & full length!
         if ($channel === 'whatsapp' && in_array($type, ['confirmation', 'reminder', 'reschedule', 'update'], true)) {
-            if (!str_contains(strtolower($parsed), 'buton') && !str_contains(strtolower($parsed), 'button')) {
+            if (!str_contains(strtolower($parsed), '1') && !str_contains(strtolower($parsed), '2')) {
                 $suffix = ($locale === 'en')
-                    ? "\n\n📌 Please press the buttons below or reply '1' to Confirm, '2' to Cancel."
-                    : "\n\n📌 Ju lutem shtypni butonat më poshtë ose ktheni përgjigje '1' për Konfirmim, '2' për Anulim.";
+                    ? "\n\n📌 Please reply '1' to Confirm, or '2' to Cancel."
+                    : "\n\n📌 Ktheni përgjigje '1' për Konfirmim, ose '2' për Anulim.";
                 $parsed .= $suffix;
             }
         }
+
+        return $parsed;
 
         return $parsed;
     }
