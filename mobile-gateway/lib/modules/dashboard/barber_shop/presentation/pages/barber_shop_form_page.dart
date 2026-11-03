@@ -51,24 +51,33 @@ class _BarberShopFormPageState extends State<BarberShopFormPage> {
     _slugController.text = widget.item?['slug']?.toString() ?? '';
     _primaryColorController.text = widget.item?['primary_color']?.toString() ?? '';
     _secondaryColorController.text = widget.item?['secondary_color']?.toString() ?? '';
-    _trialEndsAtController.text = widget.item?['trial_ends_at']?.toString() ?? '';
-    _expiresAtController.text = widget.item?['expires_at']?.toString() ?? '';
+    _trialEndsAtController.text = _formatDisplayDate(widget.item?['trial_ends_at']);
+    _expiresAtController.text = _formatDisplayDate(widget.item?['expires_at']);
     _active = widget.item?['active'] == true || widget.item?['active'] == 1 || widget.item?['active'] == '1';
     _smsEnabled = widget.item?['sms_enabled'] == true || widget.item?['sms_enabled'] == 1 || widget.item?['sms_enabled'] == '1';
-    _timezoneController.text = widget.item?['timezone']?.toString() ?? '';
+    _timezoneController.text = widget.item?['timezone']?.toString() ?? 'Europe/Tirane';
     _currencyController.text = widget.item?['currency']?.toString() ?? 'Lekë';
-    _maxNoShowBeforeBlockController.text = widget.item?['max_no_show_before_block']?.toString() ?? '';
+    _maxNoShowBeforeBlockController.text = widget.item?['max_no_show_before_block']?.toString() ?? '3';
 
     try {
-    _ownerOptions = await repository.lookup('users');
-    if (widget.item?['owner_id'] != null) _ownerId = widget.item!['owner_id'].toString();
+      if (AuthService.instance.user?['is_admin'] == true) {
+        _ownerOptions = await repository.lookup('users');
+      }
+      if (widget.item?['owner_id'] != null) _ownerId = widget.item!['owner_id'].toString();
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(barber_shopTr(context, 'form.could_not_load')), behavior: SnackBarBehavior.floating));
     } finally { if (mounted) setState(() => _loading = false); }
   }
 
+  String _formatDisplayDate(dynamic raw) {
+    if (raw == null || raw.toString().trim().isEmpty) return '';
+    final dt = DateTime.tryParse(raw.toString())?.toLocal();
+    if (dt == null) return raw.toString();
+    return "${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
+  }
+
   Future<void> _pickownerId() async {
-    if ("owner_id" == "barber_shop_id" && AuthService.instance.user?['is_admin'] != true) return;
+    if (AuthService.instance.user?['is_admin'] != true) return;
     var filtered = List<Map<String, dynamic>>.from(_ownerOptions);
     final selected = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -84,20 +93,16 @@ class _BarberShopFormPageState extends State<BarberShopFormPage> {
     );
     if (selected != null) setState(() => _ownerId = selected['id'].toString());
   }
-  Future<void> _pickDate(TextEditingController controller) async {
-    final initial = DateTime.tryParse(controller.text) ?? DateTime.now();
-    final picked = await showDatePicker(context: context, initialDate: initial, firstDate: DateTime(1900), lastDate: DateTime(2200));
-    if (picked != null && mounted) setState(() => controller.text = picked.toIso8601String().split('T').first);
-  }
 
   Future<void> _pickDateTime(TextEditingController controller) async {
+    if (AuthService.instance.user?['is_admin'] != true) return;
     final initial = DateTime.tryParse(controller.text) ?? DateTime.now();
     final date = await showDatePicker(context: context, initialDate: initial, firstDate: DateTime(1900), lastDate: DateTime(2200));
     if (date == null || !mounted) return;
     final time = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(initial));
     if (time == null || !mounted) return;
     final value = DateTime(date.year, date.month, date.day, time.hour, time.minute);
-    setState(() => controller.text = value.toIso8601String());
+    setState(() => controller.text = _formatDisplayDate(value.toIso8601String()));
   }
 
   String _displayName(Map<String, dynamic> item) {
@@ -113,13 +118,17 @@ class _BarberShopFormPageState extends State<BarberShopFormPage> {
     payload['slug'] = _slugController.text;
     payload['primary_color'] = _primaryColorController.text;
     payload['secondary_color'] = _secondaryColorController.text;
-    payload['trial_ends_at'] = _trialEndsAtController.text.isEmpty ? null : _trialEndsAtController.text;
-    payload['expires_at'] = _expiresAtController.text.isEmpty ? null : _expiresAtController.text;
-    payload['active'] = _active;
     payload['sms_enabled'] = _smsEnabled;
     payload['timezone'] = _timezoneController.text;
     payload['currency'] = _currencyController.text;
     payload['max_no_show_before_block'] = int.tryParse(_maxNoShowBeforeBlockController.text);
+
+    // Only Global Admin can send updated trial/expiry dates and active status
+    if (AuthService.instance.user?['is_admin'] == true) {
+      payload['trial_ends_at'] = _trialEndsAtController.text.isEmpty ? null : _trialEndsAtController.text;
+      payload['expires_at'] = _expiresAtController.text.isEmpty ? null : _expiresAtController.text;
+      payload['active'] = _active;
+    }
 
     final files = <String, String>{};
     if (_logoPath != null) files['logo'] = _logoPath!;
@@ -130,6 +139,8 @@ class _BarberShopFormPageState extends State<BarberShopFormPage> {
 
   @override Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isAdmin = AuthService.instance.user?['is_admin'] == true;
+
     return BlocProvider(
       create: (_) => BarberShopCubit(repository),
       child: BlocListener<BarberShopCubit, BarberShopState>(
@@ -145,7 +156,8 @@ class _BarberShopFormPageState extends State<BarberShopFormPage> {
           body: _loading ? const Center(child: CircularProgressIndicator.adaptive()) : Form(key: _formKey, child: Builder(builder: (formContext) => ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 120), children: [
             _FormHeader(isEdit: widget.item != null),
             const SizedBox(height: 22),
-            _FieldShell(label: barber_shopTr(context, 'field.owner_id'), child: InkWell(onTap: _pickownerId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_ownerOptions.firstWhere((e) => e['id'].toString() == _ownerId?.toString(), orElse: () => {'id': '', 'name': barber_shopTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)])))),
+            if (isAdmin)
+              _FieldShell(label: barber_shopTr(context, 'field.owner_id'), child: InkWell(onTap: _pickownerId, borderRadius: BorderRadius.circular(16), child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: Row(children: [Expanded(child: Text(_displayName(_ownerOptions.firstWhere((e) => e['id'].toString() == _ownerId?.toString(), orElse: () => {'id': '', 'name': barber_shopTr(context, 'form.select')})))), const Icon(Icons.keyboard_arrow_down_rounded)])))),
             _FieldShell(label: barber_shopTr(context, 'field.name'), child: TextFormField(controller: _nameController,  decoration: InputDecoration(hintText: barber_shopTr(context, 'field.name'), border: InputBorder.none, isDense: true), validator: (v) { if (v == null || v.trim().isEmpty) return barber_shopTr(context, 'form.required');  return null; })),
             _FieldShell(label: barber_shopTr(context, 'field.app_name'), child: TextFormField(controller: _appNameController,  decoration: InputDecoration(hintText: barber_shopTr(context, 'field.app_name'), border: InputBorder.none, isDense: true), validator: (v) { if (v == null || v.trim().isEmpty) return barber_shopTr(context, 'form.required');  return null; })),
             _FieldShell(label: barber_shopTr(context, 'field.slug'), child: TextFormField(controller: _slugController,  decoration: InputDecoration(hintText: barber_shopTr(context, 'field.slug'), border: InputBorder.none, isDense: true), validator: (v) { if (v == null || v.trim().isEmpty) return barber_shopTr(context, 'form.required');  return null; })),
@@ -153,9 +165,82 @@ class _BarberShopFormPageState extends State<BarberShopFormPage> {
             PremiumImagePicker(label: barber_shopTr(context, 'field.banner'), path: _bannerPath, currentUrl: widget.item?['banner'] != null ? '${ApiService.serverUrl}/${widget.item!['banner']}' : null, onPicked: (p) => setState(() => _bannerPath = p)),
             _FieldShell(label: barber_shopTr(context, 'field.primary_color'), child: TextFormField(controller: _primaryColorController,  decoration: InputDecoration(hintText: barber_shopTr(context, 'field.primary_color'), border: InputBorder.none, isDense: true), validator: (v) { if (v == null || v.trim().isEmpty) return barber_shopTr(context, 'form.required');  return null; })),
             _FieldShell(label: barber_shopTr(context, 'field.secondary_color'), child: TextFormField(controller: _secondaryColorController,  decoration: InputDecoration(hintText: barber_shopTr(context, 'field.secondary_color'), border: InputBorder.none, isDense: true), validator: (v) { if (v == null || v.trim().isEmpty) return barber_shopTr(context, 'form.required');  return null; })),
-            _FieldShell(label: barber_shopTr(context, 'field.trial_ends_at'), child: InkWell(onTap: () => _pickDateTime(_trialEndsAtController), borderRadius: BorderRadius.circular(12), child: InputDecorator(decoration: InputDecoration(border: InputBorder.none, isDense: true, suffixIcon: const Icon(Icons.event_rounded)), child: Text(_trialEndsAtController.text.isEmpty ? barber_shopTr(context, 'form.select_datetime') : _trialEndsAtController.text, style: TextStyle(color: _trialEndsAtController.text.isEmpty ? Theme.of(context).colorScheme.onSurfaceVariant : null, fontWeight: FontWeight.w600))))),
-            _FieldShell(label: barber_shopTr(context, 'field.expires_at'), child: InkWell(onTap: () => _pickDateTime(_expiresAtController), borderRadius: BorderRadius.circular(12), child: InputDecorator(decoration: InputDecoration(border: InputBorder.none, isDense: true, suffixIcon: const Icon(Icons.event_rounded)), child: Text(_expiresAtController.text.isEmpty ? barber_shopTr(context, 'form.select_datetime') : _expiresAtController.text, style: TextStyle(color: _expiresAtController.text.isEmpty ? Theme.of(context).colorScheme.onSurfaceVariant : null, fontWeight: FontWeight.w600))))),
-            Container(decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: SwitchListTile.adaptive(contentPadding: const EdgeInsets.symmetric(horizontal: 16), title: Text(barber_shopTr(context, 'field.active'), style: const TextStyle(fontWeight: FontWeight.w700)), value: _active, onChanged: (v) => setState(() => _active = v))),
+
+            // Subscription Dates (Read-Only for Salon Owners, Editable for Super Admin)
+            _FieldShell(
+              label: 'Periudha Provë (Trial Ends At)',
+              child: isAdmin
+                ? InkWell(
+                    onTap: () => _pickDateTime(_trialEndsAtController),
+                    borderRadius: BorderRadius.circular(12),
+                    child: InputDecorator(
+                      decoration: const InputDecoration(border: InputBorder.none, isDense: true, suffixIcon: Icon(Icons.event_rounded)),
+                      child: Text(_trialEndsAtController.text.isEmpty ? barber_shopTr(context, 'form.select_datetime') : _trialEndsAtController.text, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                  )
+                : Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(_trialEndsAtController.text.isEmpty ? 'Mungon' : _trialEndsAtController.text, style: const TextStyle(fontWeight: FontWeight.extrabold, fontSize: 13.5)),
+                        const Icon(Icons.lock_outline_rounded, size: 16, color: Colors.grey),
+                      ],
+                    ),
+                  ),
+            ),
+
+            _FieldShell(
+              label: 'Datë Skadence (Expires At)',
+              child: isAdmin
+                ? InkWell(
+                    onTap: () => _pickDateTime(_expiresAtController),
+                    borderRadius: BorderRadius.circular(12),
+                    child: InputDecorator(
+                      decoration: const InputDecoration(border: InputBorder.none, isDense: true, suffixIcon: Icon(Icons.event_rounded)),
+                      child: Text(_expiresAtController.text.isEmpty ? barber_shopTr(context, 'form.select_datetime') : _expiresAtController.text, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                  )
+                : Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(_expiresAtController.text.isEmpty ? 'Mungon' : _expiresAtController.text, style: const TextStyle(fontWeight: FontWeight.extrabold, fontSize: 13.5)),
+                        const Icon(Icons.lock_outline_rounded, size: 16, color: Colors.grey),
+                      ],
+                    ),
+                  ),
+            ),
+
+            // Active Status (Read-Only for Salon Owners, Toggleable for Super Admin)
+            isAdmin
+              ? Container(decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: SwitchListTile.adaptive(contentPadding: const EdgeInsets.symmetric(horizontal: 16), title: Text(barber_shopTr(context, 'field.active'), style: const TextStyle(fontWeight: FontWeight.w700)), value: _active, onChanged: (v) => setState(() => _active = v)))
+              : _FieldShell(
+                  label: barber_shopTr(context, 'field.active'),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: (_active ? Colors.green : Colors.red).withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _active ? 'AKTIV' : 'INAKTIV',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: _active ? Colors.green : Colors.red),
+                          ),
+                        ),
+                        const Spacer(),
+                        const Icon(Icons.lock_outline_rounded, size: 16, color: Colors.grey),
+                      ],
+                    ),
+                  ),
+                ),
+
+            const SizedBox(height: 14),
             Container(decoration: BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.outlineVariant), borderRadius: BorderRadius.circular(16)), child: SwitchListTile.adaptive(contentPadding: const EdgeInsets.symmetric(horizontal: 16), title: Text(barber_shopTr(context, 'field.sms_enabled'), style: const TextStyle(fontWeight: FontWeight.w700)), value: _smsEnabled, onChanged: (v) => setState(() => _smsEnabled = v))),
             _FieldShell(label: barber_shopTr(context, 'field.timezone'), child: TextFormField(controller: _timezoneController,  decoration: InputDecoration(hintText: barber_shopTr(context, 'field.timezone'), border: InputBorder.none, isDense: true), validator: (v) { if (v == null || v.trim().isEmpty) return barber_shopTr(context, 'form.required');  return null; })),
             _FieldShell(label: 'Monedha Zyrtare (Currency)', child: TextFormField(controller: _currencyController, decoration: const InputDecoration(hintText: 'p.sh: Lekë, €, \$, CHF, £', border: InputBorder.none, isDense: true))),
