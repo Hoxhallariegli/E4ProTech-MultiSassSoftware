@@ -162,15 +162,6 @@ class MessageTemplate extends Model
                 }
             }
         }
-                } elseif ($type === 'reschedule' || $type === 'update') {
-                    $templateText = "Pershendetje {customer_name}! Takimi juaj ne {shop_name} me {staff_name} u ndryshua per ne oren {time} {date}. Rezervo ose menaxho: {booking_link}";
-                } elseif ($type === 'cancellation' || $type === 'cancelled') {
-                    $templateText = "Pershendetje {customer_name}! Takimi juaj ne {shop_name} per ne oren {time} {date} u anulua. Rezervo perseri: {booking_link}";
-                } else {
-                    $templateText = "Pershendetje {customer_name}! Rezervimi {service_name} ne {shop_name} u konfirmua per oren {time} me date {date}. Rezervo ose menaxho: {booking_link}";
-                }
-            }
-        }
 
         $shopSlug = $booking->barberShop?->slug ?? 'salon';
         $bookingLink = url("/b/{$shopSlug}");
