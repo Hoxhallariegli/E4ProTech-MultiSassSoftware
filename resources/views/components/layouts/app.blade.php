@@ -362,41 +362,46 @@
         });
     }
 
-    // PWA BeforeInstallPrompt Event Handler
-    let deferredPwaPrompt;
-    const pwaBanner = document.getElementById('pwa-install-banner');
-    const pwaBtn = document.getElementById('pwa-install-btn');
-    const pwaClose = document.getElementById('pwa-install-close');
+    // PWA BeforeInstallPrompt Event Handler (Isolated IIFE to prevent re-declaration errors in Livewire)
+    (function() {
+        if (window.pwaScriptInitialized) return;
+        window.pwaScriptInitialized = true;
 
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPwaPrompt = e;
-        if (!localStorage.getItem('pwa_banner_closed')) {
-            pwaBanner?.classList.remove('hidden');
-        }
-    });
+        window.deferredPwaPrompt = window.deferredPwaPrompt || null;
+        const pwaBanner = document.getElementById('pwa-install-banner');
+        const pwaBtn = document.getElementById('pwa-install-btn');
+        const pwaClose = document.getElementById('pwa-install-close');
 
-    pwaBtn?.addEventListener('click', async () => {
-        if (deferredPwaPrompt) {
-            deferredPwaPrompt.prompt();
-            const { outcome } = await deferredPwaPrompt.userChoice;
-            if (outcome === 'accepted') {
-                console.log('User installed the PWA');
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            window.deferredPwaPrompt = e;
+            if (!localStorage.getItem('pwa_banner_closed')) {
+                pwaBanner?.classList.remove('hidden');
             }
-            deferredPwaPrompt = null;
+        });
+
+        pwaBtn?.addEventListener('click', async () => {
+            if (window.deferredPwaPrompt) {
+                window.deferredPwaPrompt.prompt();
+                const { outcome } = await window.deferredPwaPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    console.log('User installed the PWA');
+                }
+                window.deferredPwaPrompt = null;
+                pwaBanner?.classList.add('hidden');
+            }
+        });
+
+        pwaClose?.addEventListener('click', () => {
             pwaBanner?.classList.add('hidden');
-        }
-    });
+            localStorage.setItem('pwa_banner_closed', '1');
+        });
 
-    pwaClose?.addEventListener('click', () => {
-        pwaBanner?.classList.add('hidden');
-        localStorage.setItem('pwa_banner_closed', '1');
-    });
-
-    window.addEventListener('appinstalled', () => {
-        pwaBanner?.classList.add('hidden');
-        console.log('E4ProTech PWA Installed');
-    });
+        window.addEventListener('appinstalled', () => {
+            pwaBanner?.classList.add('hidden');
+            console.log('E4ProTech PWA Installed');
+        });
+    })();
 
     @if(session()->has('success'))
         window.addEventListener('DOMContentLoaded', () => {
