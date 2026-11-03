@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/core/widgets/app_toast.dart';
 import 'package:mobile_gateway/core/widgets/premium_image_picker.dart';
 import 'package:mobile_gateway/l10n/customer_localization.dart';
 import '../cubit/customer_cubit.dart';
@@ -123,6 +124,9 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
       child: BlocListener<CustomerCubit, CustomerState>(
         listener: (context, state) {
           if (state is CustomerSaved) {
+            final isEdit = widget.item?['id'] != null;
+            final msg = isEdit ? 'Klienti u përditësua me sukses!' : 'Klienti u krijua me sukses!';
+            AppToast.showSuccess(context, msg);
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (context.mounted && Navigator.of(context).canPop()) {
                 Navigator.of(context).pop(true);
@@ -131,7 +135,7 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
           }
           if (state is CustomerFailure) {
             final message = state.message.trim().isEmpty ? customerTr(context, 'form.save_error') : state.message;
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 4)));
+            AppToast.showError(context, message);
           }
         },
         child: Scaffold(

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_gateway/services/api_service.dart';
 import 'package:mobile_gateway/services/auth_service.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/core/widgets/app_toast.dart';
 import 'package:mobile_gateway/modules/dashboard/presentation/widgets/shop_switcher_widget.dart';
 import 'package:mobile_gateway/modules/dashboard/payment/presentation/pages/payment_form_page.dart';
 import 'package:mobile_gateway/core/branding/branding_cubit.dart';
@@ -224,9 +225,7 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
               child: BlocConsumer<BookingCubit, BookingState>(
                 listener: (context, state) {
                   if (state is BookingFailure) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(state.message), behavior: SnackBarBehavior.floating),
-                    );
+                    AppToast.showError(context, state.message);
                   }
                 },
                 builder: (context, state) {
@@ -931,12 +930,13 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
 
                     if (res.statusCode == 200 || res.statusCode == 201) {
                       _refresh();
+                      if (context.mounted) {
+                        AppToast.showSuccess(context, 'Pagesa u krye me sukses!');
+                      }
                     } else {
                       final err = ApiService.extractErrorMessage(res);
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Gabim gjatë pagesës: $err'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
-                        );
+                        AppToast.showError(context, 'Gabim gjatë pagesës: $err');
                       }
                     }
                   },
@@ -980,8 +980,17 @@ class BookingCalendarPageState extends State<BookingCalendarPage> {
                       if (confirmCancel != true) return;
                     }
 
-                    await ApiService.put('/bookings/$id', {'status': 'cancelled'});
-                    _refresh();
+                    try {
+                      await ApiService.put('/bookings/$id', {'status': 'cancelled'});
+                      _refresh();
+                      if (context.mounted) {
+                        AppToast.showSuccess(context, 'Rezervimi u anulua me sukses!');
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        AppToast.showError(context, 'Gabim gjatë anulimit të rezervimit: ${ApiService.extractErrorMessage(e)}');
+                      }
+                    }
                   },
                 ),
               ],

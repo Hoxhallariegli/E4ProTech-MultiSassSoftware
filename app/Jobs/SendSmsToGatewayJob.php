@@ -36,19 +36,19 @@ class SendSmsToGatewayJob
             return;
         }
 
-        // Delete queue item ONLY if the booking's appointment time has already passed
-        if ($queue->booking && $queue->booking->appointment_at && $queue->booking->appointment_at->isPast()) {
-            $queue->delete();
-            Log::info("🧹 [SendSmsToGatewayJob] Deleted past appointment SMS Queue ID #{$queue->id}");
-            return;
-        }
-
         $shopId = $queue->barber_shop_id;
         $booking = $queue->booking;
         $barberId = $booking?->barber_id;
         $customerId = $booking?->customer_id;
         $bookingId = $queue->booking_id ?? $booking?->id;
         $templateType = $queue->resolved_template_type;
+
+        // Delete queue item ONLY if it is a reminder AND the booking's appointment time has already passed
+        if ($templateType === 'reminder' && $booking && $booking->appointment_at && $booking->appointment_at->isPast()) {
+            $queue->delete();
+            Log::info("🧹 [SendSmsToGatewayJob] Deleted past appointment Reminder SMS Queue ID #{$queue->id}");
+            return;
+        }
 
         // STRICT DEDUPLICATION: If a log record already exists for this booking_id and template_type, DO NOT SEND DUPLICATE!
         if ($booking && $customerId) {
@@ -81,7 +81,7 @@ class SendSmsToGatewayJob
             if ($waSent) {
                 // Delete from queue table immediately on success so queue stays 100% clean!
                 $queue->delete();
-                Log::info("💬 [SendSmsToGatewayJob] Scheduled reminder ID #{$queue->id} (Booking #{$bookingId}) successfully sent via WhatsApp Gateway and deleted from queue.");
+                Log::info("💬 [SendSmsToGatewayJob] Scheduled message ID #{$queue->id} (Booking #{$bookingId}) successfully sent via WhatsApp Gateway and deleted from queue.");
                 return;
             }
         } catch (\Throwable $e) {

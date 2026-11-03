@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/core/widgets/app_toast.dart';
 import 'package:mobile_gateway/core/widgets/premium_image_picker.dart';
 import 'package:mobile_gateway/l10n/service_localization.dart';
 import '../cubit/service_cubit.dart';
@@ -116,6 +117,9 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
       child: BlocListener<ServiceCubit, ServiceState>(
         listener: (context, state) {
           if (state is ServiceSaved) {
+            final isEdit = widget.item?['id'] != null;
+            final msg = isEdit ? 'Shërbimi u përditësua me sukses!' : 'Shërbimi u krijua me sukses!';
+            AppToast.showSuccess(context, msg);
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (context.mounted && Navigator.of(context).canPop()) {
                 Navigator.of(context).pop(true);
@@ -124,7 +128,7 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
           }
           if (state is ServiceFailure) {
             final message = state.message.trim().isEmpty ? serviceTr(context, 'form.save_error') : state.message;
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 4)));
+            AppToast.showError(context, message);
           }
         },
         child: Scaffold(

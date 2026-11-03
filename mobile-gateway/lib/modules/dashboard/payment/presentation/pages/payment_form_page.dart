@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/core/widgets/app_toast.dart';
 import 'package:mobile_gateway/core/branding/branding_cubit.dart';
 import 'package:mobile_gateway/core/widgets/premium_image_picker.dart';
 import 'package:mobile_gateway/l10n/payment_localization.dart';
@@ -245,10 +246,15 @@ class _PaymentFormPageState extends State<PaymentFormPage> {
       create: (_) => PaymentCubit(repository),
       child: BlocListener<PaymentCubit, PaymentState>(
         listener: (context, state) {
-          if (state is PaymentSaved) Navigator.pop(context, true);
+          if (state is PaymentSaved) {
+            final isEdit = widget.item?['id'] != null;
+            final msg = isEdit ? 'Pagesa u përditësua me sukses!' : 'Pagesa u krijua me sukses!';
+            AppToast.showSuccess(context, msg);
+            Navigator.pop(context, true);
+          }
           if (state is PaymentFailure) {
             final message = state.message.trim().isEmpty ? paymentTr(context, 'form.save_error') : state.message;
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 4)));
+            AppToast.showError(context, message);
           }
         },
         child: Scaffold(

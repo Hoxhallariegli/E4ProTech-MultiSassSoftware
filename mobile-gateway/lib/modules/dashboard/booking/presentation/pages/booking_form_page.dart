@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile_gateway/core/widgets/premium_widgets.dart';
+import 'package:mobile_gateway/core/widgets/app_toast.dart';
 import 'package:mobile_gateway/core/branding/branding_cubit.dart';
 import 'package:mobile_gateway/l10n/booking_localization.dart';
 import '../cubit/booking_cubit.dart';
@@ -653,13 +654,18 @@ class _BookingFormPageState extends State<BookingFormPage> {
       create: (_) => BookingCubit(repository),
       child: BlocListener<BookingCubit, BookingState>(
         listener: (context, state) {
-          if (state is BookingSaved) Navigator.pop(context, true);
+          if (state is BookingSaved) {
+            final isEdit = widget.item?['id'] != null;
+            final msg = isEdit ? 'Rezervimi u përditësua me sukses!' : 'Rezervimi u krijua me sukses!';
+            AppToast.showSuccess(context, msg);
+            Navigator.pop(context, true);
+          }
           if (state is BookingFailure) {
             final message = state.message.trim().isEmpty ? bookingTr(context, 'form.save_error') : state.message;
             if (message.toLowerCase().contains('pushimi') || message.toLowerCase().contains('dreka') || message.toLowerCase().contains('lunch')) {
               _showLunchWarningDialog(context, message);
             } else {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 4)));
+              AppToast.showError(context, message);
             }
           }
         },
