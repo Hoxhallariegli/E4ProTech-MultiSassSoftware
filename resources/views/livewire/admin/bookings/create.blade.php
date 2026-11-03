@@ -111,6 +111,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto p-1 custom-scrollbar">
                         @foreach($serviceListObjects as $s)
                             <button type="button"
+                                    wire:key="service-btn-{{ $s->id }}"
                                     wire:click="selectService('{{ $s->id }}')"
                                     class="p-4 rounded-2xl text-left transition-all border flex items-center justify-between gap-3 relative {{ (string)$service_id === (string)$s->id ? 'bg-blue-600 text-white border-blue-600 shadow-xl shadow-blue-500/25 ring-2 ring-blue-400 scale-[1.01]' : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:bg-blue-50/50' }}">
                                 <div class="space-y-1">
@@ -162,15 +163,21 @@
 
                     {{-- Quick Date Buttons --}}
                     <div class="flex items-center gap-2 flex-wrap">
-                        <button type="button" wire:click="selectQuickDate(0)"
+                        <button type="button"
+                                wire:key="quick-date-btn-0"
+                                wire:click="selectQuickDate(0)"
                                 class="px-4 py-2 text-xs font-bold rounded-2xl border transition-all {{ $booking_date === now()->format('Y-m-d') ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-blue-500' }}">
                             {{ __('bookings.Today') }}
                         </button>
-                        <button type="button" wire:click="selectQuickDate(1)"
+                        <button type="button"
+                                wire:key="quick-date-btn-1"
+                                wire:click="selectQuickDate(1)"
                                 class="px-4 py-2 text-xs font-bold rounded-2xl border transition-all {{ $booking_date === now()->addDays(1)->format('Y-m-d') ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-blue-500' }}">
                             {{ __('bookings.Tomorrow') }}
                         </button>
-                        <button type="button" wire:click="selectQuickDate(2)"
+                        <button type="button"
+                                wire:key="quick-date-btn-2"
+                                wire:click="selectQuickDate(2)"
                                 class="px-4 py-2 text-xs font-bold rounded-2xl border transition-all {{ $booking_date === now()->addDays(2)->format('Y-m-d') ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-blue-500' }}">
                             {{ __('bookings.Day After Tomorrow') }}
                         </button>
@@ -214,6 +221,7 @@
                                     @if($slot['is_available'])
                                         {{-- Available Slot --}}
                                         <button type="button"
+                                                wire:key="slot-btn-available-{{ $slot['time'] }}"
                                                 wire:click="selectTimeSlot('{{ $slot['time'] }}')"
                                                 class="p-3 rounded-2xl text-xs font-black text-center transition-all border flex flex-col items-center justify-center gap-0.5 {{ $selected_time === $slot['time'] ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-500/30 scale-105 ring-2 ring-blue-400' : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-600 hover:text-white hover:border-emerald-600' }}">
                                             <div class="flex items-center gap-1 font-bold">
@@ -224,7 +232,8 @@
                                         </button>
                                     @elseif($slot['is_overbooked'])
                                         {{-- Overbooked / Busy Slot --}}
-                                        <div class="p-3 rounded-2xl text-xs font-bold text-center border bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800 opacity-90 flex flex-col items-center justify-center gap-0.5"
+                                        <div wire:key="slot-btn-busy-{{ $slot['time'] }}"
+                                             class="p-3 rounded-2xl text-xs font-bold text-center border bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800 opacity-90 flex flex-col items-center justify-center gap-0.5"
                                              title="{{ $slot['reason'] }}">
                                             <div class="flex items-center gap-1 font-black">
                                                 <span class="w-2 h-2 rounded-full bg-rose-600 inline-block"></span>
@@ -237,6 +246,7 @@
                                     @elseif($slot['is_past'])
                                         {{-- Past Slot (Clickable to allow recording past bookings) --}}
                                         <button type="button"
+                                                wire:key="slot-btn-past-{{ $slot['time'] }}"
                                                 wire:click="selectTimeSlot('{{ $slot['time'] }}')"
                                                 class="p-3 rounded-2xl text-xs font-bold text-center transition-all border flex flex-col items-center justify-center gap-0.5 {{ $selected_time === $slot['time'] ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-500/30 scale-105 ring-2 ring-blue-400' : 'bg-gray-100 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700' }}"
                                                 title="Klikoni për të shtuar takim për këtë orar të kaluar">
@@ -250,7 +260,8 @@
                                         </button>
                                     @else
                                         {{-- Exceeds Close --}}
-                                        <div class="p-3 rounded-2xl text-xs font-bold text-center border bg-gray-100 dark:bg-gray-800/60 text-gray-400 border-gray-200 dark:border-gray-700/60 opacity-60 flex flex-col items-center justify-center gap-0.5">
+                                        <div wire:key="slot-btn-closed-{{ $slot['time'] }}"
+                                             class="p-3 rounded-2xl text-xs font-bold text-center border bg-gray-100 dark:bg-gray-800/60 text-gray-400 border-gray-200 dark:border-gray-700/60 opacity-60 flex flex-col items-center justify-center gap-0.5">
                                             <div class="flex items-center gap-1">
                                                 <x-heroicon-o-lock-closed class="w-3.5 h-3.5 shrink-0 text-gray-400" />
                                                 <span>{{ $slot['time'] }}</span>
