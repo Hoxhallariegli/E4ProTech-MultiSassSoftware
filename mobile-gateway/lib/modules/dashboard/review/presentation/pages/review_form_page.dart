@@ -249,7 +249,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
             Text(
               '$currentRating / 5 Yje',
               style: TextStyle(
-                fontWeight: FontWeight.extrabold,
+                fontWeight: FontWeight.bold,
                 fontSize: 13,
                 color: Colors.amber.shade700,
               ),
