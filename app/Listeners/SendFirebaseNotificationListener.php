@@ -100,7 +100,7 @@ class SendFirebaseNotificationListener
                         $this->triggerGatewayDevice($shopId, 0, $formattedPhone, $parsedConfirmation, $booking->barber_id, $booking->customer_id, 'confirmation', $booking->id);
                         Log::info("📝 [STEP 4a] Direct Confirmation Message sent for Booking #{$booking->id} (Phone: {$booking->customer->phone}, Channel: {$preferredChannel})");
 
-                        // 2. Scheduled Reminder Message ONLY inserted into message_queues
+                        // 2. Scheduled Reminder Message ONLY inserted into message_queues if reminder time is in the future
                         $shop = $booking->barberShop;
                         if ($booking->appointment_at && $booking->appointment_at->isFuture()) {
                             $rawVal = $shop?->reminder_hours_before;
@@ -113,36 +113,38 @@ class SendFirebaseNotificationListener
                             $reminderMins = max(10, $reminderMins);
 
                             $scheduledReminderTime = $booking->appointment_at->copy()->subMinutes($reminderMins);
-                            if ($scheduledReminderTime->isPast()) {
-                                $scheduledReminderTime = now();
-                            }
 
-                            $parsedReminder = MessageTemplate::parseForBooking($booking, 'reminder', null, $preferredChannel);
-                            $existingReminder = MessageQueue::where('booking_id', $booking->id)
-                                ->where(function($q) {
-                                    $q->where('template_type', 'reminder')
-                                      ->orWhere('message_content', 'like', '%Rikujtes%')
-                                      ->orWhere('message_content', 'like', '%Reminder%');
-                                })->exists();
+                            // ONLY queue a reminder if the scheduled reminder time is in the FUTURE!
+                            if ($scheduledReminderTime->isFuture()) {
+                                $parsedReminder = MessageTemplate::parseForBooking($booking, 'reminder', null, $preferredChannel);
+                                $existingReminder = MessageQueue::where('booking_id', $booking->id)
+                                    ->where(function($q) {
+                                        $q->where('template_type', 'reminder')
+                                          ->orWhere('message_content', 'like', '%Rikujtes%')
+                                          ->orWhere('message_content', 'like', '%Reminder%');
+                                    })->exists();
 
-                            if (!$existingReminder) {
-                                $reminderQueueData = [
-                                    'barber_shop_id' => $booking->barber_shop_id,
-                                    'booking_id' => $booking->id,
-                                    'channel' => $preferredChannel,
-                                    'phone_number' => $formattedPhone,
-                                    'message_content' => $parsedReminder,
-                                    'scheduled_at' => $scheduledReminderTime,
-                                    'status' => 'pending',
-                                    'retry_count' => 0,
-                                ];
-                                if (Schema::hasColumn('message_queues', 'template_type')) {
-                                    $reminderQueueData['template_type'] = 'reminder';
+                                if (!$existingReminder) {
+                                    $reminderQueueData = [
+                                        'barber_shop_id' => $booking->barber_shop_id,
+                                        'booking_id' => $booking->id,
+                                        'channel' => $preferredChannel,
+                                        'phone_number' => $formattedPhone,
+                                        'message_content' => $parsedReminder,
+                                        'scheduled_at' => $scheduledReminderTime,
+                                        'status' => 'pending',
+                                        'retry_count' => 0,
+                                    ];
+                                    if (Schema::hasColumn('message_queues', 'template_type')) {
+                                        $reminderQueueData['template_type'] = 'reminder';
+                                    }
+                                    $reminderQueue = MessageQueue::create($reminderQueueData);
+                                    \App\Models\AuditTrail::log($reminderQueue, 'create', 'MessageQueues');
+
+                                    Log::info("⏰ [STEP 4a] Reminder Message scheduled for Booking #{$booking->id} at {$scheduledReminderTime} in MessageQueue");
                                 }
-                                $reminderQueue = MessageQueue::create($reminderQueueData);
-                                \App\Models\AuditTrail::log($reminderQueue, 'create', 'MessageQueues');
-
-                                Log::info("⏰ [STEP 4a] Reminder Message scheduled for Booking #{$booking->id} at {$scheduledReminderTime} in MessageQueue");
+                            } else {
+                                Log::info("⏭️ [SendFirebaseNotificationListener] Skipped reminder queue for Booking #{$booking->id} because reminder time {$scheduledReminderTime} has already passed.");
                             }
                         }
                     }
@@ -164,42 +166,47 @@ class SendFirebaseNotificationListener
                             $reminderMins = max(10, $reminderMins);
 
                             $scheduledReminderTime = $booking->appointment_at->copy()->subMinutes($reminderMins);
-                            if ($scheduledReminderTime->isPast()) {
-                                $scheduledReminderTime = now();
-                            }
 
-                            $parsedReminder = MessageTemplate::parseForBooking($booking, 'reminder', null, $preferredChannel);
+                            if ($scheduledReminderTime->isFuture()) {
+                                $parsedReminder = MessageTemplate::parseForBooking($booking, 'reminder', null, $preferredChannel);
 
-                            // Find and update existing pending reminder in MessageQueue
-                            $pendingReminder = MessageQueue::where('booking_id', $booking->id)
-                                ->where('status', 'pending')
-                                ->where(function($q) {
-                                    $q->where('template_type', 'reminder')
-                                      ->orWhere('message_content', 'like', '%Rikujtes%')
-                                      ->orWhere('message_content', 'like', '%Reminder%');
-                                })
-                                ->first();
+                                // Find and update existing pending reminder in MessageQueue
+                                $pendingReminder = MessageQueue::where('booking_id', $booking->id)
+                                    ->where('status', 'pending')
+                                    ->where(function($q) {
+                                        $q->where('template_type', 'reminder')
+                                          ->orWhere('message_content', 'like', '%Rikujtes%')
+                                          ->orWhere('message_content', 'like', '%Reminder%');
+                                    })
+                                    ->first();
 
-                            if ($pendingReminder) {
-                                $pendingReminder->update([
-                                    'channel' => $preferredChannel,
-                                    'scheduled_at' => $scheduledReminderTime,
-                                    'message_content' => $parsedReminder,
-                                    'phone_number' => $formattedPhone,
-                                ]);
-                                Log::info("⏰ [RESCHEDULE] Pending Reminder for Booking #{$booking->id} updated to {$scheduledReminderTime} with new content.");
+                                if ($pendingReminder) {
+                                    $pendingReminder->update([
+                                        'channel' => $preferredChannel,
+                                        'scheduled_at' => $scheduledReminderTime,
+                                        'message_content' => $parsedReminder,
+                                        'phone_number' => $formattedPhone,
+                                    ]);
+                                    Log::info("⏰ [RESCHEDULE] Pending Reminder for Booking #{$booking->id} updated to {$scheduledReminderTime}");
+                                } else {
+                                    MessageQueue::create([
+                                        'barber_shop_id' => $booking->barber_shop_id,
+                                        'booking_id' => $booking->id,
+                                        'channel' => $preferredChannel,
+                                        'template_type' => 'reminder',
+                                        'phone_number' => $formattedPhone,
+                                        'message_content' => $parsedReminder,
+                                        'scheduled_at' => $scheduledReminderTime,
+                                        'status' => 'pending',
+                                        'retry_count' => 0,
+                                    ]);
+                                }
                             } else {
-                                MessageQueue::create([
-                                    'barber_shop_id' => $booking->barber_shop_id,
-                                    'booking_id' => $booking->id,
-                                    'channel' => $preferredChannel,
-                                    'template_type' => 'reminder',
-                                    'phone_number' => $formattedPhone,
-                                    'message_content' => $parsedReminder,
-                                    'scheduled_at' => $scheduledReminderTime,
-                                    'status' => 'pending',
-                                    'retry_count' => 0,
-                                ]);
+                                // Delete any pending reminder queue row if updated to a time where reminder has passed
+                                MessageQueue::where('booking_id', $booking->id)
+                                    ->where('status', 'pending')
+                                    ->delete();
+                                Log::info("🧹 [SendFirebaseNotificationListener] Deleted pending reminder for updated Booking #{$booking->id} because reminder time has passed.");
                             }
                         }
 
