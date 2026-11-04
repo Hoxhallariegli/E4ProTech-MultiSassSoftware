@@ -53,14 +53,22 @@ class SendFirebaseNotificationListener
                 $shopName = $booking->barberShop?->name ?? 'Sallon';
                 $time = $booking->appointment_at ? $booking->appointment_at->format('H:i d/m/Y') : '';
 
-                $title = "Rezervim i Ri ($shopName)";
+                $status = $booking->status ?? 'pending';
 
-                // Custom Push Notification Body
-                if ($action === 'created') {
+                if ($status === 'confirmed') {
+                    $title = "✅ Takimi u Konfirmua! ({$shopName})";
+                    $body = "Klienti {$customerName} konfirmoi takimin e orës {$time} për {$serviceName}.";
+                } elseif ($status === 'cancelled') {
+                    $title = "❌ Takimi u Anulua! ({$shopName})";
+                    $body = "Klienti {$customerName} anuloi takimin e orës {$time} për {$serviceName}.";
+                } elseif ($action === 'created') {
+                    $title = "📅 Rezervim i Ri! ({$shopName})";
                     $body = "Klienti {$customerName} rezervoi {$serviceName} për orën {$time} tek {$barberName}.";
                 } elseif ($action === 'updated') {
+                    $title = "✏️ Takimi u Përditësua ({$shopName})";
                     $body = "Rezervimi i {$customerName} u përditësua për {$time}.";
                 } else {
+                    $title = "Njoftim Rezervimi ({$shopName})";
                     $body = "Ka një përditësim te rezervimi i {$customerName}.";
                 }
 
@@ -229,8 +237,12 @@ class SendFirebaseNotificationListener
                 $customData = [
                     'shop_id' => (string) ($shopId ?? 0),
                     'action' => (string) $action,
+                    'status' => (string) ($booking->status ?? 'updated'),
                     'model' => 'Booking',
                     'model_id' => (string) $booking->id,
+                    'booking_id' => (string) $booking->id,
+                    'type' => 'bookings.updated',
+                    'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
                 ];
 
                 if ($shopId) {
