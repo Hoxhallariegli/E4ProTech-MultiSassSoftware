@@ -109,15 +109,22 @@
                 <span>{{ $item->created_at?->format('d/m/Y H:i') }}</span>
             </div>
             @php
-                $months = 1;
-                if (!empty($item->notes) && preg_match('/(\d+)\s*(months|muaj)/i', (string) $item->notes, $matches)) {
+                $months = (int) ($item->months ?? 1);
+                if ($months <= 1 && !empty($item->notes) && preg_match('/(\d+)\s*(months|muaj)/i', (string) $item->notes, $matches)) {
                     $months = (int) $matches[1];
-                } elseif ($item->plan?->duration_months) {
+                } elseif ($months <= 1 && $item->plan?->duration_months) {
                     $months = (int) $item->plan->duration_months;
                 }
+
+                $periodText = match($months) {
+                    12 => '1 Vit (12 Muaj)',
+                    24 => '2 Vite (24 Muaj)',
+                    36 => '3 Vite (36 Muaj)',
+                    default => "{$months} Muaj",
+                };
             @endphp
             <div class="text-[11px] font-semibold text-gray-500 dark:text-gray-400">
-                <span>{{ $months }} {{ $months == 12 ? 'Vit (12 Muaj)' : ($months == 24 ? 'Vite (24 Muaj)' : 'Muaj') }}</span>
+                <span>{{ $periodText }}</span>
                 @if($item->status === 'approved' && $item->barberShop?->expires_at)
                     <span class="text-emerald-600 dark:text-emerald-400 font-mono font-bold block">
                         {{ __('subscription-renewals.Expires') }}: {{ $item->barberShop->expires_at->format('d/m/Y') }}
