@@ -63,7 +63,7 @@
                     <div class="text-amber-400 text-3xl mb-1">⏳</div>
                     <h3 class="text-base font-semibold text-amber-300">Kjo lidhje ka skaduar</h3>
                     <p class="text-xs text-slate-400">
-                        Takimi #{{ $booking->id }} ka përfunduar ose është kërkuar jashtë orarit të lejuar.
+                        Ky rezervim #{{ $shortCode ?? dechex($booking->id * 7919) }} ka përfunduar ose është kërkuar jashtë orarit të lejuar.
                     </p>
                 </div>
             @else
