@@ -163,8 +163,8 @@ class MessageTemplate extends Model
             }
         }
 
-        $shopSlug = $booking->barberShop?->slug ?? 'salon';
-        $bookingLink = url("/b/{$shopSlug}/{$booking->id}");
+        $shortCode = dechex($booking->id * 7919);
+        $bookingLink = url("/m/{$shortCode}");
 
         $replacements = [
             '{customer_name}' => $booking->customer?->name ?? 'Klient',

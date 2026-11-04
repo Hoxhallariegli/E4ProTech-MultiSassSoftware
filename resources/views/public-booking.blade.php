@@ -93,7 +93,7 @@
 
                 <!-- Action Button for Customer -->
                 @if($booking->status !== 'cancelled')
-                    <form action="{{ route('public.booking.cancel', ['slug' => $shop->slug ?? 'salon', 'id' => $booking->id]) }}" method="POST" onsubmit="return confirm('Jeni i sigurt që dëshironi ta anuloni këtë takim?');">
+                    <form action="{{ isset($shortCode) ? route('public.booking.cancel.short', ['code' => $shortCode]) : route('public.booking.cancel', ['slug' => $shop->slug ?? 'salon', 'id' => $booking->id]) }}" method="POST" onsubmit="return confirm('Jeni i sigurt që dëshironi ta anuloni këtë takim?');">
                         @csrf
                         <button type="submit" class="w-full py-3 px-4 bg-rose-600/90 hover:bg-rose-600 text-white text-sm font-semibold rounded-2xl transition duration-200 shadow-lg shadow-rose-600/20">
                             ❌ Anulo Këtë Takim
