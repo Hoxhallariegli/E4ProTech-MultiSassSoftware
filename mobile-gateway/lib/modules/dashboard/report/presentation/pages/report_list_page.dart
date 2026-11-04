@@ -85,8 +85,11 @@ class _ReportListPageState extends State<ReportListPage> {
         final list = (decodedBookings['data'] as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
 
         _periodBookings = list.where((b) {
+          final apptStr = b['appointment_at']?.toString();
+          final appt = apptStr != null ? DateTime.tryParse(apptStr)?.toLocal() : null;
+          final matchesDate = appt == null || (appt.isAfter(startDate.subtract(const Duration(seconds: 1))) && appt.isBefore(endDate.add(const Duration(days: 1))));
           final matchesBarber = _selectedBarberId == null || b['barber_id']?.toString() == _selectedBarberId.toString();
-          return matchesBarber;
+          return matchesDate && matchesBarber;
         }).toList();
 
         // Calculate metrics locally if API metrics missing

@@ -60,6 +60,20 @@ class BookingController extends Controller
             }
         }
 
+        if ($request->filled('start_date')) {
+            try {
+                $start = \Carbon\Carbon::parse($request->input('start_date'))->startOfDay();
+                $query->where('appointment_at', '>=', $start);
+            } catch (\Throwable $e) {}
+        }
+
+        if ($request->filled('end_date')) {
+            try {
+                $end = \Carbon\Carbon::parse($request->input('end_date'))->endOfDay();
+                $query->where('appointment_at', '<=', $end);
+            } catch (\Throwable $e) {}
+        }
+
         $items = $query->orderBy($sortField, $direction)->paginate($perPage)->withQueryString();
         return BookingResource::collection($items);
     }
