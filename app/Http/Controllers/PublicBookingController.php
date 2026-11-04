@@ -53,6 +53,17 @@ class PublicBookingController extends Controller
         return $this->renderView($booking, $code);
     }
 
+    public function confirmShort(Request $request, string $code)
+    {
+        $booking = static::resolveBooking($code);
+
+        if (!$booking) {
+            return redirect()->back()->with('error', 'Rezervimi nuk u gjet.');
+        }
+
+        return $this->processConfirmation($booking);
+    }
+
     public function cancelShort(Request $request, string $code)
     {
         $booking = static::resolveBooking($code);
@@ -76,6 +87,19 @@ class PublicBookingController extends Controller
 
         $code = dechex($booking->id * 7919);
         return $this->renderView($booking, $code);
+    }
+
+    public function confirm(Request $request, string $slug, int $id)
+    {
+        $booking = Booking::withoutGlobalScope('barber_shop_access')
+            ->where('id', $id)
+            ->first();
+
+        if (!$booking) {
+            return redirect()->back()->with('error', 'Rezervimi nuk u gjet.');
+        }
+
+        return $this->processConfirmation($booking);
     }
 
     public function cancel(Request $request, string $slug, int $id)
@@ -109,6 +133,22 @@ class PublicBookingController extends Controller
             'appointmentAt' => $appointmentAt,
             'shortCode' => $code,
         ]);
+    }
+
+    protected function processConfirmation(Booking $booking)
+    {
+        $appointmentAt = $booking->appointment_at ? Carbon::parse($booking->appointment_at) : null;
+
+        if (in_array($booking->status, ['cancelled', 'completed'], true) || ($appointmentAt && $appointmentAt->isPast())) {
+            return redirect()->back()->with('error', 'Kjo lidhje ka skaduar. Nuk mund ta konfirmoni më këtë takim.');
+        }
+
+        if ($booking->status !== 'confirmed') {
+            $booking->update(['status' => 'confirmed']);
+            AuditTrail::logCustom($booking, 'update', 'Bookings', "Konfirmuar nga klienti nëpërmjet linkut publik (#{$booking->id})");
+        }
+
+        return redirect()->back()->with('success', 'Takimi juaj u konfirmua me sukses. Ju mirëpresim!');
     }
 
     protected function processCancellation(Booking $booking)

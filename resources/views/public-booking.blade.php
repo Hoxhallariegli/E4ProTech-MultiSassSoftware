@@ -8,31 +8,51 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        :root {
+            --brand-primary: {{ $shop->primary_color ?: '#10b981' }};
+            --brand-secondary: {{ $shop->secondary_color ?: '#059669' }};
+        }
+        .btn-brand-primary {
+            background-color: var(--brand-primary);
+        }
+        .btn-brand-primary:hover {
+            filter: brightness(0.9);
+        }
+        .text-brand-primary {
+            color: var(--brand-primary);
+        }
+        .border-brand-primary {
+            border-color: var(--brand-primary);
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4">
 
     <div class="max-w-md w-full bg-slate-800 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden">
 
-        <!-- Header -->
-        <div class="p-6 bg-slate-800/80 border-b border-slate-700 text-center relative">
-            <div class="w-16 h-16 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl font-bold">
-                ✂️
-            </div>
+        <!-- Header with Shop Branding -->
+        <div class="p-6 bg-slate-800/90 border-b border-slate-700 text-center relative">
+            @if($shop && !empty($shop->logo))
+                <img src="{{ $shop->logo_url }}" alt="{{ $shop->name }}" class="w-16 h-16 rounded-2xl object-cover border border-slate-600/50 shadow-md mx-auto mb-3" />
+            @else
+                <div class="w-16 h-16 bg-slate-700 text-brand-primary border border-slate-600/50 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl font-bold shadow-md">
+                    ✂️
+                </div>
+            @endif
             <h1 class="text-xl font-bold text-white">{{ $shop->name ?? 'Salloni' }}</h1>
-            <p class="text-xs text-slate-400 mt-1">Detajet e Takimit Juaj</p>
+            <p class="text-xs text-slate-400 mt-1">Detajet & Menaxhimi i Takimit Juaj</p>
         </div>
 
         <div class="p-6 space-y-6">
 
             @if(session('success'))
-                <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 p-4 rounded-2xl text-sm text-center">
+                <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 p-4 rounded-2xl text-sm text-center font-medium">
                     {{ session('success') }}
                 </div>
             @endif
 
             @if(session('error'))
-                <div class="bg-rose-500/10 border border-rose-500/30 text-rose-400 p-4 rounded-2xl text-sm text-center">
+                <div class="bg-rose-500/10 border border-rose-500/30 text-rose-400 p-4 rounded-2xl text-sm text-center font-medium">
                     {{ session('error') }}
                 </div>
             @endif
@@ -48,7 +68,7 @@
                 </div>
             @else
                 <!-- Active Booking Details -->
-                <div class="bg-slate-900/50 border border-slate-700/60 rounded-2xl p-4 space-y-3">
+                <div class="bg-slate-900/60 border border-slate-700/60 rounded-2xl p-4 space-y-3 shadow-inner">
 
                     <div class="flex items-center justify-between border-b border-slate-700/50 pb-3">
                         <span class="text-xs text-slate-400">Statusi i Takimit:</span>
@@ -68,7 +88,7 @@
 
                     <div class="flex justify-between items-center text-sm">
                         <span class="text-slate-400">Shërbimi:</span>
-                        <span class="font-semibold text-emerald-400">{{ $booking->service?->name ?? 'Shërbim Kryesor' }}</span>
+                        <span class="font-semibold text-brand-primary">{{ $booking->service?->name ?? 'Shërbim Kryesor' }}</span>
                     </div>
 
                     <div class="flex justify-between items-center text-sm">
@@ -85,20 +105,31 @@
 
                     <div class="flex justify-between items-center text-sm">
                         <span class="text-slate-400">Çmimi:</span>
-                        <span class="font-bold text-emerald-400">
+                        <span class="font-bold text-brand-primary">
                             {{ number_format((float) ($booking->service?->price ?? $booking->total_price ?? 0), 2) }} Lekë
                         </span>
                     </div>
                 </div>
 
-                <!-- Action Button for Customer -->
+                <!-- Action Buttons for Customer -->
                 @if($booking->status !== 'cancelled')
-                    <form action="{{ isset($shortCode) ? route('public.booking.cancel.short', ['code' => $shortCode]) : route('public.booking.cancel', ['slug' => $shop->slug ?? 'salon', 'id' => $booking->id]) }}" method="POST" onsubmit="return confirm('Jeni i sigurt që dëshironi ta anuloni këtë takim?');">
-                        @csrf
-                        <button type="submit" class="w-full py-3 px-4 bg-rose-600/90 hover:bg-rose-600 text-white text-sm font-semibold rounded-2xl transition duration-200 shadow-lg shadow-rose-600/20">
-                            ❌ Anulo Këtë Takim
-                        </button>
-                    </form>
+                    <div class="space-y-3">
+                        @if($booking->status === 'pending')
+                            <form action="{{ isset($shortCode) ? route('public.booking.confirm.short', ['code' => $shortCode]) : route('public.booking.confirm', ['slug' => $shop->slug ?? 'salon', 'id' => $booking->id]) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="w-full py-3.5 px-4 btn-brand-primary text-white text-sm font-bold rounded-2xl transition duration-200 shadow-lg flex items-center justify-center gap-2">
+                                    <span>✅</span> Konfirmo Këtë Takim
+                                </button>
+                            </form>
+                        @endif
+
+                        <form action="{{ isset($shortCode) ? route('public.booking.cancel.short', ['code' => $shortCode]) : route('public.booking.cancel', ['slug' => $shop->slug ?? 'salon', 'id' => $booking->id]) }}" method="POST" onsubmit="return confirm('Jeni i sigurt që dëshironi ta anuloni këtë takim?');">
+                            @csrf
+                            <button type="submit" class="w-full py-3.5 px-4 bg-rose-600/90 hover:bg-rose-600 text-white text-sm font-bold rounded-2xl transition duration-200 shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2">
+                                <span>❌</span> Anulo Këtë Takim
+                            </button>
+                        </form>
+                    </div>
                 @endif
             @endif
 

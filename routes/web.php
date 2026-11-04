@@ -24,8 +24,10 @@ Route::get('/', WelcomeController::class);
 Route::get('krijo-sallonin', \App\Livewire\CreateSalonWizard::class)->name('krijo-sallonin');
 Route::get('s/{slug}', [\App\Http\Controllers\ShopLandingController::class, 'show'])->name('shop.landing');
 Route::get('m/{code}', [\App\Http\Controllers\PublicBookingController::class, 'showShort'])->name('public.booking.short');
+Route::post('m/{code}/confirm', [\App\Http\Controllers\PublicBookingController::class, 'confirmShort'])->name('public.booking.confirm.short');
 Route::post('m/{code}/cancel', [\App\Http\Controllers\PublicBookingController::class, 'cancelShort'])->name('public.booking.cancel.short');
 Route::get('b/{slug}/{id}', [\App\Http\Controllers\PublicBookingController::class, 'show'])->name('public.booking.show');
+Route::post('b/{slug}/{id}/confirm', [\App\Http\Controllers\PublicBookingController::class, 'confirm'])->name('public.booking.confirm');
 Route::post('b/{slug}/{id}/cancel', [\App\Http\Controllers\PublicBookingController::class, 'cancel'])->name('public.booking.cancel');
 Route::get('download/apk', [\App\Http\Controllers\Api\Mobile\AppVersionController::class, 'download'])->name('app.download.apk');
 Route::get('language/{locale}', function ($locale) {
