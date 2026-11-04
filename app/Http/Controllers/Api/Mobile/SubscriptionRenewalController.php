@@ -114,13 +114,19 @@ class SubscriptionRenewalController extends Controller
 
         try {
             $item = $query->findOrFail($id);
+            if (!$user->is_global_admin && in_array(strtolower((string)$item->status), ['approved', 'completed', 'active'], true)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nuk mund të fshini një kërkesë abonimi që është miratuar (APPROVED).',
+                ], 422);
+            }
             app(\App\Domain\SubscriptionRenewal\Actions\DeleteSubscriptionRenewalAction::class)->execute($item);
-            return response()->json(['success' => true, 'message' => 'Subscription Renewal request deleted.']);
+            return response()->json(['success' => true, 'message' => 'Kërkesa e abonimit u fshi me sukses.']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Delete Error: " . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => config('app.debug') ? $e->getMessage() : 'Record is referenced by other data and cannot be deleted.',
+                'message' => config('app.debug') ? $e->getMessage() : 'Nuk mund të fshihet kjo kërkesë abonimi.',
             ], 409);
         }
     }

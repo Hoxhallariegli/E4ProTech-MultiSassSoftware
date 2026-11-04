@@ -139,7 +139,7 @@ class SubscriptionRenewalCard extends StatelessWidget {
                 ),
               ),
 
-              if (onTap != null || onDelete != null)
+              if ((onTap != null || onDelete != null) && status == 'pending')
                 PopupMenuButton<String>(
                   padding: EdgeInsets.zero,
                   icon: Icon(Icons.more_vert_rounded, size: 20, color: isDark ? Colors.white70 : Colors.black54),
