@@ -22,7 +22,7 @@ class ReportController extends Controller
         $period = strtolower((string) $request->input('period_type', 'daily'));
         $dateStr = (string) $request->input('report_date', date('Y-m-d'));
 
-        $query = \App\Models\Booking::withoutGlobalScope('barber_shop_access');
+        $query = \App\Models\Booking::withoutGlobalScope('barber_shop_access')->with(['service', 'payment']);
 
         if ($shopId) {
             $query->where('barber_shop_id', $shopId);
