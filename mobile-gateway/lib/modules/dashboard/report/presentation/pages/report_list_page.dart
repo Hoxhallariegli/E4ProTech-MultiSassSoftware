@@ -224,7 +224,14 @@ class _ReportListPageState extends State<ReportListPage> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(AuthService.instance.user?['business']?['name'] ?? 'Salloni Aktiv', style: TextStyle(fontSize: 10, color: primaryColor, fontWeight: FontWeight.bold)),
+                Flexible(
+                  child: Text(
+                    AuthService.instance.user?['business']?['name'] ?? 'Salloni Aktiv',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 10, color: primaryColor, fontWeight: FontWeight.bold),
+                  ),
+                ),
                 Icon(Icons.keyboard_arrow_down_rounded, size: 12, color: primaryColor),
               ],
             ),
