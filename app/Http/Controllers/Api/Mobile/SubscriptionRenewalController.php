@@ -97,6 +97,14 @@ class SubscriptionRenewalController extends Controller
         }
 
         $item = $query->findOrFail($id);
+
+        if (!$user->is_global_admin && in_array(strtolower((string)$item->status), ['approved', 'completed', 'active'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Nuk mund të ndryshoni një kërkesë abonimi që është miratuar (APPROVED).',
+            ], 422);
+        }
+
         $data = $this->prepareData($request);
 
         if (!$user->is_global_admin) {

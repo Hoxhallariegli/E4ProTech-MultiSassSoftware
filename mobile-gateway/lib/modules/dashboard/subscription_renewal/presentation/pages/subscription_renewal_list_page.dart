@@ -607,10 +607,14 @@ class _SubscriptionRenewalListViewState extends State<_SubscriptionRenewalListVi
                       itemCount: items.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
+                        final item = items[index];
+                        final status = (item['status'] ?? '').toString().toLowerCase();
+                        final isPending = (status == 'pending');
+
                         return SubscriptionRenewalCard(
-                          item: items[index],
-                          onTap: canEdit ? () => _openForm(items[index]) : null,
-                          onDelete: canDelete ? () => _confirmDelete(context, items[index]) : null,
+                          item: item,
+                          onTap: (canEdit && isPending) ? () => _openForm(item) : null,
+                          onDelete: (canDelete && isPending) ? () => _confirmDelete(context, item) : null,
                         );
                       },
                     );

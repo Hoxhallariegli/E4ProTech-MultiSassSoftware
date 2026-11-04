@@ -145,6 +145,13 @@ class PublicBookingController extends Controller
 
         if ($booking->status !== 'confirmed') {
             $booking->update(['status' => 'confirmed']);
+            event(new \App\Events\BookingChanged($booking, 'updated'));
+            event(new \App\Events\FirebaseNotificationRequested(
+                event: 'bookings.updated',
+                modelClass: Booking::class,
+                modelId: $booking->id,
+                action: 'updated',
+            ));
             AuditTrail::logCustom($booking, 'update', 'Bookings', "Konfirmuar nga klienti nëpërmjet linkut publik (#{$booking->id})");
         }
 
@@ -159,8 +166,17 @@ class PublicBookingController extends Controller
             return redirect()->back()->with('error', 'Kjo lidhje ka skaduar. Nuk mund ta anuloni më këtë takim.');
         }
 
-        $booking->update(['status' => 'cancelled']);
-        AuditTrail::logCustom($booking, 'update', 'Bookings', "Anuluar nga klienti nëpërmjet linkut publik (#{$booking->id})");
+        if ($booking->status !== 'cancelled') {
+            $booking->update(['status' => 'cancelled']);
+            event(new \App\Events\BookingChanged($booking, 'updated'));
+            event(new \App\Events\FirebaseNotificationRequested(
+                event: 'bookings.updated',
+                modelClass: Booking::class,
+                modelId: $booking->id,
+                action: 'updated',
+            ));
+            AuditTrail::logCustom($booking, 'update', 'Bookings', "Anuluar nga klienti nëpërmjet linkut publik (#{$booking->id})");
+        }
 
         return redirect()->back()->with('success', 'Takimi juaj u anulua me sukses.');
     }

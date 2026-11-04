@@ -128,17 +128,26 @@ class FirebaseService
     {
         // Send directly to all registered FCM device tokens for this shop, or users belonging to this shop, or admins
         $tokens = DeviceToken::where(function($q) use ($shopId) {
-                $q->where('barber_shop_id', $shopId)
-                  ->orWhereHas('user', function($userQuery) use ($shopId) {
-                      $userQuery->where('barber_shop_id', $shopId)
-                                ->orWhereHas('roles', fn($roleQuery) => $roleQuery->where('name', 'admin'));
-                  });
+                if ($shopId > 0) {
+                    $q->where('barber_shop_id', $shopId)
+                      ->orWhereNull('barber_shop_id')
+                      ->orWhere('barber_shop_id', 0)
+                      ->orWhereHas('user', function($userQuery) use ($shopId) {
+                          $userQuery->where('barber_shop_id', $shopId)
+                                    ->orWhereNull('barber_shop_id')
+                                    ->orWhere('is_global_admin', true);
+                      });
+                } else {
+                    $q->whereNotNull('fcm_token');
+                }
             })
             ->whereNotNull('fcm_token')
+            ->where('fcm_token', '!=', '')
+            ->where('fcm_token', '!=', 'inactive_token')
             ->orderByDesc('last_used_at')
             ->get()
-            ->unique(fn($d) => $d->user_id ? "user_{$d->user_id}" : "token_{$d->fcm_token}")
             ->pluck('fcm_token')
+            ->unique()
             ->filter()
             ->values();
 

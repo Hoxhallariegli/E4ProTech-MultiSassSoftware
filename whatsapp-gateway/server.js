@@ -740,7 +740,7 @@ app.get('/api/whatsapp/qr', async (req, res) => {
             await sock.sendPresenceUpdate('paused', targetJid);
         } catch (_) {}
 
-        // Prepare message content (Text, Images, Documents, Audio, or Interactive Buttons)
+        // Prepare message content (Text, Images, Documents, or Audio)
         let messagePayload = { text: message || '' };
 
         if (image_url) {
@@ -754,19 +754,6 @@ app.get('/api/whatsapp/qr', async (req, res) => {
             };
         } else if (audio_url) {
             messagePayload = { audio: { url: audio_url }, ptt: true, mimetype: 'audio/ogg; codecs=opus' };
-        } else if (Array.isArray(buttons) && buttons.length > 0) {
-            const formattedButtons = buttons.map((b, i) => ({
-                buttonId: b.id || `btn_${i}`,
-                buttonText: { displayText: b.text || b.label || 'Zgjidh' },
-                type: 1
-            }));
-
-            messagePayload = {
-                text: message,
-                footer: 'E4ProTech Sallon Management',
-                buttons: formattedButtons,
-                headerType: 1
-            };
         }
 
         const sent = await sock.sendMessage(targetJid, messagePayload);
