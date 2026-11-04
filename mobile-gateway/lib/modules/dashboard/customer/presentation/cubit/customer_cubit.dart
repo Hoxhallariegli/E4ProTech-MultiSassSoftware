@@ -22,7 +22,12 @@ class CustomerCubit extends Cubit<CustomerState> {
   Future<void> load({bool refresh = false, String? search, Map<String, dynamic>? filters}) async {
     if (search != null) _search = search;
     if (filters != null) _filters = Map<String, dynamic>.from(filters);
-    if (refresh) { _page = 1; _hasMore = true; _items.clear(); }
+    if (refresh) {
+      CustomerRepository.clearCache();
+      _page = 1;
+      _hasMore = true;
+      _items.clear();
+    }
     if (_page == 1) emit(CustomerLoading(List.unmodifiable(_items)));
 
     try {
@@ -32,6 +37,7 @@ class CustomerCubit extends Cubit<CustomerState> {
         sort: _sort,
         direction: _direction,
         filters: _filters,
+        forceRefresh: refresh,
       );
       if (_page == 1) _items.clear();
       _items.addAll(result.page.items);
@@ -57,7 +63,10 @@ class CustomerCubit extends Cubit<CustomerState> {
     await load();
   }
 
-  Future<void> refresh() => load(refresh: true);
+  Future<void> refresh() {
+    CustomerRepository.clearCache();
+    return load(refresh: true);
+  }
 
   void setSort(String field) {
     if (_sort == field) {
