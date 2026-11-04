@@ -1923,115 +1923,136 @@ class _SmsGatewayGroupCardState extends State<_SmsGatewayGroupCard> {
             const SizedBox(height: 12),
 
             // ORA E RIKUJTESES SMS
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E212B) : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark ? const Color(0xFF3B4052) : theme.colorScheme.outlineVariant,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Koha e Rikujtesës (SMS Reminder)',
-                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Mesazhi "Rikujtesë" dërgohet ${widget.branding.reminderHours >= 60 ? "${widget.branding.reminderHours ~/ 60} orë" : "${widget.branding.reminderHours} minuta"} para orarit.',
-                          style: const TextStyle(fontSize: 10.5, color: Colors.grey),
-                        ),
-                      ],
+            Builder(
+              builder: (context) {
+                final isEn = Localizations.localeOf(context).languageCode == 'en';
+                final h = widget.branding.reminderHours;
+                final String timeText = isEn
+                    ? (h >= 1.0 ? '${h == h.roundToDouble() ? h.toInt() : h} ${h == 1.0 ? "hour" : "hours"}' : '${(h * 60).toInt()} minutes')
+                    : (h >= 1.0 ? '${h == h.roundToDouble() ? h.toInt() : h} orë' : '${(h * 60).toInt()} minuta');
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E212B) : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF3B4052) : theme.colorScheme.outlineVariant,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  SizedBox(
-                    width: 95,
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<double>(
-                        value: [0.5, 1.0, 2.0, 4.0, 24.0].contains(widget.branding.reminderHours) ? widget.branding.reminderHours : 2.0,
-                        isExpanded: true,
-                        dropdownColor: isDark ? const Color(0xFF2A2E3B) : Colors.white,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : Colors.black,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isEn ? 'Reminder Time (SMS & WA)' : 'Koha e Rikujtesës (SMS & WA)',
+                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              isEn
+                                  ? 'Reminder message is sent $timeText before appointment.'
+                                  : 'Mesazhi "Rikujtesë" dërgohet $timeText para orarit.',
+                              style: const TextStyle(fontSize: 10.5, color: Colors.grey),
+                            ),
+                          ],
                         ),
-                        items: const [
-                          DropdownMenuItem(value: 0.5, child: Text('30 Min')),
-                          DropdownMenuItem(value: 1.0, child: Text('1 Orë')),
-                          DropdownMenuItem(value: 2.0, child: Text('2 Orë')),
-                          DropdownMenuItem(value: 4.0, child: Text('4 Orë')),
-                          DropdownMenuItem(value: 24.0, child: Text('1 Ditë')),
-                        ],
-                        onChanged: (val) {
-                          if (val != null) {
-                            _updateReminderHours(val);
-                          }
-                        },
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        width: 95,
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<double>(
+                            value: [0.5, 1.0, 2.0, 4.0, 24.0].contains(widget.branding.reminderHours) ? widget.branding.reminderHours : 2.0,
+                            isExpanded: true,
+                            dropdownColor: isDark ? const Color(0xFF2A2E3B) : Colors.white,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
+                            items: [
+                              DropdownMenuItem(value: 0.5, child: Text(isEn ? '30 Mins' : '30 Min')),
+                              DropdownMenuItem(value: 1.0, child: Text(isEn ? '1 Hour' : '1 Orë')),
+                              DropdownMenuItem(value: 2.0, child: Text(isEn ? '2 Hours' : '2 Orë')),
+                              DropdownMenuItem(value: 4.0, child: Text(isEn ? '4 Hours' : '4 Orë')),
+                              DropdownMenuItem(value: 24.0, child: Text(isEn ? '1 Day' : '1 Ditë')),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) {
+                                _updateReminderHours(val);
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
             const SizedBox(height: 12),
 
             // WHATSAPP NOTIFICATIONS SWITCH
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E212B) : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark ? const Color(0xFF3B4052) : theme.colorScheme.outlineVariant,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.chat_bubble_rounded, color: Color(0xFF10B981), size: 18),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Aktivizo WhatsApp Notifications',
-                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          widget.branding.whatsappEnabled
-                              ? 'Njoftimet automatike të takimeve dërgohen në WhatsApp.'
-                              : 'Njoftimet në WhatsApp janë të çaktivizuara.',
-                          style: const TextStyle(fontSize: 10.5, color: Colors.grey),
-                        ),
-                      ],
+            Builder(
+              builder: (context) {
+                final isEn = Localizations.localeOf(context).languageCode == 'en';
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E212B) : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF3B4052) : theme.colorScheme.outlineVariant,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  _shopWaLoading
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator.adaptive(strokeWidth: 2))
-                      : Switch.adaptive(
-                          value: widget.branding.whatsappEnabled,
-                          onChanged: _toggleShopWhatsapp,
-                          activeColor: const Color(0xFF10B981),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                ],
-              ),
+                        child: const Icon(Icons.chat_bubble_rounded, color: Color(0xFF10B981), size: 18),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isEn ? 'Enable WhatsApp Notifications' : 'Aktivizo Njoftimet në WhatsApp',
+                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              isEn
+                                  ? (widget.branding.whatsappEnabled
+                                      ? 'Automated booking notifications are sent on WhatsApp.'
+                                      : 'WhatsApp notifications are currently disabled.')
+                                  : (widget.branding.whatsappEnabled
+                                      ? 'Njoftimet automatike të takimeve dërgohen në WhatsApp.'
+                                      : 'Njoftimet në WhatsApp janë të çaktivizuara.'),
+                              style: const TextStyle(fontSize: 10.5, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _shopWaLoading
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator.adaptive(strokeWidth: 2))
+                          : Switch.adaptive(
+                              value: widget.branding.whatsappEnabled,
+                              onChanged: _toggleShopWhatsapp,
+                              activeColor: const Color(0xFF10B981),
+                            ),
+                    ],
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 12),
           ],
