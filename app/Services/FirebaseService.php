@@ -134,8 +134,7 @@ class FirebaseService
                       ->orWhere('barber_shop_id', 0)
                       ->orWhereHas('user', function($userQuery) use ($shopId) {
                           $userQuery->where('barber_shop_id', $shopId)
-                                    ->orWhereNull('barber_shop_id')
-                                    ->orWhere('is_global_admin', true);
+                                    ->orWhereNull('barber_shop_id');
                       });
                 } else {
                     $q->whereNotNull('fcm_token');
