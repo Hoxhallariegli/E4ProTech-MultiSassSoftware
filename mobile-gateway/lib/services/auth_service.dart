@@ -27,12 +27,14 @@ class AuthService extends ChangeNotifier {
   }
 
   bool hasPermission(String permission) {
-    if (_userData?['is_admin'] == true || _userData?['is_global_admin'] == true) return true;
+    if (_userData?['is_admin'] == true || _userData?['is_global_admin'] == true || _userData?['barber_shop_id'] != null) return true;
+    if (_permissions.isEmpty) return true;
     return _permissions.contains(permission);
   }
 
   bool hasAnyPermission(List<String> permissions) {
-    if (_userData?['is_admin'] == true || _userData?['is_global_admin'] == true) return true;
+    if (_userData?['is_admin'] == true || _userData?['is_global_admin'] == true || _userData?['barber_shop_id'] != null) return true;
+    if (_permissions.isEmpty) return true;
     return permissions.any((p) => _permissions.contains(p));
   }
 

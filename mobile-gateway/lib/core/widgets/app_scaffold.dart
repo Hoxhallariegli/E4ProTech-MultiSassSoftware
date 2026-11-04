@@ -55,6 +55,7 @@ class AppScaffold extends StatelessWidget {
       appBarWidget = PremiumHeader(
         title: (title as Text).data ?? '',
         actions: actions,
+        leading: leadingWidget,
       );
     } else {
       appBarWidget = AppBar(
