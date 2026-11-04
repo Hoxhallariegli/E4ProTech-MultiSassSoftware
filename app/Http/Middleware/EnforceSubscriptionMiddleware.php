@@ -33,7 +33,13 @@ class EnforceSubscriptionMiddleware
                                      str_contains($path, 'logout') ||
                                      str_contains($currentRoute, 'logout') ||
                                      str_contains($uri, 'login') ||
-                                     str_contains($path, 'login');
+                                     str_contains($path, 'login') ||
+                                     str_contains($uri, 'subscription-renewals') ||
+                                     str_contains($path, 'subscription-renewals') ||
+                                     str_contains($uri, 'subscriptions') ||
+                                     str_contains($path, 'subscriptions') ||
+                                     str_contains($uri, 'livewire') ||
+                                     str_contains($path, 'livewire');
 
                         if (!$isAllowed) {
                             foreach ($allowedRoutes as $allowed) {

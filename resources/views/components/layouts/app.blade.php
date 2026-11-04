@@ -268,8 +268,13 @@
             if (!$user->is_global_admin) {
                 $globalShop = $user->barberShop;
                 if ($globalShop && $globalShop->is_expired) {
-                    $globalExpired = true;
-                    $globalShopName = $globalShop->name;
+                    $isRenewalPage = request()->routeIs('admin.subscription-renewals.*')
+                        || request()->is('*subscription-renewals*')
+                        || request()->is('*subscriptions*');
+                    if (!$isRenewalPage) {
+                        $globalExpired = true;
+                        $globalShopName = $globalShop->name;
+                    }
                 }
             }
         }
