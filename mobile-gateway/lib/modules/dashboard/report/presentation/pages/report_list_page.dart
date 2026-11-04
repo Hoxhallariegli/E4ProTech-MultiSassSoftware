@@ -63,16 +63,15 @@ class _ReportListPageState extends State<ReportListPage> {
         _generatedMetrics = decoded['data'] != null ? Map<String, dynamic>.from(decoded['data']) : null;
       }
 
-      // Compute start and end dates for exact period breakdown
       DateTime startDate = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
       DateTime endDate = startDate.add(const Duration(days: 1));
 
       if (_periodType == 'weekly') {
-        startDate = _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
+        startDate = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day).subtract(Duration(days: _selectedDate.weekday - 1));
         endDate = startDate.add(const Duration(days: 7));
       } else if (_periodType == 'monthly') {
         startDate = DateTime(_selectedDate.year, _selectedDate.month, 1);
-        endDate = DateTime(_selectedDate.year, _selectedDate.month + 1, 1).subtract(const Duration(seconds: 1));
+        endDate = DateTime(_selectedDate.year, _selectedDate.month + 1, 1);
       }
 
       final startStr = '${startDate.year.toString().padLeft(4, '0')}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')}';
@@ -86,8 +85,11 @@ class _ReportListPageState extends State<ReportListPage> {
 
         _periodBookings = list.where((b) {
           final apptStr = b['appointment_at']?.toString();
-          final appt = apptStr != null ? DateTime.tryParse(apptStr)?.toLocal() : null;
-          final matchesDate = appt == null || (appt.isAfter(startDate.subtract(const Duration(seconds: 1))) && appt.isBefore(endDate.add(const Duration(days: 1))));
+          if (apptStr == null) return false;
+          final appt = DateTime.tryParse(apptStr)?.toLocal();
+          if (appt == null) return false;
+
+          final matchesDate = !appt.isBefore(startDate) && appt.isBefore(endDate);
           final matchesBarber = _selectedBarberId == null || b['barber_id']?.toString() == _selectedBarberId.toString();
           return matchesDate && matchesBarber;
         }).toList();
