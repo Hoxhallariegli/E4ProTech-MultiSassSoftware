@@ -107,7 +107,7 @@ class WhatsappWebhookController extends Controller
                 })
                 ->where('status', '!=', 'cancelled')
                 ->where('appointment_at', '>=', now()->subHours(24))
-                ->orderBy('appointment_at', 'asc')
+                ->latest('id')
                 ->first();
         }
 
