@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Customer;
+use App\Models\MessageLog;
 use App\Models\AuditTrail;
 use App\Services\WhatsAppService;
 use Illuminate\Http\JsonResponse;
@@ -81,27 +82,49 @@ class WhatsappWebhookController extends Controller
                 ->first();
         }
 
-        // Fallback: If no booking_id in button, find latest active booking for this phone
-        if (!$booking) {
-            $digitsOnly = preg_replace('/[^\d]/', '', $phone);
-            $last7 = strlen($digitsOnly) >= 7 ? substr($digitsOnly, -7) : $digitsOnly;
+        $digitsOnly = preg_replace('/[^\d]/', '', $phone);
+        $last7 = strlen($digitsOnly) >= 7 ? substr($digitsOnly, -7) : $digitsOnly;
 
+        // Strategy A: Check MessageLog for the EXACT booking ID that was last sent to this customer on WhatsApp
+        if (!$booking) {
+            $latestLog = MessageLog::whereNotNull('booking_id')
+                ->where(function ($q) use ($phone, $last7) {
+                    $q->where('phone_number', 'like', "%{$phone}%")
+                      ->orWhere('phone_number', 'like', "%{$last7}%")
+                      ->orWhereHas('customer', function ($cq) use ($last7) {
+                          $cq->whereRaw("REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '+', ''), '(', '') LIKE ?", ["%{$last7}%"]);
+                      });
+                })
+                ->latest('id')
+                ->first();
+
+            if ($latestLog && $latestLog->booking_id) {
+                $targetBooking = Booking::withoutGlobalScope('barber_shop_access')->find($latestLog->booking_id);
+                if ($targetBooking && $targetBooking->status !== 'cancelled') {
+                    $booking = $targetBooking;
+                    Log::info("🎯 [WhatsApp Webhook] Resolved exact Booking #{$booking->id} from MessageLog ID #{$latestLog->id}");
+                }
+            }
+        }
+
+        // Strategy B: Fallback to latest non-cancelled booking for this customer's phone
+        if (!$booking) {
             $customerIds = Customer::withoutGlobalScope('barber_shop_access')
-                ->where(function($q) use ($shopId) {
+                ->where(function ($q) use ($shopId) {
                     if ($shopId) $q->where('barber_shop_id', $shopId);
                 })
                 ->whereRaw("REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '+', ''), '(', '') LIKE ?", ["%{$last7}%"])
                 ->pluck('id');
 
             $booking = Booking::withoutGlobalScope('barber_shop_access')
-                ->where(function($q) use ($shopId) {
+                ->where(function ($q) use ($shopId) {
                     if ($shopId) $q->where('barber_shop_id', $shopId);
                 })
-                ->where(function($q) use ($customerIds, $last7) {
+                ->where(function ($q) use ($customerIds, $last7) {
                     if ($customerIds->isNotEmpty()) {
                         $q->whereIn('customer_id', $customerIds);
                     }
-                    $q->orWhereHas('customer', function($cq) use ($last7) {
+                    $q->orWhereHas('customer', function ($cq) use ($last7) {
                         $cq->whereRaw("REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '+', ''), '(', '') LIKE ?", ["%{$last7}%"]);
                     });
                 })
