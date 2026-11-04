@@ -63,52 +63,53 @@ class _ReportListPageState extends State<ReportListPage> {
         _generatedMetrics = decoded['data'] != null ? Map<String, dynamic>.from(decoded['data']) : null;
       }
 
-      // Fetch bookings list for period breakdown
-      final bookingsRes = await ApiService.get('/bookings?per_page=50');
+      // Compute start and end dates for exact period breakdown
+      DateTime startDate = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+      DateTime endDate = startDate.add(const Duration(days: 1));
+
+      if (_periodType == 'weekly') {
+        startDate = _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
+        endDate = startDate.add(const Duration(days: 7));
+      } else if (_periodType == 'monthly') {
+        startDate = DateTime(_selectedDate.year, _selectedDate.month, 1);
+        endDate = DateTime(_selectedDate.year, _selectedDate.month + 1, 1).subtract(const Duration(seconds: 1));
+      }
+
+      final startStr = '${startDate.year.toString().padLeft(4, '0')}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')}';
+      final endStr = '${endDate.year.toString().padLeft(4, '0')}-${endDate.month.toString().padLeft(2, '0')}-${endDate.day.toString().padLeft(2, '0')}';
+
+      // Fetch bookings list for period breakdown with date range filters
+      final bookingsRes = await ApiService.get('/bookings?per_page=200&start_date=$startStr&end_date=$endStr');
       if (bookingsRes.statusCode == 200) {
         final decodedBookings = jsonDecode(bookingsRes.body);
         final list = (decodedBookings['data'] as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
 
-        // Filter bookings by date range locally for exact period accuracy
-        DateTime startDate = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
-        DateTime endDate = startDate.add(const Duration(days: 1));
-
-        if (_periodType == 'weekly') {
-          startDate = _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
-          endDate = startDate.add(const Duration(days: 7));
-        } else if (_periodType == 'monthly') {
-          startDate = DateTime(_selectedDate.year, _selectedDate.month, 1);
-          endDate = DateTime(_selectedDate.year, _selectedDate.month + 1, 1);
-        }
-
         _periodBookings = list.where((b) {
-          final apptStr = b['appointment_at']?.toString();
-          if (apptStr == null) return false;
-          final appt = DateTime.tryParse(apptStr)?.toLocal();
-          if (appt == null) return false;
-
-          final matchesDate = appt.isAfter(startDate.subtract(const Duration(seconds: 1))) && appt.isBefore(endDate);
           final matchesBarber = _selectedBarberId == null || b['barber_id']?.toString() == _selectedBarberId.toString();
-
-          return matchesDate && matchesBarber;
+          return matchesBarber;
         }).toList();
 
-        // Calculate total revenue locally if API returned 0
-        if (_generatedMetrics == null || (_generatedMetrics!['total_revenue'] ?? 0) == 0) {
+        // Calculate metrics locally if API metrics missing
+        if (_generatedMetrics == null) {
           double calculatedRevenue = 0.0;
+          double potentialEarnings = 0.0;
+
           for (final b in _periodBookings) {
             final status = (b['status'] ?? '').toString();
             final paymentStatus = (b['payment_status'] ?? '').toString();
             final price = double.tryParse(b['total_price']?.toString() ?? '0') ?? 0.0;
 
-            if (status != 'cancelled' && (['completed', 'paid', 'confirmed'].contains(status) || paymentStatus == 'paid')) {
+            if (status == 'completed' || paymentStatus == 'paid') {
               calculatedRevenue += price;
+            } else if (status != 'cancelled') {
+              potentialEarnings += price;
             }
           }
 
           _generatedMetrics = {
             'total_bookings': _periodBookings.length,
             'total_revenue': calculatedRevenue,
+            'potential_earnings': potentialEarnings,
             'total_completed': _periodBookings.where((b) => (b['status'] ?? '').toString() == 'completed').length,
             'total_cancelled': _periodBookings.where((b) => (b['status'] ?? '').toString() == 'cancelled').length,
           };
@@ -193,6 +194,7 @@ class _ReportListPageState extends State<ReportListPage> {
     final primaryColor = theme.colorScheme.primary;
 
     final totalRevenue = double.tryParse(_generatedMetrics?['total_revenue']?.toString() ?? '0') ?? 0.0;
+    final potentialEarnings = double.tryParse(_generatedMetrics?['potential_earnings']?.toString() ?? '0') ?? 0.0;
     final totalBookings = int.tryParse(_generatedMetrics?['total_bookings']?.toString() ?? '0') ?? 0;
     final totalCompleted = int.tryParse(_generatedMetrics?['total_completed']?.toString() ?? '0') ?? 0;
     final totalCancelled = int.tryParse(_generatedMetrics?['total_cancelled']?.toString() ?? '0') ?? 0;
@@ -359,7 +361,7 @@ class _ReportListPageState extends State<ReportListPage> {
 
                   const SizedBox(height: 16),
 
-                  // 2. 4 HERO KPI STAT CARDS GRID
+                  // 2. HERO KPI STAT CARDS GRID
                   GridView.count(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -373,6 +375,12 @@ class _ReportListPageState extends State<ReportListPage> {
                         value: context.formatCurrency(totalRevenue),
                         icon: Icons.account_balance_wallet_rounded,
                         color: const Color(0xFF10B981),
+                      ),
+                      _StatCard(
+                        title: reportTr(context, 'list.title') == 'Reports & Analytics' ? 'Potential Earnings' : 'Fitimet Potenciale',
+                        value: context.formatCurrency(potentialEarnings),
+                        icon: Icons.savings_rounded,
+                        color: const Color(0xFFF59E0B),
                       ),
                       _StatCard(
                         title: reportTr(context, 'field.total_bookings'),

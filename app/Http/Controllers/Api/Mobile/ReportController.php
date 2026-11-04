@@ -10,44 +10,67 @@ use Illuminate\Http\JsonResponse;
 use App\Domain\Report\DTOs\ReportDTO;
 use App\Domain\Report\Actions\CreateReportAction;
 use App\Domain\Report\Actions\UpdateReportAction;
+use Carbon\Carbon;
 
 class ReportController extends Controller
 {
     public function generate(Request $request): JsonResponse
     {
-        $shopId = $request->input('barber_shop_id', $request->user()?->barber_shop_id);
+        $user = $request->user();
+        $shopId = $request->input('barber_shop_id', $user?->barber_shop_id);
         $barberId = $request->input('barber_id');
-        $period = $request->input('period_type', 'daily');
-        $dateStr = $request->input('report_date', date('Y-m-d'));
+        $period = strtolower((string) $request->input('period_type', 'daily'));
+        $dateStr = (string) $request->input('report_date', date('Y-m-d'));
 
-        $query = \App\Models\Booking::where('barber_shop_id', $shopId);
+        $query = \App\Models\Booking::withoutGlobalScope('barber_shop_access');
+
+        if ($shopId) {
+            $query->where('barber_shop_id', $shopId);
+        }
 
         if ($barberId) {
             $query->where('barber_id', $barberId);
         }
 
-        $startDate = \Carbon\Carbon::parse($dateStr)->startOfDay();
-        $endDate = \Carbon\Carbon::parse($dateStr)->endOfDay();
+        try {
+            $baseDate = Carbon::parse($dateStr);
+        } catch (\Throwable $e) {
+            $baseDate = Carbon::today();
+        }
+
+        $startDate = $baseDate->copy()->startOfDay();
+        $endDate = $baseDate->copy()->endOfDay();
 
         if ($period === 'weekly') {
-            $startDate = \Carbon\Carbon::parse($dateStr)->startOfWeek();
-            $endDate = \Carbon\Carbon::parse($dateStr)->endOfWeek();
+            $startDate = $baseDate->copy()->startOfWeek();
+            $endDate = $baseDate->copy()->endOfWeek();
         } elseif ($period === 'monthly') {
-            $startDate = \Carbon\Carbon::parse($dateStr)->startOfMonth();
-            $endDate = \Carbon\Carbon::parse($dateStr)->endOfMonth();
+            $startDate = $baseDate->copy()->startOfMonth();
+            $endDate = $baseDate->copy()->endOfMonth();
         }
 
         $bookings = $query->whereBetween('appointment_at', [$startDate, $endDate])->get();
 
         $barberName = $barberId ? (\App\Models\Barber::find($barberId)?->name ?? 'Stafi') : 'Gjithë Stafi';
 
+        // 1. Total Revenue: Collected money from completed or paid bookings
         $calculatedRevenue = $bookings->filter(function($b) {
-            return $b->status !== 'cancelled' && (
-                in_array($b->status, ['completed', 'paid', 'confirmed'], true)
-                || ($b->payment_status ?? '') === 'paid'
-                || ($b->payment?->status ?? '') === 'paid'
-            );
-        })->sum('total_price');
+            return $b->status === 'completed'
+                || strtolower((string)($b->payment_status ?? '')) === 'paid'
+                || strtolower((string)($b->payment?->status ?? '')) === 'paid';
+        })->sum(function($b) {
+            return (float) ($b->service?->price ?? $b->total_price ?? 0);
+        });
+
+        // 2. Potential Earnings: Uncollected money from active pending & confirmed bookings
+        $potentialEarnings = $bookings->filter(function($b) {
+            return $b->status !== 'cancelled'
+                && $b->status !== 'completed'
+                && strtolower((string)($b->payment_status ?? '')) !== 'paid'
+                && strtolower((string)($b->payment?->status ?? '')) !== 'paid';
+        })->sum(function($b) {
+            return (float) ($b->service?->price ?? $b->total_price ?? 0);
+        });
 
         $metrics = [
             'barber_shop_id' => $shopId,
@@ -58,7 +81,9 @@ class ReportController extends Controller
             'end_date' => $endDate->format('Y-m-d H:i:s'),
             'total_bookings' => $bookings->count(),
             'total_revenue' => (float) $calculatedRevenue,
+            'potential_earnings' => (float) $potentialEarnings,
             'total_completed' => $bookings->where('status', 'completed')->count(),
+            'total_pending' => $bookings->whereIn('status', ['pending', 'confirmed'])->count(),
             'total_cancelled' => $bookings->where('status', 'cancelled')->count(),
             'notes' => "Kalkuluar automatikisht nga baza e të dhënave për {$barberName}.",
         ];
@@ -99,8 +124,7 @@ class ReportController extends Controller
             if ($value === null || $value === '' || !str_ends_with($key, '_id')) {
                 continue;
             }
-            if (in_array($key, array (
-), true)) {
+            if (in_array($key, array (), true)) {
                 continue;
             }
             if (in_array($key, array_keys(Report::rules()), true)) {
@@ -168,24 +192,6 @@ class ReportController extends Controller
     private function prepareData(Request $request): array
     {
         $data = $request->all();
-
-        foreach ([
-        ] as $field) {
-            if (isset($data[$field]) && is_string($data[$field])) {
-                $decoded = json_decode($data[$field], true);
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    $data[$field] = $decoded;
-                }
-            }
-        }
-
-        foreach ([
-        ] as $field) {
-            if ($request->hasFile($field)) {
-                $data[$field] = app(\App\Services\ImageUploadService::class)->upload($request->file($field), 'uploads/reports');
-            }
-        }
-
         return $data;
     }
 }
