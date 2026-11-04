@@ -52,9 +52,11 @@ class SubscriptionRenewalObserver
         $shop = $item->barberShop;
         if (!$shop) return;
 
-        // Parse duration months from notes or calculate from plan
+        // Parse duration months from $item->months, notes, or plan
         $months = 1;
-        if (!empty($item->notes) && preg_match('/(\d+)\s*(months|muaj)/i', (string) $item->notes, $matches)) {
+        if ($item->months > 0) {
+            $months = (int) $item->months;
+        } elseif (!empty($item->notes) && preg_match('/(\d+)\s*(months|muaj)/i', (string) $item->notes, $matches)) {
             $months = max(1, (int) $matches[1]);
         } elseif ($item->plan && $item->plan->duration_months > 0) {
             $months = (int) $item->plan->duration_months;

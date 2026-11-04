@@ -79,6 +79,11 @@ class _SubscriptionRenewalListViewState extends State<_SubscriptionRenewalListVi
         'plan_id': selectedPlan['id'],
         'amount': calculatedAmount ?? (double.tryParse(selectedPlan['price']?.toString() ?? '0') ?? 0.0),
         'payment_method': 'cash',
+        'months': _selectedDurationMonths,
+        'notes': '$_selectedDurationMonths Muaj',
+      };
+    }
+        'payment_method': 'cash',
         'notes': subscription_renewalTr(context, 'form.prefill_notes', {'months': _selectedDurationMonths.toString()}),
       };
     }

@@ -128,7 +128,27 @@ class _SubscriptionRenewalFormPageState extends State<SubscriptionRenewalFormPag
     payload['plan_id'] = _planId;
     payload['payment_method'] = _paymentMethod;
     payload['amount'] = double.tryParse(_amountController.text);
-    payload['notes'] = _notesController.text;
+
+    int months = 6;
+    if (widget.item?['months'] != null && int.tryParse(widget.item!['months'].toString()) != null) {
+      months = int.parse(widget.item!['months'].toString());
+    } else {
+      final lowerNotes = _notesController.text.toLowerCase();
+      if (lowerNotes.contains('24') || lowerNotes.contains('2 vite') || lowerNotes.contains('2 years')) {
+        months = 24;
+      } else if (lowerNotes.contains('12') || lowerNotes.contains('1 vit') || lowerNotes.contains('1 year')) {
+        months = 12;
+      } else if (lowerNotes.contains('6')) {
+        months = 6;
+      }
+    }
+
+    payload['months'] = months;
+    if (_notesController.text.trim().isEmpty) {
+      payload['notes'] = '$months Muaj';
+    } else {
+      payload['notes'] = _notesController.text;
+    }
     payload['status'] = _status;
 
     final files = <String, String>{};

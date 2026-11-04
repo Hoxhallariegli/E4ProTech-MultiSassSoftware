@@ -15,6 +15,7 @@ class SubscriptionRenewal extends Model
         'payment_method',
         'transfer_document',
         'amount',
+        'months',
         'notes',
         'status',
     ];
@@ -22,6 +23,7 @@ class SubscriptionRenewal extends Model
     protected function casts(): array {
         return [
             'amount' => 'decimal:2',
+            'months' => 'integer',
         ];
     }
 
@@ -32,6 +34,7 @@ class SubscriptionRenewal extends Model
             'payment_method' => ['required', \Illuminate\Validation\Rule::in(['bank_transfer', 'cash', 'card', 'online'])],
             'transfer_document' => ['nullable', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'min:0'],
+            'months' => ['nullable', 'integer', 'min:1'],
             'notes' => ['nullable', 'string'],
             'status' => ['required', \Illuminate\Validation\Rule::in(['pending', 'approved', 'rejected'])],
         ];

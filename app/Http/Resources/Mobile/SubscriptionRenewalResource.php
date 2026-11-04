@@ -16,6 +16,7 @@ class SubscriptionRenewalResource extends JsonResource
             'payment_method' => $this->payment_method,
             'transfer_document' => $this->transfer_document ? asset(ltrim((string) $this->transfer_document, '/')) : null,
             'amount' => $this->amount,
+            'months' => (int) ($this->months ?? 1),
             'notes' => $this->notes,
             'status' => $this->status,
             'created_at' => $this->created_at?->toIso8601String(),

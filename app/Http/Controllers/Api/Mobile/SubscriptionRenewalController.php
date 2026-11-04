@@ -63,6 +63,14 @@ class SubscriptionRenewalController extends Controller
             $data['status'] = 'pending';
         }
 
+        if (empty($data['months'])) {
+            if (!empty($data['notes']) && preg_match('/(\d+)\s*(months|muaj)/i', (string) $data['notes'], $matches)) {
+                $data['months'] = (int) $matches[1];
+            } else {
+                $data['months'] = 1;
+            }
+        }
+
         if (empty($data['amount']) && !empty($data['plan_id'])) {
             $plan = Plan::find($data['plan_id']);
             if ($plan) {

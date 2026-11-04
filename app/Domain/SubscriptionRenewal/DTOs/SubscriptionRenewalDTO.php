@@ -10,6 +10,7 @@ class SubscriptionRenewalDTO
         public readonly string $payment_method,
         public readonly ?string $transfer_document,
         public readonly float $amount,
+        public readonly ?int $months,
         public readonly ?string $notes,
         public readonly string $status,
     ) {}
@@ -21,6 +22,7 @@ class SubscriptionRenewalDTO
             payment_method: (string) ($data['payment_method'] ?? 'bank_transfer'),
             transfer_document: (string) ($data['transfer_document'] ?? ''),
             amount: isset($data['amount']) && $data['amount'] !== '' ? (float) $data['amount'] : 0.0,
+            months: isset($data['months']) && $data['months'] !== '' ? (int) $data['months'] : 1,
             notes: (string) ($data['notes'] ?? ''),
             status: (string) ($data['status'] ?? 'pending'),
         );
@@ -33,6 +35,7 @@ class SubscriptionRenewalDTO
             'payment_method' => $this->payment_method,
             'transfer_document' => $this->transfer_document,
             'amount' => $this->amount,
+            'months' => $this->months,
             'notes' => $this->notes,
             'status' => $this->status,
         ];
