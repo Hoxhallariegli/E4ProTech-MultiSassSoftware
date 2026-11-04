@@ -40,6 +40,8 @@ class _BookingListViewState extends State<_BookingListView> {
   List<Map<String, dynamic>> _customerIdFilterOptions = [];
 
 
+  Timer? _autoRefreshTimer;
+
   @override
   void initState() {
     super.initState();
@@ -53,6 +55,19 @@ class _BookingListViewState extends State<_BookingListView> {
       if (!mounted) return;
       context.read<BookingCubit>().handleRealtime(action, data);
     }, tenantId: AuthService.instance.user?['barber_shop_id']);
+
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      if (mounted) {
+        context.read<BookingCubit>().refresh();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _autoRefreshTimer?.cancel();
+    _scroll.dispose();
+    super.dispose();
   }
 
   Future<void> _loadFilterOptions() async {
