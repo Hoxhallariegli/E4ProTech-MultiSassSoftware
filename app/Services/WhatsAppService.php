@@ -26,14 +26,6 @@ class WhatsAppService
         }
 
         try {
-            // Auto-attach confirm & cancel interactive buttons if bookingId is provided and no custom buttons passed
-            if (empty($buttons) && $bookingId && in_array($templateType ?: 'confirmation', ['confirmation', 'reminder', 'reschedule', 'update'], true)) {
-                $buttons = [
-                    ['id' => "confirm_{$bookingId}", 'text' => "✅ Po, do të vij"],
-                    ['id' => "cancel_{$bookingId}", 'text' => "❌ Anulo takimin"],
-                ];
-            }
-
             $payload = [
                 'phone' => $phone,
                 'message' => $message,
@@ -42,10 +34,6 @@ class WhatsAppService
 
             if ($barberId) {
                 $payload['barber_id'] = (string) $barberId;
-            }
-
-            if (!empty($buttons)) {
-                $payload['buttons'] = $buttons;
             }
 
             // Retry up to 2 times with 25s timeout to handle Render Free Tier wake-up delay
