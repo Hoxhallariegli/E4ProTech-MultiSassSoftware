@@ -19,6 +19,7 @@ class Create extends Component
 
     public $barber_shop_id = '';
     public $plan_id = '';
+    public $months = 6;
     public $duration = 6;
     public $payment_method = 'cash';
     public $transfer_document = '';
@@ -38,6 +39,7 @@ class Create extends Component
 
         if ($durationParam) {
             $this->duration = max(1, (int) $durationParam);
+            $this->months = $this->duration;
         }
 
         if ($planIdParam) {
@@ -60,6 +62,20 @@ class Create extends Component
         $this->updatedPlanId($id);
     }
 
+    public function updatedMonths($value)
+    {
+        $this->duration = max(1, (int) $value);
+        $this->months = $this->duration;
+        if ($this->plan_id) {
+            $this->updatedPlanId($this->plan_id);
+        }
+    }
+
+    public function updatedDuration($value)
+    {
+        $this->updatedMonths($value);
+    }
+
     public function updatedPlanId($value)
     {
         if (!$value) {
@@ -70,7 +86,7 @@ class Create extends Component
         if (!$plan) return;
 
         $basePrice = (float) ($plan->price ?? 0);
-        $months = (int) ($this->duration ?: 6);
+        $months = max(1, (int) ($this->months ?: $this->duration ?: 6));
         $discountPct = $months === 12 ? 0.05 : ($months === 24 ? 0.10 : 0.0);
         $totalPrice = ($basePrice * $months) * (1.0 - $discountPct);
 
@@ -111,6 +127,7 @@ class Create extends Component
             'payment_method' => $this->payment_method,
             'transfer_document' => $this->transfer_document,
             'amount' => $this->amount,
+            'months' => $this->months ?: $this->duration ?: 6,
             'notes' => $this->notes,
             'status' => $this->status,
         ]);

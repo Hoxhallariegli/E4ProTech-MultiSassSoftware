@@ -14,8 +14,11 @@ use Livewire\WithFileUploads;
 
 class QuickCreate extends Component
 {
-        use WithPagination, WithFileUploads;
-     public $plan_id = '';
+    use WithPagination, WithFileUploads;
+
+    public $plan_id = '';
+    public $months = 6;
+    public $duration = 6;
     public $payment_method = '';
     public $transfer_document = '';
     public $amount = '';
@@ -57,6 +60,7 @@ class QuickCreate extends Component
             'payment_method' => $this->payment_method,
             'transfer_document' => $this->transfer_document,
             'amount' => $this->amount,
+            'months' => $this->months ?: $this->duration ?: 6,
             'notes' => $this->notes,
             'status' => $this->status,
         ]);
@@ -67,7 +71,7 @@ class QuickCreate extends Component
         $this->created = true;
         $this->createdId = $item->id;
         $this->createdLabel = (string) ($item->id ?? $item->id);
-        $this->reset(['plan_id', 'payment_method', 'transfer_document', 'amount', 'notes', 'status']);
+        $this->reset(['plan_id', 'payment_method', 'transfer_document', 'amount', 'months', 'duration', 'notes', 'status']);
     }
 
     public function addAnother()

@@ -20,6 +20,8 @@ class Edit extends Component
     public SubscriptionRenewal $item;
     public $barber_shop_id = '';
     public $plan_id = '';
+    public $months = 6;
+    public $duration = 6;
     public $payment_method = '';
     public $transfer_document = '';
     public $amount = '';
@@ -33,18 +35,27 @@ class Edit extends Component
         $this->updatedPlanId($id);
     }
 
+    public function updatedMonths($value)
+    {
+        $this->duration = max(1, (int) $value);
+        $this->months = $this->duration;
+        if ($this->plan_id) {
+            $this->updatedPlanId($this->plan_id);
+        }
+    }
+
+    public function updatedDuration($value)
+    {
+        $this->updatedMonths($value);
+    }
+
     public function updatedPlanId($value)
     {
         if (!$value) return;
         $plan = \App\Models\Plan::find($value);
         if (!$plan) return;
 
-        // Parse duration from notes if present (e.g. 6, 12, 24)
-        $months = 6;
-        if (!empty($this->notes) && preg_match('/(\d+)\s*(months|muaj)/i', (string) $this->notes, $matches)) {
-            $months = max(1, (int) $matches[1]);
-        }
-
+        $months = max(1, (int) ($this->months ?: $this->duration ?: 6));
         $basePrice = (float) ($plan->price ?? 0);
         $discountPct = $months === 12 ? 0.05 : ($months === 24 ? 0.10 : 0.0);
         $totalPrice = ($basePrice * $months) * (1.0 - $discountPct);
@@ -74,6 +85,8 @@ class Edit extends Component
         $this->item = $subscriptionRenewal;
         $this->fill($subscriptionRenewal->toArray());
         $this->barber_shop_id = (string) $subscriptionRenewal->barber_shop_id;
+        $this->months = (int) ($subscriptionRenewal->months ?: 6);
+        $this->duration = $this->months;
     }
 
     public function render()
@@ -106,6 +119,7 @@ class Edit extends Component
             'payment_method' => $this->payment_method,
             'transfer_document' => $this->transfer_document,
             'amount' => $this->amount,
+            'months' => $this->months ?: $this->duration ?: 6,
             'notes' => $this->notes,
             'status' => $this->status,
         ]);
