@@ -22,7 +22,7 @@ class ReportController extends Controller
         $period = strtolower((string) $request->input('period_type', 'daily'));
         $dateStr = (string) $request->input('report_date', date('Y-m-d'));
 
-        $query = \App\Models\Booking::withoutGlobalScope('barber_shop_access')->with(['service', 'payment']);
+        $query = \App\Models\Booking::withoutGlobalScope('barber_shop_access')->with(['service', 'payments']);
 
         if ($shopId) {
             $query->where('barber_shop_id', $shopId);
@@ -57,7 +57,7 @@ class ReportController extends Controller
         $calculatedRevenue = $bookings->filter(function($b) {
             return $b->status === 'completed'
                 || strtolower((string)($b->payment_status ?? '')) === 'paid'
-                || strtolower((string)($b->payment?->status ?? '')) === 'paid';
+                || $b->payments->where('status', 'paid')->isNotEmpty();
         })->sum(function($b) {
             return (float) ($b->service?->price ?? $b->total_price ?? 0);
         });
@@ -67,7 +67,7 @@ class ReportController extends Controller
             return $b->status !== 'cancelled'
                 && $b->status !== 'completed'
                 && strtolower((string)($b->payment_status ?? '')) !== 'paid'
-                && strtolower((string)($b->payment?->status ?? '')) !== 'paid';
+                && $b->payments->where('status', 'paid')->isEmpty();
         })->sum(function($b) {
             return (float) ($b->service?->price ?? $b->total_price ?? 0);
         });
