@@ -164,7 +164,7 @@ class MessageTemplate extends Model
         }
 
         $shopSlug = $booking->barberShop?->slug ?? 'salon';
-        $bookingLink = url("/b/{$shopSlug}");
+        $bookingLink = url("/b/{$shopSlug}/{$booking->id}");
 
         $replacements = [
             '{customer_name}' => $booking->customer?->name ?? 'Klient',
