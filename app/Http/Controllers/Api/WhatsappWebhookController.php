@@ -39,10 +39,28 @@ class WhatsappWebhookController extends Controller
         // 2. Resolve Intent (Confirm vs Cancel)
         $action = null;
 
-        if (str_contains($buttonId, 'confirm_') || in_array($text, ['po', 'konfirmo', 'konfirmoj', '1', 'yes', 'confirm', '✅ po, do të vij', 'po, do te vij'], true)) {
+        $confirmKeywords = ['po', 'konfirmo', 'konfirmoj', '1', 'yes', 'confirm', '✅ po, do të vij', 'po, do te vij', 'vij', 'do vij', 'do te vij', 'ok', 'dakor', 'dakord', '1️⃣'];
+        $cancelKeywords = ['anulo', 'anuloj', 'jo', '2', 'no', 'cancel', '❌ anulo takimin', 'anulo takimin', 'sdo vij', 'nuk vij', 's\'mund te vij', '2️⃣', 'nuk mundem'];
+
+        if (str_contains($buttonId, 'confirm_')) {
             $action = 'confirm';
-        } elseif (str_contains($buttonId, 'cancel_') || in_array($text, ['anulo', 'anuloj', 'jo', '2', 'no', 'cancel', '❌ anulo takimin', 'anulo takimin'], true)) {
+        } elseif (str_contains($buttonId, 'cancel_')) {
             $action = 'cancel';
+        } else {
+            foreach ($confirmKeywords as $cw) {
+                if ($text === $cw || str_contains(" {$text} ", " {$cw} ")) {
+                    $action = 'confirm';
+                    break;
+                }
+            }
+            if (!$action) {
+                foreach ($cancelKeywords as $cw) {
+                    if ($text === $cw || str_contains(" {$text} ", " {$cw} ")) {
+                        $action = 'cancel';
+                        break;
+                    }
+                }
+            }
         }
 
         if (!$action) {
@@ -65,24 +83,32 @@ class WhatsappWebhookController extends Controller
 
         // Fallback: If no booking_id in button, find latest active booking for this phone
         if (!$booking) {
-            $lastDigits = strlen($phone) > 8 ? substr($phone, -8) : $phone;
+            $digitsOnly = preg_replace('/[^\d]/', '', $phone);
+            $last7 = strlen($digitsOnly) >= 7 ? substr($digitsOnly, -7) : $digitsOnly;
+
             $customerIds = Customer::withoutGlobalScope('barber_shop_access')
-                ->where('barber_shop_id', $shopId)
-                ->where(function ($q) use ($phone, $lastDigits) {
-                    $q->where('phone', 'like', "%{$phone}%")
-                      ->orWhere('phone', 'like', "%{$lastDigits}%");
+                ->where(function($q) use ($shopId) {
+                    if ($shopId) $q->where('barber_shop_id', $shopId);
                 })
+                ->whereRaw("REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '+', ''), '(', '') LIKE ?", ["%{$last7}%"])
                 ->pluck('id');
 
-            if ($customerIds->isNotEmpty()) {
-                $booking = Booking::withoutGlobalScope('barber_shop_access')
-                    ->where('barber_shop_id', $shopId)
-                    ->whereIn('customer_id', $customerIds)
-                    ->where('status', '!=', 'cancelled')
-                    ->where('appointment_at', '>=', now()->subHours(12))
-                    ->orderBy('appointment_at', 'asc')
-                    ->first();
-            }
+            $booking = Booking::withoutGlobalScope('barber_shop_access')
+                ->where(function($q) use ($shopId) {
+                    if ($shopId) $q->where('barber_shop_id', $shopId);
+                })
+                ->where(function($q) use ($customerIds, $last7) {
+                    if ($customerIds->isNotEmpty()) {
+                        $q->whereIn('customer_id', $customerIds);
+                    }
+                    $q->orWhereHas('customer', function($cq) use ($last7) {
+                        $cq->whereRaw("REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '+', ''), '(', '') LIKE ?", ["%{$last7}%"]);
+                    });
+                })
+                ->where('status', '!=', 'cancelled')
+                ->where('appointment_at', '>=', now()->subHours(24))
+                ->orderBy('appointment_at', 'asc')
+                ->first();
         }
 
         if (!$booking) {
