@@ -21,7 +21,12 @@ class WorkingHourCubit extends Cubit<WorkingHourState> {
   Future<void> load({bool refresh = false, String? search, Map<String, dynamic>? filters}) async {
     if (search != null) _search = search;
     if (filters != null) _filters = Map<String, dynamic>.from(filters);
-    if (refresh) { _page = 1; _hasMore = true; _items.clear(); }
+    if (refresh) {
+      WorkingHourRepository.clearCache();
+      _page = 1;
+      _hasMore = true;
+      _items.clear();
+    }
     if (_page == 1) emit(WorkingHourLoading(List.unmodifiable(_items)));
 
     try {
@@ -31,6 +36,7 @@ class WorkingHourCubit extends Cubit<WorkingHourState> {
         sort: _sort,
         direction: _direction,
         filters: _filters,
+        forceRefresh: refresh,
       );
       if (_page == 1) _items.clear();
       _items.addAll(result.page.items);
@@ -56,7 +62,10 @@ class WorkingHourCubit extends Cubit<WorkingHourState> {
     await load();
   }
 
-  Future<void> refresh() => load(refresh: true);
+  Future<void> refresh() {
+    WorkingHourRepository.clearCache();
+    return load(refresh: true);
+  }
 
   void setSort(String field) {
     if (_sort == field) {
