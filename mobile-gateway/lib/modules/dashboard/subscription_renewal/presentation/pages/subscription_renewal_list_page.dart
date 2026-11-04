@@ -83,10 +83,6 @@ class _SubscriptionRenewalListViewState extends State<_SubscriptionRenewalListVi
         'notes': '$_selectedDurationMonths Muaj',
       };
     }
-        'payment_method': 'cash',
-        'notes': subscription_renewalTr(context, 'form.prefill_notes', {'months': _selectedDurationMonths.toString()}),
-      };
-    }
 
     final changed = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => SubscriptionRenewalFormPage(item: prefillItem)));
     if (changed == true && mounted) context.read<SubscriptionRenewalCubit>().load(refresh: true);
