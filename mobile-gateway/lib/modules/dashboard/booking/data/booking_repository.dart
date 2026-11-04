@@ -26,7 +26,9 @@ class BookingRepository {
     final cacheKey = '$page:$search:$sort:$direction:${filters.toString()}';
     final cached = _indexCache[cacheKey];
 
-    if (!forceRefresh && cached != null && DateTime.now().difference(cached.timestamp).inMinutes < 3) {
+    if (forceRefresh) {
+      clearCache();
+    } else if (cached != null && DateTime.now().difference(cached.timestamp).inMinutes < 3) {
       return (page: cached.page, meta: cached.meta);
     }
 
