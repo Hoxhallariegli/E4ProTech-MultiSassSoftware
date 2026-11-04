@@ -241,6 +241,18 @@ class PushService {
 
             RealtimeService.instance.notifyListeners(resource, action, message.data);
           }
+        });
+
+        FirebaseMessaging.onMessageOpenedApp.listen((message) async {
+          debugPrint('FCM Notification Clicked: ${message.notification?.title}');
+          final String model = message.data['model'] ?? '';
+          final String action = message.data['action'] ?? 'updated';
+          if (model.isNotEmpty) {
+            String resource = model.toLowerCase();
+            if (resource == 'booking') resource = 'bookings';
+            RealtimeService.instance.notifyListeners(resource, action, message.data);
+          }
+        });
 
           final String actionType = (message.data['action'] ?? message.data['type'] ?? '').toString();
           if (actionType == 'SEND_SMS') {
