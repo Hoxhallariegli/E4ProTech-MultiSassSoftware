@@ -60,12 +60,16 @@ class PremiumHeader extends StatelessWidget implements PreferredSizeWidget {
                 children: [
                   Icon(Icons.storefront_rounded, size: 12, color: theme.colorScheme.primary),
                   const SizedBox(width: 4),
-                  Text(
-                    businessName,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.bold,
+                  Flexible(
+                    child: Text(
+                      businessName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 2),

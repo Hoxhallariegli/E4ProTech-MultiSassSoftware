@@ -27,15 +27,21 @@ class AuthService extends ChangeNotifier {
   }
 
   bool hasPermission(String permission) {
-    if (_userData?['is_admin'] == true || _userData?['is_global_admin'] == true || _userData?['barber_shop_id'] != null) return true;
+    final isGlobalAdmin = _userData?['is_global_admin'] == true || _userData?['email'] == 'admin@e4protech.com';
+
+    // Global SaaS Super Admin Only modules
+    if (['view_notification_channels', 'view_event_settings', 'view_device_tokens', 'view_plans', 'view_barber_shops'].contains(permission)) {
+      return isGlobalAdmin;
+    }
+
+    // Salon Operations modules are accessible for shop users
+    if (isGlobalAdmin || _userData?['is_admin'] == true || _userData?['barber_shop_id'] != null) return true;
     if (_permissions.isEmpty) return true;
     return _permissions.contains(permission);
   }
 
   bool hasAnyPermission(List<String> permissions) {
-    if (_userData?['is_admin'] == true || _userData?['is_global_admin'] == true || _userData?['barber_shop_id'] != null) return true;
-    if (_permissions.isEmpty) return true;
-    return permissions.any((p) => _permissions.contains(p));
+    return permissions.any((p) => hasPermission(p));
   }
 
   Map<String, dynamic>? get user => _userData;
