@@ -19,7 +19,7 @@ class AuditTrails extends Component
 {
     use WithPagination;
 
-    public string $paginate = '';
+    public string $paginate = '15';
 
     /**
      * @var array<string>
@@ -105,7 +105,8 @@ class AuditTrails extends Component
             }
         }
 
-        return $query->paginate((int) $this->paginate);
+        $perPage = (int) ($this->paginate ?: 15);
+        return $query->paginate($perPage > 0 ? $perPage : 15);
     }
 
     public function resetFilters(): void
