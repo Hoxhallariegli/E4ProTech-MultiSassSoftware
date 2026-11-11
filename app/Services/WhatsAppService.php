@@ -12,14 +12,8 @@ class WhatsAppService
 
     public function __construct()
     {
-        $this->gatewayUrl = (string) (env('WHATSAPP_GATEWAY_URL')
-            ?: config('services.whatsapp.gateway_url')
-            ?: 'https://e4protech-whatsapp-gateway.onrender.com/api/whatsapp/send');
-
-        $this->secretKey = (string) (env('WHATSAPP_SECRET')
-            ?: env('WHATSAPP_API_SECRET')
-            ?: config('services.whatsapp.secret')
-            ?: 'E4ProTech_Secret_Key_2026_Secure');
+        $this->gatewayUrl = config('services.whatsapp.gateway_url', 'http://127.0.0.1:3000/api/whatsapp/send');
+        $this->secretKey = config('services.whatsapp.secret', 'E4ProTech_Secret_Key_2026_Secure');
     }
 
     /**
