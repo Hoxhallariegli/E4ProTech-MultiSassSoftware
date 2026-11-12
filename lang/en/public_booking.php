@@ -2,6 +2,9 @@
 
 return [
     'Online Bookings Suspended' => 'Online Bookings are Suspended',
+    'Online Booking Suspended Desc' => 'Online booking for :shop is temporarily suspended as the shop subscription has expired. Please contact the salon directly.',
+    'Booking Completed' => 'Booking Completed Successfully!',
+    'Thank You Booking Registered' => 'Thank you :customer! Your appointment has been registered at :shop.',
     'Staff Member' => 'Staff Member:',
     'Service' => 'Service:',
     'Date & Time' => 'Date & Time:',
@@ -19,7 +22,6 @@ return [
     'Phone Number' => 'PHONE NUMBER *',
     'Confirm Booking' => 'Confirm Online Booking',
     'Submitting' => 'Submitting booking...',
-    'Booking Completed' => 'Booking Completed Successfully!',
     'Name Placeholder' => 'e.g. John Doe',
     'Phone Placeholder' => 'e.g. +355691234567',
     'Book Online' => 'Book Online',
@@ -39,4 +41,8 @@ return [
     'Trained Staff' => 'Trained Staff',
     'Contact' => 'Contact',
     'Open now' => 'Open now • 09:00 - 19:00',
+    'Book' => 'Book ↗',
+    'Powered by E4ProTech Engine' => 'Powered by E4ProTech Engine',
+    'Barber' => 'Barber',
+    'Barbers' => 'Barbers',
 ];

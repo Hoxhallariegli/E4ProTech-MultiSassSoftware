@@ -2,6 +2,9 @@
 
 return [
     'Online Bookings Suspended' => 'Rezervimet Online janë të Pezulluara',
+    'Online Booking Suspended Desc' => 'Faqja e rezervimeve online për :shop është e pezulluar përkohësisht pasi abonimi i sallonit ka përfunduar. Ju lutemi kontaktoni drejtpërdrejt sallonin.',
+    'Booking Completed' => 'Rezervimi u Krye me Sukses!',
+    'Thank You Booking Registered' => 'Faleminderit :customer! Takimi juaj u regjistrua me sukses te :shop.',
     'Staff Member' => 'Pjesëtari i Stafit:',
     'Service' => 'Shërbimi:',
     'Date & Time' => 'Data & Ora:',
@@ -19,7 +22,6 @@ return [
     'Phone Number' => 'NUMRI I TELEFONIT *',
     'Confirm Booking' => 'Konfirmo Rezervimin Online',
     'Submitting' => 'Duke dërguar rezervimin...',
-    'Booking Completed' => 'Rezervimi u Krye me Sukses!',
     'Name Placeholder' => 'p.sh: Albano Hoxha',
     'Phone Placeholder' => 'p.sh: +355691234567',
     'Book Online' => 'Rezervo Online',
@@ -39,4 +41,8 @@ return [
     'Trained Staff' => 'Staf i Trajnuar',
     'Contact' => 'Kontakt',
     'Open now' => 'Hapur tani • 09:00 - 19:00',
+    'Book' => 'Rezervo ↗',
+    'Powered by E4ProTech Engine' => 'Mundësuar nga E4ProTech Engine',
+    'Barber' => 'Berber',
+    'Barbers' => 'Berberë',
 ];

@@ -23,8 +23,6 @@
 <body class="min-h-full flex flex-col justify-between selection:bg-[#7C5CFC] selection:text-white antialiased bg-[#FAF8F2] text-[#1A1D20]">
 
     @php
-        $isEn = app()->getLocale() === 'en';
-
         // Dynamic Primary & Secondary Colors from barber_shops table
         $primaryColor = !empty($shop->primary_color) ? $shop->primary_color : '#7C5CFC';
         $secondaryColor = !empty($shop->secondary_color) ? $shop->secondary_color : '#0A4D44';
@@ -39,7 +37,7 @@
         $heroSubtitle = __('public_booking.Hero Subtitle');
         $heroButton = __('public_booking.Book Appointment Online');
         $contactPhone = $shop->phone ?? '';
-        $footerText = "© " . date('Y') . " {$shop->name} — " . ($isEn ? "Powered by E4ProTech Engine" : "Mundësuar nga E4ProTech Engine");
+        $footerText = "© " . date('Y') . " {$shop->name} — " . __('public_booking.Powered by E4ProTech Engine');
     @endphp
 
     <!-- Top Navigation Bar (Managed Colors & Language Switcher) -->
@@ -65,7 +63,7 @@
                     </h1>
                     <p class="text-[10px] sm:text-[11px] font-extrabold flex items-center gap-1 mt-0.5 truncate" style="color: {{ $secondaryColor }};">
                         <span class="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style="background-color: {{ $primaryColor }};"></span>
-                        <span class="truncate">{{ app()->getLocale() === 'en' ? 'Open now • 09:00 - 19:00' : 'Hapur tani • 09:00 - 19:00' }}</span>
+                        <span class="truncate">{{ __('public_booking.Open now') }}</span>
                     </p>
                 </div>
             </a>
@@ -88,7 +86,7 @@
 
                 @if(!empty($contactPhone))
                     <a href="tel:{{ $contactPhone }}" class="hidden md:inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-extrabold bg-white border border-slate-300 text-[#1A1D20] hover:bg-stone-50 transition shadow-sm">
-                        <span>{{ app()->getLocale() === 'en' ? 'Contact' : 'Kontakt' }}</span>
+                        <span>{{ __('public_booking.Contact') }}</span>
                     </a>
                 @endif
 
@@ -96,7 +94,7 @@
                    class="px-3.5 sm:px-6 py-2 sm:py-2.5 rounded-full text-[11px] sm:text-xs font-black text-white shadow-md transition transform active:scale-95 whitespace-nowrap"
                    style="background-color: {{ $primaryColor }};">
                     <span class="hidden sm:inline">{!! $heroButton !!}</span>
-                    <span class="sm:hidden">{{ app()->getLocale() === 'en' ? 'Book ↗' : 'Rezervo ↗' }}</span>
+                    <span class="sm:hidden">{{ __('public_booking.Book') }}</span>
                 </a>
             </div>
         </div>
@@ -140,9 +138,9 @@
                     </div>
 
                     <div class="flex items-center gap-6 text-xs font-extrabold text-slate-600">
-                        <span class="flex items-center gap-1.5"><strong style="color: {{ $secondaryColor }};">✓</strong> {{ app()->getLocale() === 'en' ? '24/7 Booking' : 'Rezervim 24/7' }}</span>
-                        <span class="flex items-center gap-1.5"><strong style="color: {{ $secondaryColor }};">✓</strong> {{ app()->getLocale() === 'en' ? 'SMS Confirmation' : 'Konfirmim me SMS' }}</span>
-                        <span class="flex items-center gap-1.5"><strong style="color: {{ $secondaryColor }};">✓</strong> {{ app()->getLocale() === 'en' ? 'Trained Staff' : 'Staf i Trajnuar' }}</span>
+                        <span class="flex items-center gap-1.5"><strong style="color: {{ $secondaryColor }};">✓</strong> {{ __('public_booking.24/7 Booking') }}</span>
+                        <span class="flex items-center gap-1.5"><strong style="color: {{ $secondaryColor }};">✓</strong> {{ __('public_booking.SMS Confirmation') }}</span>
+                        <span class="flex items-center gap-1.5"><strong style="color: {{ $secondaryColor }};">✓</strong> {{ __('public_booking.Trained Staff') }}</span>
                     </div>
                 </div>
 
@@ -151,18 +149,18 @@
                     <div class="p-8 rounded-[2.5rem] bg-white border border-stone-200/80 shadow-2xl relative z-10">
                         <div class="flex items-center justify-between mb-6">
                             <span class="text-xs font-black uppercase tracking-wider" style="color: {{ $primaryColor }};">
-                                {{ app()->getLocale() === 'en' ? 'STATISTICS & TRUST' : 'STATISTIKAT & BESUESHMËRIA' }}
+                                {{ __('public_booking.Statistics & Trust') }}
                             </span>
                             <span class="text-xs px-3 py-1 rounded-full font-extrabold" style="background-color: {{ $secondaryColor }}1A; color: {{ $secondaryColor }};">
-                                {{ app()->getLocale() === 'en' ? '99.4% Satisfaction' : '99.4% Kënaqësi' }}
+                                {{ __('public_booking.Satisfaction') }}
                             </span>
                         </div>
 
                         <div class="space-y-4 mb-6">
                             <div class="p-4 rounded-2xl bg-[#FAF8F2] border border-stone-200/60 flex items-center justify-between">
                                 <div>
-                                    <p class="text-xs text-slate-500 font-bold">{{ app()->getLocale() === 'en' ? 'Active Staff' : 'Stafi Aktiv' }}</p>
-                                    <h4 class="text-xl font-black text-[#1A1D20]">{{ $shop->getStaffCountLabel($staff->count()) }}</h4>
+                                    <p class="text-xs text-slate-500 font-bold">{{ __('public_booking.Active Staff') }}</p>
+                                    <h4 class="text-xl font-black text-[#1A1D20]">{{ $staff->count() }} {{ $staff->count() === 1 ? __('public_booking.Barber') : __('public_booking.Barbers') }}</h4>
                                 </div>
                                 <span class="w-10 h-10 rounded-xl font-black flex items-center justify-center text-lg"
                                       style="background-color: {{ $primaryColor }}15; color: {{ $primaryColor }};">
@@ -172,8 +170,8 @@
 
                             <div class="p-4 rounded-2xl bg-[#FAF8F2] border border-stone-200/60 flex items-center justify-between">
                                 <div>
-                                    <p class="text-xs text-slate-500 font-bold">{{ app()->getLocale() === 'en' ? 'Offered Services' : 'Shërbimet e Ofruara' }}</p>
-                                    <h4 class="text-xl font-black text-[#1A1D20]">{{ $services->count() }} {{ app()->getLocale() === 'en' ? 'Options' : 'Opsione' }}</h4>
+                                    <p class="text-xs text-slate-500 font-bold">{{ __('public_booking.Offered Services') }}</p>
+                                    <h4 class="text-xl font-black text-[#1A1D20]">{{ $services->count() }} {{ __('public_booking.Options') }}</h4>
                                 </div>
                                 <span class="w-10 h-10 rounded-xl font-black flex items-center justify-center text-lg"
                                       style="background-color: {{ $secondaryColor }}15; color: {{ $secondaryColor }};">
@@ -207,8 +205,8 @@
                 {{ $footerText }}
             </span>
             <div class="flex gap-6 text-xs text-white/90 font-bold">
-                <a href="#booking-section" class="hover:text-amber-300 text-white transition">{{ app()->getLocale() === 'en' ? 'Book Online' : 'Rezervo Online' }}</a>
-                <a href="{{ route('dashboard') }}" class="hover:text-amber-300 text-white transition">{{ app()->getLocale() === 'en' ? 'Admin Panel' : 'Paneli Admin' }}</a>
+                <a href="#booking-section" class="hover:text-amber-300 text-white transition">{{ __('public_booking.Book Online') }}</a>
+                <a href="{{ route('dashboard') }}" class="hover:text-amber-300 text-white transition">{{ __('public_booking.Admin Panel') }}</a>
             </div>
         </div>
     </footer>
@@ -228,6 +226,3 @@
     @livewireScripts
 </body>
 </html>
-
-
-
