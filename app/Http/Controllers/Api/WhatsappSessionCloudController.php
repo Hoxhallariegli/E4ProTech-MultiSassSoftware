@@ -37,13 +37,11 @@ class WhatsappSessionCloudController extends Controller
         }
 
         try {
-            // Delete raw unencrypted legacy row for this session key if exists
-            DB::table('whatsapp_sessions')->where('session_key', $key)->delete();
-
-            $record = WhatsappSession::create([
-                'session_key' => $key,
-                'session_data' => $files,
-            ]);
+            // Idempotent updateOrCreate
+            WhatsappSession::updateOrCreate(
+                ['session_key' => $key],
+                ['session_data' => $files]
+            );
 
             Log::info("✅ [CLOUD SESSION SAVED] Session {$key} saved in DB with " . count($files) . " files!");
             return response()->json(['success' => true, 'message' => "Session {$key} synced to cloud database!"]);
