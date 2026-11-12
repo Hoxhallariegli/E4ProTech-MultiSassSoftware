@@ -50,7 +50,7 @@ return [
     'Step Count' => 'Step :step of :total',
     'Click service to proceed' => 'Click a service to proceed to staff selection',
     'Click staff to proceed' => 'Click a staff member to proceed',
-    'Select date and time' => 'Choose your preferred date and time',
+    'Select date and time' => 'Choose Date & Time',
     'Fill customer details' => 'Fill Your Customer Details',
     'Review summary and enter info' => 'Review summary and enter your name and phone number',
     'Continue to Staff' => 'Continue to Staff',

@@ -179,11 +179,8 @@
                 <div class="space-y-6">
                     <div class="border-b border-stone-200 pb-3">
                         <h3 class="text-xl sm:text-2xl font-black text-[#1A1D20] tracking-tight">
-                            {{ __('public_booking.3 Appointment Date') }} & {{ __('public_booking.4 Appointment Time') }}
-                        </h3>
-                        <p class="text-xs text-slate-500 font-bold mt-1">
                             {{ __('public_booking.Select date and time') }}
-                        </p>
+                        </h3>
                     </div>
 
                     <!-- Top Row: 7-Day Interactive Date Buttons Strip -->
