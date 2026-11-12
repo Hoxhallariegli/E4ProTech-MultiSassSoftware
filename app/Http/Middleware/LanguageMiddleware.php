@@ -14,9 +14,14 @@ class LanguageMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (session()->has('locale')) {
-            App::setLocale(session()->get('locale'));
+        $locale = session('locale');
+
+        if (!$locale || !in_array($locale, ['sq', 'en'], true)) {
+            $locale = 'sq';
+            session()->put('locale', 'sq');
         }
+
+        App::setLocale($locale);
 
         return $next($request);
     }
