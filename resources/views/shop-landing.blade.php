@@ -236,7 +236,7 @@
     <section id="staff" class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div class="flex items-center justify-between mb-10">
             <div>
-                <span class="text-xs font-black uppercase tracking-widest" style="color: {{ $primaryColor };">{{ $staffBadge }}</span>
+                <span class="text-xs font-black uppercase tracking-widest" style="color: {{ $primaryColor }}">{{ $staffBadge }}</span>
                 <h2 class="text-2xl sm:text-4xl font-black text-[#1A1D20] tracking-tight mt-1">{{ $staffTitle }}</h2>
             </div>
             <span class="text-xs px-4 py-2 rounded-full bg-white border border-stone-200 text-[#1A1D20] font-extrabold shadow-sm">
@@ -249,7 +249,7 @@
                 <div class="p-6 rounded-[2rem] bg-white border border-stone-200/80 transition duration-300 group shadow-md hover:shadow-xl">
                     <div class="flex items-center gap-4">
                         <div class="w-16 h-16 rounded-2xl flex items-center justify-center font-black text-2xl"
-                             style="background-color: {{ $secondaryColor }}15; color: {{ $secondaryColor }}; border: 1px solid {{ $secondaryColor }}30;">
+                             style="background-color: {{ $secondaryColor }}15; color: {{ $secondaryColor }}; border: 1px solid {{ $secondaryColor }}30">
                             {{ mb_substr($member->name, 0, 1) }}
                         </div>
                         <div>
@@ -276,7 +276,7 @@
     </section>
 
     <!-- Footer (Managed Secondary Color) -->
-    <footer class="py-10 text-white mt-auto" style="background-color: {{ $secondaryColor }};">
+    <footer class="py-10 text-white mt-auto" style="background-color: {{ $secondaryColor }}">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
             <span class="text-xs text-white/90 font-medium !text-white">
                 {{ $footerText }}
