@@ -291,13 +291,14 @@ class PublicShopBooking extends Component
             return;
         }
 
-        // Find or create Customer
-        $customer = Customer::where('barber_shop_id', $this->shop->id)
+        // Find or create Customer (bypassing global scope if visitor is logged in to another shop)
+        $customer = Customer::withoutGlobalScope('barber_shop_access')
+            ->where('barber_shop_id', $this->shop->id)
             ->where('phone', trim($this->customerPhone))
             ->first();
 
         if (!$customer) {
-            $customer = Customer::create([
+            $customer = Customer::withoutGlobalScope('barber_shop_access')->create([
                 'barber_shop_id' => $this->shop->id,
                 'phone' => trim($this->customerPhone),
                 'name' => trim($this->customerName),
@@ -308,10 +309,10 @@ class PublicShopBooking extends Component
             $customer->update(['name' => trim($this->customerName)]);
         }
 
-        $service = Service::findOrFail($this->selectedServiceId);
+        $service = Service::withoutGlobalScope('barber_shop_access')->findOrFail($this->selectedServiceId);
 
-        // Create Booking
-        $booking = Booking::create([
+        // Create Booking (bypassing global scope if visitor is logged in to another shop)
+        $booking = Booking::withoutGlobalScope('barber_shop_access')->create([
             'barber_shop_id' => $this->shop->id,
             'barber_id' => $this->selectedBarberId,
             'service_id' => $service->id,
