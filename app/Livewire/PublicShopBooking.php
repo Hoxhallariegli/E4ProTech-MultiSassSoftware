@@ -291,37 +291,42 @@ class PublicShopBooking extends Component
             return;
         }
 
-        // Find or create Customer
-        $customer = Customer::updateOrCreate(
-            [
+        try {
+            // Find or create Customer
+            $customer = Customer::updateOrCreate(
+                [
+                    'barber_shop_id' => $this->shop->id,
+                    'phone' => trim($this->customerPhone),
+                ],
+                [
+                    'name' => trim($this->customerName),
+                    'total_bookings' => 0,
+                    'no_show_count' => 0,
+                ]
+            );
+
+            $service = Service::findOrFail($this->selectedServiceId);
+
+            // Create Booking
+            $booking = Booking::create([
                 'barber_shop_id' => $this->shop->id,
-                'phone' => trim($this->customerPhone),
-            ],
-            [
-                'name' => trim($this->customerName),
-                'total_bookings' => 0,
-                'no_show_count' => 0,
-            ]
-        );
+                'barber_id' => $this->selectedBarberId,
+                'service_id' => $service->id,
+                'customer_id' => $customer->id,
+                'appointment_at' => $appointmentAt,
+                'status' => 'confirmed',
+                'payment_status' => 'unpaid',
+                'total_price' => $service->price,
+                'notes' => $this->notes ? "Rezervim Online: " . $this->notes : "Rezervim Online nga Faqja Publike",
+                'source' => 'online',
+            ]);
 
-        $service = Service::findOrFail($this->selectedServiceId);
-
-        // Create Booking
-        $booking = Booking::create([
-            'barber_shop_id' => $this->shop->id,
-            'barber_id' => $this->selectedBarberId,
-            'service_id' => $service->id,
-            'customer_id' => $customer->id,
-            'appointment_at' => $appointmentAt,
-            'status' => 'confirmed',
-            'payment_status' => 'unpaid',
-            'total_price' => $service->price,
-            'notes' => $this->notes ? "Rezervim Online: " . $this->notes : "Rezervim Online nga Faqja Publike",
-            'source' => 'online',
-        ]);
-
-        $this->createdBooking = $booking;
-        $this->bookingSuccess = true;
+            $this->createdBooking = $booking;
+            $this->bookingSuccess = true;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("PublicShopBooking error: " . $e->getMessage());
+            $this->addError('customerPhone', 'Lidhja me bazën e të dhënave u ndërpre përkohësisht. Ju lutemi klikoni përsëri butonin e rezervimit.');
+        }
     }
 
     public function render()
