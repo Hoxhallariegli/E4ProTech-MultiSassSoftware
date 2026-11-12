@@ -64,7 +64,7 @@
             <div class="flex items-center justify-between gap-2">
                 @if($currentStep > 1)
                     <button type="button" wire:click="previousStep" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-black transition">
-                        <span>←</span> <span>Mbrapa</span>
+                        <span>←</span> <span>{{ __('public_booking.Back') }}</span>
                     </button>
                 @else
                     <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-100 text-stone-600 text-[11px] font-black">
@@ -74,7 +74,7 @@
                 @endif
 
                 <span class="text-xs font-black text-slate-500 uppercase tracking-wider">
-                    Hapi {{ $currentStep }} nga 4
+                    {{ __('public_booking.Step Count', ['step' => $currentStep, 'total' => 4]) }}
                 </span>
             </div>
 
@@ -95,7 +95,7 @@
                             {{ __('public_booking.1 Select Service') }}
                         </h3>
                         <p class="text-xs text-slate-500 font-bold mt-1">
-                            Klikoni një shërbim për të kaluar te zgjedhja e stafit
+                            {{ __('public_booking.Click service to proceed') }}
                         </p>
                     </div>
 
@@ -124,7 +124,7 @@
                         <div class="pt-2 flex justify-end">
                             <button type="button" wire:click="nextStep" class="w-full sm:w-auto px-8 py-3.5 rounded-full text-xs font-black text-white shadow-xl transition transform active:scale-95 flex items-center justify-center gap-2"
                                     style="background-color: {{ $primaryColor }};">
-                                <span>Vazhdo te Stafi</span> <span>➔</span>
+                                <span>{{ __('public_booking.Continue to Staff') }}</span> <span>➔</span>
                             </button>
                         </div>
                     @endif
@@ -138,7 +138,7 @@
                             {{ __('public_booking.2 Select Staff Member') }}
                         </h3>
                         <p class="text-xs text-slate-500 font-bold mt-1">
-                            Klikoni një anëtar stafit për të vazhduar
+                            {{ __('public_booking.Click staff to proceed') }}
                         </p>
                     </div>
 
@@ -163,12 +163,12 @@
 
                     <div class="pt-2 flex items-center justify-between gap-3">
                         <button type="button" wire:click="previousStep" class="px-5 py-3 rounded-full text-xs font-bold text-slate-700 bg-stone-100 hover:bg-stone-200 transition">
-                            ← Mbrapa
+                            ← {{ __('public_booking.Back') }}
                         </button>
                         @if($selectedBarberId)
                             <button type="button" wire:click="nextStep" class="px-8 py-3.5 rounded-full text-xs font-black text-white shadow-xl transition transform active:scale-95 flex items-center gap-2"
                                     style="background-color: {{ $primaryColor }};">
-                                <span>Vazhdo te Orari</span> <span>➔</span>
+                                <span>{{ __('public_booking.Continue to Schedule') }}</span> <span>➔</span>
                             </button>
                         @endif
                     </div>
@@ -182,7 +182,7 @@
                             {{ __('public_booking.3 Appointment Date') }} & {{ __('public_booking.4 Appointment Time') }}
                         </h3>
                         <p class="text-xs text-slate-500 font-bold mt-1">
-                            Zgjidhni datën dhe orën tuaj të preferuar
+                            {{ __('public_booking.Select date and time') }}
                         </p>
                     </div>
 
@@ -217,12 +217,12 @@
 
                     <div class="pt-2 flex items-center justify-between gap-3">
                         <button type="button" wire:click="previousStep" class="px-5 py-3 rounded-full text-xs font-bold text-slate-700 bg-stone-100 hover:bg-stone-200 transition">
-                            ← Mbrapa
+                            ← {{ __('public_booking.Back') }}
                         </button>
                         @if($bookingDate && $bookingTime)
                             <button type="button" wire:click="nextStep" class="px-8 py-3.5 rounded-full text-xs font-black text-white shadow-xl transition transform active:scale-95 flex items-center gap-2"
                                     style="background-color: {{ $primaryColor }};">
-                                <span>Vazhdo te Detajet</span> <span>➔</span>
+                                <span>{{ __('public_booking.Continue to Details') }}</span> <span>➔</span>
                             </button>
                         @endif
                     </div>
@@ -233,29 +233,29 @@
                 <div class="space-y-6">
                     <div class="border-b border-stone-200 pb-3">
                         <h3 class="text-xl sm:text-2xl font-black text-[#1A1D20] tracking-tight">
-                            Plotësoni Të Dhënat Tuaja
+                            {{ __('public_booking.Fill customer details') }}
                         </h3>
                         <p class="text-xs text-slate-500 font-bold mt-1">
-                            Rishikoni përmbledhjen dhe vendosni emrin e telefonin
+                            {{ __('public_booking.Review summary and enter info') }}
                         </p>
                     </div>
 
                     <!-- Summary Card -->
                     <div class="p-5 rounded-2xl text-white text-xs space-y-2.5 shadow-md" style="background-color: {{ $secondaryColor }};">
                         <div class="flex justify-between border-b border-white/20 pb-2">
-                            <span class="text-teal-100 font-medium">Shërbimi:</span>
+                            <span class="text-teal-100 font-medium">{{ __('public_booking.Service') }}</span>
                             <span class="font-extrabold text-white">{{ $selectedService?->name ?: '-' }} ({{ $selectedService?->duration_minutes }} min)</span>
                         </div>
                         <div class="flex justify-between border-b border-white/20 pb-2">
-                            <span class="text-teal-100 font-medium">Stafi:</span>
+                            <span class="text-teal-100 font-medium">{{ __('public_booking.Staff Member') }}</span>
                             <span class="font-extrabold text-white">{{ $selectedBarber?->name ?: '-' }}</span>
                         </div>
                         <div class="flex justify-between border-b border-white/20 pb-2">
-                            <span class="text-teal-100 font-medium">Data & Ora:</span>
+                            <span class="text-teal-100 font-medium">{{ __('public_booking.Date & Time') }}</span>
                             <span class="font-black text-amber-300">{{ $bookingDate }} | {{ $bookingTime }}</span>
                         </div>
                         <div class="flex justify-between pt-0.5">
-                            <span class="text-teal-100 font-medium">Çmimi:</span>
+                            <span class="text-teal-100 font-medium">{{ __('public_booking.Total Price') }}</span>
                             <span class="font-black text-white text-sm">{{ $selectedService?->formatted_price_range }}</span>
                         </div>
                     </div>
@@ -282,7 +282,7 @@
 
                     <div class="pt-2 flex items-center justify-between gap-3">
                         <button type="button" wire:click="previousStep" class="px-5 py-3.5 rounded-full text-xs font-bold text-slate-700 bg-stone-100 hover:bg-stone-200 transition shrink-0">
-                            ← Mbrapa
+                            ← {{ __('public_booking.Back') }}
                         </button>
                         <button type="submit" wire:loading.attr="disabled"
                                 class="flex-1 py-4 rounded-full font-black text-sm text-white shadow-xl transition transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
