@@ -292,23 +292,28 @@ class PublicShopBooking extends Component
         }
 
         try {
-            // Find or create Customer
-            $customer = Customer::updateOrCreate(
-                [
+            // Find or create Customer cleanly without global scope issues
+            $customer = Customer::withoutGlobalScope('barber_shop_access')
+                ->where('barber_shop_id', $this->shop->id)
+                ->where('phone', trim($this->customerPhone))
+                ->first();
+
+            if (!$customer) {
+                $customer = Customer::withoutGlobalScope('barber_shop_access')->create([
                     'barber_shop_id' => $this->shop->id,
                     'phone' => trim($this->customerPhone),
-                ],
-                [
                     'name' => trim($this->customerName),
                     'total_bookings' => 0,
                     'no_show_count' => 0,
-                ]
-            );
+                ]);
+            } else {
+                $customer->update(['name' => trim($this->customerName)]);
+            }
 
-            $service = Service::findOrFail($this->selectedServiceId);
+            $service = Service::withoutGlobalScope('barber_shop_access')->findOrFail($this->selectedServiceId);
 
             // Create Booking
-            $booking = Booking::create([
+            $booking = Booking::withoutGlobalScope('barber_shop_access')->create([
                 'barber_shop_id' => $this->shop->id,
                 'barber_id' => $this->selectedBarberId,
                 'service_id' => $service->id,
@@ -325,7 +330,12 @@ class PublicShopBooking extends Component
             $this->bookingSuccess = true;
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("PublicShopBooking error: " . $e->getMessage());
-            $this->addError('customerPhone', 'Lidhja me bazën e të dhënave u ndërpre përkohësisht. Ju lutemi klikoni përsëri butonin e rezervimit.');
+            if (isset($booking) && $booking->id) {
+                $this->createdBooking = $booking;
+                $this->bookingSuccess = true;
+            } else {
+                $this->addError('customerPhone', 'Ka ndodhur një pasaktësi gjatë rezervimit. Ju lutemi provoni përsëri.');
+            }
         }
     }
 
