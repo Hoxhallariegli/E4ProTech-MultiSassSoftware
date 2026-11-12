@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}" class="h-full bg-[#FAF8F2] text-[#1A1D20] light">
+<html lang="{{ app()->getLocale() }}" class="h-full bg-[#FAF8F2] text-[#1A1D20] overflow-x-hidden max-w-full light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -15,12 +15,14 @@
     <style>
         html, body {
             color-scheme: light !important;
+            overflow-x: hidden !important;
+            max-width: 100vw !important;
         }
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
     </style>
     @livewireStyles
 </head>
-<body class="min-h-full flex flex-col justify-between selection:bg-[#7C5CFC] selection:text-white antialiased bg-[#FAF8F2] text-[#1A1D20]">
+<body class="min-h-full flex flex-col justify-between selection:bg-[#7C5CFC] selection:text-white antialiased bg-[#FAF8F2] text-[#1A1D20] overflow-x-hidden max-w-full">
 
     @php
         // Dynamic Primary & Secondary Colors from barber_shops table
@@ -41,7 +43,7 @@
     @endphp
 
     <!-- Top Navigation Bar (Managed Colors & Language Switcher) -->
-    <header class="sticky top-0 z-50 backdrop-blur-md bg-[#FAF8F2]/95 border-b border-stone-200/60">
+    <header class="sticky top-0 z-50 backdrop-blur-md bg-[#FAF8F2]/95 border-b border-stone-200/60 overflow-hidden w-full max-w-full">
         <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-0 sm:h-20 flex items-center justify-between gap-2">
             <!-- Brand Logo & Name -->
             <a href="#" class="flex items-center gap-2 sm:gap-3 min-w-0 group">
@@ -101,13 +103,13 @@
     </header>
 
     <!-- Hero Section (Managed Dynamic Colors & High-End Welcome Layout) -->
-    <section class="relative overflow-hidden py-16 lg:py-24 border-b border-stone-200/60 bg-[#FAF8F2]">
+    <section class="relative overflow-hidden py-12 lg:py-24 border-b border-stone-200/60 bg-[#FAF8F2] w-full max-w-full">
         <!-- Background Ambient Glow -->
-        <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full blur-[120px] opacity-15"
+        <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[320px] sm:w-[600px] h-[300px] rounded-full blur-[120px] opacity-15 pointer-events-none"
              style="background-color: {{ $primaryColor }};"></div>
 
         <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
 
                 <!-- Left Hero Text Column -->
                 <div class="lg:col-span-7 text-left">
@@ -120,16 +122,16 @@
                     </div>
 
                     <!-- Arrow 2: Hero Main Title with Managed Primary Underline Highlight -->
-                    <h1 class="text-4xl sm:text-6xl lg:text-7xl font-black text-[#1A1D20] tracking-tight leading-[1.08] mb-6">
+                    <h1 class="text-3xl sm:text-6xl lg:text-7xl font-black text-[#1A1D20] tracking-tight leading-[1.1] mb-6">
                         <span class="underline decoration-4 underline-offset-4" style="text-decoration-color: {{ $primaryColor }};">{{ $heroTitle }}</span>
                     </h1>
 
-                    <p class="text-base sm:text-lg text-slate-600 max-w-xl mb-8 font-medium leading-relaxed">
+                    <p class="text-sm sm:text-lg text-slate-600 max-w-xl mb-8 font-medium leading-relaxed">
                         {{ $heroSubtitle }}
                     </p>
 
                     <!-- Hero Actions -->
-                    <div class="flex flex-col sm:flex-row items-center gap-4 mb-8">
+                    <div class="flex flex-col sm:flex-row items-center gap-4 mb-8 w-full">
                         <a href="#booking-section"
                            class="w-full sm:w-auto px-8 py-4 rounded-full font-black text-sm text-white shadow-xl transition transform active:scale-95 flex items-center justify-center gap-2"
                            style="background-color: {{ $primaryColor }};">
@@ -137,7 +139,7 @@
                         </a>
                     </div>
 
-                    <div class="flex items-center gap-6 text-xs font-extrabold text-slate-600">
+                    <div class="flex flex-wrap items-center gap-3 sm:gap-6 text-xs font-extrabold text-slate-600">
                         <span class="flex items-center gap-1.5"><strong style="color: {{ $secondaryColor }};">✓</strong> {{ __('public_booking.24/7 Booking') }}</span>
                         <span class="flex items-center gap-1.5"><strong style="color: {{ $secondaryColor }};">✓</strong> {{ __('public_booking.SMS Confirmation') }}</span>
                         <span class="flex items-center gap-1.5"><strong style="color: {{ $secondaryColor }};">✓</strong> {{ __('public_booking.Trained Staff') }}</span>
@@ -145,8 +147,8 @@
                 </div>
 
                 <!-- Right Visual Stats & Quote Card Column -->
-                <div class="lg:col-span-5 relative">
-                    <div class="p-8 rounded-[2.5rem] bg-white border border-stone-200/80 shadow-2xl relative z-10">
+                <div class="lg:col-span-5 relative w-full">
+                    <div class="p-6 sm:p-8 rounded-[2.5rem] bg-white border border-stone-200/80 shadow-2xl relative z-10 w-full">
                         <div class="flex items-center justify-between mb-6">
                             <span class="text-xs font-black uppercase tracking-wider" style="color: {{ $primaryColor }};">
                                 {{ __('public_booking.Statistics & Trust') }}
@@ -162,7 +164,7 @@
                                     <p class="text-xs text-slate-500 font-bold">{{ __('public_booking.Active Staff') }}</p>
                                     <h4 class="text-xl font-black text-[#1A1D20]">{{ $shop->getStaffCountLabel($staff->count()) }}</h4>
                                 </div>
-                                <span class="w-10 h-10 rounded-xl font-black flex items-center justify-center text-lg"
+                                <span class="w-10 h-10 rounded-xl font-black flex items-center justify-center text-lg shrink-0"
                                       style="background-color: {{ $primaryColor }}15; color: {{ $primaryColor }};">
                                     <x-heroicon-o-scissors class="w-5 h-5" />
                                 </span>
@@ -173,7 +175,7 @@
                                     <p class="text-xs text-slate-500 font-bold">{{ __('public_booking.Offered Services') }}</p>
                                     <h4 class="text-xl font-black text-[#1A1D20]">{{ $services->count() }} {{ __('public_booking.Options') }}</h4>
                                 </div>
-                                <span class="w-10 h-10 rounded-xl font-black flex items-center justify-center text-lg"
+                                <span class="w-10 h-10 rounded-xl font-black flex items-center justify-center text-lg shrink-0"
                                       style="background-color: {{ $secondaryColor }}15; color: {{ $secondaryColor }};">
                                     <x-heroicon-o-sparkles class="w-5 h-5" />
                                 </span>
@@ -183,7 +185,7 @@
                         <!-- Arrow 3: Quote Card Box (Secondary Managed Color) -->
                         <div class="p-4 rounded-2xl text-white text-xs font-medium leading-relaxed flex items-center gap-3 shadow-md"
                              style="background-color: {{ $secondaryColor }};">
-                            <span class="text-2xl">💡</span>
+                            <span class="text-2xl shrink-0">💡</span>
                             <span>{{ __('public_booking.Hero Quote') }}</span>
                         </div>
                     </div>
@@ -194,17 +196,17 @@
     </section>
 
     <!-- Interactive Livewire Online Booking Component -->
-    <section id="booking-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full scroll-mt-6">
+    <section id="booking-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 w-full scroll-mt-6 overflow-hidden">
         <livewire:public-shop-booking :shop="$shop" />
     </section>
 
     <!-- Footer (Managed Secondary Color) -->
-    <footer class="py-10 text-white mt-auto" style="background-color: {{ $secondaryColor }}">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <span class="text-xs text-white/90 font-medium !text-white">
+    <footer class="py-8 sm:py-10 text-white mt-auto w-full max-w-full overflow-hidden" style="background-color: {{ $secondaryColor }}">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+            <span class="text-xs text-white/90 font-medium !text-white leading-relaxed">
                 {{ $footerText }}
             </span>
-            <div class="flex gap-6 text-xs text-white/90 font-bold">
+            <div class="flex gap-6 text-xs text-white/90 font-bold shrink-0">
                 <a href="#booking-section" class="hover:text-amber-300 text-white transition">{{ __('public_booking.Book Online') }}</a>
                 <a href="{{ route('dashboard') }}" class="hover:text-amber-300 text-white transition">{{ __('public_booking.Admin Panel') }}</a>
             </div>
