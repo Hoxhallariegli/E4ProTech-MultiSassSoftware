@@ -188,9 +188,16 @@
 
                     <!-- Top Row: Date Picker -->
                     <div>
-                        <label class="block text-xs font-black text-[#1A1D20] uppercase tracking-wider mb-2">
-                            {{ __('public_booking.3 Appointment Date') }}
-                        </label>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-xs font-black text-[#1A1D20] uppercase tracking-wider">
+                                {{ __('public_booking.3 Appointment Date') }}
+                            </label>
+                            @if($bookingDate)
+                                <span class="text-xs font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
+                                    {{ \Carbon\Carbon::parse($bookingDate)->format('d/m/Y') }}
+                                </span>
+                            @endif
+                        </div>
                         <input type="date" wire:model.live="bookingDate" min="{{ date('Y-m-d') }}"
                                class="w-full sm:w-1/2 px-5 py-3.5 rounded-2xl bg-[#FAF8F2] border border-slate-200 text-[#1A1D20] font-black text-sm focus:outline-none transition shadow-xs">
                         @error('bookingDate') <p class="text-xs text-rose-500 mt-1 font-bold">{{ $message }}</p> @enderror
@@ -269,7 +276,7 @@
                         </div>
                         <div class="flex justify-between border-b border-white/20 pb-2">
                             <span class="text-teal-100 font-medium">{{ __('public_booking.Date & Time') }}</span>
-                            <span class="font-black text-amber-300">{{ $bookingDate }} | {{ $bookingTime }}</span>
+                            <span class="font-black text-amber-300">{{ \Carbon\Carbon::parse($bookingDate)->format('d/m/Y') }} | {{ $bookingTime }}</span>
                         </div>
                         <div class="flex justify-between pt-0.5">
                             <span class="text-teal-100 font-medium">{{ __('public_booking.Total Price') }}</span>
