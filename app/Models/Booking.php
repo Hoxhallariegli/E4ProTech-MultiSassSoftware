@@ -85,7 +85,7 @@ class Booking extends Model
 
         $durationMinutes = 30;
         if ($serviceId) {
-            $service = \App\Models\Service::find($serviceId);
+            $service = \App\Models\Service::withoutGlobalScope('barber_shop_access')->find($serviceId);
             if ($service && $service->duration_minutes > 0) {
                 $durationMinutes = (int) $service->duration_minutes;
             }
@@ -94,7 +94,7 @@ class Booking extends Model
         $end = (clone $start)->addMinutes($durationMinutes);
 
         // Check overlap ONLY with existing active bookings for the same staff member
-        $query = static::query()
+        $query = static::withoutGlobalScope('barber_shop_access')->query()
             ->where('barber_id', $barberId)
             ->where('status', '!=', 'cancelled')
             ->whereDate('appointment_at', $start->format('Y-m-d'));
@@ -103,11 +103,12 @@ class Booking extends Model
             $query->where('id', '!=', $ignoreId);
         }
 
-        $existingBookings = $query->with('service')->get();
+        $existingBookings = $query->get();
 
         foreach ($existingBookings as $existing) {
             $eStart = $existing->appointment_at;
-            $eDuration = $existing->service?->duration_minutes ?? 30;
+            $eService = \App\Models\Service::withoutGlobalScope('barber_shop_access')->find($existing->service_id);
+            $eDuration = ($eService && $eService->duration_minutes > 0) ? (int) $eService->duration_minutes : ($existing->service?->duration_minutes ?? 30);
             $eEnd = (clone $eStart)->addMinutes($eDuration);
 
             if ($eStart < $end && $eEnd > $start) {

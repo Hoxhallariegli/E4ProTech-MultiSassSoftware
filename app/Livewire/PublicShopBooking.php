@@ -178,7 +178,8 @@ class PublicShopBooking extends Component
 
         $bookingEntries = $bookings->map(function ($b) {
             $start = $b->appointment_at->copy();
-            $dur = $b->service?->duration_minutes ?? 30;
+            $service = Service::withoutGlobalScope('barber_shop_access')->find($b->service_id);
+            $dur = ($service && $service->duration_minutes > 0) ? (int) $service->duration_minutes : ($b->service?->duration_minutes ?? 30);
             return [
                 'start' => $start,
                 'end' => $start->copy()->addMinutes($dur),
