@@ -20,11 +20,38 @@ class DeleteBarberAction
             app(\App\Services\ImageUploadService::class)->delete($model->photo);
         }
 
-        // Clean up or delete all dependent/child relations
-        \App\Models\Booking::withoutGlobalScope('barber_shop_access')->where('barber_id', $model->id)->delete();
+        // Get all booking IDs associated with this barber
+        $bookingIds = \App\Models\Booking::withoutGlobalScope('barber_shop_access')
+            ->where('barber_id', $model->id)
+            ->pluck('id');
+
+        if ($bookingIds->isNotEmpty()) {
+            // Delete payments connected to these bookings
+            \App\Models\Payment::withoutGlobalScope('barber_shop_access')
+                ->whereIn('booking_id', $bookingIds)
+                ->delete();
+
+            // Delete message logs connected to these bookings
+            \App\Models\MessageLog::withoutGlobalScope('barber_shop_access')
+                ->whereIn('booking_id', $bookingIds)
+                ->delete();
+
+            // Delete message queues connected to these bookings
+            \App\Models\MessageQueue::withoutGlobalScope('barber_shop_access')
+                ->whereIn('booking_id', $bookingIds)
+                ->delete();
+
+            // Delete bookings
+            \App\Models\Booking::withoutGlobalScope('barber_shop_access')
+                ->whereIn('id', $bookingIds)
+                ->delete();
+        }
+
+        // Delete working hours & bulk cancellations for this barber
         \App\Models\WorkingHour::withoutGlobalScope('barber_shop_access')->where('barber_id', $model->id)->delete();
         \App\Models\BulkCancellation::withoutGlobalScope('barber_shop_access')->where('barber_id', $model->id)->delete();
 
+        AuditTrail::logCustom($model, 'delete', 'Barbers', "Fshirje e detyruar (Force Delete Admin) e berberit #{$model->id}");
 
         return $model->forceDelete();
     }
