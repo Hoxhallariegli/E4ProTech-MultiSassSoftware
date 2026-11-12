@@ -161,7 +161,7 @@ class PublicShopBooking extends Component
         }
 
         // Fetch existing bookings for this barber or shop on this day (without tenant scope)
-        $bookingQuery = Booking::withoutGlobalScope('barber_shop_access')->query()
+        $bookingQuery = Booking::withoutGlobalScope('barber_shop_access')
             ->whereBetween('appointment_at', [
                 $date->copy()->startOfDay(),
                 $date->copy()->endOfDay(),
