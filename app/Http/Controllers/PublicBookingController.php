@@ -168,6 +168,12 @@ class PublicBookingController extends Controller
 
         if ($booking->status !== 'cancelled') {
             $booking->update(['status' => 'cancelled']);
+
+            // Purge any pending scheduled reminders in MessageQueue for this booking
+            \App\Models\MessageQueue::where('booking_id', $booking->id)
+                ->where('status', 'pending')
+                ->delete();
+
             event(new \App\Events\BookingChanged($booking, 'updated'));
             event(new \App\Events\FirebaseNotificationRequested(
                 event: 'bookings.updated',
