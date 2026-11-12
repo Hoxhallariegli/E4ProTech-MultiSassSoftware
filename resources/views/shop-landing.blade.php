@@ -71,56 +71,60 @@
     @endphp
 
     <!-- Top Navigation Bar (Managed Colors & Language Switcher) -->
-    <header class="sticky top-0 z-50 backdrop-blur-md bg-[#FAF8F2]/90 border-b border-stone-200/60">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-            <a href="#" class="flex items-center gap-3 group">
+    <header class="sticky top-0 z-50 backdrop-blur-md bg-[#FAF8F2]/95 border-b border-stone-200/60">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-0 sm:h-20 flex items-center justify-between gap-2">
+            <!-- Brand Logo & Name -->
+            <a href="#" class="flex items-center gap-2 sm:gap-3 min-w-0 group">
                 @if(!empty($shop->logo))
-                    <img src="{{ asset(ltrim($shop->logo, '/')) }}" alt="{{ $shop->name }}" class="w-12 h-12 rounded-2xl object-cover shadow-md border border-stone-200/60 transition transform group-hover:scale-105 shrink-0">
+                    <img src="{{ asset(ltrim($shop->logo, '/')) }}" alt="{{ $shop->name }}" class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl object-cover shadow-md border border-stone-200/60 transition transform group-hover:scale-105 shrink-0">
                 @else
-                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl text-white shadow-md transition transform group-hover:scale-105 shrink-0"
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center font-black text-lg sm:text-xl text-white shadow-md transition transform group-hover:scale-105 shrink-0"
                          style="background: linear-gradient(135deg, {{ $primaryColor }}, {{ $secondaryColor }});">
                         {{ mb_substr($shop->name, 0, 1) }}
                     </div>
                 @endif
-                <div>
-                    <h1 class="text-lg font-black tracking-tight text-[#1A1D20] flex items-center gap-2">
-                        {{ $shop->name }}
-                        <span class="text-[10px] px-2.5 py-0.5 rounded-full font-extrabold uppercase tracking-wider"
+                <div class="min-w-0">
+                    <h1 class="text-sm sm:text-lg font-black tracking-tight text-[#1A1D20] truncate flex items-center gap-1.5">
+                        <span class="truncate">{{ $shop->name }}</span>
+                        <span class="hidden md:inline-block text-[10px] px-2.5 py-0.5 rounded-full font-extrabold uppercase tracking-wider shrink-0"
                               style="background-color: {{ $secondaryColor }}1A; color: {{ $secondaryColor }};">
                             {{ $shop->resolved_shop_label }}
                         </span>
                     </h1>
-                    <p class="text-[11px] font-extrabold flex items-center gap-1.5 mt-0.5" style="color: {{ $secondaryColor }};">
-                        <span class="w-2 h-2 rounded-full animate-pulse" style="background-color: {{ $primaryColor }};"></span>
-                        {{ app()->getLocale() === 'en' ? 'Open now • 09:00 - 19:00' : 'Hapur tani • 09:00 - 19:00' }}
+                    <p class="text-[10px] sm:text-[11px] font-extrabold flex items-center gap-1 mt-0.5 truncate" style="color: {{ $secondaryColor }};">
+                        <span class="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style="background-color: {{ $primaryColor }};"></span>
+                        <span class="truncate">{{ app()->getLocale() === 'en' ? 'Open now • 09:00 - 19:00' : 'Hapur tani • 09:00 - 19:00' }}</span>
                     </p>
                 </div>
             </a>
 
-            <div class="flex items-center gap-3">
+            <!-- Right Actions (Language Switcher & CTA Button) -->
+            <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
                 <!-- Language Switcher Pill -->
-                <div class="flex items-center gap-1 p-1 rounded-full bg-white border border-slate-300 shadow-sm text-xs font-black">
+                <div class="flex items-center gap-0.5 p-0.5 sm:p-1 rounded-full bg-white border border-slate-300 shadow-sm text-[11px] sm:text-xs font-black">
                     <a href="{{ route('language.switch', 'sq') }}"
-                       class="px-3 py-1.5 rounded-full transition {{ app()->getLocale() === 'sq' ? 'text-white shadow-sm' : 'text-slate-600 hover:text-black' }}"
+                       class="px-2 sm:px-3 py-1 sm:py-1.5 rounded-full transition {{ app()->getLocale() === 'sq' ? 'text-white shadow-sm' : 'text-slate-600 hover:text-black' }}"
                        style="{{ app()->getLocale() === 'sq' ? 'background-color: '.$primaryColor.';' : '' }}">
                         SQ
                     </a>
                     <a href="{{ route('language.switch', 'en') }}"
-                       class="px-3 py-1.5 rounded-full transition {{ app()->getLocale() === 'en' ? 'text-white shadow-sm' : 'text-slate-600 hover:text-black' }}"
+                       class="px-2 sm:px-3 py-1 sm:py-1.5 rounded-full transition {{ app()->getLocale() === 'en' ? 'text-white shadow-sm' : 'text-slate-600 hover:text-black' }}"
                        style="{{ app()->getLocale() === 'en' ? 'background-color: '.$primaryColor.';' : '' }}">
                         EN
                     </a>
                 </div>
 
                 @if(!empty($contactPhone))
-                    <a href="tel:{{ $contactPhone }}" class="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-extrabold bg-white border border-slate-300 text-[#1A1D20] hover:bg-stone-50 transition shadow-sm">
+                    <a href="tel:{{ $contactPhone }}" class="hidden md:inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-extrabold bg-white border border-slate-300 text-[#1A1D20] hover:bg-stone-50 transition shadow-sm">
                         <span>{{ app()->getLocale() === 'en' ? 'Contact' : 'Kontakt' }}</span>
                     </a>
                 @endif
 
-                <a href="#booking-section" class="px-6 py-2.5 rounded-full text-xs font-black text-white shadow-lg transition transform active:scale-95"
+                <a href="#booking-section"
+                   class="px-3.5 sm:px-6 py-2 sm:py-2.5 rounded-full text-[11px] sm:text-xs font-black text-white shadow-md transition transform active:scale-95 whitespace-nowrap"
                    style="background-color: {{ $primaryColor }};">
-                    {!! $heroButton !!}
+                    <span class="hidden sm:inline">{!! $heroButton !!}</span>
+                    <span class="sm:hidden">{{ app()->getLocale() === 'en' ? 'Book ↗' : 'Rezervo ↗' }}</span>
                 </a>
             </div>
         </div>
