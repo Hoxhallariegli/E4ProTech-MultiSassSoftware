@@ -223,6 +223,8 @@
         }
     </script>
 
+    <x-pwa-install-prompt :shop="$shop" />
+
     @livewireScripts
 </body>
 </html>
