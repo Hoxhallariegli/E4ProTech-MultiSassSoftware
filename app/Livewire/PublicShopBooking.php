@@ -219,9 +219,6 @@ class PublicShopBooking extends Component
             }
         }
 
-        $slotStep = (int) ($this->shop->min_service_time ?: 15);
-        if ($slotStep <= 0) $slotStep = 15;
-
         $slots = [];
         $cursor = $openDt->copy();
 
@@ -235,7 +232,7 @@ class PublicShopBooking extends Component
 
             // Skip past times if selected date is today
             if ($date->isToday() && $slotStart->isBefore($now)) {
-                $cursor->addMinutes($slotStep);
+                $cursor->addMinutes(30);
                 continue;
             }
 
@@ -252,7 +249,7 @@ class PublicShopBooking extends Component
                 $slots[] = $slotStart->format('H:i');
             }
 
-            $cursor->addMinutes($slotStep);
+            $cursor->addMinutes(30);
         }
 
         if (empty($this->bookingTime) || !in_array($this->bookingTime, $slots, true)) {
