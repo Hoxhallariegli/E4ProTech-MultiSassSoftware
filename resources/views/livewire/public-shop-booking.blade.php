@@ -1,4 +1,4 @@
-<div id="booking-section" class="py-8 bg-white border border-stone-200/80 rounded-[2.5rem] p-4 sm:p-10 shadow-2xl transition-all duration-300">
+<div id="booking-section" class="py-6 sm:py-10 bg-white border border-stone-200/80 rounded-[2rem] sm:rounded-[2.5rem] p-4 sm:p-10 shadow-2xl transition-all duration-300">
     @php
         $primaryColor = !empty($shop->primary_color) ? $shop->primary_color : '#7C5CFC';
         $secondaryColor = !empty($shop->secondary_color) ? $shop->secondary_color : '#0A4D44';
@@ -23,7 +23,7 @@
             </p>
         </div>
     @elseif($bookingSuccess && $createdBooking)
-        <div class="text-center py-10 space-y-6 animate-fade-in">
+        <div class="text-center py-8 sm:py-10 space-y-6">
             <div class="w-20 h-20 bg-emerald-100 border-2 border-emerald-500 text-emerald-700 rounded-full flex items-center justify-center mx-auto text-4xl shadow-lg">
                 ✓
             </div>
@@ -59,38 +59,29 @@
             </button>
         </div>
     @else
-        <!-- STEPPER HEADER PROGRESS BAR -->
-        <div class="mb-8">
-            <div class="flex items-center justify-between border-b border-stone-200 pb-4 mb-4">
-                <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full animate-pulse" style="background-color: {{ $primaryColor }};"></span>
-                    <span class="text-xs font-black uppercase tracking-wider text-slate-500">
-                        {{ __('public_booking.Automated 24/7 Booking') }}
-                    </span>
-                </div>
-                <span class="text-xs font-extrabold px-3 py-1 rounded-full text-white" style="background-color: {{ $primaryColor }};">
-                    {{ $currentStep }} / 4
+        <!-- SLEEK PROGRESS BAR HEADER -->
+        <div class="mb-6 space-y-3">
+            <div class="flex items-center justify-between gap-2">
+                @if($currentStep > 1)
+                    <button type="button" wire:click="previousStep" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-black transition">
+                        <span>←</span> <span>Mbrapa</span>
+                    </button>
+                @else
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-100 text-stone-600 text-[11px] font-black">
+                        <span class="w-2 h-2 rounded-full animate-pulse" style="background-color: {{ $primaryColor }};"></span>
+                        <span>{{ __('public_booking.Automated 24/7 Booking') }}</span>
+                    </div>
+                @endif
+
+                <span class="text-xs font-black text-slate-500 uppercase tracking-wider">
+                    Hapi {{ $currentStep }} nga 4
                 </span>
             </div>
 
-            <!-- Stepper Steps Tabs -->
-            <div class="grid grid-cols-4 gap-1 sm:gap-2 text-center">
-                <button type="button" wire:click="goToStep(1)" class="py-2 px-1 rounded-xl text-[10px] sm:text-xs font-extrabold transition flex flex-col sm:flex-row items-center justify-center gap-1 {{ $currentStep === 1 ? 'text-white shadow-md' : ($selectedServiceId ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-stone-100 text-stone-500') }}"
-                        style="{{ $currentStep === 1 ? 'background-color: '.$primaryColor.';' : '' }}">
-                    <span>1.</span> <span class="truncate">{{ __('public_booking.Service') }}</span>
-                </button>
-                <button type="button" wire:click="goToStep(2)" class="py-2 px-1 rounded-xl text-[10px] sm:text-xs font-extrabold transition flex flex-col sm:flex-row items-center justify-center gap-1 {{ $currentStep === 2 ? 'text-white shadow-md' : ($selectedBarberId ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-stone-100 text-stone-500') }}"
-                        style="{{ $currentStep === 2 ? 'background-color: '.$primaryColor.';' : '' }}">
-                    <span>2.</span> <span class="truncate">{{ __('public_booking.Staff Member') }}</span>
-                </button>
-                <button type="button" wire:click="goToStep(3)" class="py-2 px-1 rounded-xl text-[10px] sm:text-xs font-extrabold transition flex flex-col sm:flex-row items-center justify-center gap-1 {{ $currentStep === 3 ? 'text-white shadow-md' : ($bookingDate && $bookingTime ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-stone-100 text-stone-500') }}"
-                        style="{{ $currentStep === 3 ? 'background-color: '.$primaryColor.';' : '' }}">
-                    <span>3.</span> <span class="truncate">{{ __('public_booking.Date & Time') }}</span>
-                </button>
-                <button type="button" wire:click="goToStep(4)" class="py-2 px-1 rounded-xl text-[10px] sm:text-xs font-extrabold transition flex flex-col sm:flex-row items-center justify-center gap-1 {{ $currentStep === 4 ? 'text-white shadow-md' : 'bg-stone-100 text-stone-500' }}"
-                        style="{{ $currentStep === 4 ? 'background-color: '.$primaryColor.';' : '' }}">
-                    <span>4.</span> <span class="truncate">{{ __('public_booking.Your Name') }}</span>
-                </button>
+            <!-- Progress Line Bar -->
+            <div class="w-full h-2 bg-stone-100 rounded-full overflow-hidden">
+                <div class="h-full transition-all duration-300 rounded-full"
+                     style="width: {{ $currentStep * 25 }}%; background-color: {{ $primaryColor }};"></div>
             </div>
         </div>
 
@@ -98,33 +89,40 @@
 
             <!-- STEP 1: SELECT SERVICE -->
             @if($currentStep === 1)
-                <div class="space-y-4 animate-fade-in">
-                    <div class="flex items-center justify-between">
-                        <label class="block text-xs font-black text-[#1A1D20] uppercase tracking-wider">
+                <div class="space-y-4">
+                    <div class="border-b border-stone-200 pb-3">
+                        <h3 class="text-xl sm:text-2xl font-black text-[#1A1D20] tracking-tight">
                             {{ __('public_booking.1 Select Service') }}
-                        </label>
-                        <span class="text-[11px] text-slate-500 font-bold">Zgjidhni shërbimin për të kaluar te stafi</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 font-bold mt-1">
+                            Klikoni një shërbim për të kaluar te zgjedhja e stafit
+                        </p>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         @foreach($services as $s)
                             <button type="button"
                                     wire:click="selectService({{ $s->id }})"
-                                    class="p-4 rounded-2xl border text-left transition flex items-center justify-between cursor-pointer active:scale-98"
+                                    class="p-4 rounded-2xl border text-left transition flex items-center justify-between cursor-pointer active:scale-98 group hover:shadow-md"
                                     style="{{ $selectedServiceId === $s->id ? 'border-color: '.$primaryColor.'; background-color: '.$primaryColor.'15; box-shadow: 0 0 0 2px '.$primaryColor.'40;' : 'border-color: #e2e8f0; background-color: #FAF8F2;' }}">
                                 <div class="pr-2">
-                                    <h4 class="font-extrabold text-sm text-[#1A1D20]">{{ $s->name }}</h4>
+                                    <h4 class="font-extrabold text-sm text-[#1A1D20] flex items-center gap-1.5">
+                                        <span>{{ $s->name }}</span>
+                                        @if($selectedServiceId === $s->id)
+                                            <span class="text-xs font-bold text-emerald-600">✓</span>
+                                        @endif
+                                    </h4>
                                     <span class="text-xs text-slate-500 font-medium">{{ $s->duration_minutes }} min</span>
                                 </div>
                                 <span class="font-black text-sm whitespace-nowrap shrink-0" style="color: {{ $secondaryColor }};">{{ $s->formatted_price_range }}</span>
                             </button>
                         @endforeach
                     </div>
-                    @error('selectedServiceId') <p class="text-xs text-rose-500 mt-1 font-bold">{{ $message }}</p> @enderror
+                    @error('selectedServiceId') <p class="text-xs text-rose-500 font-bold">{{ $message }}</p> @enderror
 
                     @if($selectedServiceId)
-                        <div class="pt-4 flex justify-end">
-                            <button type="button" wire:click="nextStep" class="px-6 py-3 rounded-full text-xs font-black text-white shadow-md transition transform active:scale-95 flex items-center gap-2"
+                        <div class="pt-2 flex justify-end">
+                            <button type="button" wire:click="nextStep" class="w-full sm:w-auto px-8 py-3.5 rounded-full text-xs font-black text-white shadow-xl transition transform active:scale-95 flex items-center justify-center gap-2"
                                     style="background-color: {{ $primaryColor }};">
                                 <span>Vazhdo te Stafi</span> <span>➔</span>
                             </button>
@@ -134,38 +132,41 @@
 
             <!-- STEP 2: SELECT STAFF -->
             @elseif($currentStep === 2)
-                <div class="space-y-4 animate-fade-in">
-                    <div class="flex items-center justify-between">
-                        <button type="button" wire:click="previousStep" class="text-xs font-black text-slate-600 hover:text-black flex items-center gap-1">
-                            <span>←</span> <span>Mbrapa</span>
-                        </button>
-                        <label class="block text-xs font-black text-[#1A1D20] uppercase tracking-wider">
+                <div class="space-y-4">
+                    <div class="border-b border-stone-200 pb-3">
+                        <h3 class="text-xl sm:text-2xl font-black text-[#1A1D20] tracking-tight">
                             {{ __('public_booking.2 Select Staff Member') }}
-                        </label>
+                        </h3>
+                        <p class="text-xs text-slate-500 font-bold mt-1">
+                            Klikoni një anëtar stafit për të vazhduar
+                        </p>
                     </div>
 
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         @foreach($staff as $st)
                             <button type="button"
                                     wire:click="selectBarber({{ $st->id }})"
-                                    class="p-4 rounded-2xl border text-center transition cursor-pointer active:scale-98"
+                                    class="p-4 rounded-2xl border text-center transition cursor-pointer active:scale-98 hover:shadow-md"
                                     style="{{ $selectedBarberId === $st->id ? 'border-color: '.$primaryColor.'; background-color: '.$primaryColor.'15; box-shadow: 0 0 0 2px '.$primaryColor.'40;' : 'border-color: #e2e8f0; background-color: #FAF8F2;' }}">
-                                <div class="w-12 h-12 rounded-2xl font-black flex items-center justify-center mx-auto mb-2 text-lg"
+                                <div class="w-12 h-12 rounded-2xl font-black flex items-center justify-center mx-auto mb-2 text-lg relative"
                                      style="background-color: {{ $secondaryColor }}15; color: {{ $secondaryColor }}; border: 1px solid {{ $secondaryColor }}30;">
                                     {{ mb_substr($st->name, 0, 1) }}
+                                    @if($selectedBarberId === $st->id)
+                                        <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-black flex items-center justify-center border-2 border-white">✓</span>
+                                    @endif
                                 </div>
                                 <h5 class="font-extrabold text-xs text-[#1A1D20] truncate">{{ $st->name }}</h5>
                             </button>
                         @endforeach
                     </div>
-                    @error('selectedBarberId') <p class="text-xs text-rose-500 mt-1 font-bold">{{ $message }}</p> @enderror
+                    @error('selectedBarberId') <p class="text-xs text-rose-500 font-bold">{{ $message }}</p> @enderror
 
-                    <div class="pt-4 flex items-center justify-between">
-                        <button type="button" wire:click="previousStep" class="px-5 py-2.5 rounded-full text-xs font-bold text-slate-600 bg-stone-100 hover:bg-stone-200 transition">
+                    <div class="pt-2 flex items-center justify-between gap-3">
+                        <button type="button" wire:click="previousStep" class="px-5 py-3 rounded-full text-xs font-bold text-slate-700 bg-stone-100 hover:bg-stone-200 transition">
                             ← Mbrapa
                         </button>
                         @if($selectedBarberId)
-                            <button type="button" wire:click="nextStep" class="px-6 py-3 rounded-full text-xs font-black text-white shadow-md transition transform active:scale-95 flex items-center gap-2"
+                            <button type="button" wire:click="nextStep" class="px-8 py-3.5 rounded-full text-xs font-black text-white shadow-xl transition transform active:scale-95 flex items-center gap-2"
                                     style="background-color: {{ $primaryColor }};">
                                 <span>Vazhdo te Orari</span> <span>➔</span>
                             </button>
@@ -175,14 +176,14 @@
 
             <!-- STEP 3: DATE & TIME -->
             @elseif($currentStep === 3)
-                <div class="space-y-4 animate-fade-in">
-                    <div class="flex items-center justify-between">
-                        <button type="button" wire:click="previousStep" class="text-xs font-black text-slate-600 hover:text-black flex items-center gap-1">
-                            <span>←</span> <span>Mbrapa</span>
-                        </button>
-                        <label class="block text-xs font-black text-[#1A1D20] uppercase tracking-wider">
+                <div class="space-y-4">
+                    <div class="border-b border-stone-200 pb-3">
+                        <h3 class="text-xl sm:text-2xl font-black text-[#1A1D20] tracking-tight">
                             {{ __('public_booking.3 Appointment Date') }} & {{ __('public_booking.4 Appointment Time') }}
-                        </label>
+                        </h3>
+                        <p class="text-xs text-slate-500 font-bold mt-1">
+                            Zgjidhni datën dhe orën tuaj të preferuar
+                        </p>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -214,12 +215,12 @@
                         </div>
                     </div>
 
-                    <div class="pt-4 flex items-center justify-between">
-                        <button type="button" wire:click="previousStep" class="px-5 py-2.5 rounded-full text-xs font-bold text-slate-600 bg-stone-100 hover:bg-stone-200 transition">
+                    <div class="pt-2 flex items-center justify-between gap-3">
+                        <button type="button" wire:click="previousStep" class="px-5 py-3 rounded-full text-xs font-bold text-slate-700 bg-stone-100 hover:bg-stone-200 transition">
                             ← Mbrapa
                         </button>
                         @if($bookingDate && $bookingTime)
-                            <button type="button" wire:click="nextStep" class="px-6 py-3 rounded-full text-xs font-black text-white shadow-md transition transform active:scale-95 flex items-center gap-2"
+                            <button type="button" wire:click="nextStep" class="px-8 py-3.5 rounded-full text-xs font-black text-white shadow-xl transition transform active:scale-95 flex items-center gap-2"
                                     style="background-color: {{ $primaryColor }};">
                                 <span>Vazhdo te Detajet</span> <span>➔</span>
                             </button>
@@ -229,18 +230,27 @@
 
             <!-- STEP 4: CUSTOMER DETAILS & CONFIRMATION -->
             @elseif($currentStep === 4)
-                <div class="space-y-6 animate-fade-in">
+                <div class="space-y-6">
+                    <div class="border-b border-stone-200 pb-3">
+                        <h3 class="text-xl sm:text-2xl font-black text-[#1A1D20] tracking-tight">
+                            Plotësoni Të Dhënat Tuaja
+                        </h3>
+                        <p class="text-xs text-slate-500 font-bold mt-1">
+                            Rishikoni përmbledhjen dhe vendosni emrin e telefonin
+                        </p>
+                    </div>
+
                     <!-- Summary Card -->
-                    <div class="p-5 rounded-2xl text-white text-xs space-y-2 shadow-md" style="background-color: {{ $secondaryColor }};">
-                        <div class="flex justify-between border-b border-white/20 pb-1.5">
+                    <div class="p-5 rounded-2xl text-white text-xs space-y-2.5 shadow-md" style="background-color: {{ $secondaryColor }};">
+                        <div class="flex justify-between border-b border-white/20 pb-2">
                             <span class="text-teal-100 font-medium">Shërbimi:</span>
                             <span class="font-extrabold text-white">{{ $selectedService?->name ?: '-' }} ({{ $selectedService?->duration_minutes }} min)</span>
                         </div>
-                        <div class="flex justify-between border-b border-white/20 pb-1.5">
+                        <div class="flex justify-between border-b border-white/20 pb-2">
                             <span class="text-teal-100 font-medium">Stafi:</span>
                             <span class="font-extrabold text-white">{{ $selectedBarber?->name ?: '-' }}</span>
                         </div>
-                        <div class="flex justify-between border-b border-white/20 pb-1.5">
+                        <div class="flex justify-between border-b border-white/20 pb-2">
                             <span class="text-teal-100 font-medium">Data & Ora:</span>
                             <span class="font-black text-amber-300">{{ $bookingDate }} | {{ $bookingTime }}</span>
                         </div>
@@ -270,8 +280,8 @@
                         </div>
                     </div>
 
-                    <div class="pt-4 flex items-center justify-between gap-4">
-                        <button type="button" wire:click="previousStep" class="px-5 py-3 rounded-full text-xs font-bold text-slate-600 bg-stone-100 hover:bg-stone-200 transition shrink-0">
+                    <div class="pt-2 flex items-center justify-between gap-3">
+                        <button type="button" wire:click="previousStep" class="px-5 py-3.5 rounded-full text-xs font-bold text-slate-700 bg-stone-100 hover:bg-stone-200 transition shrink-0">
                             ← Mbrapa
                         </button>
                         <button type="submit" wire:loading.attr="disabled"
