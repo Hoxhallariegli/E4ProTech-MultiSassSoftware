@@ -199,6 +199,23 @@ class BarberShop extends Model
         };
     }
 
+    public function getStaffCountLabel(int $count): string
+    {
+        $isEn = app()->getLocale() === 'en';
+
+        if ($count === 1) {
+            $label = $this->resolved_staff_label;
+            return "1 {$label}";
+        }
+
+        $plural = $this->resolved_staff_label_plural;
+        if (!$isEn && $plural === 'Berberët') {
+            return "{$count} Berberë";
+        }
+
+        return "{$count} {$plural}";
+    }
+
     public function getResolvedShopLabelAttribute(): string
     {
         if (!empty($this->shop_label)) return $this->shop_label;
