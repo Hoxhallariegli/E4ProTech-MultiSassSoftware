@@ -162,7 +162,7 @@
                             <div class="p-4 rounded-2xl bg-[#FAF8F2] border border-stone-200/60 flex items-center justify-between">
                                 <div>
                                     <p class="text-xs text-slate-500 font-bold">{{ app()->getLocale() === 'en' ? 'Active Staff' : 'Stafi Aktiv' }}</p>
-                                    <h4 class="text-xl font-black text-[#1A1D20]">{{ $staff->count() }} {{ $shop->resolved_staff_label_plural }}</h4>
+                                    <h4 class="text-xl font-black text-[#1A1D20]">{{ $shop->getStaffCountLabel($staff->count()) }}</h4>
                                 </div>
                                 <span class="w-10 h-10 rounded-xl font-black flex items-center justify-center text-lg"
                                       style="background-color: {{ $primaryColor }}15; color: {{ $primaryColor }};">
