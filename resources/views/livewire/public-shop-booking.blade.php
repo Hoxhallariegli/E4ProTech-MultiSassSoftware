@@ -90,7 +90,7 @@
                                 <h4 class="font-extrabold text-sm text-[#1A1D20]">{{ $s->name }}</h4>
                                 <span class="text-xs text-slate-500 font-medium">{{ $s->duration_minutes }} min</span>
                             </div>
-                            <span class="font-black text-sm whitespace-nowrap" style="color: {{ $secondaryColor }};">{{ number_format($s->price, 0) }} {{ $shop->resolved_currency }}</span>
+                            <span class="font-black text-sm whitespace-nowrap" style="color: {{ $secondaryColor }};">{{ $s->formatted_price_range }}</span>
                         </button>
                     @endforeach
                 </div>

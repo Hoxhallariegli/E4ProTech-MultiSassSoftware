@@ -51,7 +51,7 @@
     @endif
     <td class="hidden lg:table-cell px-6 py-5 font-extrabold text-gray-900 dark:text-white">{{ $item->name }}</td>
     <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300 truncate max-w-xs">{{ $item->description ?: '-' }}</td>
-    <td class="hidden lg:table-cell px-6 py-5 font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">{{ format_currency($item->price, $item->barberShop) }}</td>
+    <td class="hidden lg:table-cell px-6 py-5 font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">{{ $item->formatted_price_range }}</td>
     <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300 font-bold">{{ $item->duration_minutes }} min</td>
     <td class="hidden lg:table-cell px-6 py-5 text-gray-600 dark:text-gray-300">{{ $item->category ?: '-' }}</td>
     <td class="hidden lg:table-cell px-6 py-5">

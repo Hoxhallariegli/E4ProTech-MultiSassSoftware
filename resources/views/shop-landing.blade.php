@@ -389,7 +389,7 @@
                         </div>
                         <div class="text-right whitespace-nowrap">
                             <span class="text-xl font-black block mb-2" style="color: {{ $secondaryColor }};">
-                                {{ number_format($service->price, 0) }} {{ $shop->resolved_currency }}
+                                {{ $service->formatted_price_range }}
                             </span>
                             <button type="button"
                                     onclick="selectServiceAndScroll({{ $service->id }})"

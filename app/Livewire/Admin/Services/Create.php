@@ -19,26 +19,27 @@ class Create extends Component
     public $name = '';
     public $description = '';
     public $price = '';
+    public $price_max = '';
     public $duration_minutes = '';
     public $category = '';
     public $active = false;
- 
-    #[On('barber-shop-created')] 
+
+    #[On('barber-shop-created')]
     public function refreshBarberShops($id) { $this->barber_shop_id = $id; $this->updatedBarberShopId($id); }
- 
+
     public function updatedBarberShopId($value)
     {
         if (!$value) return;
         $related = \App\Models\BarberShop::find($value);
         if (!$related) return;
     }
- 
+
     protected function getbarberShopsList() {
         $query = \App\Models\BarberShop::query();
         if (method_exists(\App\Models\BarberShop::class, 'scopeForActiveShop')) { $query->forActiveShop(); }
         return $query->pluck('name', 'id')->toArray();
     }
- 
+
     public function mount() { if (auth()->check() && auth()->user()->barber_shop_id) { $this->barber_shop_id = auth()->user()->barber_shop_id; } }
 
     public function render() { abort_if_cannot('add_services');         $shop = \App\Models\BarberShop::find($this->barber_shop_id);
@@ -55,6 +56,7 @@ class Create extends Component
             'name' => $this->name,
             'description' => $this->description,
             'price' => $this->price,
+            'price_max' => $this->price_max,
             'duration_minutes' => $this->duration_minutes,
             'category' => $this->category,
             'active' => $this->active,

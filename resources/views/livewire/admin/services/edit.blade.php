@@ -18,7 +18,8 @@
 </div>
 <div><x-form.input name="name" type="text" wire:model.live="name" :label="__('services.Name')" class="dark:bg-gray-900" /></div>
 <div class="md:col-span-2"><x-form.textarea name="description" wire:model="description" :label="__('services.Description')" class="dark:bg-gray-900" /></div>
-<div><x-form.input name="price" type="number" step="0.01" min="0" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'').replace(/(\..*)\./g,'$1').replace(/(\.\d{2}).*/g,'$1')" wire:model.live="price" :label="__('services.Price')" class="dark:bg-gray-900" /></div>
+<div><x-form.input name="price" type="number" step="0.01" min="0" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'').replace(/(\..*)\./g,'$1').replace(/(\.\d{2}).*/g,'$1')" wire:model.live="price" :label="__('services.Price') . ' (Minimal)'" class="dark:bg-gray-900" /></div>
+<div><x-form.input name="price_max" type="number" step="0.01" min="0" inputmode="decimal" wire:model.live="price_max" :label="'Çmimi Maksimal (Rang, p.sh. 800 - 1000 Lekë)'" class="dark:bg-gray-900" /></div>
 <div><x-form.input name="duration_minutes" type="number" step="1" wire:model.live="duration_minutes" :label="__('services.Duration Minutes')" class="dark:bg-gray-900" /></div>
 <div><x-form.input name="category" type="text" wire:model.live="category" :label="__('services.Category')" class="dark:bg-gray-900" /></div>
 <div><x-form.checkbox name="active" wire:model="active" :label="__('services.Active')" /></div></div><div class="mt-10 flex justify-end"><x-button type="submit" variant="blue" class="w-full sm:w-auto !px-12 !py-4 !rounded-2xl">{{ __('services.Update') }}</x-button></div></form></div>
