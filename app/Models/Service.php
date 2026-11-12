@@ -57,7 +57,7 @@ class Service extends Model
 
     public function getFormattedPriceRangeAttribute(): string
     {
-        $shop = $this->barberShop;
+        $shop = $this->relationLoaded('barberShop') ? $this->barberShop : null;
         $currency = $shop?->resolved_currency ?: 'Lekë';
 
         $min = number_format((float) $this->price, 0);

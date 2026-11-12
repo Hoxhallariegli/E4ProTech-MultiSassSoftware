@@ -21,6 +21,7 @@ class ShopLandingController extends Controller
 
         $services = \App\Models\Service::withoutGlobalScope('barber_shop_access')
             ->where('barber_shop_id', $shop->id)
+            ->with('barberShop')
             ->get();
 
         $workingHours = \App\Models\WorkingHour::whereIn('barber_id', $staff->pluck('id'))->get();
