@@ -291,52 +291,42 @@ class PublicShopBooking extends Component
             return;
         }
 
-        try {
-            // Find or create Customer cleanly without global scope issues
-            $customer = Customer::withoutGlobalScope('barber_shop_access')
-                ->where('barber_shop_id', $this->shop->id)
-                ->where('phone', trim($this->customerPhone))
-                ->first();
+        // Find or create Customer
+        $customer = Customer::withoutGlobalScope('barber_shop_access')
+            ->where('barber_shop_id', $this->shop->id)
+            ->where('phone', trim($this->customerPhone))
+            ->first();
 
-            if (!$customer) {
-                $customer = Customer::withoutGlobalScope('barber_shop_access')->create([
-                    'barber_shop_id' => $this->shop->id,
-                    'phone' => trim($this->customerPhone),
-                    'name' => trim($this->customerName),
-                    'total_bookings' => 0,
-                    'no_show_count' => 0,
-                ]);
-            } else {
-                $customer->update(['name' => trim($this->customerName)]);
-            }
-
-            $service = Service::withoutGlobalScope('barber_shop_access')->findOrFail($this->selectedServiceId);
-
-            // Create Booking
-            $booking = Booking::withoutGlobalScope('barber_shop_access')->create([
+        if (!$customer) {
+            $customer = Customer::withoutGlobalScope('barber_shop_access')->create([
                 'barber_shop_id' => $this->shop->id,
-                'barber_id' => $this->selectedBarberId,
-                'service_id' => $service->id,
-                'customer_id' => $customer->id,
-                'appointment_at' => $appointmentAt,
-                'status' => 'confirmed',
-                'payment_status' => 'unpaid',
-                'total_price' => $service->price,
-                'notes' => $this->notes ? "Rezervim Online: " . $this->notes : "Rezervim Online nga Faqja Publike",
-                'source' => 'online',
+                'phone' => trim($this->customerPhone),
+                'name' => trim($this->customerName),
+                'total_bookings' => 0,
+                'no_show_count' => 0,
             ]);
-
-            $this->createdBooking = $booking;
-            $this->bookingSuccess = true;
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error("PublicShopBooking error: " . $e->getMessage());
-            if (isset($booking) && $booking->id) {
-                $this->createdBooking = $booking;
-                $this->bookingSuccess = true;
-            } else {
-                $this->addError('customerPhone', 'Ka ndodhur një pasaktësi gjatë rezervimit. Ju lutemi provoni përsëri.');
-            }
+        } else {
+            $customer->update(['name' => trim($this->customerName)]);
         }
+
+        $service = Service::withoutGlobalScope('barber_shop_access')->findOrFail($this->selectedServiceId);
+
+        // Create Booking
+        $booking = Booking::withoutGlobalScope('barber_shop_access')->create([
+            'barber_shop_id' => $this->shop->id,
+            'barber_id' => $this->selectedBarberId,
+            'service_id' => $service->id,
+            'customer_id' => $customer->id,
+            'appointment_at' => $appointmentAt,
+            'status' => 'confirmed',
+            'payment_status' => 'unpaid',
+            'total_price' => $service->price,
+            'notes' => $this->notes ? "Rezervim Online: " . $this->notes : "Rezervim Online nga Faqja Publike",
+            'source' => 'online',
+        ]);
+
+        $this->createdBooking = $booking;
+        $this->bookingSuccess = true;
     }
 
     public function render()
