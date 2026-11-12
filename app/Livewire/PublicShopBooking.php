@@ -219,6 +219,9 @@ class PublicShopBooking extends Component
             }
         }
 
+        $slotStep = (int) ($this->shop->min_service_time ?: 15);
+        if ($slotStep <= 0) $slotStep = 15;
+
         $slots = [];
         $cursor = $openDt->copy();
 
@@ -232,11 +235,11 @@ class PublicShopBooking extends Component
 
             // Skip past times if selected date is today
             if ($date->isToday() && $slotStart->isBefore($now)) {
-                $cursor->addMinutes(30);
+                $cursor->addMinutes($slotStep);
                 continue;
             }
 
-            // Check overlap with existing bookings
+            // Check overlap with existing bookings (Ensures selected service's full $reqDuration fits in the gap!)
             $hasOverlap = false;
             foreach ($bookingEntries as $entry) {
                 if ($slotStart < $entry['end'] && $slotEnd > $entry['start']) {
@@ -249,7 +252,7 @@ class PublicShopBooking extends Component
                 $slots[] = $slotStart->format('H:i');
             }
 
-            $cursor->addMinutes(30);
+            $cursor->addMinutes($slotStep);
         }
 
         if (empty($this->bookingTime) || !in_array($this->bookingTime, $slots, true)) {
