@@ -110,15 +110,29 @@ class PublicShopBooking extends Component
         }
         $dateStr = $date->format('Y-m-d');
 
+        $dayIndex = $date->dayOfWeek; // 0 = Sunday, 1 = Monday ... 4 = Thursday
+        $dayEnglish = strtolower($date->format('l'));
+        $dayAlbanianMap = [
+            'monday' => 'e hene',
+            'tuesday' => 'e marte',
+            'wednesday' => 'e merkure',
+            'thursday' => 'e enjte',
+            'friday' => 'e premte',
+            'saturday' => 'e shtune',
+            'sunday' => 'e diel',
+        ];
+        $dayAlbanian = $dayAlbanianMap[$dayEnglish] ?? $dayEnglish;
+
         $workingHour = null;
 
         // Check if barber has an explicit working hours record marked as closed
         if ($this->selectedBarberId) {
-            $dayOfWeekLower = strtolower($date->format('l'));
             $workingHour = WorkingHour::withoutGlobalScope('barber_shop_access')
                 ->where('barber_id', $this->selectedBarberId)
-                ->where(function($q) use ($dayOfWeekLower) {
-                    $q->whereRaw('LOWER(day_of_week) = ?', [$dayOfWeekLower]);
+                ->where(function($q) use ($dayEnglish, $dayAlbanian, $dayIndex) {
+                    $q->whereRaw('LOWER(day_of_week) LIKE ?', ["%{$dayEnglish}%"])
+                      ->orWhereRaw('LOWER(day_of_week) LIKE ?', ["%{$dayAlbanian}%"])
+                      ->orWhere('day_of_week', $dayIndex);
                 })
                 ->first();
 
