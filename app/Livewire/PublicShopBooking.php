@@ -292,17 +292,21 @@ class PublicShopBooking extends Component
         }
 
         // Find or create Customer
-        $customer = Customer::updateOrCreate(
-            [
+        $customer = Customer::where('barber_shop_id', $this->shop->id)
+            ->where('phone', trim($this->customerPhone))
+            ->first();
+
+        if (!$customer) {
+            $customer = Customer::create([
                 'barber_shop_id' => $this->shop->id,
                 'phone' => trim($this->customerPhone),
-            ],
-            [
                 'name' => trim($this->customerName),
                 'total_bookings' => 0,
                 'no_show_count' => 0,
-            ]
-        );
+            ]);
+        } else {
+            $customer->update(['name' => trim($this->customerName)]);
+        }
 
         $service = Service::findOrFail($this->selectedServiceId);
 
