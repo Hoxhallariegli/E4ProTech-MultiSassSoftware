@@ -155,7 +155,7 @@
                     <label class="block text-xs font-extrabold text-[#1A1D20] uppercase tracking-wider mb-2">
                         {{ __('public_booking.Your Name') }}
                     </label>
-                    <input type="text" wire:model.live="customerName" placeholder="p.sh: Albano Hoxha"
+                    <input type="text" wire:model.live="customerName" placeholder="{{ __('public_booking.Name Placeholder') }}"
                            class="w-full px-5 py-3.5 rounded-2xl bg-[#FAF8F2] border border-slate-200 text-[#1A1D20] text-sm font-bold focus:outline-none transition">
                     @error('customerName') <p class="text-xs text-rose-500 mt-1 font-bold">{{ $message }}</p> @enderror
                 </div>
@@ -163,7 +163,7 @@
                     <label class="block text-xs font-extrabold text-[#1A1D20] uppercase tracking-wider mb-2">
                         {{ __('public_booking.Phone Number') }}
                     </label>
-                    <input type="text" wire:model.live="customerPhone" placeholder="p.sh: +355691234567"
+                    <input type="text" wire:model.live="customerPhone" placeholder="{{ __('public_booking.Phone Placeholder') }}"
                            class="w-full px-5 py-3.5 rounded-2xl bg-[#FAF8F2] border border-slate-200 text-[#1A1D20] text-sm font-bold focus:outline-none transition">
                     @error('customerPhone') <p class="text-xs text-rose-500 mt-1 font-bold">{{ $message }}</p> @enderror
                 </div>
