@@ -45,6 +45,8 @@ class PublicShopBooking extends Component
         if ($barbers->isNotEmpty()) {
             $this->selectedBarberId = $barbers->first()->id;
         }
+
+        $this->autoAdvanceToAvailableDate();
     }
 
     #[\Livewire\Attributes\On('preselect-service')]
@@ -58,6 +60,7 @@ class PublicShopBooking extends Component
         $this->selectedServiceId = $serviceId;
         $this->bookingTime = null;
         $this->currentStep = 2; // Auto advance to Step 2 (Staff)
+        $this->autoAdvanceToAvailableDate();
     }
 
     public function selectBarber($barberId)
@@ -65,6 +68,7 @@ class PublicShopBooking extends Component
         $this->selectedBarberId = $barberId;
         $this->bookingTime = null;
         $this->currentStep = 3; // Auto advance to Step 3 (Date & Time)
+        $this->autoAdvanceToAvailableDate();
     }
 
     public function goToStep(int $step)
@@ -72,6 +76,9 @@ class PublicShopBooking extends Component
         if ($step < 1) $step = 1;
         if ($step > 4) $step = 4;
         $this->currentStep = $step;
+        if ($step === 3) {
+            $this->autoAdvanceToAvailableDate();
+        }
     }
 
     public function nextStep()
@@ -89,16 +96,26 @@ class PublicShopBooking extends Component
             return;
         }
         $this->currentStep = min(4, $this->currentStep + 1);
+        if ($this->currentStep === 3) {
+            $this->autoAdvanceToAvailableDate();
+        }
     }
 
     public function previousStep()
     {
         $this->currentStep = max(1, $this->currentStep - 1);
+        if ($this->currentStep === 3) {
+            $this->autoAdvanceToAvailableDate();
+        }
     }
 
     public function updatedBookingDate()
     {
         $this->bookingTime = null;
+        $slots = $this->getTimeSlotsForDate($this->bookingDate ?: Carbon::now()->format('Y-m-d'));
+        if (!empty($slots)) {
+            $this->bookingTime = $slots[0];
+        }
     }
 
     public function resetForm()
@@ -125,6 +142,8 @@ class PublicShopBooking extends Component
         if ($barbers->isNotEmpty()) {
             $this->selectedBarberId = $barbers->first()->id;
         }
+
+        $this->autoAdvanceToAvailableDate();
     }
 
     public function getServicesProperty()
@@ -143,22 +162,51 @@ class PublicShopBooking extends Component
             ->get();
     }
 
-    public function getAvailableTimeSlotsProperty()
+    public function autoAdvanceToAvailableDate(): void
     {
         if (!$this->bookingDate) {
-            return [];
+            $this->bookingDate = Carbon::now()->format('Y-m-d');
         }
 
+        // Check if current date has slots
+        $currentSlots = $this->getTimeSlotsForDate($this->bookingDate);
+        if (!empty($currentSlots)) {
+            if (empty($this->bookingTime) || !in_array($this->bookingTime, $currentSlots, true)) {
+                $this->bookingTime = $currentSlots[0];
+            }
+            return;
+        }
+
+        // Scan ahead up to 14 days to find the first open date
+        $startDate = Carbon::parse($this->bookingDate);
+        for ($i = 1; $i <= 14; $i++) {
+            $checkDate = $startDate->copy()->addDays($i)->format('Y-m-d');
+            $slots = $this->getTimeSlotsForDate($checkDate);
+            if (!empty($slots)) {
+                $this->bookingDate = $checkDate;
+                $this->bookingTime = $slots[0];
+                return;
+            }
+        }
+    }
+
+    public function getAvailableTimeSlotsProperty()
+    {
+        $this->autoAdvanceToAvailableDate();
+        return $this->getTimeSlotsForDate($this->bookingDate ?: Carbon::now()->format('Y-m-d'));
+    }
+
+    public function getTimeSlotsForDate(string $dateStr): array
+    {
         $now = Carbon::now();
 
         try {
-            $date = Carbon::parse($this->bookingDate);
+            $date = Carbon::parse($dateStr);
         } catch (\Throwable $e) {
             $date = Carbon::today();
         }
-        $dateStr = $date->format('Y-m-d');
 
-        $dayIndex = $date->dayOfWeek; // 0 = Sunday, 1 = Monday ... 4 = Thursday
+        $dayIndex = $date->dayOfWeek;
         $dayEnglish = strtolower($date->format('l'));
         $dayAlbanianMap = [
             'monday' => 'e hene',
@@ -173,7 +221,6 @@ class PublicShopBooking extends Component
 
         $workingHour = null;
 
-        // Check if barber has an explicit working hours record marked as closed
         if ($this->selectedBarberId) {
             $workingHour = WorkingHour::withoutGlobalScope('barber_shop_access')
                 ->where('barber_id', $this->selectedBarberId)
@@ -184,7 +231,6 @@ class PublicShopBooking extends Component
                 })
                 ->first();
 
-            // ONLY if explicitly closed, return []
             if ($workingHour && (bool)$workingHour->is_closed === true) {
                 return [];
             }
@@ -213,7 +259,6 @@ class PublicShopBooking extends Component
             $closeDt = Carbon::parse("{$dateStr} 20:00:00");
         }
 
-        // Duration for selected service or 30 min default
         $reqDuration = 30;
         if ($this->selectedServiceId) {
             $service = Service::withoutGlobalScope('barber_shop_access')->find($this->selectedServiceId);
@@ -222,7 +267,6 @@ class PublicShopBooking extends Component
             }
         }
 
-        // Fetch existing bookings for this barber or shop on this day (without tenant scope)
         $bookingQuery = Booking::withoutGlobalScope('barber_shop_access')
             ->whereBetween('appointment_at', [
                 $date->copy()->startOfDay(),
@@ -236,19 +280,18 @@ class PublicShopBooking extends Component
             $bookingQuery->where('barber_shop_id', $this->shop->id);
         }
 
-        $bookings = $bookingQuery->with('service')->get();
+        $bookings = $bookingQuery->get();
 
         $bookingEntries = $bookings->map(function ($b) {
             $start = $b->appointment_at->copy();
             $service = Service::withoutGlobalScope('barber_shop_access')->find($b->service_id);
-            $dur = ($service && $service->duration_minutes > 0) ? (int) $service->duration_minutes : ($b->service?->duration_minutes ?? 30);
+            $dur = ($service && $service->duration_minutes > 0) ? (int) $service->duration_minutes : 30;
             return [
                 'start' => $start,
                 'end' => $start->copy()->addMinutes($dur),
             ];
         });
 
-        // Add lunch break if configured for workingHour
         $lunchStartStr = $normalizeTime($workingHour?->lunch_start);
         $lunchEndStr = $normalizeTime($workingHour?->lunch_end);
         if ($lunchStartStr && $lunchEndStr) {
@@ -262,7 +305,6 @@ class PublicShopBooking extends Component
             }
         }
 
-        // Add staff absence periods (Bulk Cancellations)
         if ($this->selectedBarberId) {
             $absences = \App\Models\BulkCancellation::where('barber_id', $this->selectedBarberId)
                 ->where('start_at', '<', $date->copy()->endOfDay())
@@ -281,8 +323,7 @@ class PublicShopBooking extends Component
             }
         }
 
-        // Step interval is ALWAYS equal to the selected service's duration_minutes ($reqDuration)
-        $slotStep = $reqDuration > 0 ? $reqDuration : (int) ($this->shop->min_service_time ?: 15);
+        $slotStep = $reqDuration > 0 ? $reqDuration : 15;
         if ($slotStep <= 0) $slotStep = 15;
 
         $slots = [];
@@ -296,13 +337,11 @@ class PublicShopBooking extends Component
                 break;
             }
 
-            // Skip past times if selected date is today
             if ($date->isToday() && $slotStart->isBefore($now)) {
                 $cursor->addMinutes($slotStep);
                 continue;
             }
 
-            // Check overlap with existing bookings (Ensures selected service's full $reqDuration fits in the gap!)
             $hasOverlap = false;
             foreach ($bookingEntries as $entry) {
                 if ($slotStart < $entry['end'] && $slotEnd > $entry['start']) {
@@ -316,10 +355,6 @@ class PublicShopBooking extends Component
             }
 
             $cursor->addMinutes($slotStep);
-        }
-
-        if (empty($this->bookingTime) || !in_array($this->bookingTime, $slots, true)) {
-            $this->bookingTime = $slots[0] ?? null;
         }
 
         return $slots;
