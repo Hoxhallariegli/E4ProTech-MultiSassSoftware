@@ -115,7 +115,8 @@ class PublicShopBooking extends Component
         // Check if barber has an explicit working hours record marked as closed
         if ($this->selectedBarberId) {
             $dayOfWeekLower = strtolower($date->format('l'));
-            $workingHour = WorkingHour::where('barber_id', $this->selectedBarberId)
+            $workingHour = WorkingHour::withoutGlobalScope('barber_shop_access')
+                ->where('barber_id', $this->selectedBarberId)
                 ->where(function($q) use ($dayOfWeekLower) {
                     $q->whereRaw('LOWER(day_of_week) = ?', [$dayOfWeekLower]);
                 })
@@ -153,14 +154,14 @@ class PublicShopBooking extends Component
         // Duration for selected service or 30 min default
         $reqDuration = 30;
         if ($this->selectedServiceId) {
-            $service = Service::find($this->selectedServiceId);
+            $service = Service::withoutGlobalScope('barber_shop_access')->find($this->selectedServiceId);
             if ($service && $service->duration_minutes > 0) {
                 $reqDuration = (int) $service->duration_minutes;
             }
         }
 
-        // Fetch existing bookings for this barber or shop on this day
-        $bookingQuery = Booking::query()
+        // Fetch existing bookings for this barber or shop on this day (without tenant scope)
+        $bookingQuery = Booking::withoutGlobalScope('barber_shop_access')->query()
             ->whereBetween('appointment_at', [
                 $date->copy()->startOfDay(),
                 $date->copy()->endOfDay(),
