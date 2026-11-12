@@ -165,11 +165,6 @@
                            style="background-color: {{ $primaryColor }};">
                             <span>{!! $heroButton !!}</span>
                         </a>
-
-                        <a href="#services"
-                           class="w-full sm:w-auto px-8 py-4 rounded-full font-extrabold text-sm text-[#1A1D20] bg-white border border-slate-300 hover:bg-stone-50 transition flex items-center justify-center gap-2 shadow-sm">
-                            <span>{{ app()->getLocale() === 'en' ? 'View Services & Pricing' : 'Shiko Shërbimet & Çmimet' }}</span>
-                        </a>
                     </div>
 
                     <div class="flex items-center gap-6 text-xs font-extrabold text-slate-600">
@@ -229,44 +224,6 @@
                 </div>
 
             </div>
-        </div>
-    </section>
-
-    <!-- Staff Members Section -->
-    <section id="staff" class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-        <div class="flex items-center justify-between mb-10">
-            <div>
-                <span class="text-xs font-black uppercase tracking-widest" style="color: {{ $primaryColor }}">{{ $staffBadge }}</span>
-                <h2 class="text-2xl sm:text-4xl font-black text-[#1A1D20] tracking-tight mt-1">{{ $staffTitle }}</h2>
-            </div>
-            <span class="text-xs px-4 py-2 rounded-full bg-white border border-stone-200 text-[#1A1D20] font-extrabold shadow-sm">
-                {{ $staff->count() }} {{ $shop->resolved_staff_label_plural }}
-            </span>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            @foreach($staff as $member)
-                <div class="p-6 rounded-[2rem] bg-white border border-stone-200/80 transition duration-300 group shadow-md hover:shadow-xl">
-                    <div class="flex items-center gap-4">
-                        <div class="w-16 h-16 rounded-2xl flex items-center justify-center font-black text-2xl"
-                             style="background-color: {{ $secondaryColor }}15; color: {{ $secondaryColor }}; border: 1px solid {{ $secondaryColor }}30">
-                            {{ mb_substr($member->name, 0, 1) }}
-                        </div>
-                        <div>
-                            <h4 class="font-black text-lg text-[#1A1D20] transition">{{ $member->name }}</h4>
-                            <p class="text-xs font-extrabold text-slate-500 mt-0.5">{{ $shop->resolved_staff_label }}</p>
-                            @if($member->phone)
-                                <p class="text-xs text-slate-400 mt-1 font-bold">
-                                    {{ $member->phone }}
-                                </p>
-                            @endif
-                        </div>
-                    </div>
-                    @if($member->bio)
-                        <p class="text-xs text-slate-600 mt-4 leading-relaxed line-clamp-2 font-medium">{{ $member->bio }}</p>
-                    @endif
-                </div>
-            @endforeach
         </div>
     </section>
 
