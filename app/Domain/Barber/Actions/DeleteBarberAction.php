@@ -26,6 +26,14 @@ class DeleteBarberAction
             ->pluck('id');
 
         if ($bookingIds->isNotEmpty()) {
+            // Delete reviews connected to these bookings or this barber
+            \App\Models\Review::withoutGlobalScope('barber_shop_access')
+                ->where(function($q) use ($bookingIds, $model) {
+                    $q->whereIn('booking_id', $bookingIds)
+                      ->orWhere('barber_id', $model->id);
+                })
+                ->delete();
+
             // Delete payments connected to these bookings
             \App\Models\Payment::withoutGlobalScope('barber_shop_access')
                 ->whereIn('booking_id', $bookingIds)
@@ -46,6 +54,9 @@ class DeleteBarberAction
                 ->whereIn('id', $bookingIds)
                 ->delete();
         }
+
+        // Delete reviews directly referencing this barber
+        \App\Models\Review::withoutGlobalScope('barber_shop_access')->where('barber_id', $model->id)->delete();
 
         // Delete working hours & bulk cancellations for this barber
         \App\Models\WorkingHour::withoutGlobalScope('barber_shop_access')->where('barber_id', $model->id)->delete();
