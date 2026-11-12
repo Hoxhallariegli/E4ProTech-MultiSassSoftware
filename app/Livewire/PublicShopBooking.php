@@ -110,6 +110,21 @@ class PublicShopBooking extends Component
         $this->notes = '';
         $this->bookingTime = null;
         $this->bookingDate = Carbon::now()->format('Y-m-d');
+        $this->selectedServiceId = null;
+        $this->selectedBarberId = null;
+        $this->currentStep = 1;
+
+        // Preselect first service if available
+        $services = $this->services;
+        if ($services->isNotEmpty()) {
+            $this->selectedServiceId = $services->first()->id;
+        }
+
+        // Preselect first barber if available
+        $barbers = $this->barbers;
+        if ($barbers->isNotEmpty()) {
+            $this->selectedBarberId = $barbers->first()->id;
+        }
     }
 
     public function getServicesProperty()
