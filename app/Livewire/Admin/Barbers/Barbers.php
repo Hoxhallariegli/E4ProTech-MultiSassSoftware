@@ -60,4 +60,26 @@ class Barbers extends Component
         catch (\Illuminate\Database\QueryException $e) { $this->dispatch('toast', message: __('barbers.delete_error_referenced'), type: 'error'); }
         catch (\Exception $e) { $this->dispatch('toast', message: __('barbers.delete_error'), type: 'error'); }
     }
+
+    public function forceDeleteBarber($id, DeleteBarberAction $action)
+    {
+        if (!auth()->user()?->is_global_admin) {
+            $this->dispatch('toast', message: 'Kjo komandë lejohet vetëm për Super Admin.', type: 'error');
+            return;
+        }
+
+        $item = Barber::withoutGlobalScope('barber_shop_access')->find($id);
+        if (!$item) {
+            $this->dispatch('toast', message: __('barbers.not_found'), type: 'error');
+            return;
+        }
+
+        try {
+            $action->forceExecute($item);
+            $this->dispatch('toast', message: 'Anëtari i stafit dhe të gjitha të dhënat lidhëse u fshinë tërësisht!', type: 'success');
+            $this->resetPage();
+        } catch (\Exception $e) {
+            $this->dispatch('toast', message: 'Gabim gjatë fshirjes: ' . $e->getMessage(), type: 'error');
+        }
+    }
 }

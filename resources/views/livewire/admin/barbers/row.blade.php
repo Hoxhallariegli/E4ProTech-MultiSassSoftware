@@ -86,6 +86,36 @@
                     </x-modal>
                 </div>
             @endcan
+
+            @if(auth()->user()?->is_global_admin)
+                <div x-data="{ confirmation: '' }" x-cloak class="inline-block">
+                    <x-modal>
+                        <x-slot name="trigger">
+                            <button @click="on = true" class="text-[10px] font-black uppercase text-rose-600 hover:text-rose-800 dark:text-rose-400 dark:hover:text-rose-200 bg-rose-50 dark:bg-rose-900/30 px-3 py-1.5 rounded-xl border border-rose-200/60 dark:border-rose-800/60">
+                                ⚡ Force Delete
+                            </button>
+                        </x-slot>
+                        <x-slot name="modalTitle">
+                            <div class="text-left dark:text-white text-rose-600 font-black">⚡ Fshij Tërësisht (Force Delete) - {{ $item->name }}</div>
+                        </x-slot>
+                        <x-slot name="content">
+                            <div class="text-left space-y-3">
+                                <p class="text-xs text-red-600 dark:text-red-400 font-bold leading-relaxed">
+                                    ⚠️ VETËM PËR SUPER ADMIN: Kjo komandë do të fshijë TËRËSISHT këtë anëtar stafit së bashku me të gjitha rezervimet, oraret e punës dhe mungesat lidhëse!
+                                </p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    Shkruaj <strong class="text-black dark:text-white">{{ $item->name }}</strong> për ta konfirmuar:
+                                </p>
+                                <input x-model="confirmation" placeholder="Shkruaj {{ $item->name }} për konfirmim" class="w-full px-3 py-2 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-rose-500 outline-none text-xs font-bold">
+                            </div>
+                        </x-slot>
+                        <x-slot name="footer">
+                            <x-button variant="gray" @click="on = false">Anulo</x-button>
+                            <x-button variant="red" x-bind:disabled="confirmation !== '{{ $item->name }}'" wire:click="$parent.forceDeleteBarber('{{ $item->id }}')" @click="on = false">⚡ Fshij Tërësisht</x-button>
+                        </x-slot>
+                    </x-modal>
+                </div>
+            @endif
         </div>
     </td>
 </tr>
