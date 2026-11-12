@@ -126,30 +126,41 @@ class PublicShopBooking extends Component
         $today = Carbon::now();
 
         $albanianDays = [
-            'Monday' => 'E Hënë',
-            'Tuesday' => 'E Martë',
-            'Wednesday' => 'E Mërkurë',
-            'Thursday' => 'E Enjte',
-            'Friday' => 'E Premte',
-            'Saturday' => 'E Shtunë',
-            'Sunday' => 'E Diel',
+            'Monday' => 'Hën',
+            'Tuesday' => 'Mar',
+            'Wednesday' => 'Mër',
+            'Thursday' => 'Enj',
+            'Friday' => 'Pre',
+            'Saturday' => 'Sht',
+            'Sunday' => 'Die',
+        ];
+
+        $englishDays = [
+            'Monday' => 'Mo',
+            'Tuesday' => 'Tu',
+            'Wednesday' => 'We',
+            'Thursday' => 'Th',
+            'Friday' => 'Fr',
+            'Saturday' => 'Sa',
+            'Sunday' => 'Su',
         ];
 
         for ($i = 0; $i < 7; $i++) {
             $dt = $today->copy()->addDays($i);
             $dateStr = $dt->format('Y-m-d');
+            $dayName = $dt->format('l');
 
             if ($i === 0) {
                 $dayLabel = $isEn ? 'Today' : 'Sot';
             } elseif ($i === 1) {
                 $dayLabel = $isEn ? 'Tomorrow' : 'Nesër';
             } else {
-                $dayName = $dt->format('l');
-                $dayLabel = $isEn ? $dayName : ($albanianDays[$dayName] ?? $dayName);
+                $dayLabel = $isEn ? ($englishDays[$dayName] ?? 'Day') : ($albanianDays[$dayName] ?? 'Ditë');
             }
 
             $dates[] = [
                 'date' => $dateStr,
+                'day_num' => $dt->format('j'),
                 'formatted' => $dt->format('d/m'),
                 'day' => $dayLabel,
             ];

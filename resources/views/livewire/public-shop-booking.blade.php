@@ -203,10 +203,10 @@
                             @foreach($availableDates as $d)
                                 <button type="button"
                                         wire:click="selectBookingDate('{{ $d['date'] }}')"
-                                        class="flex-1 min-w-[76px] sm:min-w-[90px] py-3 px-2 rounded-2xl border text-center transition flex flex-col items-center justify-center gap-0.5 cursor-pointer active:scale-95 shrink-0 snap-start"
+                                        class="min-w-[56px] sm:min-w-[62px] py-2.5 px-2 rounded-2xl border text-center transition flex flex-col items-center justify-center gap-0.5 cursor-pointer active:scale-95 shrink-0 snap-start"
                                         style="{{ $bookingDate === $d['date'] ? 'background-color: '.$primaryColor.'; border-color: '.$primaryColor.'; color: #ffffff; box-shadow: 0 4px 12px '.$primaryColor.'40;' : 'background-color: #FAF8F2; border-color: #e2e8f0; color: #1A1D20;' }}">
                                     <span class="text-[10px] font-extrabold uppercase {{ $bookingDate === $d['date'] ? 'text-amber-300' : 'text-slate-500' }}">{{ $d['day'] }}</span>
-                                    <span class="text-xs font-black">{{ $d['formatted'] }}</span>
+                                    <span class="text-sm font-black">{{ $d['day_num'] }}</span>
                                 </button>
                             @endforeach
                         </div>
