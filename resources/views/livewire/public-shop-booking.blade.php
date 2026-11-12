@@ -176,7 +176,7 @@
 
             <!-- STEP 3: DATE & TIME -->
             @elseif($currentStep === 3)
-                <div class="space-y-4">
+                <div class="space-y-6">
                     <div class="border-b border-stone-200 pb-3">
                         <h3 class="text-xl sm:text-2xl font-black text-[#1A1D20] tracking-tight">
                             {{ __('public_booking.3 Appointment Date') }} & {{ __('public_booking.4 Appointment Time') }}
@@ -186,33 +186,50 @@
                         </p>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-extrabold text-[#1A1D20] uppercase tracking-wider mb-2">
-                                {{ __('public_booking.3 Appointment Date') }}
-                            </label>
-                            <input type="date" wire:model.live="bookingDate" min="{{ date('Y-m-d') }}"
-                                   class="w-full px-5 py-3.5 rounded-2xl bg-[#FAF8F2] border border-slate-200 text-[#1A1D20] font-bold text-sm focus:outline-none transition">
-                            @error('bookingDate') <p class="text-xs text-rose-500 mt-1 font-bold">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-xs font-extrabold text-[#1A1D20] uppercase tracking-wider mb-2">
+                    <!-- Top Row: Date Picker -->
+                    <div>
+                        <label class="block text-xs font-black text-[#1A1D20] uppercase tracking-wider mb-2">
+                            {{ __('public_booking.3 Appointment Date') }}
+                        </label>
+                        <input type="date" wire:model.live="bookingDate" min="{{ date('Y-m-d') }}"
+                               class="w-full sm:w-1/2 px-5 py-3.5 rounded-2xl bg-[#FAF8F2] border border-slate-200 text-[#1A1D20] font-black text-sm focus:outline-none transition shadow-xs">
+                        @error('bookingDate') <p class="text-xs text-rose-500 mt-1 font-bold">{{ $message }}</p> @enderror
+                    </div>
+
+                    <!-- Bottom Row: Time Slots Grid Chips -->
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="block text-xs font-black text-[#1A1D20] uppercase tracking-wider">
                                 {{ __('public_booking.4 Appointment Time') }}
                             </label>
                             @if(!empty($availableTimeSlots))
-                                <select wire:model.live="bookingTime"
-                                        class="w-full px-5 py-3.5 rounded-2xl bg-[#FAF8F2] border border-slate-200 text-[#1A1D20] font-bold text-sm focus:outline-none transition">
-                                    @foreach($availableTimeSlots as $timeSlot)
-                                        <option value="{{ $timeSlot }}">{{ $timeSlot }}</option>
-                                    @endforeach
-                                </select>
-                            @else
-                                <div class="px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 font-bold text-xs flex items-center gap-2">
-                                    {{ __('public_booking.No Slots Available') }}
-                                </div>
+                                <span class="text-xs font-bold text-slate-500">
+                                    {{ count($availableTimeSlots) }} {{ app()->getLocale() === 'en' ? 'slots available' : 'orare të lira' }}
+                                </span>
                             @endif
-                            @error('bookingTime') <p class="text-xs text-rose-500 mt-1 font-bold">{{ $message }}</p> @enderror
                         </div>
+
+                        @if(!empty($availableTimeSlots))
+                            <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-2.5 max-h-[280px] overflow-y-auto p-1">
+                                @foreach($availableTimeSlots as $timeSlot)
+                                    <button type="button"
+                                            wire:click="$set('bookingTime', '{{ $timeSlot }}')"
+                                            class="py-3 px-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95"
+                                            style="{{ $bookingTime === $timeSlot ? 'background-color: '.$primaryColor.'; color: #ffffff; box-shadow: 0 4px 12px '.$primaryColor.'40;' : 'background-color: #FAF8F2; border: 1px solid #e2e8f0; color: #1A1D20;' }}">
+                                        <span>{{ $timeSlot }}</span>
+                                        @if($bookingTime === $timeSlot)
+                                            <span class="text-[10px] text-emerald-300">✓</span>
+                                        @endif
+                                    </button>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="p-6 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 font-bold text-xs text-center space-y-1">
+                                <p class="text-sm font-black">{{ __('public_booking.No Slots Available') }}</p>
+                                <p class="text-[11px] opacity-80">Ju lutemi zgjidhni një datë tjetër për të parë oraret e lira.</p>
+                            </div>
+                        @endif
+                        @error('bookingTime') <p class="text-xs text-rose-500 mt-1.5 font-bold">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="pt-2 flex items-center justify-between gap-3">
