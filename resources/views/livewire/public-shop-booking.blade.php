@@ -186,9 +186,9 @@
                         </p>
                     </div>
 
-                    <!-- Top Row: Date Picker -->
+                    <!-- Top Row: 7-Day Interactive Date Buttons Strip -->
                     <div>
-                        <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center justify-between mb-3">
                             <label class="block text-xs font-black text-[#1A1D20] uppercase tracking-wider">
                                 {{ __('public_booking.3 Appointment Date') }}
                             </label>
@@ -198,9 +198,19 @@
                                 </span>
                             @endif
                         </div>
-                        <input type="date" wire:model.live="bookingDate" min="{{ date('Y-m-d') }}"
-                               class="w-full sm:w-1/2 px-5 py-3.5 rounded-2xl bg-[#FAF8F2] border border-slate-200 text-[#1A1D20] font-black text-sm focus:outline-none transition shadow-xs">
-                        @error('bookingDate') <p class="text-xs text-rose-500 mt-1 font-bold">{{ $message }}</p> @enderror
+
+                        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                            @foreach($availableDates as $d)
+                                <button type="button"
+                                        wire:click="selectBookingDate('{{ $d['date'] }}')"
+                                        class="py-3 px-2 rounded-2xl border text-center transition flex flex-col items-center justify-center gap-0.5 cursor-pointer active:scale-95 hover:shadow-md"
+                                        style="{{ $bookingDate === $d['date'] ? 'background-color: '.$primaryColor.'; border-color: '.$primaryColor.'; color: #ffffff; box-shadow: 0 4px 12px '.$primaryColor.'40;' : 'background-color: #FAF8F2; border-color: #e2e8f0; color: #1A1D20;' }}">
+                                    <span class="text-[10px] font-extrabold uppercase {{ $bookingDate === $d['date'] ? 'text-amber-300' : 'text-slate-500' }}">{{ $d['day'] }}</span>
+                                    <span class="text-xs font-black">{{ $d['formatted'] }}</span>
+                                </button>
+                            @endforeach
+                        </div>
+                        @error('bookingDate') <p class="text-xs text-rose-500 mt-1.5 font-bold">{{ $message }}</p> @enderror
                     </div>
 
                     <!-- Bottom Row: Time Slots Grid Chips -->

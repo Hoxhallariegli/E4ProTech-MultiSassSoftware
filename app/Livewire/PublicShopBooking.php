@@ -109,6 +109,55 @@ class PublicShopBooking extends Component
         }
     }
 
+    public function selectBookingDate(string $dateStr): void
+    {
+        $this->bookingDate = $dateStr;
+        $this->bookingTime = null;
+        $slots = $this->getTimeSlotsForDate($dateStr);
+        if (!empty($slots)) {
+            $this->bookingTime = $slots[0];
+        }
+    }
+
+    public function getAvailableDatesProperty(): array
+    {
+        $dates = [];
+        $isEn = app()->getLocale() === 'en';
+        $today = Carbon::now();
+
+        $albanianDays = [
+            'Monday' => 'E Hënë',
+            'Tuesday' => 'E Martë',
+            'Wednesday' => 'E Mërkurë',
+            'Thursday' => 'E Enjte',
+            'Friday' => 'E Premte',
+            'Saturday' => 'E Shtunë',
+            'Sunday' => 'E Diel',
+        ];
+
+        for ($i = 0; $i < 7; $i++) {
+            $dt = $today->copy()->addDays($i);
+            $dateStr = $dt->format('Y-m-d');
+
+            if ($i === 0) {
+                $dayLabel = $isEn ? 'Today' : 'Sot';
+            } elseif ($i === 1) {
+                $dayLabel = $isEn ? 'Tomorrow' : 'Nesër';
+            } else {
+                $dayName = $dt->format('l');
+                $dayLabel = $isEn ? $dayName : ($albanianDays[$dayName] ?? $dayName);
+            }
+
+            $dates[] = [
+                'date' => $dateStr,
+                'formatted' => $dt->format('d/m'),
+                'day' => $dayLabel,
+            ];
+        }
+
+        return $dates;
+    }
+
     public function updatedBookingDate()
     {
         $this->bookingTime = null;
@@ -438,6 +487,7 @@ class PublicShopBooking extends Component
             'services' => $this->services,
             'barbers' => $this->barbers,
             'staff' => $this->barbers,
+            'availableDates' => $this->availableDates,
             'availableTimeSlots' => $this->availableTimeSlots,
         ])->layout('components.layouts.blank');
     }
