@@ -126,13 +126,13 @@ class PublicShopBooking extends Component
         $today = Carbon::now();
 
         $albanianDays = [
-            'Monday' => 'Hën',
-            'Tuesday' => 'Mar',
-            'Wednesday' => 'Mër',
-            'Thursday' => 'Enj',
-            'Friday' => 'Pre',
-            'Saturday' => 'Sht',
-            'Sunday' => 'Die',
+            'Monday' => 'H',
+            'Tuesday' => 'M',
+            'Wednesday' => 'M',
+            'Thursday' => 'E',
+            'Friday' => 'P',
+            'Saturday' => 'Sh',
+            'Sunday' => 'D',
         ];
 
         $englishDays = [
@@ -150,13 +150,7 @@ class PublicShopBooking extends Component
             $dateStr = $dt->format('Y-m-d');
             $dayName = $dt->format('l');
 
-            if ($i === 0) {
-                $dayLabel = $isEn ? 'Today' : 'Sot';
-            } elseif ($i === 1) {
-                $dayLabel = $isEn ? 'Tomorrow' : 'Nesër';
-            } else {
-                $dayLabel = $isEn ? ($englishDays[$dayName] ?? 'Day') : ($albanianDays[$dayName] ?? 'Ditë');
-            }
+            $dayLabel = $isEn ? ($englishDays[$dayName] ?? 'D') : ($albanianDays[$dayName] ?? 'D');
 
             $dates[] = [
                 'date' => $dateStr,
