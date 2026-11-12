@@ -27,6 +27,8 @@ class PublicShopBooking extends Component
     public $bookingSuccess = false;
     public $createdBooking = null;
 
+    public int $currentStep = 1;
+
     public function mount(BarberShop $shop)
     {
         $this->shop = $shop;
@@ -55,12 +57,43 @@ class PublicShopBooking extends Component
     {
         $this->selectedServiceId = $serviceId;
         $this->bookingTime = null;
+        $this->currentStep = 2; // Auto advance to Step 2 (Staff)
     }
 
     public function selectBarber($barberId)
     {
         $this->selectedBarberId = $barberId;
         $this->bookingTime = null;
+        $this->currentStep = 3; // Auto advance to Step 3 (Date & Time)
+    }
+
+    public function goToStep(int $step)
+    {
+        if ($step < 1) $step = 1;
+        if ($step > 4) $step = 4;
+        $this->currentStep = $step;
+    }
+
+    public function nextStep()
+    {
+        if ($this->currentStep === 1 && !$this->selectedServiceId) {
+            $this->addError('selectedServiceId', 'Ju lutemi zgjidhni një shërbim.');
+            return;
+        }
+        if ($this->currentStep === 2 && !$this->selectedBarberId) {
+            $this->addError('selectedBarberId', 'Ju lutemi zgjidhni një anëtar stafit.');
+            return;
+        }
+        if ($this->currentStep === 3 && (!$this->bookingDate || !$this->bookingTime)) {
+            $this->addError('bookingTime', 'Ju lutemi zgjidhni datën dhe orarin.');
+            return;
+        }
+        $this->currentStep = min(4, $this->currentStep + 1);
+    }
+
+    public function previousStep()
+    {
+        $this->currentStep = max(1, $this->currentStep - 1);
     }
 
     public function updatedBookingDate()
