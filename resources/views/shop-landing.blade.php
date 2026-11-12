@@ -387,11 +387,12 @@
                             <span class="text-xl font-black block mb-2" style="color: {{ $secondaryColor }};">
                                 {{ number_format($service->price, 0) }} {{ $shop->resolved_currency }}
                             </span>
-                            <a href="#booking-section"
-                               class="px-5 py-2 rounded-full text-xs font-black text-white shadow transition inline-block"
-                               style="background-color: {{ $primaryColor }};">
+                            <button type="button"
+                                    onclick="selectServiceAndScroll({{ $service->id }})"
+                                    class="px-5 py-2 rounded-full text-xs font-black text-white shadow transition inline-block cursor-pointer active:scale-95"
+                                    style="background-color: {{ $primaryColor }};">
                                 {{ app()->getLocale() === 'en' ? 'Select ↗' : 'Zgjidh ↗' }}
-                            </a>
+                            </button>
                         </div>
                     </div>
                 @endforeach
@@ -400,7 +401,7 @@
     </section>
 
     <!-- Interactive Livewire Online Booking Component -->
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
+    <section id="booking-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full scroll-mt-6">
         <livewire:public-shop-booking :shop="$shop" />
     </section>
 
@@ -416,6 +417,18 @@
             </div>
         </div>
     </footer>
+
+    <script>
+        function selectServiceAndScroll(serviceId) {
+            if (window.Livewire) {
+                window.Livewire.dispatch('preselect-service', { serviceId: serviceId });
+            }
+            const elem = document.getElementById('booking-section');
+            if (elem) {
+                elem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    </script>
 
     @livewireScripts
 </body>

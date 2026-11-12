@@ -45,6 +45,12 @@ class PublicShopBooking extends Component
         }
     }
 
+    #[\Livewire\Attributes\On('preselect-service')]
+    public function preselectService($serviceId)
+    {
+        $this->selectService($serviceId);
+    }
+
     public function selectService($serviceId)
     {
         $this->selectedServiceId = $serviceId;
