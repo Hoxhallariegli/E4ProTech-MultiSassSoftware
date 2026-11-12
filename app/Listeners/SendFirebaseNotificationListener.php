@@ -220,16 +220,21 @@ class SendFirebaseNotificationListener
                     }
 
                     // -------------------------------------------------------------
-                    // ACTION C: DELETED -> Cancel Pending Reminder + Direct Cancellation SMS
+                    // ACTION C: DELETED -> Cancel Pending Reminder + Direct Cancellation SMS (ONLY if booking was active)
                     // -------------------------------------------------------------
                     elseif ($action === 'deleted') {
                         // Cancel pending reminders for this booking
                         MessageQueue::where('booking_id', $booking->id)
-                            ->where('status', 'pending')
+                            ->whereIn('status', ['pending', 'queued'])
                             ->delete();
 
-                        $parsedCancel = MessageTemplate::parseForBooking($booking, 'cancellation', null, $preferredChannel);
-                        $this->triggerGatewayDevice($shopId, 0, $formattedPhone, $parsedCancel, $booking->barber_id, $booking->customer_id, 'cancellation', $booking->id);
+                        // DO NOT resend cancellation SMS if booking was ALREADY cancelled, completed or no-show previously!
+                        if ($booking->status === 'cancelled' || $booking->status === 'completed' || $booking->status === 'no-show') {
+                            Log::info("⏭️ [DELETE SKIP] Booking #{$booking->id} was already '{$booking->status}'. Skipping duplicate cancellation SMS to customer.");
+                        } else {
+                            $parsedCancel = MessageTemplate::parseForBooking($booking, 'cancellation', null, $preferredChannel);
+                            $this->triggerGatewayDevice($shopId, 0, $formattedPhone, $parsedCancel, $booking->barber_id, $booking->customer_id, 'cancellation', $booking->id);
+                        }
                     }
                 }
 
