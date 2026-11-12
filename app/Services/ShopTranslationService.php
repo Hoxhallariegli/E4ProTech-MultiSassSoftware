@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\BarberShop;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Lang;
 
 class ShopTranslationService
 {
@@ -61,7 +62,7 @@ class ShopTranslationService
     {
         $locale = app()->getLocale();
 
-        // 1. Check if frontPageSetting has a custom translation for the active locale
+        // 1. Check if frontPageSetting has an explicit custom translation in the translations JSON column for the active locale
         if ($shop->frontPageSetting) {
             $settingVal = $shop->frontPageSetting->getTranslated($key, $locale);
             if (!empty($settingVal)) {
@@ -69,10 +70,17 @@ class ShopTranslationService
             }
         }
 
-        // 2. Check translation file for current locale
+        // 2. Ensure translation files exist for this shop
         $fileKey = "shop-{$shop->slug}.{$key}";
-        if (\Illuminate\Support\Facades\Lang::has($fileKey)) {
-            return __($fileKey);
+        if (!Lang::has($fileKey)) {
+            static::createShopTranslationFiles($shop);
+        }
+
+        if (Lang::has($fileKey)) {
+            $translated = __($fileKey);
+            if (!empty($translated) && is_string($translated) && $translated !== $fileKey) {
+                return $translated;
+            }
         }
 
         return $default;
