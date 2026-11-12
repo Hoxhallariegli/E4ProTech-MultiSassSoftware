@@ -266,7 +266,8 @@ class PublicShopBooking extends Component
             }
         }
 
-        $slotStep = (int) ($this->shop->min_service_time ?: 15);
+        // Step interval is ALWAYS equal to the selected service's duration_minutes ($reqDuration)
+        $slotStep = $reqDuration > 0 ? $reqDuration : (int) ($this->shop->min_service_time ?: 15);
         if ($slotStep <= 0) $slotStep = 15;
 
         $slots = [];
