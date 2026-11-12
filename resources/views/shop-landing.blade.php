@@ -232,100 +232,11 @@
         </div>
     </section>
 
-    <!-- Arrow 4: The Dark Wave Section ("HOW WE WORK" / "SI FUNKSIONON" - Managed Secondary Color) -->
-    <section id="how-it-works" class="relative text-white py-20 lg:py-28" style="background-color: {{ $secondaryColor }};">
-
-        <!-- Jagged Top Wave Shape Divider -->
-        <div class="absolute top-0 left-0 right-0 h-6 bg-[#FAF8F2]"
-             style="clip-path: polygon(0 0, 25% 100%, 50% 0, 75% 100%, 100% 0, 100% 0, 0 0);"></div>
-
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-6">
-            <div class="text-center max-w-3xl mx-auto mb-16">
-                <span class="text-xs font-extrabold uppercase tracking-widest text-amber-300">
-                    {{ app()->getLocale() === 'en' ? 'HOW IT WORKS' : 'SI FUNKSIONON' }}
-                </span>
-                <h2 class="text-3xl sm:text-5xl font-black tracking-tight text-white mt-2 mb-4">
-                    {{ app()->getLocale() === 'en' ? 'Your Salon Experience, Step By Step' : 'Transformimi i Sallonit Tuaj, Hap Pas Hapi' }}
-                </h2>
-                <p class="text-sm text-teal-100 font-medium">
-                    {{ app()->getLocale() === 'en'
-                        ? "Every booking is simple, fast, and 100% secure at {$shop->name}:"
-                        : "Çdo biznes është unik. Ja si funksionon rezervimi online te {$shop->name}:" }}
-                </p>
-            </div>
-
-            <!-- Steps Grid (Glassmorphic Cards) -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-
-                <!-- Step 1 -->
-                <div class="p-8 rounded-[2rem] bg-white/10 backdrop-blur-md border border-white/15">
-                    <span class="text-xs font-black uppercase tracking-widest text-amber-300">
-                        {{ app()->getLocale() === 'en' ? 'STEP 1' : 'HAPI 1' }}
-                    </span>
-                    <h3 class="text-xl font-black text-white mt-2 mb-3">
-                        {{ app()->getLocale() === 'en' ? 'Discovery & Online Page' : 'Discovery & Faqja Online' }}
-                    </h3>
-                    <p class="text-xs text-teal-100 leading-relaxed font-medium">
-                        {{ app()->getLocale() === 'en'
-                            ? 'Clients find your customized public page 24/7 with all services and pricing.'
-                            : 'Klientët gjejnë faqen tuaj publike të personalizuar 24/7 me të gjitha shërbimet dhe çmimet.' }}
-                    </p>
-                </div>
-
-                <!-- Step 2 -->
-                <div class="p-8 rounded-[2rem] bg-white/10 backdrop-blur-md border border-white/15">
-                    <span class="text-xs font-black uppercase tracking-widest text-amber-300">
-                        {{ app()->getLocale() === 'en' ? 'STEP 2' : 'HAPI 2' }}
-                    </span>
-                    <h3 class="text-xl font-black text-white mt-2 mb-3">
-                        {{ app()->getLocale() === 'en' ? '24/7 Booking' : 'Rezervime 24/7' }}
-                    </h3>
-                    <p class="text-xs text-teal-100 leading-relaxed font-medium">
-                        {{ app()->getLocale() === 'en'
-                            ? 'Clients choose their preferred barber/stylist, service, and available time.'
-                            : 'Klientët zgjedhin berberin/parukieren, shërbimin dhe orarin e lirë që ju përshtatet më së miri.' }}
-                    </p>
-                </div>
-
-                <!-- Step 3 -->
-                <div class="p-8 rounded-[2rem] bg-white/10 backdrop-blur-md border border-white/15">
-                    <span class="text-xs font-black uppercase tracking-widest text-amber-300">
-                        {{ app()->getLocale() === 'en' ? 'STEP 3' : 'HAPI 3' }}
-                    </span>
-                    <h3 class="text-xl font-black text-white mt-2 mb-3">
-                        {{ app()->getLocale() === 'en' ? 'SMS & Reminders' : 'SMS & Rikujtesa' }}
-                    </h3>
-                    <p class="text-xs text-teal-100 leading-relaxed font-medium">
-                        {{ app()->getLocale() === 'en'
-                            ? 'Automated confirmation and SMS reminders sent for every appointment.'
-                            : 'Sistemi llogarit dhe dërgon konfirmimin si dhe rikujtesën automatike me SMS për çdo takim.' }}
-                    </p>
-                </div>
-
-                <!-- Step 4 -->
-                <div class="p-8 rounded-[2rem] bg-white/10 backdrop-blur-md border border-white/15">
-                    <span class="text-xs font-black uppercase tracking-widest text-amber-300">
-                        {{ app()->getLocale() === 'en' ? 'STEP 4' : 'HAPI 4' }}
-                    </span>
-                    <h3 class="text-xl font-black text-white mt-2 mb-3">
-                        {{ app()->getLocale() === 'en' ? 'App & Live Sync' : 'Aplikacion & Live Sync' }}
-                    </h3>
-                    <p class="text-xs text-teal-100 leading-relaxed font-medium">
-                        {{ app()->getLocale() === 'en'
-                            ? 'Appointments sync instantly with your mobile app and admin dashboard.'
-                            : 'Rezervimi sinkronizohet menjëherë në aplikacionin tuaj celular dhe panelin admin.' }}
-                    </p>
-                </div>
-
-            </div>
-        </div>
-    </section>
-
     <!-- Staff Members Section -->
     <section id="staff" class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div class="flex items-center justify-between mb-10">
             <div>
-                <span class="text-xs font-black uppercase tracking-widest" style="color: {{ $primaryColor }};">{{ $staffBadge }}</span>
+                <span class="text-xs font-black uppercase tracking-widest" style="color: {{ $primaryColor };">{{ $staffBadge }}</span>
                 <h2 class="text-2xl sm:text-4xl font-black text-[#1A1D20] tracking-tight mt-1">{{ $staffTitle }}</h2>
             </div>
             <span class="text-xs px-4 py-2 rounded-full bg-white border border-stone-200 text-[#1A1D20] font-extrabold shadow-sm">
@@ -356,51 +267,6 @@
                     @endif
                 </div>
             @endforeach
-        </div>
-    </section>
-
-    <!-- Services & Pricing Section -->
-    <section id="services" class="py-16 bg-[#F5F2E9] border-y border-stone-200/80">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between mb-10">
-                <div>
-                    <span class="text-xs font-black uppercase tracking-widest" style="color: {{ $secondaryColor }};">{{ $servicesBadge }}</span>
-                    <h2 class="text-2xl sm:text-4xl font-black text-[#1A1D20] tracking-tight mt-1">{{ $servicesTitle }}</h2>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                @foreach($services as $service)
-                    <div class="p-6 rounded-[2rem] bg-white border border-stone-200/80 flex justify-between items-center transition duration-300 shadow-sm hover:shadow-md">
-                        <div class="pr-4">
-                            <div class="flex items-center gap-2">
-                                <span class="text-[10px] px-2.5 py-0.5 rounded-full font-extrabold uppercase tracking-wider"
-                                      style="background-color: {{ $secondaryColor }}1A; color: {{ $secondaryColor }}; border: 1px solid {{ $secondaryColor }}30;">
-                                    {{ $service->category ?: $shop->resolved_service_label }}
-                                </span>
-                                <span class="text-xs text-slate-500 font-bold">
-                                    {{ $service->duration_minutes }} min
-                                </span>
-                            </div>
-                            <h4 class="font-black text-lg text-[#1A1D20] mt-2">{{ $service->name }}</h4>
-                            @if($service->description)
-                                <p class="text-xs text-slate-600 mt-1 leading-relaxed font-medium">{{ $service->description }}</p>
-                            @endif
-                        </div>
-                        <div class="text-right whitespace-nowrap">
-                            <span class="text-xl font-black block mb-2" style="color: {{ $secondaryColor }};">
-                                {{ $service->formatted_price_range }}
-                            </span>
-                            <button type="button"
-                                    onclick="selectServiceAndScroll({{ $service->id }})"
-                                    class="px-5 py-2 rounded-full text-xs font-black text-white shadow transition inline-block cursor-pointer active:scale-95"
-                                    style="background-color: {{ $primaryColor }};">
-                                {{ app()->getLocale() === 'en' ? 'Select ↗' : 'Zgjidh ↗' }}
-                            </button>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
         </div>
     </section>
 
