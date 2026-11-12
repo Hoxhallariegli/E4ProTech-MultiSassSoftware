@@ -94,7 +94,7 @@ class Booking extends Model
         $end = (clone $start)->addMinutes($durationMinutes);
 
         // Check overlap ONLY with existing active bookings for the same staff member
-        $query = static::withoutGlobalScope('barber_shop_access')->query()
+        $query = static::withoutGlobalScope('barber_shop_access')
             ->where('barber_id', $barberId)
             ->where('status', '!=', 'cancelled')
             ->whereDate('appointment_at', $start->format('Y-m-d'));
