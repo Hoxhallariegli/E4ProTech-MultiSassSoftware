@@ -29,4 +29,14 @@ return [
     'Active Staff' => 'Active Staff',
     'Offered Services' => 'Offered Services',
     'Options' => 'Options',
+
+    'Hero Badge' => '✨ Official :shop',
+    'Hero Title' => 'Premium Experience for Services & Styling',
+    'Hero Subtitle' => 'Book your appointment online with our professional team in seconds. Choose your preferred service, schedule, and staff 24/7.',
+    'Hero Quote' => '"Book your appointment in just 30 seconds. Choose your preferred person and schedule from any device."',
+    '24/7 Booking' => '24/7 Booking',
+    'SMS Confirmation' => 'SMS Confirmation',
+    'Trained Staff' => 'Trained Staff',
+    'Contact' => 'Contact',
+    'Open now' => 'Open now • 09:00 - 19:00',
 ];

@@ -29,4 +29,14 @@ return [
     'Active Staff' => 'Stafi Aktiv',
     'Offered Services' => 'Shërbimet e Ofruara',
     'Options' => 'Opsione',
+
+    'Hero Badge' => '✨ :shop Zyrtare',
+    'Hero Title' => 'Eksperiencë Premium për Shërbime & Stilim',
+    'Hero Subtitle' => 'Rezervoni takimin tuaj online me ekipin tonë profesional në pak sekonda. Zgjidhni shërbimin, orarin dhe stafin tuaj të preferuar 24/7.',
+    'Hero Quote' => '"Rezervoni takimin tuaj në vetëm 30 sekonda. Zgjidhni personin dhe orarin tuaj të preferuar nga çdo pajisje."',
+    '24/7 Booking' => 'Rezervim 24/7',
+    'SMS Confirmation' => 'Konfirmim me SMS',
+    'Trained Staff' => 'Staf i Trajnuar',
+    'Contact' => 'Kontakt',
+    'Open now' => 'Hapur tani • 09:00 - 19:00',
 ];

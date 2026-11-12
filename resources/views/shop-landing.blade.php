@@ -23,8 +23,6 @@
 <body class="min-h-full flex flex-col justify-between selection:bg-[#7C5CFC] selection:text-white antialiased bg-[#FAF8F2] text-[#1A1D20]">
 
     @php
-        use App\Services\ShopTranslationService;
-
         $isEn = app()->getLocale() === 'en';
 
         // Dynamic Primary & Secondary Colors from barber_shops table
@@ -36,38 +34,12 @@
             $secondaryColor = '#0A4D44';
         }
 
-        $defaultBadge = $isEn
-            ? "Official {$shop->resolved_shop_label} • {$shop->name}"
-            : "{$shop->resolved_shop_label} Zyrtare • {$shop->name}";
-
-        $defaultTitle = $isEn
-            ? "Premium Experience for {$shop->resolved_service_label} & Styling"
-            : "Eksperiencë Premium për {$shop->resolved_service_label} & Stilim";
-
-        $defaultSubtitle = $isEn
-            ? "Book your appointment online with our professional team in seconds. Choose your preferred service, schedule, and staff 24/7."
-            : "Rezervoni takimin tuaj online me ekipin tonë profesional në pak sekonda. Zgjidhni shërbimin, orarin dhe stafin tuaj të preferuar 24/7.";
-
-        $defaultButton = $isEn
-            ? "Book Appointment Online ↗"
-            : "Rezervo Takim Online ↗";
-
-        $defaultServicesBadge = $isEn ? "Pricing & Duration" : "Çmimet & Kohëzgjatja";
-        $defaultServicesTitle = $isEn ? "Our Services" : "Shërbimet e Ofruara";
-        $defaultStaffBadge = $isEn ? "Our Team" : "Ekipi Ynë";
-        $defaultStaffTitle = $isEn ? "Our {$shop->resolved_staff_label_plural}" : "{$shop->resolved_staff_label_plural} Tanë";
-        $defaultFooterText = "© " . date('Y') . " {$shop->name} — " . ($isEn ? "Powered by E4ProTech Engine" : "Mundësuar nga E4ProTech Engine");
-
-        $heroBadge = ShopTranslationService::getShopText($shop, 'hero_badge', $defaultBadge);
-        $heroTitle = ShopTranslationService::getShopText($shop, 'hero_title', $defaultTitle);
-        $heroSubtitle = ShopTranslationService::getShopText($shop, 'hero_subtitle', $defaultSubtitle);
-        $heroButton = ShopTranslationService::getShopText($shop, 'hero_button', $defaultButton);
-        $servicesBadge = ShopTranslationService::getShopText($shop, 'services_badge', $defaultServicesBadge);
-        $servicesTitle = ShopTranslationService::getShopText($shop, 'services_title', $defaultServicesTitle);
-        $staffBadge = ShopTranslationService::getShopText($shop, 'staff_badge', $defaultStaffBadge);
-        $staffTitle = ShopTranslationService::getShopText($shop, 'staff_title', $defaultStaffTitle);
-        $contactPhone = ShopTranslationService::getShopText($shop, 'contact_phone', $shop->phone ?? '');
-        $footerText = ShopTranslationService::getShopText($shop, 'footer_text', $defaultFooterText);
+        $heroBadge = __('public_booking.Hero Badge', ['shop' => $shop->name]);
+        $heroTitle = __('public_booking.Hero Title');
+        $heroSubtitle = __('public_booking.Hero Subtitle');
+        $heroButton = __('public_booking.Book Appointment Online');
+        $contactPhone = $shop->phone ?? '';
+        $footerText = "© " . date('Y') . " {$shop->name} — " . ($isEn ? "Powered by E4ProTech Engine" : "Mundësuar nga E4ProTech Engine");
     @endphp
 
     <!-- Top Navigation Bar (Managed Colors & Language Switcher) -->
@@ -214,11 +186,7 @@
                         <div class="p-4 rounded-2xl text-white text-xs font-medium leading-relaxed flex items-center gap-3 shadow-md"
                              style="background-color: {{ $secondaryColor }};">
                             <span class="text-2xl">💡</span>
-                            <span>
-                                {{ app()->getLocale() === 'en'
-                                    ? '"Book your appointment in just 30 seconds. Choose your preferred person and schedule from any device."'
-                                    : '"Rezervoni takimin tuaj në vetëm 30 sekonda. Zgjidhni personin dhe orarin tuaj të preferuar nga çdo pajisje."' }}
-                            </span>
+                            <span>{{ __('public_booking.Hero Quote') }}</span>
                         </div>
                     </div>
                 </div>
