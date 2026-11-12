@@ -359,51 +359,6 @@
         </div>
     </section>
 
-    <!-- Services & Pricing Section -->
-    <section id="services" class="py-16 bg-[#F5F2E9] border-y border-stone-200/80">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between mb-10">
-                <div>
-                    <span class="text-xs font-black uppercase tracking-widest" style="color: {{ $secondaryColor }};">{{ $servicesBadge }}</span>
-                    <h2 class="text-2xl sm:text-4xl font-black text-[#1A1D20] tracking-tight mt-1">{{ $servicesTitle }}</h2>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                @foreach($services as $service)
-                    <div class="p-6 rounded-[2rem] bg-white border border-stone-200/80 flex justify-between items-center transition duration-300 shadow-sm hover:shadow-md">
-                        <div class="pr-4">
-                            <div class="flex items-center gap-2">
-                                <span class="text-[10px] px-2.5 py-0.5 rounded-full font-extrabold uppercase tracking-wider"
-                                      style="background-color: {{ $secondaryColor }}1A; color: {{ $secondaryColor }}; border: 1px solid {{ $secondaryColor }}30;">
-                                    {{ $service->category ?: $shop->resolved_service_label }}
-                                </span>
-                                <span class="text-xs text-slate-500 font-bold">
-                                    {{ $service->duration_minutes }} min
-                                </span>
-                            </div>
-                            <h4 class="font-black text-lg text-[#1A1D20] mt-2">{{ $service->name }}</h4>
-                            @if($service->description)
-                                <p class="text-xs text-slate-600 mt-1 leading-relaxed font-medium">{{ $service->description }}</p>
-                            @endif
-                        </div>
-                        <div class="text-right whitespace-nowrap">
-                            <span class="text-xl font-black block mb-2" style="color: {{ $secondaryColor }};">
-                                {{ $service->formatted_price_range }}
-                            </span>
-                            <button type="button"
-                                    onclick="selectServiceAndScroll({{ $service->id }})"
-                                    class="px-5 py-2 rounded-full text-xs font-black text-white shadow transition inline-block cursor-pointer active:scale-95"
-                                    style="background-color: {{ $primaryColor }};">
-                                {{ app()->getLocale() === 'en' ? 'Select ↗' : 'Zgjidh ↗' }}
-                            </button>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </section>
-
     <!-- Interactive Livewire Online Booking Component -->
     <section id="booking-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full scroll-mt-6">
         <livewire:public-shop-booking :shop="$shop" />
