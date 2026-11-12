@@ -156,66 +156,77 @@ class SendFirebaseNotificationListener
                     }
 
                     // -------------------------------------------------------------
-                    // ACTION B: UPDATED -> Reschedule Pending Reminder + Direct Reschedule SMS
+                    // ACTION B: UPDATED -> Handle Cancellation or Reschedule Reminder
                     // -------------------------------------------------------------
                     elseif ($action === 'updated') {
                         $shop = $booking->barberShop;
 
-                        // 1. Reschedule and update pending reminder SMS
-                        if ($booking->appointment_at && $booking->appointment_at->isFuture()) {
-                            $rawVal = $shop?->reminder_hours_before;
-                            $reminderMins = 30;
-                            if ($rawVal !== null && is_numeric($rawVal) && (float)$rawVal > 0) {
-                                $num = (float) $rawVal;
-                                $reminderMins = ($num <= 12) ? (int) round($num * 60) : (int) round($num);
+                        if ($booking->status === 'cancelled') {
+                            // 1. Purge all pending scheduled reminders for cancelled booking
+                            MessageQueue::where('booking_id', $booking->id)->whereIn('status', ['pending', 'queued', 'processing'])->delete();
+                            Log::info("🧹 [CANCEL] Purged all pending reminders for cancelled Booking #{$booking->id}");
+
+                            // 2. Send direct cancellation WhatsApp/SMS message to customer with shop re-booking link
+                            $parsedCancel = MessageTemplate::parseForBooking($booking, 'cancellation', null, $preferredChannel);
+                            $this->triggerGatewayDevice($shopId, 0, $formattedPhone, $parsedCancel, $booking->barber_id, $booking->customer_id, 'cancellation', $booking->id);
+                            Log::info("📝 [CANCEL] Direct cancellation message sent to {$formattedPhone} for Booking #{$booking->id}");
+                        } else {
+                            // 1. Reschedule and update pending reminder SMS
+                            if ($booking->appointment_at && $booking->appointment_at->isFuture()) {
+                                $rawVal = $shop?->reminder_hours_before;
+                                $reminderMins = 30;
+                                if ($rawVal !== null && is_numeric($rawVal) && (float)$rawVal > 0) {
+                                    $num = (float) $rawVal;
+                                    $reminderMins = ($num <= 12) ? (int) round($num * 60) : (int) round($num);
+                                }
+                                $reminderMins = max(10, $reminderMins);
+
+                                $scheduledReminderTime = $booking->appointment_at->copy()->subMinutes($reminderMins);
+                                if ($scheduledReminderTime->isPast()) {
+                                    $scheduledReminderTime = now();
+                                }
+
+                                $parsedReminder = MessageTemplate::parseForBooking($booking, 'reminder', null, $preferredChannel);
+
+                                // Find and update existing pending reminder in MessageQueue
+                                $pendingReminder = MessageQueue::where('booking_id', $booking->id)
+                                    ->where('status', 'pending')
+                                    ->where(function($q) {
+                                        $q->where('template_type', 'reminder')
+                                          ->orWhere('message_content', 'like', '%Rikujtes%')
+                                          ->orWhere('message_content', 'like', '%Reminder%');
+                                    })
+                                    ->first();
+
+                                if ($pendingReminder) {
+                                    $pendingReminder->update([
+                                        'channel' => $preferredChannel,
+                                        'scheduled_at' => $scheduledReminderTime,
+                                        'message_content' => $parsedReminder,
+                                        'phone_number' => $formattedPhone,
+                                    ]);
+                                    Log::info("⏰ [RESCHEDULE] Pending Reminder for Booking #{$booking->id} updated to {$scheduledReminderTime} with new content.");
+                                } else {
+                                    MessageQueue::create([
+                                        'barber_shop_id' => $booking->barber_shop_id,
+                                        'booking_id' => $booking->id,
+                                        'channel' => $preferredChannel,
+                                        'template_type' => 'reminder',
+                                        'phone_number' => $formattedPhone,
+                                        'message_content' => $parsedReminder,
+                                        'scheduled_at' => $scheduledReminderTime,
+                                        'status' => 'pending',
+                                        'retry_count' => 0,
+                                    ]);
+                                }
                             }
-                            $reminderMins = max(10, $reminderMins);
 
-                            $scheduledReminderTime = $booking->appointment_at->copy()->subMinutes($reminderMins);
-                            if ($scheduledReminderTime->isPast()) {
-                                $scheduledReminderTime = now();
+                            // 2. Direct Update / Reschedule Message
+                            $timeOrDetailsChanged = $booking->wasChanged('appointment_at') || $booking->wasChanged('service_id') || $booking->wasChanged('barber_id');
+                            if ($timeOrDetailsChanged) {
+                                $parsedUpdate = MessageTemplate::parseForBooking($booking, 'reschedule', null, $preferredChannel);
+                                $this->triggerGatewayDevice($shopId, 0, $formattedPhone, $parsedUpdate, $booking->barber_id, $booking->customer_id, 'reschedule', $booking->id);
                             }
-
-                            $parsedReminder = MessageTemplate::parseForBooking($booking, 'reminder', null, $preferredChannel);
-
-                            // Find and update existing pending reminder in MessageQueue
-                            $pendingReminder = MessageQueue::where('booking_id', $booking->id)
-                                ->where('status', 'pending')
-                                ->where(function($q) {
-                                    $q->where('template_type', 'reminder')
-                                      ->orWhere('message_content', 'like', '%Rikujtes%')
-                                      ->orWhere('message_content', 'like', '%Reminder%');
-                                })
-                                ->first();
-
-                            if ($pendingReminder) {
-                                $pendingReminder->update([
-                                    'channel' => $preferredChannel,
-                                    'scheduled_at' => $scheduledReminderTime,
-                                    'message_content' => $parsedReminder,
-                                    'phone_number' => $formattedPhone,
-                                ]);
-                                Log::info("⏰ [RESCHEDULE] Pending Reminder for Booking #{$booking->id} updated to {$scheduledReminderTime} with new content.");
-                            } else {
-                                MessageQueue::create([
-                                    'barber_shop_id' => $booking->barber_shop_id,
-                                    'booking_id' => $booking->id,
-                                    'channel' => $preferredChannel,
-                                    'template_type' => 'reminder',
-                                    'phone_number' => $formattedPhone,
-                                    'message_content' => $parsedReminder,
-                                    'scheduled_at' => $scheduledReminderTime,
-                                    'status' => 'pending',
-                                    'retry_count' => 0,
-                                ]);
-                            }
-                        }
-
-                        // 2. Direct Update / Reschedule Message
-                        $timeOrDetailsChanged = $booking->wasChanged('appointment_at') || $booking->wasChanged('service_id') || $booking->wasChanged('barber_id');
-                        if ($timeOrDetailsChanged) {
-                            $parsedUpdate = MessageTemplate::parseForBooking($booking, 'reschedule', null, $preferredChannel);
-                            $this->triggerGatewayDevice($shopId, 0, $formattedPhone, $parsedUpdate, $booking->barber_id, $booking->customer_id, 'reschedule', $booking->id);
                         }
                     }
 

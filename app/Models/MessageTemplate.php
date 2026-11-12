@@ -139,32 +139,34 @@ class MessageTemplate extends Model
             }
         }
 
+        $shop = $booking->barberShop;
+        $shortCode = dechex($booking->id * 7919);
+        $bookingLink = url("/m/{$shortCode}");
+        $shopLandingUrl = $shop?->slug ? url("/s/{$shop->slug}") : $bookingLink;
+
         if (!$templateText) {
             if ($locale === 'en') {
                 if ($type === 'reminder') {
-                    $templateText = "Reminder: Hello {customer_name}! Your appointment at {shop_name} is today at {time}. We look forward to seeing you!";
+                    $templateText = "Reminder: Hello {customer_name}! Your appointment at {shop_name} is today at {time}. Manage: {booking_link}";
                 } elseif ($type === 'reschedule' || $type === 'update') {
-                    $templateText = "Hello {customer_name}! Your appointment at {shop_name} with {staff_name} is updated to {time} {date}.";
+                    $templateText = "Hello {customer_name}! Your appointment at {shop_name} with {staff_name} is updated to {time} {date}. Details: {booking_link}";
                 } elseif ($type === 'cancellation' || $type === 'cancelled') {
-                    $templateText = "Hello {customer_name}! Your appointment at {shop_name} for {time} {date} was cancelled.";
+                    $templateText = "Hello {customer_name}! Your appointment at {shop_name} for {time} on {date} was successfully cancelled. You are welcome to book a new appointment anytime here: {shop_url}";
                 } else {
-                    $templateText = "Hello {customer_name}! Your booking for {service_name} at {shop_name} for {time} on {date} has been successfully registered.";
+                    $templateText = "Hello {customer_name}! Your booking for {service_name} at {shop_name} for {time} on {date} has been confirmed. Details: {booking_link}";
                 }
             } else {
                 if ($type === 'reminder') {
-                    $templateText = "Rikujtesë: Përshëndetje {customer_name}! Takimi juaj te {shop_name} është sot në orën {time}. Ju mirëpresim!";
+                    $templateText = "Rikujtesë: Përshëndetje {customer_name}! Takimi juaj te {shop_name} është sot në orën {time}. Menaxho: {booking_link}";
                 } elseif ($type === 'reschedule' || $type === 'update') {
-                    $templateText = "Përshëndetje {customer_name}! Takimi juaj në {shop_name} me {staff_name} u ndryshua për në orën {time} {date}.";
+                    $templateText = "Përshëndetje {customer_name}! Takimi juaj në {shop_name} me {staff_name} u ndryshua për në orën {time} {date}. Detajet: {booking_link}";
                 } elseif ($type === 'cancellation' || $type === 'cancelled') {
-                    $templateText = "Përshëndetje {customer_name}! Takimi juaj në {shop_name} për në orën {time} {date} u anulua.";
+                    $templateText = "Përshëndetje {customer_name}! Takimi juaj te {shop_name} për në orën {time} më datë {date} u anulua me sukses. Ju mirëpresim sërish në çdo kohë! Mund të rezervoni orarin tuaj të ri këtu: {shop_url}";
                 } else {
-                    $templateText = "Përshëndetje {customer_name}! Rezervimi juaj për {service_name} në {shop_name} u regjistrua për orën {time} më datë {date}.";
+                    $templateText = "Përshëndetje {customer_name}! Rezervimi juaj për {service_name} në {shop_name} u regjistrua për orën {time} më datë {date}. Detajet: {booking_link}";
                 }
             }
         }
-
-        $shortCode = dechex($booking->id * 7919);
-        $bookingLink = url("/m/{$shortCode}");
 
         $replacements = [
             '{customer_name}' => $booking->customer?->name ?? 'Klient',
@@ -174,7 +176,7 @@ class MessageTemplate extends Model
             '{time}' => $booking->appointment_at ? $booking->appointment_at->format('H:i') : '10:00',
             '{date}' => $booking->appointment_at ? $booking->appointment_at->format('d/m/Y') : date('d/m/Y'),
             '{booking_link}' => $bookingLink,
-            '{shop_url}' => $bookingLink,
+            '{shop_url}' => $shopLandingUrl,
             '{link}' => $bookingLink,
         ];
 
