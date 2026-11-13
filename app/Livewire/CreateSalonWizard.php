@@ -47,9 +47,9 @@ class CreateSalonWizard extends Component
                 'salonSlug' => 'required|string|max:100|unique:barber_shops,slug',
                 'businessType' => 'required|string',
             ], [
-                'salonName.required' => 'Ju lutemi vendosni emrin e sallonit tuaj.',
-                'salonSlug.required' => 'Ju lutemi vendosni adresën e faqes tuaj.',
-                'salonSlug.unique' => 'Kjo adresë është e zënë. Ju lutemi zgjidhni një adresë tjetër.',
+                'salonName.required' => __('public_booking.Please enter your salon name'),
+                'salonSlug.required' => __('public_booking.Please enter your website address'),
+                'salonSlug.unique' => __('public_booking.This address is taken'),
             ]);
 
             session([
@@ -67,11 +67,11 @@ class CreateSalonWizard extends Component
                 'email' => 'required|email|max:150|unique:users,email',
                 'password' => 'required|string|min:6',
             ], [
-                'ownerName.required' => 'Ju lutemi vendosni Emrin dhe Mbiemrin tuaj.',
-                'ownerPhone.required' => 'Ju lutemi vendosni Numrin e Telefonit.',
-                'email.required' => 'Ju lutemi vendosni Adresën e E-mailit.',
-                'email.unique' => 'Kjo adresë e-maili është e regjistruar tashmë.',
-                'password.required' => 'Ju lutemi vendosni një fjalëkalim.',
+                'ownerName.required' => __('public_booking.Please enter your name'),
+                'ownerPhone.required' => __('public_booking.Please enter your phone number'),
+                'email.required' => __('public_booking.Please enter your email'),
+                'email.unique' => __('public_booking.This email is already registered'),
+                'password.required' => __('public_booking.Please enter a password'),
             ]);
 
             $this->createSalon();

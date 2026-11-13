@@ -72,4 +72,12 @@ return [
     'Booking confirmed success' => 'Your appointment has been successfully confirmed. We look forward to seeing you!',
     'Link expired cancel error' => 'This link has expired. You cannot cancel this appointment anymore.',
     'Booking cancelled success' => 'Your appointment has been successfully cancelled.',
+
+    // Salon Wizard Messages
+    'Please enter your salon name' => 'Please enter your salon name.',
+    'Please enter your website address' => 'Please enter your website page address.',
+    'This address is taken' => 'This page address is already taken. Please choose another address.',
+    'Please enter your email' => 'Please enter your email address.',
+    'This email is already registered' => 'This email address is already registered.',
+    'Please enter a password' => 'Please enter a password.',
 ];

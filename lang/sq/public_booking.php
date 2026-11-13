@@ -72,4 +72,12 @@ return [
     'Booking confirmed success' => 'Takimi juaj u konfirmua me sukses. Ju mirëpresim!',
     'Link expired cancel error' => 'Kjo lidhje ka skaduar. Nuk mund ta anuloni më këtë takim.',
     'Booking cancelled success' => 'Takimi juaj u anulua me sukses.',
+
+    // Salon Wizard Messages
+    'Please enter your salon name' => 'Ju lutemi vendosni emrin e sallonit tuaj.',
+    'Please enter your website address' => 'Ju lutemi vendosni adresën e faqes tuaj.',
+    'This address is taken' => 'Kjo adresë është e zënë. Ju lutemi zgjidhni një adresë tjetër.',
+    'Please enter your email' => 'Ju lutemi vendosni Adresën e E-mailit.',
+    'This email is already registered' => 'Kjo adresë e-maili është e regjistruar tashmë.',
+    'Please enter a password' => 'Ju lutemi vendosni një fjalëkalim.',
 ];
