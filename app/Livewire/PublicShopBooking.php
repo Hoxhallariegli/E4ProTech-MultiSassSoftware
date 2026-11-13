@@ -84,15 +84,15 @@ class PublicShopBooking extends Component
     public function nextStep()
     {
         if ($this->currentStep === 1 && !$this->selectedServiceId) {
-            $this->addError('selectedServiceId', 'Ju lutemi zgjidhni një shërbim.');
+            $this->addError('selectedServiceId', __('public_booking.Please select a service'));
             return;
         }
         if ($this->currentStep === 2 && !$this->selectedBarberId) {
-            $this->addError('selectedBarberId', 'Ju lutemi zgjidhni një anëtar stafit.');
+            $this->addError('selectedBarberId', __('public_booking.Please select a staff member'));
             return;
         }
         if ($this->currentStep === 3 && (!$this->bookingDate || !$this->bookingTime)) {
-            $this->addError('bookingTime', 'Ju lutemi zgjidhni datën dhe orarin.');
+            $this->addError('bookingTime', __('public_booking.Please select date and time'));
             return;
         }
         $this->currentStep = min(4, $this->currentStep + 1);
@@ -425,10 +425,10 @@ class PublicShopBooking extends Component
             'customerPhone' => 'required|string|max:30',
             'notes' => 'nullable|string|max:80',
         ], [
-            'customerName.required' => 'Ju lutemi vendosni Emrin dhe Mbiemrin tuaj.',
-            'customerPhone.required' => 'Ju lutemi vendosni Numrin e Telefonit.',
-            'bookingTime.required' => 'Ju lutemi zgjidhni një orar të lirë.',
-            'bookingDate.after_or_equal' => 'Data e rezervimit duhet të jetë sot ose në ditët në vijim.',
+            'customerName.required' => __('public_booking.Please enter your name'),
+            'customerPhone.required' => __('public_booking.Please enter your phone number'),
+            'bookingTime.required' => __('public_booking.Please select an available time slot'),
+            'bookingDate.after_or_equal' => __('public_booking.Booking date must be today or a future date'),
         ]);
 
         try {
@@ -478,7 +478,7 @@ class PublicShopBooking extends Component
             'status' => 'confirmed',
             'payment_status' => 'unpaid',
             'total_price' => $service->price,
-            'notes' => $this->notes ? "Rezervim Online: " . $this->notes : "Rezervim Online nga Faqja Publike",
+            'notes' => $this->notes ? __('public_booking.Online Booking') . ": " . $this->notes : __('public_booking.Online Booking from Landing Page'),
             'source' => 'online',
         ]);
 

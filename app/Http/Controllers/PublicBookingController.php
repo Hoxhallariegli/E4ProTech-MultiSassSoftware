@@ -47,7 +47,7 @@ class PublicBookingController extends Controller
         $booking = static::resolveBooking($code);
 
         if (!$booking) {
-            abort(404, 'Rezervimi nuk u gjet.');
+            abort(404, __('public_booking.Booking not found'));
         }
 
         return $this->renderView($booking, $code);
@@ -58,7 +58,7 @@ class PublicBookingController extends Controller
         $booking = static::resolveBooking($code);
 
         if (!$booking) {
-            return redirect()->back()->with('error', 'Rezervimi nuk u gjet.');
+            return redirect()->back()->with('error', __('public_booking.Booking not found'));
         }
 
         return $this->processConfirmation($booking);
@@ -69,7 +69,7 @@ class PublicBookingController extends Controller
         $booking = static::resolveBooking($code);
 
         if (!$booking) {
-            return redirect()->back()->with('error', 'Rezervimi nuk u gjet.');
+            return redirect()->back()->with('error', __('public_booking.Booking not found'));
         }
 
         return $this->processCancellation($booking);
@@ -82,7 +82,7 @@ class PublicBookingController extends Controller
             ->first();
 
         if (!$booking) {
-            abort(404, 'Rezervimi nuk u gjet.');
+            abort(404, __('public_booking.Booking not found'));
         }
 
         $code = dechex($booking->id * 7919);
@@ -96,7 +96,7 @@ class PublicBookingController extends Controller
             ->first();
 
         if (!$booking) {
-            return redirect()->back()->with('error', 'Rezervimi nuk u gjet.');
+            return redirect()->back()->with('error', __('public_booking.Booking not found'));
         }
 
         return $this->processConfirmation($booking);
@@ -109,7 +109,7 @@ class PublicBookingController extends Controller
             ->first();
 
         if (!$booking) {
-            return redirect()->back()->with('error', 'Rezervimi nuk u gjet.');
+            return redirect()->back()->with('error', __('public_booking.Booking not found'));
         }
 
         return $this->processCancellation($booking);
@@ -140,7 +140,7 @@ class PublicBookingController extends Controller
         $appointmentAt = $booking->appointment_at ? Carbon::parse($booking->appointment_at) : null;
 
         if (in_array($booking->status, ['cancelled', 'completed'], true) || ($appointmentAt && $appointmentAt->isPast())) {
-            return redirect()->back()->with('error', 'Kjo lidhje ka skaduar. Nuk mund ta konfirmoni më këtë takim.');
+            return redirect()->back()->with('error', __('public_booking.Link expired confirm error'));
         }
 
         if ($booking->status !== 'confirmed') {
@@ -155,7 +155,7 @@ class PublicBookingController extends Controller
             AuditTrail::logCustom($booking, 'update', 'Bookings', "Konfirmuar nga klienti nëpërmjet linkut publik (#{$booking->id})");
         }
 
-        return redirect()->back()->with('success', 'Takimi juaj u konfirmua me sukses. Ju mirëpresim!');
+        return redirect()->back()->with('success', __('public_booking.Booking confirmed success'));
     }
 
     protected function processCancellation(Booking $booking)
@@ -163,7 +163,7 @@ class PublicBookingController extends Controller
         $appointmentAt = $booking->appointment_at ? Carbon::parse($booking->appointment_at) : null;
 
         if (in_array($booking->status, ['cancelled', 'completed'], true) || ($appointmentAt && $appointmentAt->isPast())) {
-            return redirect()->back()->with('error', 'Kjo lidhje ka skaduar. Nuk mund ta anuloni më këtë takim.');
+            return redirect()->back()->with('error', __('public_booking.Link expired cancel error'));
         }
 
         if ($booking->status !== 'cancelled') {
@@ -184,6 +184,6 @@ class PublicBookingController extends Controller
             AuditTrail::logCustom($booking, 'update', 'Bookings', "Anuluar nga klienti nëpërmjet linkut publik (#{$booking->id})");
         }
 
-        return redirect()->back()->with('success', 'Takimi juaj u anulua me sukses.');
+        return redirect()->back()->with('success', __('public_booking.Booking cancelled success'));
     }
 }
