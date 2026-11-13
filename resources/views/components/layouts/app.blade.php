@@ -348,7 +348,5 @@
     @endif
 </script>
 
-<x-pwa-install-prompt :shop="auth()->user()?->barberShop" />
-
 </body>
 </html>

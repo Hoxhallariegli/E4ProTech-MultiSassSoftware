@@ -50,7 +50,7 @@ return [
     'Step Count' => 'Hapi :step nga :total',
     'Click service to proceed' => 'Klikoni një shërbim për të kaluar te zgjedhja e stafit',
     'Click staff to proceed' => 'Klikoni një anëtar stafit për të vazhduar',
-    'Select date and time' => 'Zgjidhni Datën dhe Orën',
+    'Select date and time' => 'Zgjidhni datën dhe orën tuaj të preferuar',
     'Fill customer details' => 'Plotësoni Të Dhënat Tuaja',
     'Review summary and enter info' => 'Rishikoni përmbledhjen dhe vendosni emrin e telefonin',
     'Continue to Staff' => 'Vazhdo te Stafi',
